@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Subscription } from '@renderer/types/online';
 
 // Kolekcja subskrypcji + lokalne helpery mutacji. Liczenie referencji i
@@ -28,10 +28,19 @@ export function createOnlineSubscriptions() {
     return subscriptions.value.find((s) => s.channelId === channelId);
   }
 
+  // Indeks: channelId → zbiór pobranych videoId. `isVideoDownloaded` jest wołane per
+  // karta, a wcześniej skanowało całą tablicę `downloadedVideoIds` (O(n) na kartę).
+  const downloadedSets = computed(() => {
+    const map = new Map<string, Set<string>>();
+    for (const sub of subscriptions.value) {
+      map.set(sub.channelId, new Set(sub.downloadedVideoIds || []));
+    }
+    return map;
+  });
+
   function isVideoDownloaded(videoId: string, channelId?: string): boolean {
     if (!channelId) return false;
-    const sub = getSubscription(channelId);
-    return !!sub && (sub.downloadedVideoIds || []).includes(videoId);
+    return downloadedSets.value.get(channelId)?.has(videoId) ?? false;
   }
 
   // Tylko optymistyczna lokalna aktualizacja. Persystencja jest obsługiwana w main przez

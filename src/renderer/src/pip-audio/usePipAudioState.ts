@@ -27,7 +27,6 @@ interface PipState {
   isMuted?: boolean;
   shuffle?: boolean;
   repeat?: 'none' | 'all' | 'one';
-  equalizerBands?: number[];
   equalizerPreset?: string;
   vizData?: number[];
   nextTrackName?: string;
@@ -56,7 +55,6 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   const isMuted = ref(false);
   const shuffle = ref(false);
   const repeat = ref<'none' | 'all' | 'one'>('none');
-  const equalizerBands = ref<number[]>([]);
   const eqPreset = ref('flat');
   const vizData = ref<number[]>([]);
   const nextTrackName = ref('');
@@ -108,6 +106,38 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
       ? Math.max(0, Math.min(1, (e.clientX - r.left) / r.width))
       : Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
     api?.send('audio-pip:progressClick', pct);
+  }
+
+  // Klawiaturowa obsługa paska postępu (rola slider): strzałki ±5 s, Home/End na krawędzie.
+  function seekBy(seconds: number) {
+    if (duration.value <= 0) return;
+    const next = Math.max(0, Math.min(duration.value, currentTime.value + seconds));
+    api?.send('audio-pip:progressClick', next / duration.value);
+  }
+
+  function onProgressKeydown(e: KeyboardEvent) {
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp':
+        e.preventDefault();
+        seekBy(5);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowDown':
+        e.preventDefault();
+        seekBy(-5);
+        break;
+      case 'Home':
+        e.preventDefault();
+        seekBy(-duration.value);
+        break;
+      case 'End':
+        e.preventDefault();
+        seekBy(duration.value);
+        break;
+      default:
+        break;
+    }
   }
 
   function onVolumeInput(e: Event) {
@@ -162,7 +192,6 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
         isMuted.value = !!s.isMuted;
         shuffle.value = !!s.shuffle;
         repeat.value = s.repeat || 'none';
-        if (s.equalizerBands) equalizerBands.value = s.equalizerBands;
         if (s.equalizerPreset) eqPreset.value = s.equalizerPreset;
         nextTrackName.value = s.nextTrackName || '';
         nextTrackArtist.value = s.nextTrackArtist || '';
@@ -220,7 +249,6 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     isMuted,
     shuffle,
     repeat,
-    equalizerBands,
     eqPreset,
     vizData,
     nextTrackName,
@@ -243,6 +271,7 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
     showMain,
     send,
     onProgressClick,
+    onProgressKeydown,
     onVolumeInput,
     selectEqPreset
   };

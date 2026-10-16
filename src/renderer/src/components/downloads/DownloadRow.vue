@@ -95,7 +95,7 @@ const icons = {
   paused: Pause
 } as const;
 const colors = {
-  downloading: 'text-primary',
+  downloading: 'text-primary-text',
   completed: 'text-success',
   error: 'text-error',
   cancelled: 'text-base-content/50',
@@ -148,7 +148,7 @@ const colors = {
         </span>
         <span
           v-if="task.fileHash"
-          class="text-[10px] text-base-content/50 font-mono flex items-center gap-1"
+          class="text-[11px] text-base-content/50 font-mono flex items-center gap-1"
           :title="task.fileHash"
         >
           <span class="truncate">sha256: {{ task.fileHash.slice(0, 16) }}…</span>
@@ -160,14 +160,24 @@ const colors = {
             <Copy :size="10" />
           </button>
         </span>
-        <span v-if="task.status === 'downloading'" class="text-xs text-base-content/50 font-mono">
+        <span
+          v-if="task.message"
+          class="text-xs text-primary-text/80 truncate block"
+          :title="t(task.message)"
+        >
+          {{ t(task.message) }}
+        </span>
+        <span
+          v-else-if="task.status === 'downloading'"
+          class="text-xs text-base-content/50 font-mono"
+        >
           {{ task.speed }} · {{ task.eta }}
         </span>
       </div>
 
       <button
         v-if="task.status === 'error' && task.errorCode === 'auth-required'"
-        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
+        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary-text text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
         :title="t('downloads.loginTitle')"
         @click="login"
       >
@@ -179,6 +189,7 @@ const colors = {
         v-if="coverStatusKey(task)"
         class="text-[11px] shrink-0 flex items-center gap-1"
         :class="coverStatusClass(task)"
+        :title="task.coverStatus === 'error' && task.coverError ? task.coverError : undefined"
       >
         <RefreshCw v-if="task.coverStatus === 'fetching'" :size="10" class="animate-spin" />
         {{ t(coverStatusKey(task)) }}

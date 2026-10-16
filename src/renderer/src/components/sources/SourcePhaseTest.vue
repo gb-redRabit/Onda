@@ -41,7 +41,7 @@ const { t } = useI18n();
         {{ t('sources.testRaw') }}
       </summary>
       <pre
-        class="max-h-64 overflow-auto px-3 pb-3 text-[10px] font-mono whitespace-pre-wrap break-all"
+        class="max-h-64 overflow-auto px-3 pb-3 text-[11px] font-mono whitespace-pre-wrap break-all"
         >{{ prettyRaw }}</pre>
     </details>
 
@@ -53,7 +53,7 @@ const { t } = useI18n();
       <summary class="cursor-pointer px-3 py-2 text-[11px] font-medium text-base-content/60">
         {{ t('sources.responseHeaders') }}
       </summary>
-      <dl class="px-3 pb-3 text-[10px] font-mono space-y-0.5">
+      <dl class="px-3 pb-3 text-[11px] font-mono space-y-0.5">
         <div v-for="[key, value] in headerRows" :key="key" class="flex gap-2">
           <dt class="shrink-0 text-base-content/50">{{ key }}:</dt>
           <dd class="break-all">{{ value }}</dd>

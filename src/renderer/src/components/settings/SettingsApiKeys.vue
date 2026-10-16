@@ -116,21 +116,25 @@ function toggleActive(id: string, active: boolean) {
         <input
           v-model="newName"
           :placeholder="$t('settings.apiKeyName')"
+          :aria-label="$t('settings.apiKeyName')"
           class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
         />
         <select
           v-model="newService"
+          :aria-label="$t('settings.apiKeyService')"
           class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
         >
           <option value="generic">Generic</option>
           <option value="youtube">YouTube</option>
           <option value="soundcloud">SoundCloud</option>
+          <option value="opensubtitles">OpenSubtitles</option>
           <option value="openai">OpenAI</option>
         </select>
         <input
           v-model="newKey"
           type="password"
           :placeholder="$t('settings.apiKeyValue')"
+          :aria-label="$t('settings.apiKeyValue')"
           class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
         />
         <div class="flex gap-2">

@@ -40,7 +40,7 @@ watch(
       class="h-32 sm:h-40 w-full bg-cover bg-center relative"
       :style="{ backgroundImage: `url(${bannerSrc})` }"
     >
-      <div class="absolute inset-0 bg-linear-to-b from-transparent via-bg-surface/30 to-base-100" />
+      <div class="absolute inset-0 bg-linear-to-b from-transparent via-base-100/30 to-base-100" />
     </div>
     <div v-else class="h-24 sm:h-32 w-full bg-linear-to-br from-primary/20 to-base-100" />
 

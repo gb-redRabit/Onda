@@ -38,7 +38,7 @@ const time = computed(() => (props.at ? new Date(props.at).toLocaleTimeString() 
       <XCircle :size="12" />
       {{ $t('sources.health.fail') }}
     </span>
-    <span v-else class="text-base-content/40">{{ $t('sources.health.unknown') }}</span>
+    <span v-else class="text-base-content/55">{{ $t('sources.health.unknown') }}</span>
 
     <span v-if="time" :title="$t('sources.health.checkedAt')">{{ time }}</span>
     <span v-if="ms !== undefined" class="font-mono">{{ ms }} ms</span>

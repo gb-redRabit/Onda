@@ -1,8 +1,9 @@
 import { app, ipcMain } from 'electron';
-import { join, dirname } from 'path';
-import { readFile, writeFile, rename, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { readFile } from 'fs/promises';
 import type { IpcSavedData, IpcSavedPlaylist, IpcSavedStream } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
+import { createWriteLock, writeJsonAtomic } from '../utils/write-queue';
 
 const SCHEMA_VERSION = 1;
 const MAX_TRACKS = 500;
@@ -69,22 +70,15 @@ export async function loadSavedData(filePath: string): Promise<IpcSavedData> {
   }
 }
 
-let writeChain: Promise<void> = Promise.resolve();
+const writeLock = createWriteLock();
 
 // Serializuje zapisy i podmienia plik atomowo (plik tymczasowy + rename), aby
 // awaria w trakcie zapisu nigdy nie pozostawiła w połowie zapisanego store.
 export function persistSaved(filePath: string, data: IpcSavedData): Promise<void> {
   const payload: PersistedSaved = { version: SCHEMA_VERSION, ...data };
-  writeChain = writeChain.then(async () => {
-    await mkdir(dirname(filePath), { recursive: true });
-    const tmp = `${filePath}.tmp`;
-    await writeFile(tmp, JSON.stringify(payload), 'utf-8');
-    await rename(tmp, filePath);
-  });
-  writeChain = writeChain.catch((e) => {
+  return writeLock(() => writeJsonAtomic(filePath, payload)).catch((e) => {
     logger.warn('saved', 'failed to persist saved streams', e);
   });
-  return writeChain;
 }
 
 export function registerSavedHandlers(): void {

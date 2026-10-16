@@ -24,3 +24,13 @@ export const VIDEO_CONTAINERS = ['mp4', 'mkv', 'webm'] as const;
 // (wejście z renderera jest niezaufane — nigdy nie pozwól na nieograniczoną pracę sharp).
 export const MAX_THUMB_SIZE = 1024;
 export const MAX_RESIZE_WIDTH = 4000;
+
+// Minimalna pozycja (s) uprawniająca do zapisu/wznowienia odtwarzania. Jedno źródło prawdy
+// dla silnika audio (zapis pozycji), mostka do store głównego, karty „Kontynuuj" i openMedia;
+// wcześniej literał `5` był powielony w czterech miejscach.
+export const RESUME_MIN_SECONDS = 5;
+
+// User-Agent przypominający przeglądarkę. Współdzielony przez serwery providerów,
+// scrapery i proxy strumieni (wcześniej ten sam literał w ośmiu miejscach).
+export const CHROME_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';

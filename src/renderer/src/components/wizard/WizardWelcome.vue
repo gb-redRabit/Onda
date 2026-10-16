@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import WizardStep from './WizardStep.vue';
-import { HardDrive, Radio, Palette, PictureInPicture } from '@lucide/vue';
+import {
+  HardDrive,
+  Radio,
+  Palette,
+  PictureInPicture,
+  Subtitles,
+  SlidersHorizontal
+} from '@lucide/vue';
 
 const features = [
   { icon: HardDrive, titleKey: 'wizard.featLibrary', descKey: 'wizard.featLibraryDesc' },
   { icon: Radio, titleKey: 'wizard.featStream', descKey: 'wizard.featStreamDesc' },
+  { icon: Subtitles, titleKey: 'wizard.featSubtitles', descKey: 'wizard.featSubtitlesDesc' },
+  { icon: SlidersHorizontal, titleKey: 'wizard.featAudio', descKey: 'wizard.featAudioDesc' },
   { icon: Palette, titleKey: 'wizard.featThemes', descKey: 'wizard.featThemesDesc' },
   { icon: PictureInPicture, titleKey: 'wizard.featPip', descKey: 'wizard.featPipDesc' }
 ];
@@ -21,7 +30,7 @@ const features = [
         class="flex items-start gap-3 p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <span
-          class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary flex items-center justify-center"
+          class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary-text flex items-center justify-center"
         >
           <component :is="f.icon" :size="17" />
         </span>

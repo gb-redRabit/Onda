@@ -1,3 +1,4 @@
+import { CHROME_USER_AGENT } from '../../../shared/constants';
 // Klient wewnętrznego API v2 SoundCloud (moduł tylko SC — bez importów YouTube, bez
 // Electrona). Aplikacja webowa uwierzytelnia każde wywołanie `client_id`, który jest
 // wbudowany w jej bundle JS i rotuje co kilka dni; wyodrębniamy go raz,
@@ -34,8 +35,7 @@ const CLIENT_ID_FAIL_RETRY_MS = 60 * 1000;
 const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
 const MAX_BUNDLE_PROBES = 6;
-const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const BROWSER_UA = CHROME_USER_AGENT;
 
 export class ScApiError extends Error {
   status?: number;

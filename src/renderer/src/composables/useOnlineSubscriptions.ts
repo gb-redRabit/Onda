@@ -6,7 +6,7 @@ import type { Subscription } from '@renderer/types/online';
 // Stan i akcje sekcji subskrypcji (dialog preferencji, odobserwowanie, masowe kolejkowanie).
 export function useOnlineSubscriptions() {
   const yt = useOnlineStore();
-  const activeSection = ref<'discover' | 'subscriptions'>('discover');
+  const activeSection = ref<'discover' | 'subscriptions' | 'links'>('discover');
   const prefsOpen = ref<Subscription | null>(null);
   const unfollowTarget = ref<string | null>(null);
 

@@ -37,7 +37,7 @@ const settings = useSettingsStore();
         </span>
         <span
           class="text-xs font-medium whitespace-nowrap"
-          :class="settings.appearance.theme === name ? 'text-primary' : 'text-base-content/80'"
+          :class="settings.appearance.theme === name ? 'text-primary-text' : 'text-base-content/80'"
         >
           {{ $t(`settings.${name}`) }}
         </span>

@@ -150,7 +150,7 @@ function onKeydown(event: KeyboardEvent): void {
             :href="browserUrl"
             target="_blank"
             rel="noreferrer"
-            class="text-sm text-primary hover:underline flex items-center gap-1"
+            class="text-sm text-primary-text hover:underline flex items-center gap-1"
           >
             {{ $t('sources.openInBrowser') }}
             <ExternalLink :size="14" />
@@ -176,7 +176,7 @@ function onKeydown(event: KeyboardEvent): void {
             />
             <span
               v-else
-              class="w-full h-full flex items-center justify-center bg-white/10 text-white/60 text-[10px]"
+              class="w-full h-full flex items-center justify-center bg-white/10 text-white/60 text-[11px]"
             >
               {{ i + 1 }}
             </span>

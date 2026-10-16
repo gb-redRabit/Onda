@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineAsyncComponent, watch, onUnmounted } from 'vue';
+import { ref, computed, defineAsyncComponent } from 'vue';
 import { Music2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -7,13 +7,14 @@ import { usePluginsStore } from '@renderer/stores/plugins';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
 import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
-import PluginUiSlot from '@renderer/components/plugins/PluginUiSlot.vue';
+import PluginUiSlot from '@renderer/components/explorer/plugins/PluginUiSlot.vue';
 import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
 import { useDialogFocus } from '@renderer/composables/useDialogFocus';
+import { useResumePrompt } from '@renderer/composables/useResumePrompt';
 
 // Edytor układu (750+ linii) renderuje się dopiero, gdy użytkownik go otworzy — leniwie.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -39,7 +40,12 @@ const showVizSettings = ref(false);
 const showLayoutEditor = ref(false);
 // Nakładka edytora układu jest modalna: pułapka focusu + powrót fokusu (WCAG 2.4.3).
 const layoutEditorRef = ref<HTMLElement | null>(null);
-useDialogFocus(layoutEditorRef);
+useDialogFocus(layoutEditorRef, {
+  closeOnEscape: true,
+  onEscape: () => {
+    showLayoutEditor.value = false;
+  }
+});
 const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAudioImmersive({
   isDragging: () => !!dragging.value,
   onDragMove: (e) => onDragMouseMove(e),
@@ -47,52 +53,28 @@ const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAu
 });
 
 // Stan przeciągania
-const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp } =
+const { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp, onElementKeydown } =
   useAudioElementDrag(isFullscreen);
 
 const elements = computed(() => settings.appearance.audioLayout?.elements ?? []);
 const hudOpacity = computed(() => (settings.appearance.audioLayout?.hudOpacity ?? 100) / 100);
 
-let resumePromptTimer: ReturnType<typeof setTimeout> | null = null;
-
-function onResumeContinue() {
-  const prompt = player.resumePrompt;
-  if (prompt) {
+const {
+  pause: pauseResumePrompt,
+  resume: resumeResumePrompt,
+  onContinue: onResumeContinue,
+  onStart: onResumeStart
+} = useResumePrompt({
+  onContinue: (prompt) => {
     audioEngine.seek(prompt.position);
     player.currentTime = prompt.position;
     audioEngine.play();
     window.api?.setPlaybackPosition(prompt.path, prompt.position);
-  }
-  player.clearResumePrompt();
-}
-
-function onResumeStart() {
-  const prompt = player.resumePrompt;
-  if (prompt) {
+  },
+  onStart: (prompt) => {
     window.api?.clearPlaybackPosition(prompt.path);
     audioEngine.clearSavedPosition(prompt.path);
   }
-  player.clearResumePrompt();
-}
-
-watch(
-  () => player.resumePrompt,
-  (prompt) => {
-    if (resumePromptTimer) {
-      clearTimeout(resumePromptTimer);
-      resumePromptTimer = null;
-    }
-    if (prompt) {
-      const timeout = Math.max(1, settings.playback.resumePromptTimeout || 7);
-      resumePromptTimer = setTimeout(() => {
-        player.clearResumePrompt();
-      }, timeout * 1000);
-    }
-  }
-);
-
-onUnmounted(() => {
-  if (resumePromptTimer) clearTimeout(resumePromptTimer);
 });
 
 // Kursor i HUD ukrywają się razem — opóźnienie pochodzi z ustawień Odtwarzania.
@@ -112,7 +94,7 @@ onUnmounted(() => {
       data-testid="audio-empty"
       class="absolute inset-0 z-95 flex flex-col items-center justify-center gap-3 pointer-events-none"
     >
-      <Music2 :size="48" class="text-base-content/15" />
+      <Music2 :size="48" class="text-base-content/15" aria-hidden="true" />
       <div class="text-center">
         <p class="text-base-content/50 text-sm font-medium">{{ $t('audioView.noTrackTitle') }}</p>
         <p class="text-base-content/55 text-[11px]">{{ $t('audioView.noTrackHint') }}</p>
@@ -150,6 +132,7 @@ onUnmounted(() => {
       :is-fullscreen="isFullscreen"
       :ui-visible="showUI"
       @element-mousedown="onElementMouseDown"
+      @element-keydown="onElementKeydown"
     />
 
     <!-- ─── Slot UI pluginu (renderowany przez host, czysty tekst) ─── -->
@@ -185,6 +168,8 @@ onUnmounted(() => {
       :position="player.resumePrompt.position"
       @continue="onResumeContinue"
       @start="onResumeStart"
+      @pause="pauseResumePrompt"
+      @resume="resumeResumePrompt"
     />
   </div>
 </template>

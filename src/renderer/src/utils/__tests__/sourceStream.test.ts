@@ -44,6 +44,7 @@ describe('sourceStream', () => {
     expect(track.id).toBe('src:src:v1');
     expect(track.name).toBe('Odcinek 1');
     expect(track.path).toBe('https://cdn.example/ep1.mp4');
+    // Wideo zostaje strumieniem (widok Źródeł), nie przenosi do globalnego /player.
     expect(track.type).toBe('stream');
     expect(track.extension).toBe('mp4');
     expect(track.mimeType).toBe('video/mp4');
@@ -60,5 +61,7 @@ describe('sourceStream', () => {
     expect(audio.name).toBe('a1');
     expect(audio.extension).toBe('mp3');
     expect(audio.mimeType).toBe('audio/mpeg');
+    // Audio → strumień w silniku audio (proxy `/stream?url=`).
+    expect(audio.type).toBe('stream');
   });
 });

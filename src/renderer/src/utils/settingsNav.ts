@@ -15,7 +15,8 @@
   Music2,
   Key,
   Puzzle,
-  Activity
+  Activity,
+  Captions
 } from '@lucide/vue';
 
 // Dane nawigacji ustawień wydzielone z `views/SettingsView.vue` (plan 2.8).
@@ -50,6 +51,13 @@ export const SETTINGS_TABS = [
     labelKey: 'settings.pipAudio',
     descKey: 'settings.tabDesc.pipAudio',
     icon: Music2,
+    section: 'playback'
+  },
+  {
+    id: 'subtitles',
+    labelKey: 'settings.subtitles',
+    descKey: 'settings.tabDesc.subtitles',
+    icon: Captions,
     section: 'playback'
   },
   {
@@ -177,6 +185,13 @@ export const SETTINGS_TABS = [
     id: 'apiKeys',
     labelKey: 'settings.apiKeys',
     descKey: 'settings.tabDesc.apiKeys',
+    icon: Key,
+    section: 'advanced'
+  },
+  {
+    id: 'providerCredentials',
+    labelKey: 'settings.providerCredentials',
+    descKey: 'settings.tabDesc.providerCredentials',
     icon: Key,
     section: 'advanced'
   },

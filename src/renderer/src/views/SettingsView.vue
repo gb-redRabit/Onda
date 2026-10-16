@@ -54,6 +54,38 @@ function onMenuDocClick(e: MouseEvent): void {
 function onMenuDocKeydown(e: KeyboardEvent): void {
   if (e.key === 'Escape' && menuOpen.value) menuOpen.value = false;
 }
+
+// Menu „more" jako wzorzec WAI-ARIA menu: focus na pierwszym elemencie po otwarciu
+// i nawigacja strzałkami (wcześniej był to zwykły div z przyciskami).
+const menuRef = ref<HTMLElement | null>(null);
+watch(menuOpen, async (open) => {
+  if (!open) return;
+  await nextTick();
+  menuRef.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+});
+function onMenuKeydown(e: KeyboardEvent): void {
+  const menu = menuRef.value;
+  if (!menu) return;
+  const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+  if (!items.length) return;
+  const idx = items.indexOf(document.activeElement as HTMLElement);
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    items[(idx + 1 + items.length) % items.length]?.focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    items[(idx - 1 + items.length) % items.length]?.focus();
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    items[0]?.focus();
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    items[items.length - 1]?.focus();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    menuOpen.value = false;
+  }
+}
 const highlightedId = ref<string | null>(null);
 
 // ---- Wyszukiwanie -----------------------------------------------------------
@@ -238,6 +270,7 @@ onBeforeUnmount(() => {
             ref="searchInput"
             v-model="search"
             :placeholder="t('settings.searchSettings')"
+            :aria-label="t('settings.searchSettings')"
             class="w-full pl-9 pr-8 h-9 rounded-field bg-base-200 border border-base-300 text-[13px] text-base-content outline-none transition-all placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             data-testid="settings-search"
             @keydown="onSearchKeydown"
@@ -258,6 +291,8 @@ onBeforeUnmount(() => {
             :title="t('settings.more')"
             :aria-label="t('settings.more')"
             :aria-expanded="menuOpen"
+            aria-haspopup="menu"
+            aria-controls="settings-menu"
             data-testid="settings-more"
             @click="menuOpen = !menuOpen"
           >
@@ -270,10 +305,16 @@ onBeforeUnmount(() => {
       <template #overlay>
         <div
           v-if="menuOpen"
+          id="settings-menu"
+          ref="menuRef"
+          role="menu"
+          :aria-label="t('settings.more')"
           class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-base-300 bg-base-100 fx-depth p-1.5 text-[13px]"
           data-testid="settings-menu"
+          @keydown="onMenuKeydown"
         >
           <button
+            role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
             data-testid="settings-export"
             @click="onMenuAction('export')"
@@ -281,6 +322,7 @@ onBeforeUnmount(() => {
             <FileDown :size="14" />{{ t('settings.export') }}
           </button>
           <button
+            role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
             data-testid="settings-import"
             @click="onMenuAction('import')"
@@ -289,6 +331,7 @@ onBeforeUnmount(() => {
           </button>
           <div class="my-1 h-px bg-base-300" />
           <button
+            role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left text-error hover:bg-error/10 transition-colors"
             data-testid="settings-reset-menu"
             @click="onMenuAction('reset')"
@@ -331,7 +374,7 @@ onBeforeUnmount(() => {
                 </span>
                 <span
                   v-if="hit.kind === 'field'"
-                  class="shrink-0 text-[10px] uppercase tracking-wider text-base-content/60"
+                  class="shrink-0 text-[11px] uppercase tracking-wider text-base-content/60"
                 >
                   {{ t('settings.searchField') }}
                 </span>
@@ -347,7 +390,7 @@ onBeforeUnmount(() => {
             <h3
               class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/60 mb-3"
             >
-              <component :is="section.icon" :size="15" class="text-primary" />
+              <component :is="section.icon" :size="15" class="text-primary-text" />
               {{ t(section.labelKey) }}
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -359,7 +402,7 @@ onBeforeUnmount(() => {
                 @click="openTab(tab.id)"
               >
                 <span
-                  class="grid place-items-center w-9 h-9 rounded-field bg-primary/10 text-primary shrink-0"
+                  class="grid place-items-center w-9 h-9 rounded-field bg-primary/10 text-primary-text shrink-0"
                 >
                   <component :is="tab.icon" :size="17" />
                 </span>
@@ -379,7 +422,7 @@ onBeforeUnmount(() => {
           <header class="mb-6 flex items-start gap-3">
             <span
               v-if="activeTabMeta"
-              class="grid place-items-center w-10 h-10 rounded-box bg-primary/10 text-primary shrink-0"
+              class="grid place-items-center w-10 h-10 rounded-box bg-primary/10 text-primary-text shrink-0"
             >
               <component :is="activeTabMeta.icon" :size="20" />
             </span>

@@ -37,6 +37,7 @@ const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
         max="100"
         step="1"
         :value="settings.general.logMaxSizeMB ?? 10"
+        :aria-label="$t('settings.logMaxSize')"
         class="w-full"
         @input="
           settings.updateGeneral({
@@ -44,7 +45,7 @@ const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
           })
         "
       />
-      <div class="flex justify-between text-[10px] text-base-content/60">
+      <div class="flex justify-between text-[11px] text-base-content/60">
         <span>1 MB</span><span>100 MB</span>
       </div>
     </div>

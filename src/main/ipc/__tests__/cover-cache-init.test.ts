@@ -9,6 +9,8 @@ import { describe, it, expect } from 'vitest';
 const ROOT = process.cwd();
 const coverCache = readFileSync(join(ROOT, 'src/main/ipc/cover/cover-cache.ts'), 'utf8');
 const index = readFileSync(join(ROOT, 'src/main/index.ts'), 'utf8');
+// Sekwencja startowa (seed korzeni/serwera mediów) została wydzielona z index.ts.
+const seedRoots = readFileSync(join(ROOT, 'src/main/bootstrap/seed-roots.ts'), 'utf8');
 
 describe('cover cache initialisation', () => {
   it('exposes an explicit initCoverCache and has no import side effect', () => {
@@ -18,7 +20,11 @@ describe('cover cache initialisation', () => {
   });
 
   it('runs initCoverCache from the app boot sequence', () => {
-    expect(index).toMatch(/import \{[^}]*initCoverCache[^}]*\} from '\.\/ipc\/cover\/cover-cache'/);
-    expect(index).toMatch(/await initCoverCache\(\)/);
+    expect(seedRoots).toMatch(
+      /import \{[^}]*initCoverCache[^}]*\} from '\.\.\/ipc\/cover\/cover-cache'/
+    );
+    expect(seedRoots).toMatch(/await initCoverCache\(\)/);
+    // Wydzielony seed musi być faktycznie wywołany z sekwencji startowej.
+    expect(index).toMatch(/seedMediaServerAndSettings\(\)/);
   });
 });

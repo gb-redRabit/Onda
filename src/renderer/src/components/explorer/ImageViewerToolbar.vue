@@ -68,7 +68,7 @@ const emit = defineEmits<{
           class="ui-icon-button fx-noise fx-depth"
           :class="
             slideshowActive
-              ? 'text-primary bg-primary/10'
+              ? 'text-primary-text bg-primary/10'
               : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           :title="
@@ -87,7 +87,7 @@ const emit = defineEmits<{
           class="ui-icon-button fx-noise fx-depth block mx-auto mt-0.5"
           :class="
             settingsOpen
-              ? 'text-primary bg-primary/10'
+              ? 'text-primary-text bg-primary/10'
               : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('imageViewer.slideshowSettings')"
@@ -156,7 +156,7 @@ const emit = defineEmits<{
         class="ui-icon-button fx-noise fx-depth"
         :class="
           fullscreen
-            ? 'text-primary bg-primary/10'
+            ? 'text-primary-text bg-primary/10'
             : 'text-base-content/70 hover:text-base-content hover:bg-base-content/10'
         "
         :title="$t('imageViewer.fullscreen')"

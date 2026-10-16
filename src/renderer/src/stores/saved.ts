@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { IpcSavedData, IpcSavedPlaylist, IpcSavedStream } from '@shared/types/ipc';
 import type { YouTubeResolveKind, YouTubeVideo, YouTubeResolvedItem } from '@renderer/types/online';
 
@@ -72,8 +72,12 @@ export const useSavedStore = defineStore('saved', () => {
     if (tracks.value.length !== before) await window.api?.savedRemoveTrack(id);
   }
 
+  // Indeks zapisanych id — `isTrackSaved` jest wołane per karta, a wcześniej
+  // skanowało całą tablicę `tracks` (O(n) na kartę).
+  const savedTrackIds = computed(() => new Set(tracks.value.map((t) => t.id)));
+
   function isTrackSaved(id: string): boolean {
-    return tracks.value.some((t) => t.id === id);
+    return savedTrackIds.value.has(id);
   }
 
   function playlistIdFor(kind: YouTubeResolveKind, url: string): string {

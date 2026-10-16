@@ -1,6 +1,7 @@
 import http from 'http';
 import fs from 'fs';
 import crypto from 'crypto';
+import { pipeline } from 'stream';
 import { normalize, isAbsolute, dirname, basename, join } from 'path';
 import { logger } from '../../shared/logger';
 import { getMimeType } from '../../shared/mime';
@@ -11,7 +12,7 @@ import {
   isAllowedStreamHost,
   validateStreamUrl
 } from './media-server-guards';
-import { handleStreamProxy } from './media-server-stream';
+import { handleStreamProxy, handleProviderStreamProxy } from './media-server-stream';
 import { isServableMediaPath } from './media-paths';
 import { isProtectedPath } from '../path-policy';
 export { isAllowedStreamHost, validateStreamUrl };
@@ -62,6 +63,7 @@ export function getExtraRoots(): string[] {
 export async function setAllowedRoots(roots: string[]): Promise<void> {
   libraryRoots.length = 0;
   libraryRoots.push(...(await resolveAll(roots)));
+  clearPathResolveCache();
   rootsChanged?.();
 }
 
@@ -88,6 +90,7 @@ export async function addAllowedRoot(root: string): Promise<boolean> {
     return false;
   }
   extraRoots.push(real);
+  clearPathResolveCache();
   rootsChanged?.();
   return true;
 }
@@ -97,6 +100,33 @@ function isWithinAnyRoot(filePath: string): boolean {
     if (isWithinRoot(filePath, root)) return true;
   }
   return false;
+}
+
+/**
+ * Strumieniuje zakres pliku (albo całość) do odpowiedzi przez `pipeline`.
+ *
+ * `pipeline()` niszczy strumień odczytu, gdy cel zostanie zamknięty — `<audio>`/`<video>`
+ * zrywa połączenie przy KAŻDYM seeku i zmianie utworu. Wcześniejsze `stream.pipe(res)`
+ * odpinało cel, ale zostawiało `fs.ReadStream` z otwartym deskryptorem do GC, co przy
+ * intensywnym przewijaniu kumulowało setki uchwytów (blokowały też usunięcie pliku na Windows).
+ * Przerwanie przez klienta (ERR_STREAM_PREMATURE_CLOSE) to norma — nie logujemy go jako błąd.
+ */
+export function serveFileRange(
+  res: http.ServerResponse,
+  file: string,
+  start: number | null,
+  end: number | null,
+  label: string
+): void {
+  const stream =
+    start === null || end === null
+      ? fs.createReadStream(file)
+      : fs.createReadStream(file, { start, end });
+  pipeline(stream, res, (err) => {
+    if (err && (err as NodeJS.ErrnoException).code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+      logger.warn('media-server', `stream error (${label}) ${file}: ${err.message}`);
+    }
+  });
 }
 
 /**
@@ -114,10 +144,33 @@ export function isPathWithinAllowedRoots(realPath: string): boolean {
 type MediaPathResolution =
   { ok: true; path: string } | { ok: false; reason: 'invalid' | 'forbidden' };
 
+// Rozstrzygnięcie ścieżki (realpath + test korzenia) jest cache'owane, bo seek w
+// <video>/<audio> generuje wiele żądań Range, z których każde robiło `realpath`
+// i liniowy skan korzeni. Krótki TTL ogranicza nieświeżość, a zmiana korzeni
+// czyści cache natychmiast.
+const PATH_RESOLVE_TTL_MS = 2000;
+const MAX_PATH_RESOLVE_ENTRIES = 512;
+const pathResolveCache = new Map<string, { at: number; resolution: MediaPathResolution }>();
+
+function clearPathResolveCache(): void {
+  pathResolveCache.clear();
+}
+
 async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolution> {
   const normalized = normalize(rawPath);
   if (!isAbsolute(normalized)) return { ok: false, reason: 'invalid' };
+  const cached = pathResolveCache.get(normalized);
+  if (cached && Date.now() - cached.at < PATH_RESOLVE_TTL_MS) return cached.resolution;
+  const resolution = await computeAllowedMediaPath(normalized);
+  pathResolveCache.set(normalized, { at: Date.now(), resolution });
+  if (pathResolveCache.size > MAX_PATH_RESOLVE_ENTRIES) {
+    const oldest = pathResolveCache.keys().next().value;
+    if (oldest !== undefined) pathResolveCache.delete(oldest);
+  }
+  return resolution;
+}
 
+async function computeAllowedMediaPath(normalized: string): Promise<MediaPathResolution> {
   let realPath = normalized;
   try {
     realPath = await fs.promises.realpath(normalized);
@@ -186,7 +239,13 @@ export function createMediaServer(): Promise<MediaServer> {
         }
 
         // Proxy zdalnego strumienia: /{token}/stream?url=<https stream url>
+        // lub /{token}/stream?provider=<token> (strumień providera, np. MEGA).
         if (url.pathname.replace(/^\/+/, '').split('/')[1] === 'stream') {
+          const providerToken = url.searchParams.get('provider');
+          if (providerToken) {
+            await handleProviderStreamProxy(req, res, providerToken);
+            return;
+          }
           await handleStreamProxy(req, res, url.searchParams.get('url') || '');
           return;
         }
@@ -266,12 +325,7 @@ export function createMediaServer(): Promise<MediaServer> {
               'content-range': `bytes ${start}-${end}/${fileSize}`,
               'content-length': String(chunkLen)
             });
-            const stream = fs.createReadStream(realPath, { start, end });
-            stream.on('error', (err) => {
-              logger.warn('media-server', `stream error (suffix range) ${rawPath}: ${err.message}`);
-              res.destroy();
-            });
-            stream.pipe(res);
+            serveFileRange(res, realPath, start, end, 'suffix range');
             return;
           }
           const match = range.match(/bytes=(\d+)-(\d*)/);
@@ -295,20 +349,10 @@ export function createMediaServer(): Promise<MediaServer> {
             'content-length': String(chunkLen)
           });
 
-          const stream = fs.createReadStream(realPath, { start, end });
-          stream.on('error', (err) => {
-            logger.warn('media-server', `stream error (range) ${rawPath}: ${err.message}`);
-            res.destroy();
-          });
-          stream.pipe(res);
+          serveFileRange(res, realPath, start, end, 'range');
         } else {
           res.writeHead(200, { 'content-length': String(fileSize) });
-          const stream = fs.createReadStream(realPath);
-          stream.on('error', (err) => {
-            logger.warn('media-server', `stream error ${rawPath}: ${err.message}`);
-            res.destroy();
-          });
-          stream.pipe(res);
+          serveFileRange(res, realPath, null, null, 'full');
         }
       } catch (e) {
         const err = e as { message?: string; code?: string };

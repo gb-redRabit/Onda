@@ -33,7 +33,7 @@ function removeFolder(path: string) {
         :key="folder"
         class="flex items-center gap-3 p-3 rounded-field border border-base-300 bg-base-200/(--glass-alpha)"
       >
-        <FolderPlus :size="16" class="text-primary/70 shrink-0" />
+        <FolderPlus :size="16" class="text-primary-text/70 shrink-0" />
         <span class="text-sm truncate">{{ folder }}</span>
         <button
           class="ml-auto p-1 rounded hover:bg-base-content/10 text-base-content/50 hover:text-error transition-colors"
@@ -51,7 +51,7 @@ function removeFolder(path: string) {
         class="w-full flex items-center gap-3 p-3.5 fx-depth rounded-box border border-dashed border-base-300 hover:border-primary/60 hover:bg-base-content/5 transition-colors text-left"
         @click="addFolder"
       >
-        <FolderPlus :size="18" class="text-primary shrink-0" />
+        <FolderPlus :size="18" class="text-primary-text shrink-0" />
         <span class="text-sm font-medium">{{ $t('wizard.libraryAddFolder') }}</span>
       </button>
 
@@ -65,7 +65,7 @@ function removeFolder(path: string) {
           role="switch"
           :aria-checked="scanNow"
           :aria-label="$t('wizard.libraryScanNow')"
-          class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+          class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-elevated"
           :class="scanNow ? 'bg-primary' : 'bg-base-300'"
           @click="emit('update:scanNow', !scanNow)"
         >

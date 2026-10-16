@@ -3,6 +3,7 @@
 // Obsługiwane: reguły sieciowe (`||domena^`, `/ścieżka/`, `*`, `$domain=`, typy,
 // `third-party`, wyjątki `@@`) oraz kosmetyczne (`domena##selektor`, `:style(...)`,
 // `:remove()`) i proste skryptlety (`##+js(...)`). Świadomie bez pełnej składni ABP.
+import { domainMatches as hostMatchesDomain } from '../../shared/domain';
 
 export interface NetworkRule {
   regex: RegExp;
@@ -205,8 +206,8 @@ export function parseFilterList(text: string): FilterSet {
 
 function domainMatches(host: string, include: string[], exclude: string[]): boolean {
   if (!include.length && !exclude.length) return true;
-  const inInc = include.length === 0 || include.some((d) => host === d || host.endsWith('.' + d));
-  const inExc = exclude.some((d) => host === d || host.endsWith('.' + d));
+  const inInc = include.length === 0 || include.some((d) => hostMatchesDomain(host, d));
+  const inExc = exclude.some((d) => hostMatchesDomain(host, d));
   return inInc && !inExc;
 }
 

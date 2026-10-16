@@ -73,7 +73,7 @@ onUnmounted(() => grid.destroy());
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
-              ? 'bg-primary/10 text-primary'
+              ? 'bg-primary/10 text-primary-text'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('library.viewModeList')"
@@ -85,7 +85,7 @@ onUnmounted(() => grid.destroy());
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
-              ? 'bg-primary/10 text-primary'
+              ? 'bg-primary/10 text-primary-text'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           :title="$t('library.viewModeGrid')"
@@ -94,7 +94,7 @@ onUnmounted(() => grid.destroy());
           <LayoutGrid :size="14" />
         </button>
         <button
-          class="fx-noise flex items-center gap-1 px-3 py-1 fx-depth rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors"
+          class="fx-noise flex items-center gap-1 px-3 py-1 fx-depth rounded-field bg-primary/10 text-primary-text text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors"
           @click="emit('playAll')"
         >
           <Film :size="12" /> {{ $t('library.playAll') }}

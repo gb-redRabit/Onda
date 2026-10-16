@@ -9,13 +9,13 @@ defineProps<{ icon?: unknown; label?: string }>();
   <button
     role="menuitem"
     tabindex="-1"
-    class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+    class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
     :aria-label="label"
     v-bind="$attrs"
   >
     <component :is="icon" v-if="icon" :size="13" />
     <slot />
-    <span v-if="$slots.hint" class="ml-auto text-[10px] text-base-content/50 font-mono">
+    <span v-if="$slots.hint" class="ml-auto text-[11px] text-base-content/50 font-mono">
       <slot name="hint" />
     </span>
   </button>

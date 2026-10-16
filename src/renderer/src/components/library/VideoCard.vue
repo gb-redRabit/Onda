@@ -61,14 +61,14 @@ function onDragStart(e: DragEvent) {
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/30 transition-colors"
       >
         <div
-          class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          class="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         >
           <Play :size="18" class="text-neutral-content ml-0.5" />
         </div>
       </div>
       <div
         v-if="track.duration"
-        class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[10px] font-medium"
+        class="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[11px] font-medium"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>

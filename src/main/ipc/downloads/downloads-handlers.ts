@@ -37,6 +37,7 @@ import type {
   IpcDownloadJobInput,
   IpcMetaOverride
 } from '../../../shared/types/ipc';
+import { logger } from '../../../shared/logger';
 
 // Ogranicza emisje broadcast, aby nie zalewać wszystkich BrowserWindows
 // aktualizacjami postępu na chunk (setki razy/s na szybkich łączach).
@@ -68,8 +69,14 @@ export function registerDownloadHandlers(): void {
   void restoreDownloadQueue();
   ipcMain.handle(
     'yt:download:add',
-    async (_event, jobs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> =>
-      e2eFixturesEnabled() ? e2eAddDownloadTasks(jobs, broadcast) : addDownloadJobs(jobs)
+    async (_event, jobs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> => {
+      logger.info('downloads', `[IPC yt:download:add] received ${jobs?.length} jobs`);
+      const tasks = e2eFixturesEnabled()
+        ? await e2eAddDownloadTasks(jobs, broadcast)
+        : await addDownloadJobs(jobs);
+      logger.info('downloads', `[IPC yt:download:add] created ${tasks?.length} tasks`);
+      return tasks;
+    }
   );
   ipcMain.handle('yt:download:cancel', async (_event, id: string): Promise<boolean> =>
     e2eFixturesEnabled() ? e2eCancelDownloadTask(id) : cancelDownloadJob(id)

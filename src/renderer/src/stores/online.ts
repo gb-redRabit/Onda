@@ -116,8 +116,10 @@ export const useOnlineStore = defineStore('online', () => {
   } = createOnlineChannel();
 
   const {
-    queuingId,
-    queueingChannelId,
+    queuingIds,
+    isQueuing,
+    queueingChannelIds,
+    isChannelQueuing,
     resolveOnline,
     queueFromResolved,
     queueVideo,
@@ -264,8 +266,10 @@ export const useOnlineStore = defineStore('online', () => {
     subscriptionsLoaded,
     checkingSubscriptions,
     checkingChannelId,
-    queuingId,
-    queueingChannelId,
+    queuingIds,
+    isQueuing,
+    queueingChannelIds,
+    isChannelQueuing,
     downloadStatusFor,
     coverStatusFor,
     downloads,

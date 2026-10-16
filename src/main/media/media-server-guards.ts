@@ -1,10 +1,23 @@
+import { CHROME_USER_AGENT } from '../../shared/constants';
 import crypto from 'crypto';
 import { sep } from 'path';
-import { isAllowedRadioHost } from '../ipc/radio-store';
 
 // Czyste helpery bezpieczeństwa/strumienia wyodrębnione z `media-server.ts` (plan 2.8).
 // `media-server` re-eksportuje `isAllowedStreamHost` i `validateStreamUrl`, aby
 // importerzy i testy pozostały bez zmian.
+//
+// Dozwolony host stacji radiowej jest WSTRZYKIWANY (`setAllowedRadioHostPredicate`),
+// a nie importowany z `ipc/radio-store` — media server nie zależy od warstwy radia.
+// Domyślnie odrzuca wszystko (deny-by-default), więc brak inicjalizacji nie otwiera proxy.
+let allowedRadioHostPredicate: (hostname: string) => boolean = () => false;
+
+export function setAllowedRadioHostPredicate(fn: (hostname: string) => boolean): void {
+  allowedRadioHostPredicate = fn;
+}
+
+export function isAllowedRadioHost(hostname: string): boolean {
+  return allowedRadioHostPredicate(hostname);
+}
 
 export function isWithinRoot(filePath: string, root: string): boolean {
   if (process.platform === 'win32') {
@@ -94,5 +107,4 @@ export function validateStreamUrl(rawUrl: string): URL | null {
 
 // UA przypominający przeglądarkę: niektóre endpointy googlevideo odrzucają żądania,
 // których User-Agent nie wygląda jak przeglądarka.
-export const STREAM_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+export const STREAM_USER_AGENT = CHROME_USER_AGENT;

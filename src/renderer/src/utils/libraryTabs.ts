@@ -1,7 +1,25 @@
-import { Disc3, Film, Folder, Images, LayoutDashboard, ListMusic, Mic2, Music2 } from '@lucide/vue';
+import {
+  Disc3,
+  Film,
+  Folder,
+  Images,
+  LayoutDashboard,
+  ListMusic,
+  Mic2,
+  Music2,
+  Sparkles
+} from '@lucide/vue';
 
 export type TabId =
-  'overview' | 'tracks' | 'video' | 'images' | 'folders' | 'artists' | 'albums' | 'playlists';
+  | 'overview'
+  | 'tracks'
+  | 'video'
+  | 'images'
+  | 'folders'
+  | 'artists'
+  | 'albums'
+  | 'playlists'
+  | 'smart';
 
 export const VALID_TABS: TabId[] = [
   'overview',
@@ -11,7 +29,8 @@ export const VALID_TABS: TabId[] = [
   'folders',
   'artists',
   'albums',
-  'playlists'
+  'playlists',
+  'smart'
 ];
 
 export function isTabId(v: unknown): v is TabId {
@@ -27,6 +46,7 @@ export interface LibraryTabCounts {
   artists: number;
   albums: number;
   playlists: number;
+  smart: number;
 }
 
 export function buildLibraryTabs(t: (key: string) => string, c: LibraryTabCounts) {
@@ -38,7 +58,8 @@ export function buildLibraryTabs(t: (key: string) => string, c: LibraryTabCounts
     { id: 'folders', label: t('library.folders'), icon: Folder, count: c.folders },
     { id: 'artists', label: t('library.artists'), icon: Mic2, count: c.artists },
     { id: 'albums', label: t('library.albums'), icon: Disc3, count: c.albums },
-    { id: 'playlists', label: t('library.playlists'), icon: ListMusic, count: c.playlists }
+    { id: 'playlists', label: t('library.playlists'), icon: ListMusic, count: c.playlists },
+    { id: 'smart', label: t('library.smart'), icon: Sparkles, count: c.smart }
   ] as const;
 }
 

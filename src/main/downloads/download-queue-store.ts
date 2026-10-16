@@ -1,8 +1,9 @@
 import { app } from 'electron';
-import { join, dirname } from 'path';
-import { readFile, writeFile, rename, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { readFile } from 'fs/promises';
 import type { IpcDownloadTask } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
+import { createWriteLock, writeJsonAtomic } from '../utils/write-queue';
 
 const SCHEMA_VERSION = 1;
 // Górna granica liczby zapisanych zadań, aby magazyn nie rósł bez ograniczeń.
@@ -31,22 +32,15 @@ export async function loadPersistedJobs(filePath: string): Promise<IpcDownloadTa
   }
 }
 
-let writeChain: Promise<void> = Promise.resolve();
+const writeLock = createWriteLock();
 
 // Serializuje zapisy i podmienia plik atomowo (plik tymczasowy + rename), aby
 // awaria w trakcie zapisu nigdy nie pozostawiła częściowo zapisanej kolejki.
 export function persistJobs(filePath: string, jobs: IpcDownloadTask[]): Promise<void> {
   const data: PersistedQueue = { version: SCHEMA_VERSION, jobs };
-  writeChain = writeChain.then(async () => {
-    await mkdir(dirname(filePath), { recursive: true });
-    const tmp = `${filePath}.tmp`;
-    await writeFile(tmp, JSON.stringify(data), 'utf-8');
-    await rename(tmp, filePath);
-  });
-  writeChain = writeChain.catch((e) => {
+  return writeLock(() => writeJsonAtomic(filePath, data)).catch((e) => {
     logger.warn('downloads', 'failed to persist download queue', e);
   });
-  return writeChain;
 }
 
 export function capPersistedJobs(jobs: IpcDownloadTask[]): IpcDownloadTask[] {

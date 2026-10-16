@@ -217,10 +217,10 @@ const readout = computed(() => {
           v-show="el.visible"
           :key="el.id"
           v-activate
-          class="absolute flex items-center justify-center text-[10px] font-medium rounded-field border-2 cursor-move"
+          class="absolute flex items-center justify-center text-[11px] font-medium rounded-field border-2 cursor-move"
           :class="[
             el.id === selectedId
-              ? 'border-primary bg-primary/15 text-primary'
+              ? 'border-primary bg-primary/15 text-primary-text'
               : 'border-base-content/20 bg-base-content/5 text-base-content/50',
             draggingId === el.id ? 'opacity-80' : 'transition-colors transition-opacity'
           ]"
@@ -234,7 +234,7 @@ const readout = computed(() => {
 
       <!-- Odczyt: pozycja/rozmiar aktywnego elementu -->
       <div
-        class="mt-2 flex items-center justify-between px-1 text-[10px] font-mono text-base-content/50 tabular-nums"
+        class="mt-2 flex items-center justify-between px-1 text-[11px] font-mono text-base-content/50 tabular-nums"
       >
         <span class="flex items-center gap-1.5">
           <component :is="ELEMENT_META[selectedId].icon" :size="11" class="opacity-50" />

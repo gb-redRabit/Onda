@@ -1,52 +1,159 @@
 import { logger } from '@shared/logger';
+import type { EqBand } from '@renderer/utils/constants/audio';
+import { iirCoefficients } from '@renderer/utils/eqBiquad';
 
-const eqFrequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+// Stała liczba slotów filtrów (neutralne, gdy nieużywane) — dzięki temu dodawanie/usuwanie
+// pasm nie wymaga przebudowy łańcucha.
+const EQ_SLOTS = 12;
 
 export class AudioGraph {
   audioCtx: AudioContext | null = null;
   analyserNode: AnalyserNode | null = null;
   sourceNode: MediaElementAudioSourceNode | null = null;
   gainNode: GainNode | null = null;
-  eqFilters: BiquadFilterNode[] = [];
+  eqFilters: AudioNode[] = [];
+  /** Gain wyjściowy korektora (preamp) — między łańcuchem filtrów a głównym gainNode. */
+  preampNode: GainNode | null = null;
+  /** Węzeł odsłuchu — pozwala spiąć kanały do mono (kontrola fazy). */
+  monitorNode: GainNode | null = null;
+  eqMono = false;
+  /**
+   * Tryb nocny: kompresor dynamiki + podbicie dialogów. Węzły są na stałe w łańcuchu,
+   * a przełączenie zmienia tylko ich parametry (neutralne = brak wpływu) — bez przebudowy
+   * grafu i bez trzasków.
+   */
+  nightCompressor: DynamicsCompressorNode | null = null;
+  nightMakeup: GainNode | null = null;
+  nightDialogueEq: BiquadFilterNode | null = null;
+  nightEnabled = false;
+  /**
+   * Kompensacja opóźnienia dźwięku: `DelayNode` opóźnia ścieżkę audio względem obrazu.
+   * Węzeł jest na stałe w łańcuchu; przy zerze opóźnienie jest neutralne.
+   */
+  delayNode: DelayNode | null = null;
+  audioDelayMs = 0;
+  /** Ostatnio ustawione pasma — nakładane na filtry także przy (od)tworzeniu kontekstu. */
+  eqBands: readonly EqBand[] = [];
+  eqEnabled = true;
+  eqPreampDb = 0;
   videoSourceNode: MediaElementAudioSourceNode | null = null;
   videoGainNode: GainNode | null = null;
   videoSourceEl: HTMLVideoElement | null = null;
   eqChainBuilt = false;
+  /** Sygnatura ostatnio zbudowanego łańcucha — patrz `computeEqSignature`. */
+  private eqSignature = '';
 
   ensureContext(): void {
     if (this.audioCtx) return;
-    this.audioCtx = new AudioContext();
+    // Odtwarzacz mediów, nie instrument — `playback` daje większy bufor kosztem
+    // opóźnienia wejścia, co realnie zmniejsza zużycie CPU/energii.
+    this.audioCtx = new AudioContext({ latencyHint: 'playback' });
     this.analyserNode = this.audioCtx.createAnalyser();
     this.analyserNode.fftSize = 2048;
     this.gainNode = this.audioCtx.createGain();
-    this.eqFilters = eqFrequencies.map((freq, i) => {
-      const filter = this.audioCtx!.createBiquadFilter();
-      filter.type = i === 0 ? 'lowshelf' : i === eqFrequencies.length - 1 ? 'highshelf' : 'peaking';
-      filter.frequency.value = freq;
-      filter.Q.value = 1.4;
-      filter.gain.value = 0;
-      return filter;
-    });
+    this.preampNode = this.audioCtx.createGain();
+    this.setEqPreamp(this.eqPreampDb);
+    this.monitorNode = this.audioCtx.createGain();
+    this.setEqMono(this.eqMono);
+    this.nightCompressor = this.audioCtx.createDynamicsCompressor();
+    this.nightMakeup = this.audioCtx.createGain();
+    this.nightDialogueEq = this.audioCtx.createBiquadFilter();
+    this.nightDialogueEq.type = 'peaking';
+    this.nightDialogueEq.frequency.value = 2500;
+    this.nightDialogueEq.Q.value = 1;
+    this.applyNightParams();
+    this.delayNode = this.audioCtx.createDelay(1);
+    this.setAudioDelayMs(this.audioDelayMs);
   }
 
   ensureEqChain(): void {
     this.ensureContext();
     if (this.eqChainBuilt) return;
-    const firstFilter = this.eqFilters[0];
-    if (firstFilter) {
-      this.sourceNode?.connect(firstFilter);
-      let eqChain: AudioNode = firstFilter;
-      for (let i = 1; i < this.eqFilters.length; i++) {
-        eqChain.connect(this.eqFilters[i]);
-        eqChain = this.eqFilters[i];
-      }
-      eqChain.connect(this.gainNode!);
-    } else {
-      this.sourceNode?.connect(this.gainNode!);
-    }
-    this.gainNode!.connect(this.analyserNode!);
+    this.rebuildEqFilters();
+    this.preampNode!.connect(this.nightCompressor!);
+    this.nightCompressor!.connect(this.nightMakeup!);
+    this.nightMakeup!.connect(this.nightDialogueEq!);
+    this.nightDialogueEq!.connect(this.delayNode!);
+    this.delayNode!.connect(this.gainNode!);
+    this.gainNode!.connect(this.monitorNode!);
+    this.monitorNode!.connect(this.analyserNode!);
     this.analyserNode!.connect(this.audioCtx!.destination);
     this.eqChainBuilt = true;
+  }
+
+  /**
+   * (Prze)budowuje IIR-y z bieżących pasm i łączy [źródło/wideo] → filtry → preamp.
+   * `IIRFilterNode` ma stałe współczynniki, więc każda ZMIANA pasma wymaga przebudowy
+   * (krótkie, jednorazowe rozłączenie łańcucha). Nie jest to jednak potrzebne przy
+   * zwykłym przełączeniu utworu — dlatego `connectSource` tylko podłącza głowę łańcucha.
+   */
+  private rebuildEqFilters(): void {
+    const ctx = this.audioCtx;
+    if (!ctx) return;
+    for (const f of this.eqFilters) {
+      try {
+        f.disconnect();
+      } catch {
+        /* ok */
+      }
+    }
+    if (this.sourceNode) {
+      try {
+        this.sourceNode.disconnect();
+      } catch {
+        /* ok */
+      }
+    }
+    if (this.videoGainNode) {
+      try {
+        this.videoGainNode.disconnect();
+      } catch {
+        /* ok */
+      }
+    }
+    const passthrough = { feedforward: [1, 0, 0], feedback: [1, 0, 0] };
+    const slots = Math.max(EQ_SLOTS, this.eqBands.length);
+    this.eqFilters = Array.from({ length: slots }, (_, i) => {
+      const band =
+        this.eqEnabled && this.eqBands[i]?.enabled !== false ? this.eqBands[i] : undefined;
+      const c = band ? iirCoefficients(band, ctx.sampleRate) : passthrough;
+      return ctx.createIIRFilter(c.feedforward, c.feedback);
+    });
+    const first = this.eqFilters[0];
+    if (first) {
+      let prev: AudioNode = first;
+      for (let i = 1; i < this.eqFilters.length; i++) {
+        prev.connect(this.eqFilters[i]);
+        prev = this.eqFilters[i];
+      }
+      if (this.preampNode) prev.connect(this.preampNode);
+    }
+    this.eqSignature = this.computeEqSignature();
+    this.connectChainHead();
+  }
+
+  /** Podłącza [źródło/wideo] do AKTUALNEJ głowy łańcucha (bez przebudowy filtrów). */
+  private connectChainHead(): void {
+    const first = this.eqFilters[0];
+    if (first) {
+      if (this.sourceNode) this.sourceNode.connect(first);
+      if (this.videoGainNode) this.videoGainNode.connect(first);
+    } else {
+      if (this.sourceNode && this.preampNode) this.sourceNode.connect(this.preampNode);
+      if (this.videoGainNode && this.preampNode) this.videoGainNode.connect(this.preampNode);
+    }
+  }
+
+  /** Sygnatura bieżących pasm/trybu/próbkowania — pozwala pominąć zbędną przebudowę. */
+  private computeEqSignature(): string {
+    const rate = this.audioCtx?.sampleRate ?? 0;
+    const bands = this.eqBands
+      .map(
+        (b) =>
+          `${b.type}:${b.frequency}:${b.q}:${b.gain}:${b.slope ?? ''}:${b.enabled === false ? 0 : 1}`
+      )
+      .join('|');
+    return `${this.eqEnabled ? 1 : 0}@${rate}@${bands}`;
   }
 
   connectSource(el: HTMLAudioElement): void {
@@ -64,12 +171,8 @@ export class AudioGraph {
     if (!this.eqChainBuilt) {
       this.ensureEqChain();
     } else {
-      const firstFilter = this.eqFilters[0];
-      if (firstFilter) {
-        this.sourceNode.connect(firstFilter);
-      } else {
-        this.sourceNode.connect(this.gainNode!);
-      }
+      // Ten sam łańcuch filtrów — wystarczy podłączyć głowę (bez alokacji węzłów IIR).
+      this.connectChainHead();
     }
   }
 
@@ -160,14 +263,8 @@ export class AudioGraph {
     this.videoSourceEl = videoEl;
 
     this.ensureEqChain();
-    const firstFilter = this.eqFilters[0];
-    if (firstFilter) {
-      this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(firstFilter);
-    } else if (this.gainNode) {
-      this.videoSourceNode.connect(this.videoGainNode);
-      this.videoGainNode.connect(this.gainNode);
-    }
+    if (this.videoSourceNode) this.videoSourceNode.connect(this.videoGainNode!);
+    this.connectChainHead();
 
     this.videoGainNode.gain.value = initialVolume;
   }
@@ -192,20 +289,9 @@ export class AudioGraph {
     this.videoSourceEl = null;
 
     if (!this.sourceNode) return;
-    const firstFilter = this.eqFilters[0];
-    try {
-      if (firstFilter) {
-        this.sourceNode.connect(firstFilter);
-      } else if (this.gainNode) {
-        this.sourceNode.connect(this.gainNode);
-      }
-    } catch (e) {
-      logger.warn(
-        'audioEngine',
-        'disconnectVideoElement: reconnect failed (source already disconnected)',
-        e
-      );
-    }
+    // Węzeł wideo zniknął razem ze swoją krawędzią; źródło audio nadal wisi na łańcuchu,
+    // ale podłączamy głowę ponownie (idempotentnie), bo mogło zostać odłączone.
+    this.connectChainHead();
   }
 
   setVideoVolume(v: number): void {
@@ -217,21 +303,71 @@ export class AudioGraph {
     }
   }
 
-  setEqualizerBand(index: number, gain: number): void {
-    if (this.eqFilters[index]) this.eqFilters[index].gain.value = gain;
+  /** Ustawia pasma i (prze)budowuje łańcuch IIR; nadmiarowe sloty stają się neutralne. */
+  setEqBands(bands: readonly EqBand[]): void {
+    this.eqBands = bands;
+    if (!this.eqChainBuilt) return;
+    // Pomijamy przebudowę, gdy nic się nie zmieniło (np. ponowne ustawienie tych samych
+    // pasm z UI) — alokacja nowych IIR-ów i trzaski były zbędne.
+    if (this.computeEqSignature() === this.eqSignature) return;
+    this.rebuildEqFilters();
   }
 
-  applyEqPreset(preset: Record<number, number>): void {
-    Object.entries(preset).forEach(([idx, gain]) => {
-      const i = parseInt(idx);
-      if (this.eqFilters[i]) this.eqFilters[i].gain.value = gain;
-    });
+  /** Preamp: płaski gain wyjściowy korektora (dB). */
+  setEqPreamp(db: number): void {
+    this.eqPreampDb = db;
+    if (this.preampNode) this.preampNode.gain.value = Math.pow(10, db / 20);
+  }
+
+  /** Włącz/wyłącz korektor bez utraty pasm (bypass = wszystkie filtry neutralne). */
+  setEqEnabled(enabled: boolean): void {
+    this.eqEnabled = enabled;
+    this.setEqBands(this.eqBands);
+  }
+
+  /** Odsłuch mono: spina kanały (channelCount 1) — do kontroli fazy/zgodności. */
+  setEqMono(on: boolean): void {
+    this.eqMono = on;
+    if (!this.monitorNode) return;
+    this.monitorNode.channelCount = on ? 1 : 2;
+    this.monitorNode.channelCountMode = 'explicit';
+    this.monitorNode.channelInterpretation = 'speakers';
+  }
+
+  /** Tryb nocny: kompresja dynamiki — ciche dialogi głośniej, efekty/eksplozje ciszej. */
+  setNightMode(on: boolean): void {
+    this.nightEnabled = on;
+    this.applyNightParams();
+  }
+
+  /** Wyłączony tryb = parametry neutralne (łańcuch zostaje, ale nic nie zmienia). */
+  private applyNightParams(): void {
+    const on = this.nightEnabled;
+    if (this.nightCompressor) {
+      this.nightCompressor.threshold.value = on ? -32 : 0;
+      this.nightCompressor.knee.value = on ? 24 : 0;
+      this.nightCompressor.ratio.value = on ? 12 : 1;
+      this.nightCompressor.attack.value = on ? 0.003 : 0;
+      this.nightCompressor.release.value = 0.25;
+    }
+    // +6 dB wyrównania po kompresji, żeby dialogi nie zniknęły pod progiem.
+    if (this.nightMakeup) this.nightMakeup.gain.value = on ? Math.pow(10, 6 / 20) : 1;
+    if (this.nightDialogueEq) this.nightDialogueEq.gain.value = on ? 4 : 0;
+  }
+
+  /**
+   * Kompensacja opóźnienia dźwięku (ms). Dodatnie = dźwięk PÓŹNIEJ niż obraz
+   * (naprawia ścieżkę audio, która ucieka do przodu). `HTMLMediaElement` nie pozwala
+   * odtworzyć dźwięku wcześniej niż obraz, więc zakres jest dodatni.
+   */
+  setAudioDelayMs(ms: number): void {
+    this.audioDelayMs = Math.max(0, Math.min(500, Math.round(ms) || 0));
+    if (this.delayNode) this.delayNode.delayTime.value = this.audioDelayMs / 1000;
   }
 
   getAnalyserNode(): AnalyserNode | null {
     return this.analyserNode;
   }
-
   getAudioContext(): AudioContext | null {
     return this.audioCtx;
   }
@@ -266,6 +402,10 @@ export class AudioGraph {
     this.videoSourceNode = null;
     this.videoGainNode = null;
     this.videoSourceEl = null;
+    this.nightCompressor = null;
+    this.nightMakeup = null;
+    this.nightDialogueEq = null;
+    this.delayNode = null;
     this.eqChainBuilt = false;
   }
 }

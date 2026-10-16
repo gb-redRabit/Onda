@@ -12,6 +12,7 @@ export {
   setDownloadEmit,
   setDownloadCompletedHandler,
   setSourceItemDownloadedHandler,
+  setProviderItemDownloadedHandler,
   flushQueueNow
 } from './download-state';
 

@@ -6,6 +6,7 @@ export const MIME_TYPES: Record<string, string> = {
   '.mov': 'video/quicktime',
   '.m4v': 'video/mp4',
   '.ts': 'video/mp2t',
+  '.m2ts': 'video/mp2t',
   '.ogv': 'video/ogg',
   '.wmv': 'video/x-ms-wmv',
   '.flv': 'video/x-flv',

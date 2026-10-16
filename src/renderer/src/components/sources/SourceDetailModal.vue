@@ -45,7 +45,7 @@ function browserUrl(item: SourceItem): string {
     <template v-if="props.item">
       <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
         <span
-          class="shrink-0 px-2 py-0.5 rounded-field bg-base-200 text-[10px] font-medium uppercase text-base-content/60"
+          class="shrink-0 px-2 py-0.5 rounded-field bg-base-200 text-[11px] font-medium uppercase text-base-content/60"
         >
           {{ props.item.type }}
         </span>
@@ -98,7 +98,7 @@ function browserUrl(item: SourceItem): string {
             :href="browserUrl(props.item)"
             target="_blank"
             rel="noreferrer"
-            class="text-sm text-primary hover:underline flex items-center gap-1"
+            class="text-sm text-primary-text hover:underline flex items-center gap-1"
           >
             {{ $t('sources.openInBrowser') }}
             <ExternalLink :size="14" />
@@ -110,7 +110,7 @@ function browserUrl(item: SourceItem): string {
           class="flex flex-col gap-4 p-4 md:border-l border-t md:border-t-0 border-base-300 overflow-y-auto bg-base-100"
         >
           <div>
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.titleField') }}
             </p>
             <p class="text-sm font-medium leading-snug">
@@ -118,26 +118,26 @@ function browserUrl(item: SourceItem): string {
             </p>
           </div>
           <div v-if="props.item.subtitle">
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.subtitleField') }}
             </p>
             <p class="text-xs text-base-content/70">{{ props.item.subtitle }}</p>
           </div>
           <div v-if="props.item.duration">
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.durationField') }}
             </p>
             <p class="text-xs font-mono text-base-content/70">{{ props.item.duration }}</p>
           </div>
           <div v-if="browserUrl(props.item)" class="min-w-0">
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.sourceUrlField') }}
             </p>
             <a
               :href="browserUrl(props.item)"
               target="_blank"
               rel="noreferrer"
-              class="text-xs text-primary hover:underline break-all"
+              class="text-xs text-primary-text hover:underline break-all"
             >
               {{ browserUrl(props.item) }}
             </a>

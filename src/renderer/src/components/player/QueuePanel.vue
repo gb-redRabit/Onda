@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { usePlayerStore } from '@renderer/stores/player';
 import { X, Music2, GripVertical, Trash2 } from '@lucide/vue';
@@ -8,8 +9,17 @@ import { buildMediaFile } from '@renderer/utils/explorerMedia';
 import type { MediaFile } from '@renderer/types/media';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import TrackInfo from '@renderer/components/TrackInfo.vue';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const player = usePlayerStore();
+const { t } = useI18n();
+const prompt = usePromptDialog();
+
+async function confirmClearQueue() {
+  if (!(await prompt.showConfirm(t('queue.clearConfirm')))) return;
+  player.clearQueue();
+}
 const dragOverIndex = ref<number | null>(null);
 const dragIndex = ref<number | null>(null);
 
@@ -141,7 +151,7 @@ function onFileDrop(e: DragEvent) {
 <template>
   <div
     data-testid="queue-panel"
-    class="h-full flex flex-col bg-base-100 border-l border-base-300"
+    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-base-300"
     @dragover.prevent
     @drop="onFileDrop"
   >
@@ -155,7 +165,7 @@ function onFileDrop(e: DragEvent) {
           v-if="player.displayQueue.length"
           data-testid="queue-clear"
           class="text-[11px] text-base-content/50 hover:text-error transition-colors px-2 py-1"
-          @click="player.clearQueue"
+          @click="confirmClearQueue"
         >
           {{ $t('queue.clear') }}
         </button>
@@ -172,7 +182,7 @@ function onFileDrop(e: DragEvent) {
 
     <!-- teraz odtwarzane -->
     <div v-if="player.currentTrack" class="px-4 py-3 border-b border-base-300 bg-base-100">
-      <div class="text-[10px] text-primary font-medium uppercase tracking-wider mb-2">
+      <div class="text-[11px] text-primary-text font-medium uppercase tracking-wider mb-2">
         {{ $t('queue.nowPlaying') }}
       </div>
       <div class="flex items-center gap-3">
@@ -201,7 +211,7 @@ function onFileDrop(e: DragEvent) {
     >
       <Music2 :size="32" class="mb-2 opacity-30" />
       <p class="text-xs">{{ $t('queue.empty') }}</p>
-      <p class="text-[10px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
+      <p class="text-[11px] text-base-content/50 mt-1">{{ $t('queue.dropHint') }}</p>
     </div>
 
     <!-- lista kolejki z drag & drop (zwirtualizowana) -->
@@ -236,7 +246,7 @@ function onFileDrop(e: DragEvent) {
           >
             <GripVertical
               :size="12"
-              class="text-base-content/60 shrink-0 opacity-0 group-hover:opacity-100 cursor-grab"
+              class="text-base-content/60 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 cursor-grab"
             />
             <div
               class="w-8 h-8 rounded-field bg-neutral flex items-center justify-center shrink-0 overflow-hidden"
@@ -267,7 +277,7 @@ function onFileDrop(e: DragEvent) {
 
     <!-- historia -->
     <div v-if="player.history.length > 0" class="border-t border-base-300 max-h-40 overflow-auto">
-      <div class="px-4 py-2 text-[10px] text-base-content/50 font-medium uppercase tracking-wider">
+      <div class="px-4 py-2 text-[11px] text-base-content/50 font-medium uppercase tracking-wider">
         {{ $t('queue.history') }}
       </div>
       <div
@@ -283,10 +293,20 @@ function onFileDrop(e: DragEvent) {
           <MediaCover :path="track.path" :size="10" fallback="music" />
         </div>
         <span class="text-xs truncate flex-1">{{ track.metadata?.title || track.name }}</span>
-        <span class="text-[10px] text-base-content/50">{{
+        <span class="text-[11px] text-base-content/50">{{
           formatDuration(track.duration || 0)
         }}</span>
       </div>
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </div>
 </template>

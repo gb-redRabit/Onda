@@ -60,7 +60,7 @@ const bufferedClass = computed(() =>
     : 'absolute inset-y-0 left-0 bg-primary/50 rounded-full'
 );
 
-const timeClass = computed(() => (isThin.value ? 'text-[10px]' : 'text-xs'));
+const timeClass = computed(() => (isThin.value ? 'text-[11px]' : 'text-xs'));
 
 function onDragSeek(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -139,7 +139,7 @@ function onTrackKey(e: KeyboardEvent) {
       <div :class="fillClass" :style="{ width: progressPct + '%' }">
         <div
           v-if="!isThin"
-          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         />
       </div>
     </div>

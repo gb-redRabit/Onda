@@ -3,12 +3,11 @@ import type { DownloadTask } from '@renderer/types/online';
 export type OnlineItemDownloadState = 'queuing' | 'downloading' | 'done' | null;
 
 export function resolveDownloadState(
-  videoId: string,
-  queuingId: string | null,
+  isQueuing: boolean,
   status: DownloadTask['status'] | null | undefined,
   coverStatus: string | null | undefined
 ): OnlineItemDownloadState {
-  if (queuingId === videoId) return 'queuing';
+  if (isQueuing) return 'queuing';
   if (status === 'downloading' || status === 'pending' || status === 'paused') {
     return 'downloading';
   }

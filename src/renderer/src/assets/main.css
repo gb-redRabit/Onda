@@ -8,6 +8,7 @@
 
   --color-primary: #605dff;
   --color-primary-content: #edf1fe;
+  --color-primary-text: #8b89ff;
   --color-secondary: #f43098;
   --color-secondary-content: #f9e4f0;
   --color-accent: #00d3bb;
@@ -206,7 +207,9 @@ input:not([type='range']):focus-visible {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-base-300);
+  /* Wcześniej `--color-base-300` (~1.1:1 na `base-100`) — praktycznie niewidoczny.
+     Podbarwiony overlay utrzymuje ≥ 3:1 na każdej powierzchni bazowej. */
+  background: color-mix(in oklab, var(--color-base-content) 40%, transparent);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -240,17 +243,18 @@ input[type='range']:focus-visible {
   outline-offset: 2px;
 }
 
-input[type='checkbox'] {
-  width: var(--size-selector);
-  height: var(--size-selector);
-  border-radius: var(--radius-selector);
-  accent-color: var(--color-primary);
-  flex-shrink: 0;
+/* W `@layer base`, żeby utility (np. `w-4`) mogły nadpisać rozmiar — niezwarstwowany
+   element-selector wygrywał z każdą klasą Tailwind (cascade layers). */
+@layer base {
+  input[type='checkbox'] {
+    width: var(--size-selector);
+    height: var(--size-selector);
+    border-radius: var(--radius-selector);
+    accent-color: var(--color-primary);
+    flex-shrink: 0;
+  }
 }
 
-.h-field {
-  height: var(--size-field);
-}
 .h-field-lg {
   height: calc(var(--size-field) + 4px);
 }
@@ -291,6 +295,13 @@ input[type='checkbox'] {
   overflow: hidden;
 }
 
+/* `.fx-noise` ucina `outline-offset: 2px` fokus-ring dzieci (overflow:hidden).
+   Ujemny offset trzyma ring wewnątrz, więc fokus pozostaje widoczny (WCAG 2.4.7). */
+.fx-noise :focus-visible,
+.fx-noise:focus-visible {
+  outline-offset: -2px;
+}
+
 .fx-noise::after {
   content: '';
   position: absolute;
@@ -302,21 +313,6 @@ input[type='checkbox'] {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 180px 180px;
   mix-blend-mode: overlay;
-}
-
-.line-clamp-1 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-}
-.line-clamp-2 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
 }
 
 @media (prefers-reduced-motion: reduce) {

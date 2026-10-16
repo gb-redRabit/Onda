@@ -234,6 +234,18 @@ appImage:
   license: build/license_en.txt
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+# Electron Fuses (@electron/fuses), applied to the packaged Electron binary.
+# Hardens the runtime against local tampering:
+#  - RunAsNode off: the binary cannot be repurposed as a plain Node interpreter.
+#  - Node CLI/`NODE_OPTIONS` off: no `--inspect` / env-var code injection.
+#  - OnlyLoadAppFromAsar + asar integrity: app code must come from app.asar,
+#    and its embedded integrity hashes (computed by electron-builder) must match.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
 publish:
   provider: github
   owner: gb-redRabit

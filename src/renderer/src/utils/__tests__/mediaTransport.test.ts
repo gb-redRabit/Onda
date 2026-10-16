@@ -4,7 +4,8 @@ import {
   applyVolumeTarget,
   seekTarget,
   skipTarget,
-  getTargetPosition
+  getTargetPosition,
+  clampSpeed
 } from '@renderer/utils/mediaTransport';
 
 const stubVideo = () => ({ currentTime: 30, duration: 120 }) as HTMLVideoElement;
@@ -75,5 +76,26 @@ describe('mediaTransport', () => {
       duration: 40
     } as HTMLAudioElement);
     expect(getTargetPosition(null)).toEqual({ currentTime: 5, duration: 40 });
+  });
+});
+
+describe('clampSpeed', () => {
+  it('keeps 0.25-multiples exact (no more 1.25 -> 1.3 drift)', () => {
+    expect(clampSpeed(1.25)).toBe(1.25);
+    expect(clampSpeed(1.5)).toBe(1.5);
+    expect(clampSpeed(0.75)).toBe(0.75);
+    expect(clampSpeed(1)).toBe(1);
+  });
+
+  it('clamps to the 0.25–3× range', () => {
+    expect(clampSpeed(0.1)).toBe(0.25);
+    expect(clampSpeed(9)).toBe(3);
+    expect(clampSpeed(0.2)).toBe(0.25);
+  });
+
+  it('snaps arbitrary input to the 0.05 grid and guards non-finite values', () => {
+    expect(clampSpeed(1.33)).toBe(1.35);
+    expect(clampSpeed(Number.NaN)).toBe(1);
+    expect(clampSpeed(Number.POSITIVE_INFINITY)).toBe(1);
   });
 });

@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { isValidCookieFile } from '../ipc/youtube/youtube-utils';
+import { domainMatches } from '../../shared/domain';
 
 // Cookies oznaczające zalogowaną sesję YouTube. Przepływ logowania Google przenosi
 // rodzinę SID: nowoczesne logowanie może pozostawić `SID`/`HSID`/`__Secure-1PSID` na
@@ -16,7 +17,7 @@ export const SESSION_COOKIE_NAMES = [
 export const YT_COOKIE_HOST = 'youtube.com';
 
 export function cookieOnDomain(cookieDomain: string, host: string): boolean {
-  return cookieDomain === host || cookieDomain === '.' + host || cookieDomain.endsWith('.' + host);
+  return domainMatches(cookieDomain, host);
 }
 
 export function hasSessionCookies(cookies: Electron.Cookie[], host?: string): Electron.Cookie[] {

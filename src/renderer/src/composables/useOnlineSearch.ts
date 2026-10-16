@@ -2,13 +2,21 @@ import { computed, ref, type Ref } from 'vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { detectChannelPrefix, detectPlatform, isHttpUrl } from '@shared/platform';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
+import { logger } from '@shared/logger';
 
 type Translate = (key: string, params?: Record<string, unknown>) => string;
 
 // Ujednolicone akcje wyszukiwania/rozwiązywania online z ochroną przed nieaktualnymi
 // odpowiedziami (wynik zastąpionego żądania jest odrzucany). Błędy są udostępniane jako
 // przetłumaczone ciągi. `openDiscover` przełącza widok z powrotem na sekcję odkrywania.
-export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: () => void) {
+// `onProvider` (opcjonalne) daje pierwszeństwo providerom linków (PikPak/MEGA/Drive…) —
+// gdy rozpozna URL, zwraca true i przerywa standardową ścieżkę YT/SoundCloud.
+export function useOnlineSearch(
+  input: Ref<string>,
+  t: Translate,
+  openDiscover: () => void,
+  onProvider?: (url: string) => Promise<boolean>
+) {
   const yt = useOnlineStore();
   let searchSeq = 0;
   let resolveSeq = 0;
@@ -45,7 +53,10 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
         );
       } else {
         const key = errorCodeKey(result.code as never);
-        searchError.value = key ? t(key) : result.error || t('youtube.searchError');
+        // Pokazujemy zlokalizowany komunikat; surowy tekst backendu trafia do logu,
+        // a nie do UI (bywał nieczytelny i nieprzetłumaczony).
+        if (!key && result.error) logger.warn('yt', `search failed: ${result.error}`);
+        searchError.value = key ? t(key) : t('youtube.searchError');
         yt.setResults([]);
       }
     } catch {
@@ -82,7 +93,8 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
         }
       } else {
         const key = errorCodeKey(res.code);
-        resolveError.value = key ? t(key) : res.error || t('youtube.resolveError');
+        if (!key && res.error) logger.warn('yt', `resolve failed: ${res.error}`);
+        resolveError.value = key ? t(key) : t('youtube.resolveError');
       }
     } catch {
       resolveError.value = t('youtube.resolveError');
@@ -93,6 +105,8 @@ export function useOnlineSearch(input: Ref<string>, t: Translate, openDiscover: 
 
   async function submit() {
     if (!input.value.trim()) return;
+    // Provider linków (PikPak/MEGA/Drive…) ma pierwszeństwo — przełącza na zakładkę „Linki".
+    if (onProvider && (await onProvider(input.value.trim()))) return;
     // @name -> kanał YouTube, $name -> profil SoundCloud: otwórz bezpośrednio.
     const prefix = detectChannelPrefix(input.value);
     if (prefix) {

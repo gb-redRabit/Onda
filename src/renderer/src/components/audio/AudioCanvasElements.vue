@@ -6,8 +6,10 @@ import AudioProgressBar from './AudioProgressBar.vue';
 import AudioControls from './AudioControls.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useI18n } from 'vue-i18n';
 import { resolveElementDecoration } from '@renderer/utils/audioView';
 import { elementStyle } from '@renderer/utils/audioElementStyle';
+import { ELEMENT_META } from '@renderer/utils/audioLayoutEditorMeta';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
 // Renderer elementów free-canvas wyodrębniony z AudioView (kontynuacja planu 6.3).
@@ -23,13 +25,29 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'element-mousedown': [event: MouseEvent, el: AudioLayoutElement];
+  'element-keydown': [event: KeyboardEvent, el: AudioLayoutElement];
 }>();
 
 const pluginsStore = usePluginsStore();
 const player = usePlayerStore();
+const { t } = useI18n();
 
 function elementDecoration(el: AudioLayoutElement): string | undefined {
   return resolveElementDecoration(el, pluginsStore.decorations);
+}
+
+// Element da się przesuwać (myszą/klawiaturą) w pełnym ekranie, poza wizualizacją.
+function isDraggable(el: AudioLayoutElement): boolean {
+  return props.isFullscreen && el.id !== 'visualization';
+}
+
+function labelFor(el: AudioLayoutElement): string {
+  const key = ELEMENT_META[el.id]?.labelKey;
+  return key ? t(key) : el.id;
+}
+
+function onKeydown(event: KeyboardEvent, el: AudioLayoutElement): void {
+  if (isDraggable(el)) emit('element-keydown', event, el);
 }
 
 function styleFor(el: AudioLayoutElement) {
@@ -42,8 +60,13 @@ function styleFor(el: AudioLayoutElement) {
     v-for="el in props.elements"
     v-show="el.visible"
     :key="el.id"
-    class="absolute overflow-hidden"
+    class="absolute overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
     :style="styleFor(el)"
+    :tabindex="isDraggable(el) ? 0 : undefined"
+    :role="isDraggable(el) ? 'group' : undefined"
+    :aria-label="isDraggable(el) ? labelFor(el) : undefined"
+    :aria-keyshortcuts="isDraggable(el) ? 'ArrowUp ArrowDown ArrowLeft ArrowRight' : undefined"
+    @keydown="onKeydown($event, el)"
   >
     <!-- Wizualizacja (z wbudowanym paskiem narzędzi) -->
     <template v-if="el.id === 'visualization'">

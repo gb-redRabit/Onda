@@ -13,7 +13,8 @@ function read(rel: string): string {
 
 describe('download output resolution', () => {
   it('does not use the synchronous statSync', () => {
-    const source = read('src/main/downloads/download-attempt.ts');
+    // Rozwiązywanie ścieżki wyjścia (stat/readdir) żyje teraz w module yt-dlp.
+    const source = read('src/main/downloads/download-attempt-ytdlp.ts');
     expect(source).not.toMatch(/statSync\(/);
     expect(source).toMatch(/from 'fs\/promises'/);
   });

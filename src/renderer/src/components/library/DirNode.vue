@@ -216,7 +216,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
             :tracks="folderTracksFor(sub)"
             class="w-8 h-8 !rounded-field shrink-0 hidden sm:grid"
           />
-          <Folder :size="13" class="shrink-0 text-primary/70 sm:hidden" />
+          <Folder :size="13" class="shrink-0 text-primary-text/70 sm:hidden" />
           <span
             class="font-medium truncate text-base-content/80 group-hover/row:text-base-content"
             >{{ sub }}</span
@@ -235,7 +235,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         </button>
 
         <button
-          class="w-6 h-6 rounded-full bg-base-100 border border-base-300 text-base-content/50 hover:text-primary hover:border-primary/30 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all shrink-0"
+          class="w-6 h-6 rounded-full bg-base-100 border border-base-300 text-base-content/50 hover:text-primary-text hover:border-primary/30 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all shrink-0"
           :title="$t('library.folderPlay')"
           @click.stop="playDir(childOriginal(sub))"
         >

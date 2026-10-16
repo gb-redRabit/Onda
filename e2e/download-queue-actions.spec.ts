@@ -72,9 +72,13 @@ test.describe('download queue actions', () => {
       await expect(live.getByTestId('download-action-retry')).toHaveCount(0);
       await expect(rows).toHaveCount(3);
 
-      // Nieruszone zadanie osiąga ukończenie, następnie clear-finished usuwa je.
+      // Nieruszone zadanie osiąga ukończenie, następnie clear-finished (z potwierdzeniem)
+      // usuwa je.
       await expect(done.getByTestId('download-action-play')).toBeVisible({ timeout: 10_000 });
       await page.getByTestId('downloads-clear-finished').click();
+      const clearDialog = page.getByTestId('explorer-prompt-dialog');
+      await expect(clearDialog).toBeVisible();
+      await clearDialog.getByRole('button', { name: /ok/i }).click();
       await expect(done).toHaveCount(0);
       await expect(rows).toHaveCount(2);
 

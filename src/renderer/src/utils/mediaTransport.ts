@@ -42,3 +42,13 @@ export function skipTarget(video: HTMLVideoElement | null, seconds: number): num
   seekTarget(video, newTime);
   return newTime;
 }
+
+/**
+ * Normalizuje prędkość odtwarzania: zakres 0.25–3× i siatka 0.05×.
+ * Menu i skróty operują na wielokrotności 0.25, więc wcześniejsze zaokrąglanie do 0.1
+ * („*10/10”) zamieniało 1.25 na 1.3 i rozjeżdżało ścieżkę w górę/w dół.
+ */
+export function clampSpeed(speed: number): number {
+  if (!Number.isFinite(speed)) return 1;
+  return Math.round(Math.max(0.25, Math.min(3, speed)) * 20) / 20;
+}

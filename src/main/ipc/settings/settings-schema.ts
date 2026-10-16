@@ -25,6 +25,7 @@ import {
   pipElementArray,
   SETTINGS_VERSION
 } from './settings-migrations';
+import { sanitizeEqBands } from '../../../shared/eqSanitize';
 
 const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
   radiusBox: numClamped(0, 32),
@@ -144,6 +145,10 @@ const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
   fpsCap: numClamped(15, 120)
 };
 
+// Zestaw pasm korektora: wspólny sanitizer (`shared/eqSanitize`) — te same granice
+// obowiązują import z schowka w rendererze, więc żywa sesja też jest chroniona.
+const eqBands: Sanitizer = (v) => sanitizeEqBands(v);
+
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   normalization: bool,
   replayGain: bool,
@@ -161,7 +166,16 @@ const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   resumePromptTimeout: numClamped(1, 60),
   playbackSpeed: numClamped(0.2, 3),
   videoFilter: str,
-  visualization: obj(VISUALIZATION_FIELDS)
+  visualization: obj(VISUALIZATION_FIELDS),
+  equalizerBands: eqBands,
+  equalizerEnabled: bool,
+  nightMode: bool,
+  audioDelayMs: numClamped(0, 500),
+  subtitleDelayMs: numClamped(-60000, 60000),
+  equalizerPreamp: numClamped(-12, 12),
+  equalizerUserPresets: recordOf(eqBands),
+  equalizerMulticolor: bool,
+  equalizerSnap: bool
 };
 
 const EXPLORER_FIELDS: Record<string, Sanitizer> = {
@@ -197,6 +211,7 @@ const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
   retryBaseMs: numClamped(500, 10000),
   tempDir: str,
   autoDownloadSubscriptions: bool,
+  autoCheckLinkSubscriptions: bool,
   hashFiles: bool,
   smartMode: bool,
   defaultSubs: bool,

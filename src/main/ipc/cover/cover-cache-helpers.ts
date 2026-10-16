@@ -5,6 +5,8 @@ import { AUDIO_EXTS, VIDEO_EXTS } from '../../../shared/constants';
 
 // Czyste helpery wyodrębnione z `cover-cache.ts` (plan 2.8) — bez stanu cache.
 
+export { uniqueId } from '../../utils/ids';
+
 export function evictCache(map: Map<string, unknown>, maxSize: number): void {
   if (map.size <= maxSize) return;
   const toDelete = map.size - maxSize;
@@ -18,10 +20,6 @@ export function evictCache(map: Map<string, unknown>, maxSize: number): void {
 
 export function hashPath(filePath: string): string {
   return createHash('md5').update(filePath.toLowerCase()).digest('hex');
-}
-
-export function uniqueId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
 export function isEnoent(e: unknown): boolean {

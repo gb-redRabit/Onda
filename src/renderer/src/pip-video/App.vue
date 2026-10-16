@@ -41,6 +41,34 @@ const {
 
 const { subsVisible, toggleSubtitles } = sub;
 
+// Klawiaturowa obsługa paska postępu (rola slider): strzałki ±5 s, Home/End na krawędzie.
+function onProgressKeydown(e: KeyboardEvent) {
+  const v = videoRef.value;
+  if (!v || !v.duration) return;
+  switch (e.key) {
+    case 'ArrowRight':
+    case 'ArrowUp':
+      e.preventDefault();
+      v.currentTime = Math.min(v.duration, v.currentTime + 5);
+      break;
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      e.preventDefault();
+      v.currentTime = Math.max(0, v.currentTime - 5);
+      break;
+    case 'Home':
+      e.preventDefault();
+      v.currentTime = 0;
+      break;
+    case 'End':
+      e.preventDefault();
+      v.currentTime = v.duration;
+      break;
+    default:
+      break;
+  }
+}
+
 onMounted(() => {
   if (props.preview) showOverlay.value = true;
 });
@@ -97,7 +125,7 @@ onMounted(() => {
           <p class="text-sm font-semibold text-white drop-shadow">{{ t('previewTitle') }}</p>
           <p class="mt-0.5 text-[11px] text-white/70">{{ t('previewDescription') }}</p>
         </div>
-        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-mono text-white">
+        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-[11px] font-mono text-white">
           1080p
         </span>
       </div>
@@ -128,7 +156,7 @@ onMounted(() => {
       <button
         v-if="!preview"
         data-testid="pip-video-maximize"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[10px] top-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
         :title="t('maximize')"
         @click="sendMaximize"
       >
@@ -173,6 +201,9 @@ onMounted(() => {
           data-testid="pip-video-subs"
           class="w-8 h-4.5 rounded-full transition-colors relative"
           :class="subsVisible ? 'bg-primary' : ''"
+          role="switch"
+          :aria-checked="subsVisible"
+          :aria-label="t('subtitles')"
           :style="
             !subsVisible
               ? { background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }
@@ -188,7 +219,7 @@ onMounted(() => {
       </div>
       <div class="mb-1.5">
         <span
-          class="text-[10px]"
+          class="text-[11px]"
           :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('brightness') }} {{ brightness }}%</span
         >
@@ -198,6 +229,7 @@ onMounted(() => {
           max="200"
           step="5"
           :value="brightness"
+          :aria-label="t('brightness')"
           class="w-full h-0.75"
           :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
           @input="brightness = parseInt(($event.target as HTMLInputElement).value)"
@@ -205,7 +237,7 @@ onMounted(() => {
       </div>
       <div>
         <span
-          class="text-[10px]"
+          class="text-[11px]"
           :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('contrast') }} {{ contrast }}%</span
         >
@@ -215,6 +247,7 @@ onMounted(() => {
           max="200"
           step="5"
           :value="contrast"
+          :aria-label="t('contrast')"
           class="w-full h-0.75"
           :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
           @input="contrast = parseInt(($event.target as HTMLInputElement).value)"
@@ -223,14 +256,14 @@ onMounted(() => {
     </div>
 
     <div
-      class="absolute bottom-2 left-2 text-[10px] font-mono pointer-events-none"
+      class="absolute bottom-2 left-2 text-[11px] font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ preview ? '0:42' : currentTime }}
     </div>
 
     <div
-      class="absolute bottom-2 right-2 text-[10px] font-mono pointer-events-none"
+      class="absolute bottom-2 right-2 text-[11px] font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ preview ? '12:08' : duration }}
@@ -240,7 +273,14 @@ onMounted(() => {
       ref="progressRef"
       class="relative h-1 shrink-0 cursor-pointer"
       :style="{ background: 'color-mix(in srgb, var(--color-base-content) 10%, transparent)' }"
+      role="slider"
+      tabindex="0"
+      aria-label="Seek"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(Number(progress) || 0)"
       @click="onProgressClick"
+      @keydown="onProgressKeydown"
       @mousemove="handleMouseMove"
       @mouseleave="handleMouseLeave"
     >
@@ -266,13 +306,13 @@ onMounted(() => {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[9px] text-neutral-content/50"
+            class="w-full h-full flex items-center justify-center text-[10px] text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
         </div>
         <span
-          class="mt-1 text-[10px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
+          class="mt-1 text-[11px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
         >
           {{ previewTimeLabel() }}
         </span>

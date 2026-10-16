@@ -185,7 +185,7 @@ const playlistVirtualizer = useVirtualList({
           class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 text-xs fx-depth rounded-field transition-colors text-left"
           :class="
             selectedPlaylistId === p.id
-              ? 'bg-primary/10 text-primary'
+              ? 'bg-primary/10 text-primary-text'
               : dragOverPlaylistId === p.id
                 ? 'ring-1 ring-primary/50 bg-primary/10'
                 : 'hover:bg-base-content/10 text-base-content/70'

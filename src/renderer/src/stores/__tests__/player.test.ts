@@ -244,12 +244,12 @@ describe('queue management', () => {
     expect(store.queueVisible).toBe(false);
   });
 
-  it('toggleEqualizer flips equalizerVisible', () => {
+  it('toggleSubtitlePanel flips subtitlePanelVisible', () => {
     const store = usePlayerStore();
-    store.toggleEqualizer();
-    expect(store.equalizerVisible).toBe(true);
-    store.toggleEqualizer();
-    expect(store.equalizerVisible).toBe(false);
+    store.toggleSubtitlePanel();
+    expect(store.subtitlePanelVisible).toBe(true);
+    store.toggleSubtitlePanel();
+    expect(store.subtitlePanelVisible).toBe(false);
   });
 });
 

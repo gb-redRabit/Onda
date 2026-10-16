@@ -1,34 +1,78 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { RotateCcw } from '@lucide/vue';
+import {
+  RotateCcw,
+  Plus,
+  SlidersHorizontal,
+  Power,
+  Download,
+  Upload,
+  Save,
+  Palette,
+  Magnet,
+  Combine,
+  Moon
+} from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
-import { EQUALIZER_PRESETS, EQUALIZER_PRESET_LABELS } from '@renderer/utils/constants';
+import { useUIStore } from '@renderer/stores/ui';
+import {
+  EQUALIZER_PRESETS,
+  EQUALIZER_PRESET_LABELS,
+  EQ_LIMITS,
+  cloneEqBands,
+  eqBandColor,
+  matchesEqPreset,
+  snapFrequency,
+  type EqBand,
+  type EqBandType
+} from '@renderer/utils/constants/audio';
+import { sanitizeEqBands, sanitizeEqPreamp } from '@shared/eqSanitize';
+import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
+import {
+  EQ_CURVE as CURVE,
+  EQ_GRID_DBS as GRID_DBS,
+  EQ_GRID_FREQS as GRID_FREQS,
+  bandX,
+  bandY,
+  dbToY,
+  markerRadius
+} from '@renderer/utils/eqGeometry';
+import { useEqSpectrum } from '@renderer/composables/useEqSpectrum';
+import EqBandRow from './EqBandRow.vue';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const player = usePlayerStore();
-const { setEqualizerBand, applyEqPreset } = useAudioPlayer();
+const fx = useAudioFxStore();
+const audio = useAudioPlayer();
+const ui = useUIStore();
+const prompt = usePromptDialog();
+const { applyEqBands } = audio;
+const { t } = useI18n();
 
 const panel = ref<HTMLElement | null>(null);
+const showControls = ref(true);
+const menuBand = ref<number | null>(null);
 
 function onClickOutside(e: MouseEvent) {
   const target = e.target as Node;
+  if (menuBand.value !== null) menuBand.value = null;
   if (
     panel.value &&
     !panel.value.contains(target) &&
     !(target as HTMLElement).closest('[data-eq-toggle]')
   ) {
-    player.equalizerVisible = false;
+    fx.equalizerVisible = false;
   }
 }
-
 onMounted(() => document.addEventListener('click', onClickOutside));
 onUnmounted(() => document.removeEventListener('click', onClickOutside));
 
-const presets = EQUALIZER_PRESETS;
-
-const { t } = useI18n();
-
+const bandTypes: EqBandType[] = ['lowshelf', 'peaking', 'highshelf'];
+const limits = EQ_LIMITS;
 const presetLabels: Record<string, string> = {
   ...EQUALIZER_PRESET_LABELS,
   classical: t('equalizer.classical'),
@@ -37,52 +81,190 @@ const presetLabels: Record<string, string> = {
   vocal: t('equalizer.vocal')
 };
 
-const bandLabels = ['32', '64', '125', '250', '500', '1K', '2K', '4K', '8K', '16K'];
+const bands = computed(() => fx.equalizerBands);
+const color = (i: number) => (fx.equalizerMulticolor ? eqBandColor(i) : 'var(--color-primary)');
+const snap = (freq: number) => (fx.equalizerSnap ? snapFrequency(freq) : freq);
 
-function selectPreset(name: string) {
-  player.equalizerPreset = name;
-  applyEqPreset(presets[name]);
+// „Solo": odsłuchaj tylko jedno pasmo (reszta neutralna) — zmiana tylko na grafie, bez zapisu.
+const solo = ref<number | null>(null);
+function applySoloGraph() {
+  const list =
+    solo.value !== null && bands.value[solo.value] ? [bands.value[solo.value]] : bands.value;
+  audio.applyEqGraph(list);
 }
-
-function onSliderDrag(e: MouseEvent, index: number) {
-  const target = e.currentTarget as HTMLElement;
-  const rect = target.getBoundingClientRect();
-  function update(ev: MouseEvent) {
-    const pct = 1 - Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
-    const val = Math.round(pct * 24 - 12);
-    setEqualizerBand(index, val);
-  }
-  update(e);
-  function onMove(ev: MouseEvent) {
-    update(ev);
-  }
-  function onUp() {
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-  }
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
+function toggleSolo(i: number) {
+  solo.value = solo.value === i ? null : i;
+  applySoloGraph();
 }
+watch(bands, () => {
+  if (solo.value !== null) applySoloGraph();
+});
+const userPresets = computed(() => fx.equalizerUserPresets ?? {});
+const activePreset = computed(() => {
+  for (const name of Object.keys(userPresets.value)) {
+    if (matchesEqPreset(bands.value, userPresets.value[name])) return name;
+  }
+  for (const name of Object.keys(EQUALIZER_PRESETS)) {
+    if (matchesEqPreset(bands.value, EQUALIZER_PRESETS[name])) return name;
+  }
+  return 'custom';
+});
 
-/**
- * Klawiaturowy odpowiednik przeciągania.
- *
- * Każdy pas był divem obsługującym tylko mousedown: bez roli, bez tabindex i bez
- * obsługi klawiszy, więc korektora nie dało się ustawić bez wskaźnika.
- */
-function onBandKey(e: KeyboardEvent, index: number) {
-  const current = player.equalizerBands[index] ?? 0;
-  let next: number | null = null;
-  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') next = current + 1;
-  else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') next = current - 1;
-  else if (e.key === 'PageUp') next = current + 6;
-  else if (e.key === 'PageDown') next = current - 6;
-  else if (e.key === 'Home') next = -12;
-  else if (e.key === 'End') next = 12;
-  else if (e.key === '0') next = 0;
-  if (next === null) return;
+// --- krzywa ---
+const curvePath = computed(() => eqCurvePath(bands.value, CURVE, fx.equalizerPreamp));
+const zeroLineY = dbToY(0);
+
+// spektrum na żywo
+const { spectrumPath } = useEqSpectrum({
+  isPlaying: () => player.isPlaying,
+  getAnalyser: () => audio.getAnalyserNode(),
+  getSampleRate: () => audio.getAudioContext()?.sampleRate ?? 48000
+});
+
+const curveEl = ref<HTMLElement | null>(null);
+const draggingBand = ref<number | null>(null);
+const hoverBand = ref<number | null>(null);
+// Menu kontekstowe otwiera się w dół, gdy kropka jest w górnej połowie, i w górę w dolnej —
+// dzięki temu nigdy nie wychodzi poza wykres.
+const menuBelow = computed(() =>
+  menuBand.value === null
+    ? true
+    : bandY((bands.value[menuBand.value]?.gain ?? 0) + fx.equalizerPreamp) < 55
+);
+
+function timeFromEvent(e: PointerEvent | MouseEvent): { frequency: number; gain: number } | null {
+  const el = curveEl.value;
+  if (!el) return null;
+  const rect = el.getBoundingClientRect();
+  const rx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const ry = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+  return {
+    frequency: Math.round(snap(ratioToFreq(rx, CURVE.minFreq, CURVE.maxFreq))),
+    gain: Math.round(CURVE.maxDb - ry * (CURVE.maxDb - CURVE.minDb) - fx.equalizerPreamp)
+  };
+}
+function onCurveDown(i: number, e: PointerEvent) {
   e.preventDefault();
-  setEqualizerBand(index, Math.max(-12, Math.min(12, next)));
+  e.stopPropagation();
+  draggingBand.value = i;
+  (e.currentTarget as Element).setPointerCapture(e.pointerId);
+}
+function onCurveMove(e: PointerEvent) {
+  if (draggingBand.value === null) return;
+  const pt = timeFromEvent(e);
+  if (pt) patchBand(draggingBand.value, pt);
+}
+function onCurveUp() {
+  draggingBand.value = null;
+}
+// dwuklik w puste miejsce = dodaj pasmo w tym punkcie
+function onCurveDblClick(e: MouseEvent) {
+  if (bands.value.length >= limits.maxBands) return;
+  const pt = timeFromEvent(e);
+  if (!pt) return;
+  const next = cloneEqBands(bands.value);
+  next.push({ type: 'peaking', frequency: pt.frequency, q: 1, gain: pt.gain });
+  commit(next);
+}
+function onMarkerDblClick(i: number) {
+  patchBand(i, { gain: 0 });
+}
+function onMarkerContext(e: MouseEvent, i: number) {
+  e.preventDefault();
+  menuBand.value = menuBand.value === i ? null : i;
+}
+
+function commit(next: EqBand[], preset = 'custom') {
+  fx.equalizerPreset = preset;
+  applyEqBands(next);
+}
+function selectPreset(name: string) {
+  const src = userPresets.value[name] ?? EQUALIZER_PRESETS[name];
+  if (src) commit(cloneEqBands(src), name);
+}
+function patchBand(i: number, patch: Partial<EqBand>) {
+  const next = cloneEqBands(bands.value);
+  if (!next[i]) return;
+  next[i] = { ...next[i], ...patch };
+  commit(next);
+}
+function setType(i: number, type: EqBandType) {
+  patchBand(i, { type });
+  menuBand.value = null;
+}
+function addBand() {
+  if (bands.value.length >= limits.maxBands) return;
+  const next = cloneEqBands(bands.value);
+  next.push({ type: 'peaking', frequency: 1000, q: 1, gain: 0 });
+  commit(next);
+}
+function removeBand(i: number) {
+  if (bands.value.length <= 1) return;
+  const next = cloneEqBands(bands.value);
+  next.splice(i, 1);
+  commit(next);
+  menuBand.value = null;
+}
+function typeLabel(type: EqBandType): string {
+  return t(`equalizer.type_${type}`);
+}
+
+// --- własne presety + eksport/import ---
+// Nazwę zbieramy we własnym polu w panelu, bo `window.prompt()` nie jest obsługiwane
+// w Electronie (rzuca „prompt() is and will not be supported") — wcześniej zapis presetu
+// był martwą funkcją, a domyślna nazwa mogła nadpisać istniejący preset bez ostrzeżenia.
+const naming = ref(false);
+const presetName = ref('');
+const canSavePreset = computed(() => {
+  const name = presetName.value.trim();
+  if (!name) return false;
+  return !(name in userPresets.value) && !(name in EQUALIZER_PRESETS);
+});
+function savePreset() {
+  presetName.value = `${t('equalizer.custom')} ${Object.keys(userPresets.value).length + 1}`;
+  naming.value = true;
+}
+function confirmSavePreset() {
+  const name = presetName.value.trim();
+  if (!name) return;
+  if (name in userPresets.value || name in EQUALIZER_PRESETS) {
+    ui.notify('error', t('equalizer.savePreset'), t('equalizer.presetExists'));
+    return;
+  }
+  audio.setEqUserPresets({ ...userPresets.value, [name]: cloneEqBands(bands.value) });
+  naming.value = false;
+  presetName.value = '';
+}
+async function deletePreset(name: string) {
+  if (!(await prompt.showConfirm(t('equalizer.presetDeleteConfirm', { name })))) return;
+  const next = { ...userPresets.value };
+  delete next[name];
+  audio.setEqUserPresets(next);
+}
+async function exportEq() {
+  try {
+    await navigator.clipboard.writeText(
+      JSON.stringify({ bands: bands.value, preamp: fx.equalizerPreamp })
+    );
+  } catch {
+    ui.notify('error', t('equalizer.export'), t('equalizer.exportError'));
+  }
+}
+async function importEq() {
+  try {
+    const text = await navigator.clipboard.readText();
+    const parsed = JSON.parse(text) as { bands?: unknown; preamp?: unknown };
+    const importedBands = sanitizeEqBands(parsed.bands);
+    if (!importedBands || importedBands.length === 0) {
+      ui.notify('error', t('equalizer.import'), t('equalizer.importError'));
+      return;
+    }
+    commit(importedBands);
+    const preamp = sanitizeEqPreamp(parsed.preamp);
+    if (preamp !== undefined) audio.setEqPreamp(preamp);
+  } catch {
+    ui.notify('error', t('equalizer.import'), t('equalizer.importError'));
+  }
 }
 </script>
 
@@ -90,28 +272,149 @@ function onBandKey(e: KeyboardEvent, index: number) {
   <div
     ref="panel"
     data-testid="equalizer"
-    class="bg-base-100 border border-base-300 rounded-box p-4 w-95"
+    class="bg-base-100 border border-base-300 rounded-box p-4 w-135 max-w-[95vw]"
   >
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
-      <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
-        title="Reset"
-        @click="selectPreset('flat')"
-      >
-        <RotateCcw :size="14" />
-      </button>
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-1.5">
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="fx.equalizerEnabled ? 'text-primary-text' : 'text-base-content/55'"
+          data-testid="eq-power"
+          :title="fx.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
+          :aria-label="fx.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
+          :aria-pressed="fx.equalizerEnabled"
+          @click="audio.setEqEnabled(!fx.equalizerEnabled)"
+        >
+          <Power :size="14" />
+        </button>
+        <h3 class="text-sm font-semibold">{{ $t('equalizer.title') }}</h3>
+      </div>
+      <div class="flex items-center gap-1">
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="fx.equalizerMono ? 'text-primary-text' : 'text-base-content/50'"
+          data-testid="eq-mono"
+          :title="$t('equalizer.mono')"
+          :aria-label="$t('equalizer.mono')"
+          :aria-pressed="fx.equalizerMono"
+          @click="audio.setEqMono(!fx.equalizerMono)"
+        >
+          <Combine :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="fx.nightMode ? 'text-primary-text' : 'text-base-content/50'"
+          data-testid="eq-night"
+          :title="$t('player.nightMode')"
+          :aria-label="$t('player.nightMode')"
+          :aria-pressed="fx.nightMode"
+          @click="audio.setNightMode(!fx.nightMode)"
+        >
+          <Moon :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="fx.equalizerSnap ? 'text-primary-text' : 'text-base-content/50'"
+          data-testid="eq-snap"
+          :title="$t('equalizer.snap')"
+          :aria-label="$t('equalizer.snap')"
+          :aria-pressed="fx.equalizerSnap"
+          @click="audio.setEqSnap(!fx.equalizerSnap)"
+        >
+          <Magnet :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="fx.equalizerMulticolor ? 'text-primary-text' : 'text-base-content/50'"
+          data-testid="eq-multicolor"
+          :title="$t('equalizer.multicolor')"
+          :aria-label="$t('equalizer.multicolor')"
+          :aria-pressed="fx.equalizerMulticolor"
+          @click="audio.setEqMulticolor(!fx.equalizerMulticolor)"
+        >
+          <Palette :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors disabled:opacity-30"
+          data-testid="eq-add-band"
+          :title="$t('equalizer.addBand')"
+          :aria-label="$t('equalizer.addBand')"
+          :disabled="bands.length >= limits.maxBands"
+          @click="addBand"
+        >
+          <Plus :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="showControls ? 'text-primary-text' : 'text-base-content/50'"
+          data-testid="eq-toggle-controls"
+          :title="showControls ? $t('equalizer.hideControls') : $t('equalizer.showControls')"
+          :aria-label="showControls ? $t('equalizer.hideControls') : $t('equalizer.showControls')"
+          @click="showControls = !showControls"
+        >
+          <SlidersHorizontal :size="14" />
+        </button>
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
+          :title="$t('equalizer.reset')"
+          :aria-label="$t('equalizer.reset')"
+          @click="selectPreset('flat')"
+        >
+          <RotateCcw :size="14" />
+        </button>
+      </div>
     </div>
 
-    <!-- presety -->
-    <div class="flex flex-wrap gap-1.5 mb-5">
+    <!-- preamp -->
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-[11px] text-base-content/50 shrink-0">{{ $t('equalizer.preamp') }}</span>
+      <input
+        type="range"
+        min="-12"
+        max="12"
+        step="1"
+        :value="fx.equalizerPreamp"
+        data-testid="eq-preamp"
+        :aria-label="$t('equalizer.preamp')"
+        class="flex-1 h-1 cursor-pointer accent-primary"
+        @input="audio.setEqPreamp(Number(($event.target as HTMLInputElement).value))"
+      />
+      <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
+        >{{ fx.equalizerPreamp > 0 ? '+' : '' }}{{ fx.equalizerPreamp }}
+        {{ $t('equalizer.db') }}</span
+      >
+    </div>
+
+    <!-- opóźnienie dźwięku (kompensacja lip-sync) -->
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-[11px] text-base-content/50 shrink-0">{{
+        $t('equalizer.audioDelay')
+      }}</span>
+      <input
+        type="range"
+        min="0"
+        max="500"
+        step="10"
+        :value="fx.audioDelayMs"
+        data-testid="eq-audio-delay"
+        :aria-label="$t('equalizer.audioDelay')"
+        class="flex-1 h-1 cursor-pointer accent-primary"
+        @input="audio.setAudioDelay(Number(($event.target as HTMLInputElement).value))"
+      />
+      <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
+        >{{ fx.audioDelayMs }} {{ $t('equalizer.ms') }}</span
+      >
+    </div>
+
+    <!-- presety (wbudowane + własne) -->
+    <div class="flex flex-wrap gap-1.5 mb-3">
       <button
-        v-for="(_, name) in presets"
+        v-for="(_, name) in EQUALIZER_PRESETS"
         :key="name"
         :data-testid="'eq-preset-' + name"
         class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
         :class="
-          player.equalizerPreset === name
+          activePreset === name
             ? 'bg-primary text-primary-content'
             : 'bg-base-300 text-base-content/70 hover:bg-base-content/10'
         "
@@ -119,66 +422,247 @@ function onBandKey(e: KeyboardEvent, index: number) {
       >
         {{ presetLabels[name] || name }}
       </button>
+      <button
+        v-for="(_, name) in userPresets"
+        :key="'u-' + name"
+        :data-testid="'eq-user-preset-' + name"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors border border-primary/40"
+        :class="
+          activePreset === name
+            ? 'bg-primary text-primary-content'
+            : 'bg-primary/10 text-primary-text'
+        "
+        @click="selectPreset(name)"
+        @contextmenu.prevent="deletePreset(name)"
+      >
+        {{ name }}
+      </button>
+      <span
+        v-if="activePreset === 'custom'"
+        data-testid="eq-preset-custom"
+        class="px-2.5 py-1 rounded-field text-[11px] font-medium bg-primary/15 text-primary-text border border-primary/40"
+      >
+        {{ $t('equalizer.custom') }}
+      </span>
+      <button
+        class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/60 hover:text-base-content transition-colors"
+        data-testid="eq-save-preset"
+        :title="$t('equalizer.savePreset')"
+        @click="savePreset"
+      >
+        <Save :size="12" />
+      </button>
+      <button
+        class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/60 hover:text-base-content transition-colors"
+        data-testid="eq-export"
+        :title="$t('equalizer.export')"
+        @click="exportEq"
+      >
+        <Download :size="12" />
+      </button>
+      <button
+        class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/60 hover:text-base-content transition-colors"
+        data-testid="eq-import"
+        :title="$t('equalizer.import')"
+        @click="importEq"
+      >
+        <Upload :size="12" />
+      </button>
+    </div>
+
+    <!-- nazwa nowego presetu (zamiast window.prompt, którego Electron nie wspiera) -->
+    <div
+      v-if="naming"
+      class="flex items-center gap-2 mb-3"
+      data-testid="eq-preset-name"
+      @keydown.esc="naming = false"
+    >
+      <input
+        v-model="presetName"
+        type="text"
+        :aria-label="$t('equalizer.presetName')"
+        :placeholder="$t('equalizer.presetName')"
+        class="flex-1 min-w-0 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+        data-testid="eq-preset-name-input"
+        @keydown.enter="confirmSavePreset"
+      />
+      <button
+        type="button"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-primary text-primary-content text-[11px] font-medium transition-colors disabled:opacity-40"
+        :disabled="!canSavePreset"
+        data-testid="eq-preset-name-confirm"
+        @click="confirmSavePreset"
+      >
+        {{ $t('equalizer.savePreset') }}
+      </button>
+      <button
+        type="button"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-base-300 text-base-content/70 text-[11px] font-medium transition-colors"
+        data-testid="eq-preset-name-cancel"
+        @click="naming = false"
+      >
+        {{ $t('common.cancel') }}
+      </button>
+    </div>
+
+    <!-- krzywa -->
+    <div
+      ref="curveEl"
+      class="relative z-30 rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3"
+      data-testid="eq-curve"
+      @dblclick="onCurveDblClick"
+    >
+      <svg
+        :viewBox="`0 0 ${CURVE.width} ${CURVE.height}`"
+        preserveAspectRatio="none"
+        class="w-full h-32 block"
+        aria-hidden="true"
+      >
+        <!-- siatka dB -->
+        <line
+          v-for="db in GRID_DBS"
+          :key="'d' + db"
+          x1="0"
+          :y1="dbToY(db)"
+          :x2="CURVE.width"
+          :y2="dbToY(db)"
+          class="stroke-base-content/10"
+          stroke-width="1"
+          vector-effect="non-scaling-stroke"
+        />
+        <!-- siatka częstotliwości -->
+        <line
+          v-for="f in GRID_FREQS"
+          :key="'f' + f"
+          :x1="(freqToRatio(f, CURVE.minFreq, CURVE.maxFreq) * CURVE.width).toFixed(1)"
+          y1="0"
+          :x2="(freqToRatio(f, CURVE.minFreq, CURVE.maxFreq) * CURVE.width).toFixed(1)"
+          :y2="CURVE.height"
+          class="stroke-base-content/10"
+          stroke-width="1"
+          vector-effect="non-scaling-stroke"
+        />
+        <line
+          x1="0"
+          :y1="zeroLineY"
+          :x2="CURVE.width"
+          :y2="zeroLineY"
+          class="stroke-base-content/25"
+          stroke-width="1"
+          stroke-dasharray="3 3"
+          vector-effect="non-scaling-stroke"
+        />
+        <path v-if="spectrumPath" :d="spectrumPath" class="fill-base-content/10" stroke="none" />
+        <path
+          :d="curvePath"
+          fill="none"
+          class="stroke-primary-text"
+          stroke-width="2"
+          vector-effect="non-scaling-stroke"
+        />
+      </svg>
+
+      <!-- etykiety siatki -->
+      <span class="absolute left-1 top-0.5 text-[10px] text-base-content/55">+18</span>
+      <span class="absolute left-1 bottom-0.5 text-[10px] text-base-content/55">-18</span>
+      <span
+        v-for="f in GRID_FREQS"
+        :key="'lf' + f"
+        class="absolute bottom-0.5 text-[10px] text-base-content/55 -translate-x-1/2"
+        :style="{ left: freqToRatio(f, CURVE.minFreq, CURVE.maxFreq) * 100 + '%' }"
+        >{{ f >= 1000 ? f / 1000 + 'k' : f }}</span
+      >
+
+      <!-- kropki pasm -->
+      <button
+        v-for="(band, i) in bands"
+        :key="'m' + i"
+        type="button"
+        class="absolute w-5 h-5 flex items-center justify-center text-[10px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
+        :style="{
+          left: bandX(band.frequency) + '%',
+          top: bandY(band.gain + fx.equalizerPreamp) + '%',
+          backgroundColor: color(i),
+          borderRadius: markerRadius(band.type),
+          opacity: band.enabled === false ? 0.35 : 1,
+          transform: `translate(-50%, -50%) scale(${hoverBand === i || draggingBand === i ? 1.3 : 1})`,
+          zIndex: hoverBand === i || draggingBand === i ? 5 : 1
+        }"
+        :title="typeLabel(band.type)"
+        :aria-label="`${t('equalizer.band')} ${i + 1} — ${typeLabel(band.type)}`"
+        @pointerdown="(e: PointerEvent) => onCurveDown(i, e)"
+        @pointermove="onCurveMove"
+        @pointerup="onCurveUp"
+        @pointercancel="onCurveUp"
+        @dblclick.stop="onMarkerDblClick(i)"
+        @contextmenu="onMarkerContext($event, i)"
+        @mouseenter="hoverBand = i"
+        @mouseleave="hoverBand = null"
+      >
+        {{ i + 1 }}
+      </button>
+
+      <!-- menu kontekstowe kropki -->
+      <div
+        v-if="menuBand !== null"
+        class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-[11px]"
+        :style="{
+          left: bandX(bands[menuBand].frequency) + '%',
+          top: bandY(bands[menuBand].gain + fx.equalizerPreamp) + '%',
+          transform: menuBelow ? 'translate(-50%, 14px)' : 'translate(-50%, calc(-100% - 14px))'
+        }"
+        @click.stop
+      >
+        <button
+          v-for="tp in bandTypes"
+          :key="tp"
+          class="w-full text-left px-2 py-1 rounded-field hover:bg-base-content/10 transition-colors"
+          :class="{ 'text-primary-text': bands[menuBand].type === tp }"
+          @click="setType(menuBand, tp)"
+        >
+          {{ typeLabel(tp) }}
+        </button>
+        <div class="my-0.5 border-t border-base-300" />
+        <button
+          class="w-full text-left px-2 py-1 rounded-field text-error hover:bg-base-content/10 transition-colors"
+          :disabled="bands.length <= 1"
+          @click="removeBand(menuBand)"
+        >
+          {{ $t('equalizer.removeBand') }}
+        </button>
+      </div>
     </div>
 
     <!-- pasma -->
-    <div class="flex gap-2 h-48">
-      <div v-for="(label, i) in bandLabels" :key="label" class="flex-1 flex flex-col items-center">
-        <span
-          class="text-[10px] text-base-content/70 font-mono tabular-nums mb-1.5 h-4 leading-4 select-none"
-        >
-          {{ player.equalizerBands[i] > 0 ? '+' : '' }}{{ player.equalizerBands[i] }}
-        </span>
-        <div
-          :data-testid="'eq-band-' + i"
-          class="flex-1 w-full relative cursor-pointer"
-          role="slider"
-          tabindex="0"
-          :aria-label="`${t('equalizer.band')} ${label} Hz`"
-          :aria-valuemin="-12"
-          :aria-valuemax="12"
-          :aria-valuenow="player.equalizerBands[i] ?? 0"
-          :aria-valuetext="`${player.equalizerBands[i] > 0 ? '+' : ''}${player.equalizerBands[i] ?? 0} dB`"
-          @mousedown="onSliderDrag($event, i)"
-          @keydown="onBandKey($event, i)"
-        >
-          <!-- tło ścieżki — szersze, wysoki kontrast -->
-          <div
-            class="absolute w-1.25 h-full rounded-full bg-base-content/20"
-            style="left: 50%; transform: translateX(-50%)"
-          />
-          <!-- wypełniona część od środka -->
-          <div
-            class="absolute w-1.25 rounded-full bg-primary"
-            style="left: 50%; transform: translateX(-50%)"
-            :style="
-              player.equalizerBands[i] >= 0
-                ? {
-                    top: ((12 - player.equalizerBands[i]) / 24) * 100 + '%',
-                    height: (Math.abs(player.equalizerBands[i]) / 24) * 100 + '%'
-                  }
-                : { top: '50%', height: (Math.abs(player.equalizerBands[i]) / 24) * 100 + '%' }
-            "
-          />
-          <!-- linia środkowa -->
-          <div
-            class="absolute w-3 h-0.5 rounded-full bg-base-content/70"
-            style="left: 50%; transform: translateX(-50%); top: 50%"
-          />
-          <!-- uchwyt -->
-          <div
-            class="absolute w-4 h-4 rounded-full bg-primary border border-white shadow-md transition-all duration-75"
-            :style="{
-              left: '50%',
-              top: ((12 - player.equalizerBands[i]) / 24) * 100 + '%',
-              transform: 'translate(-50%, -50%)'
-            }"
-          />
-        </div>
-        <span class="text-[9px] text-base-content/70 mt-1.5 h-3 leading-3 select-none">{{
-          label
-        }}</span>
-      </div>
+    <div v-if="showControls" class="space-y-2 max-h-72 overflow-auto pr-1">
+      <EqBandRow
+        v-for="(band, i) in bands"
+        :key="i"
+        :band="band"
+        :index="i"
+        :color="color(i)"
+        :soloed="solo === i"
+        :hovered="hoverBand === i"
+        :can-remove="bands.length > 1"
+        :snap-enabled="fx.equalizerSnap"
+        :band-types="bandTypes"
+        :type-label="typeLabel"
+        @patch="(patch) => patchBand(i, patch)"
+        @toggle-solo="toggleSolo(i)"
+        @remove="removeBand(i)"
+        @mouseenter="hoverBand = i"
+        @mouseleave="hoverBand = null"
+      />
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </div>
 </template>

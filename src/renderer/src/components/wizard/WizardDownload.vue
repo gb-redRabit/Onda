@@ -31,7 +31,7 @@ async function chooseFolder() {
         class="w-full flex items-center gap-3 p-3.5 fx-depth rounded-box border border-base-300 hover:border-primary/50 transition-colors text-left"
         @click="chooseFolder"
       >
-        <Download :size="18" class="text-primary shrink-0" />
+        <Download :size="18" class="text-primary-text shrink-0" />
         <div class="min-w-0">
           <div class="text-sm font-medium">{{ $t('wizard.chooseDownload') }}</div>
           <div class="text-xs text-base-content/50 truncate">
@@ -49,7 +49,7 @@ async function chooseFolder() {
             class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 fx-depth rounded-field text-sm font-medium border transition-colors"
             :class="
               settings.download.defaultKind === k.id
-                ? 'border-primary bg-primary/10 text-primary'
+                ? 'border-primary bg-primary/10 text-primary-text'
                 : 'border-base-300 text-base-content/70 hover:bg-base-content/5'
             "
             @click="settings.updateDownload({ defaultKind: k.id })"

@@ -133,6 +133,30 @@ describe('covers', () => {
     });
   });
 
+  // Regresja: gdy globalna domyślna okładka to również „clip"/"frame", sam typ jest
+  // równy domyślnemu, ale parametry (czasy) mogą się różnić — muszą zostać zapisane,
+  // inaczej po ponownym otwarciu preferencji wracały wartości domyślne.
+  it('keeps clip times even when the default cover type is also clip', () => {
+    const prefs = buildSubscribePrefs(
+      input({ coverType: 'clip', coverClipStart: 10, coverClipEnd: 40, coverClipFormat: 'mp4' }),
+      { ...defaults, cover: 'clip' }
+    );
+    expect(prefs.cover).toEqual({
+      type: 'clip',
+      clipStart: 10,
+      clipEnd: 40,
+      clipFormat: 'mp4'
+    });
+  });
+
+  it('keeps frame time even when the default cover type is also frame', () => {
+    const prefs = buildSubscribePrefs(input({ coverType: 'frame', coverFrameTime: 12 }), {
+      ...defaults,
+      cover: 'frame'
+    });
+    expect(prefs.cover).toEqual({ type: 'frame', frameTime: 12 });
+  });
+
   it('treats video "none" as an explicit opt-out and keeps other video covers default', () => {
     expect(
       buildSubscribePrefs(input({ kind: 'video', coverType: 'none' }), defaults).cover

@@ -1,4 +1,11 @@
-import type { BoundIpcMethod, IpcArgs, IpcChannel, IpcResult } from './contract';
+import type {
+  BoundIpcMethod,
+  IpcArgs,
+  IpcChannel,
+  IpcReceiveChannel,
+  IpcResult,
+  IpcSendChannel
+} from './contract';
 
 // Współdzielona deklaracja API dla renderera (plan 1.4): preload je implementuje,
 // renderer konsumuje je przez `Window['api']`. Sygnatury wrapperów
@@ -11,9 +18,9 @@ export interface OndaAPI {
   getMediaServerUrl: () => Promise<string>;
   getWindowId: () => Promise<IpcResult<'window:id'>>;
   invoke: <C extends IpcChannel>(channel: C, ...args: IpcArgs<C>) => Promise<IpcResult<C>>;
-  send: (channel: string, ...args: unknown[]) => void;
-  on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
-  once: (channel: string, callback: (...args: unknown[]) => void) => void;
+  send: (channel: IpcSendChannel, ...args: unknown[]) => void;
+  on: (channel: IpcReceiveChannel, callback: (...args: unknown[]) => void) => () => void;
+  once: (channel: IpcReceiveChannel, callback: (...args: unknown[]) => void) => void;
   getFilePath: (file: File) => string;
 
   // wideo PiP
@@ -59,6 +66,8 @@ export interface OndaAPI {
   getCover: BoundIpcMethod<'media:getCover'>;
   getDuration: BoundIpcMethod<'media:getDuration'>;
   getDurations: BoundIpcMethod<'media:batchDurations'>;
+  getVideoFps: BoundIpcMethod<'media:getVideoFps'>;
+  saveScreenshot: BoundIpcMethod<'media:saveScreenshot'>;
   writeTags: BoundIpcMethod<'media:writeTags'>;
   renameFile: BoundIpcMethod<'media:renameFile'>;
   writeCover: BoundIpcMethod<'media:writeCover'>;
@@ -79,6 +88,14 @@ export interface OndaAPI {
   findExternalSubtitles: BoundIpcMethod<'subtitles:findExternal'>;
   readSubtitleFile: BoundIpcMethod<'subtitles:readFile'>;
   extractSubtitleFonts: BoundIpcMethod<'subtitles:extractAttachments'>;
+  getFontCacheStats: BoundIpcMethod<'subtitles:fontCacheStats'>;
+  clearFontCache: BoundIpcMethod<'subtitles:fontCacheClear'>;
+  openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;
+  openSubtitlesDownload: BoundIpcMethod<'opensubtitles:download'>;
+  napiProjektCheck: BoundIpcMethod<'napiprojekt:check'>;
+  napiProjektDownload: BoundIpcMethod<'napiprojekt:download'>;
+  animeSubSearch: BoundIpcMethod<'animesub:search'>;
+  animeSubDownload: BoundIpcMethod<'animesub:download'>;
   getPlaybackPosition: BoundIpcMethod<'playback:getPosition'>;
   setPlaybackPosition: BoundIpcMethod<'playback:setPosition'>;
   clearPlaybackPosition: BoundIpcMethod<'playback:clearPosition'>;

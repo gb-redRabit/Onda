@@ -23,7 +23,6 @@ vi.mock('@renderer/stores/player', () => ({
     repeat: 'none',
     isMuted: false,
     volume: 0.5,
-    equalizerVisible: false,
     queueVisible: false,
     isFavorite: () => false,
     toggleShuffle: vi.fn(),
@@ -31,8 +30,14 @@ vi.mock('@renderer/stores/player', () => ({
     prevTrack: vi.fn(),
     nextTrack: vi.fn(),
     toggleMute: vi.fn(),
-    toggleEqualizer: vi.fn(),
     toggleQueue: vi.fn()
+  })
+}));
+
+vi.mock('@renderer/stores/audioFx', () => ({
+  useAudioFxStore: () => ({
+    equalizerVisible: false,
+    toggleEqualizer: vi.fn()
   })
 }));
 

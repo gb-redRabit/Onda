@@ -20,6 +20,8 @@ export function errorCodeKey(code?: string): string {
       return 'downloads.errorUnsupported';
     case 'disk-full':
       return 'downloads.errorDiskFull';
+    case 'rate-limited':
+      return 'downloads.errorRateLimited';
     default:
       return '';
   }

@@ -1,8 +1,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import type { Ref } from 'vue';
 import { formatDuration } from '@renderer/utils/formatters';
-import type { usePipVideoSubtitle } from './usePipVideoSubtitle';
-import type { PipSubtitleData } from './usePipVideoSubtitle';
+import type { usePipVideoSubtitle, PipSubtitleData } from './usePipVideoSubtitle';
 
 interface PipVideoRefs {
   videoRef: Ref<HTMLVideoElement | null>;

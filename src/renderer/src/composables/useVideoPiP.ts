@@ -1,8 +1,11 @@
+import { watch } from 'vue';
 import type { usePlayerStore } from '@renderer/stores/player';
 import type { useSettingsStore } from '@renderer/stores/settings';
 import type { usePiP } from '@renderer/composables/usePiP';
 import type { MediaFile } from '@renderer/types/media';
+import type { SubtitleData } from '@renderer/composables/subtitleState';
 import { preparePiPSubtitleData } from '@renderer/composables/useSubtitleRenderer';
+import { subtitleDelayMs } from '@renderer/composables/subtitleDelay';
 export function useVideoPiP(
   player: ReturnType<typeof usePlayerStore>,
   settings: ReturnType<typeof useSettingsStore>,
@@ -44,16 +47,28 @@ export function useVideoPiP(
     }
   }
 
-  async function updatePiPSubtitles(track: MediaFile, guardPipActive = false): Promise<void> {
-    await preparePiPSubtitleData(track.path)
-      .then((subtitleData) => {
-        if (guardPipActive && !player.pipActive) return;
-        pip.updateSubtitle(subtitleData);
-      })
-      .catch(() => {
-        /* best-effort */
-      });
+  let lastSubtitleData: SubtitleData | null = null;
+
+  /** Dołącza bieżące opóźnienie napisów do payloadu PiP (okno stosuje je jako offset). */
+  function sendSubtitle(data: SubtitleData | null): void {
+    pip.updateSubtitle(data ? { ...data, subtitleDelayMs: subtitleDelayMs.value } : null);
   }
+
+  async function updatePiPSubtitles(track: MediaFile, guardPipActive = false): Promise<void> {
+    try {
+      const subtitleData = await preparePiPSubtitleData(track.path);
+      if (guardPipActive && !player.pipActive) return;
+      lastSubtitleData = subtitleData;
+      sendSubtitle(subtitleData);
+    } catch {
+      /* best-effort: brak napisów w PiP nie może przerwać odtwarzania */
+    }
+  }
+
+  // Regulacja opóźnienia musi trafić do okna PiP bez ponownej ekstrakcji napisów.
+  watch(subtitleDelayMs, () => {
+    if (player.pipActive && lastSubtitleData) sendSubtitle(lastSubtitleData);
+  });
 
   return { togglePiP, updatePiPSubtitles };
 }

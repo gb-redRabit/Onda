@@ -25,7 +25,7 @@ function isActive(item: FlatItem): boolean {
   <div class="max-h-80 overflow-y-auto py-1">
     <template v-for="group in groups" :key="group.key">
       <div
-        class="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-base-content/60"
+        class="px-3 pt-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-base-content/60"
       >
         {{ group.label }}
       </div>
@@ -36,7 +36,7 @@ function isActive(item: FlatItem): boolean {
           role="option"
           :aria-selected="isActive(item)"
           class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
-          :class="isActive(item) ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
+          :class="isActive(item) ? 'bg-primary/10 text-primary-text' : 'hover:bg-base-content/10'"
           @click="emit('run', item)"
           @mouseenter="emit('activate', indexOf(item))"
         >
@@ -56,7 +56,7 @@ function isActive(item: FlatItem): boolean {
           role="option"
           :aria-selected="isActive(item)"
           class="flex items-center gap-2.5 px-3 py-2 cursor-pointer text-sm transition-colors"
-          :class="isActive(item) ? 'bg-primary/10 text-primary' : 'hover:bg-base-content/10'"
+          :class="isActive(item) ? 'bg-primary/10 text-primary-text' : 'hover:bg-base-content/10'"
           @click="emit('run', item)"
           @mouseenter="emit('activate', indexOf(item))"
         >

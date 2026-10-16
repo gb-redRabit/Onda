@@ -16,7 +16,7 @@ const segments = computed(() => highlightSegments(props.text, props.query));
 <template>
   <span>
     <template v-for="(segment, index) in segments" :key="index">
-      <mark v-if="segment.match" class="bg-primary/20 text-primary px-0.5 rounded">{{
+      <mark v-if="segment.match" class="bg-primary/20 text-primary-text px-0.5 rounded">{{
         segment.text
       }}</mark>
       <template v-else>{{ segment.text }}</template>

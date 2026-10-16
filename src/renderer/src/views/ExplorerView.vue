@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             pinned
-              ? 'text-primary bg-primary/10'
+              ? 'text-primary-text bg-primary/10'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           data-testid="explorer-always-on-top"
@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             dupPanelOpen
-              ? 'text-primary bg-primary/10'
+              ? 'text-primary-text bg-primary/10'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
           "
           data-testid="explorer-duplicates"

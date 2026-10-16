@@ -1,5 +1,5 @@
 import { app, nativeImage } from 'electron';
-import { mkdir, access, readFile, writeFile, stat } from 'fs/promises';
+import { mkdir, access, readFile, writeFile, rm, mkdtemp } from 'fs/promises';
 import { join, extname } from 'path';
 import { createHash } from 'crypto';
 import sharp from 'sharp';
@@ -8,7 +8,10 @@ import { AUDIO_EXTS, VIDEO_EXTS, MAX_THUMB_SIZE } from '../../../shared/constant
 import { extractAndCacheCover } from '../cover/cover-cache';
 import { SharpService } from '../../utils/sharp';
 import { clearDirContents } from '../../utils/clear-dir';
+import { runCommand } from '../../utils/exec';
+import { resolveBin } from '../../binaries';
 import { logger } from '../../../shared/logger';
+import { sourceStamp } from '../../utils/source-stamp';
 
 const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
 
@@ -36,12 +39,76 @@ async function readCache(cacheFile: string): Promise<string | null> {
 }
 
 // Uwzględnij size + mtime, aby zastąpiony plik nigdy nie użył nieaktualnej miniatury.
-async function sourceStamp(filePath: string): Promise<string> {
+// (Współdzielone z cache transkodowania — `utils/source-stamp`.)
+
+/**
+ * Argumenty FFmpeg do wyciągnięcia pojedynczej klatki jako JPEG. Wydzielone (czysta
+ * funkcja), aby dało się je przetestować bez uruchamiania ffmpeg.
+ */
+export function videoFrameArgs(filePath: string, outPath: string, seek: string): string[] {
+  return [
+    '-v',
+    'quiet',
+    '-ss',
+    seek,
+    '-i',
+    filePath,
+    '-frames:v',
+    '1',
+    '-q:v',
+    '3',
+    '-update',
+    '1',
+    outPath,
+    '-y'
+  ];
+}
+
+async function extractVideoFrameTo(
+  filePath: string,
+  outPath: string,
+  seek: string
+): Promise<boolean> {
+  const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
   try {
-    const s = await stat(filePath);
-    return `${s.size}:${s.mtimeMs}`;
+    await runCommand(ffmpeg, videoFrameArgs(filePath, outPath, seek), { timeout: 20000 });
+    const buf = await readFile(outPath).catch(() => null);
+    return !!buf && buf.length > 0;
   } catch {
-    return '';
+    return false;
+  }
+}
+
+/**
+ * Miniatura z prawdziwej klatki wideo (FFmpeg), przeskalowana do `maxSize`. Najpierw 1 s
+ * w głąb (unika czarnej klatki z fade-inu), a dla bardzo krótkich klipów cofa się do 0 s.
+ * Zwraca `null`, gdy ffmpeg jest niedostępny albo nie uda się wyciągnąć klatki.
+ */
+export async function videoFrameThumbnail(
+  filePath: string,
+  maxSize: number
+): Promise<Buffer | null> {
+  const outDir = await mkdtemp(join(os.tmpdir(), 'onda-vthumb-')).catch(() => null);
+  if (!outDir) return null;
+  const outPath = join(outDir, 'frame.jpg');
+  try {
+    const ok =
+      (await extractVideoFrameTo(filePath, outPath, '1')) ||
+      (await extractVideoFrameTo(filePath, outPath, '0'));
+    if (!ok) return null;
+    const raw = await readFile(outPath);
+    if (!raw.length) return null;
+    return await sharp(raw)
+      .resize(maxSize, maxSize, { fit: 'outside', withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+  } catch (e) {
+    logger.warn('media', `video frame thumbnail failed for ${filePath}`, e);
+    return null;
+  } finally {
+    await rm(outDir, { recursive: true, force: true }).catch(() => {
+      /* best-effort */
+    });
   }
 }
 
@@ -50,7 +117,15 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
   const isAudio = AUDIO_EXTS.includes(ext);
   let buf: Buffer | null = null;
 
-  if (!isAudio) {
+  // Wideo: prawdziwa klatka z FFmpeg ma pierwszeństwo nad miniaturą systemową. Shell na
+  // Windows zwraca dla wideo często ikonę/generyk (albo klatkę zależną od kodeka), więc
+  // dotychczasowy fallback FFmpeg nigdy by nie odpalił — a użytkownik chce realną klatkę.
+  // Dla pozostałych plików kolejność zostaje bez zmian (system → sharp → okładka → ikona).
+  if (VIDEO_EXTS.includes(ext)) {
+    buf = await videoFrameThumbnail(filePath, maxSize);
+  }
+
+  if (!buf && !isAudio) {
     try {
       const thumb = await nativeImage.createThumbnailFromPath(filePath, {
         width: maxSize,
@@ -101,24 +176,55 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
   return buf;
 }
 
-export async function getThumbnail(filePath: string, maxSize: number): Promise<string | null> {
-  try {
-    maxSize = sanitizeThumbSize(maxSize);
-    const stamp = await sourceStamp(filePath);
-    const hash = createHash('md5')
-      .update(filePath + maxSize + stamp)
-      .digest('hex');
-    const cacheFile = join(cacheDir, `${hash}.jpg`);
-    const cached = await readCache(cacheFile);
-    if (cached) return cached;
+async function thumbnailCachePath(filePath: string, maxSize: number): Promise<string> {
+  const stamp = await sourceStamp(filePath);
+  const hash = createHash('md5')
+    .update(filePath + maxSize + stamp)
+    .digest('hex');
+  return join(cacheDir, `${hash}.jpg`);
+}
 
-    const buf = await buildThumbnail(filePath, maxSize);
-    if (!buf) return null;
+// Deduplikacja budowy tej samej miniatury MIĘDZY wywołaniami (getThumbnail +
+// batchThumbnails). Wcześniej `batchThumbnails` miał lokalny zbiór blokad z
+// odpytywaniem `setInterval` co 10 ms (busy-wait) i nie dzielił go z innymi
+// wywołaniami, więc dwie partie budowały ten sam plik równolegle.
+const inflightThumbs = new Map<string, Promise<string | null>>();
+
+function buildAndCacheThumbnail(
+  filePath: string,
+  maxSize: number,
+  cacheFile: string
+): Promise<string | null> {
+  const existing = inflightThumbs.get(cacheFile);
+  if (existing) return existing;
+  const p = (async (): Promise<string | null> => {
     await mkdir(cacheDir, { recursive: true }).catch(() => {
       /* best-effort */
     });
+    const buf = await buildThumbnail(filePath, maxSize);
+    if (!buf) return null;
     await writeFile(cacheFile, buf);
     return `data:image/jpeg;base64,${buf.toString('base64')}`;
+  })();
+  inflightThumbs.set(cacheFile, p);
+  void p.then(
+    () => {
+      if (inflightThumbs.get(cacheFile) === p) inflightThumbs.delete(cacheFile);
+    },
+    () => {
+      if (inflightThumbs.get(cacheFile) === p) inflightThumbs.delete(cacheFile);
+    }
+  );
+  return p;
+}
+
+export async function getThumbnail(filePath: string, maxSize: number): Promise<string | null> {
+  try {
+    maxSize = sanitizeThumbSize(maxSize);
+    const cacheFile = await thumbnailCachePath(filePath, maxSize);
+    const cached = await readCache(cacheFile);
+    if (cached) return cached;
+    return await buildAndCacheThumbnail(filePath, maxSize, cacheFile);
   } catch (e) {
     logger.warn('media', `getThumbnail failed for ${filePath}`, e);
     return null;
@@ -135,53 +241,25 @@ export async function batchThumbnails(
     /* best-effort */
   });
   const concurrency = Math.max(1, os.cpus().length - 1);
-  const batchThumbnailLocks = new Set<string>();
 
   for (let i = 0; i < files.length; i += concurrency) {
     const batch = files.slice(i, i + concurrency);
-    const promises = batch.map(async (filePath) => {
-      try {
-        const stamp = await sourceStamp(filePath);
-        const hash = createHash('md5')
-          .update(filePath + maxSize + stamp)
-          .digest('hex');
-        const cacheFile = join(cacheDir, `${hash}.jpg`);
-        const cached = await readCache(cacheFile);
-        if (cached) {
-          result[filePath] = cached;
-          return;
-        }
-
-        while (batchThumbnailLocks.has(cacheFile)) {
-          await new Promise<void>((resolve) => {
-            const check = setInterval(() => {
-              if (!batchThumbnailLocks.has(cacheFile)) {
-                clearInterval(check);
-                resolve();
-              }
-            }, 10);
-            setTimeout(() => {
-              clearInterval(check);
-              resolve();
-            }, 5000);
-          });
-        }
-        batchThumbnailLocks.add(cacheFile);
-
+    await Promise.all(
+      batch.map(async (filePath) => {
         try {
-          const buf = await buildThumbnail(filePath, maxSize);
-          if (buf) {
-            await writeFile(cacheFile, buf);
-            result[filePath] = `data:image/jpeg;base64,${buf.toString('base64')}`;
+          const cacheFile = await thumbnailCachePath(filePath, maxSize);
+          const cached = await readCache(cacheFile);
+          if (cached) {
+            result[filePath] = cached;
+            return;
           }
-        } finally {
-          batchThumbnailLocks.delete(cacheFile);
+          const dataUrl = await buildAndCacheThumbnail(filePath, maxSize, cacheFile);
+          if (dataUrl) result[filePath] = dataUrl;
+        } catch (e) {
+          logger.warn('media', `batch thumbnail skipped for ${filePath}`, e);
         }
-      } catch (e) {
-        logger.warn('media', `batch thumbnail skipped for ${filePath}`, e);
-      }
-    });
-    await Promise.all(promises);
+      })
+    );
   }
   return result;
 }

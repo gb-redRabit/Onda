@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { scanDir, filterCoverSiblingVideos } from '../library/library-scan';
+import { scanDir, filterCoverSiblingVideos, markSiblingVideoCovers } from '../library/library-scan';
 import type { MediaFile } from '../../../shared/types/media';
 
 vi.mock('../media/media-handlers', () => ({
@@ -124,5 +124,27 @@ describe('scanDir incremental refresh', () => {
 
     const kept = filterCoverSiblingVideos([audio, exactTwin, revTwin, standalone]);
     expect(kept.map((x) => x.name)).toEqual(['Song.MP3', 'Music Video.mp4']);
+  });
+
+  it('markSiblingVideoCovers flags audio that has a cover video (twin or _rev)', () => {
+    const f = (name: string, type: 'audio' | 'video'): MediaFile => ({
+      id: name,
+      name,
+      path: `D:\\${name}`,
+      extension: `.${type === 'audio' ? 'mp3' : 'mp4'}`,
+      mimeType: '',
+      size: 1,
+      type,
+      addedAt: 0,
+      playCount: 0,
+      mtime: 0
+    });
+    const twin = f('Song.mp3', 'audio');
+    const rev = f('Other.mp3', 'audio');
+    const plain = f('Plain.mp3', 'audio');
+    markSiblingVideoCovers([twin, rev, plain, f('Song.mp4', 'video'), f('Other_rev.mp4', 'video')]);
+    expect(twin.hasCover).toBe(true);
+    expect(rev.hasCover).toBe(true);
+    expect(plain.hasCover).toBeUndefined();
   });
 });

@@ -7,15 +7,23 @@ import {
   ListMusic,
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Moon,
+  Camera
 } from '@lucide/vue';
+import { useI18n } from 'vue-i18n';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
+import { useUIStore } from '@renderer/stores/ui';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 import PlayerSpeedMenu from './PlayerSpeedMenu.vue';
 import TransportButtons from './TransportButtons.vue';
 import { useVideoPreview } from '@renderer/composables/useVideoPreview';
-import SubtitleTrackSelector from './SubtitleTrackSelector.vue';
+import SubtitleButton from './SubtitleButton.vue';
 import VideoFilterDropdown from './VideoFilterDropdown.vue';
+import AbRepeatButton from './AbRepeatButton.vue';
+import AbRepeatMarkers from './AbRepeatMarkers.vue';
 
 const props = defineProps<{
   showControls: boolean;
@@ -31,6 +39,33 @@ const emit = defineEmits<{
 }>();
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
+const audio = useAudioPlayer();
+const ui = useUIStore();
+const { t } = useI18n();
+
+/** Rysuje bieżącą klatkę wideo do PNG w natywnej rozdzielczości i zapisuje obok pliku. */
+async function captureFrame(): Promise<void> {
+  const video = props.videoRef.value;
+  const path = player.currentTrack?.path;
+  if (!video || !path || !video.videoWidth || !video.videoHeight) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx2d = canvas.getContext('2d');
+  if (!ctx2d) return;
+  ctx2d.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) return;
+  const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+  try {
+    const res = await window.api.saveScreenshot(path, bytes, video.currentTime);
+    if (res.success && res.path) ui.notify('success', t('player.frameSaved'), res.path);
+    else ui.notify('error', t('player.frameSaveError'), res.error);
+  } catch (e) {
+    ui.notify('error', t('player.frameSaveError'), String(e));
+  }
+}
 
 const seekBarRef = ref<HTMLElement | null>(null);
 const {
@@ -133,6 +168,8 @@ function onVolumeKeydown(e: KeyboardEvent) {
         />
       </div>
 
+      <AbRepeatMarkers :duration="player.duration" />
+
       <div
         v-if="previewVisible"
         class="absolute -top-2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none"
@@ -150,7 +187,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[10px] text-neutral-content/50"
+            class="w-full h-full flex items-center justify-center text-[11px] text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
@@ -211,25 +248,46 @@ function onVolumeKeydown(e: KeyboardEvent) {
 
       <!-- prawa strona: narzędzia + głośność -->
       <div class="flex items-center gap-2.5">
+        <AbRepeatButton :current-time="player.currentTime" />
         <VideoFilterDropdown />
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.equalizerVisible }"
+          :class="{ 'text-primary-text!': fx.nightMode }"
+          data-night-mode
+          :title="$t('player.nightMode')"
+          :aria-label="$t('player.nightMode')"
+          :aria-pressed="fx.nightMode"
+          @click="audio.setNightMode(!fx.nightMode)"
+        >
+          <Moon :size="16" />
+        </button>
+        <button
+          class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
+          data-capture-frame
+          :title="$t('player.captureFrame')"
+          :aria-label="$t('player.captureFrame')"
+          @click="captureFrame"
+        >
+          <Camera :size="16" />
+        </button>
+        <button
+          class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
+          :class="{ 'text-primary-text!': fx.equalizerVisible }"
           data-eq-toggle
           :aria-label="$t('common.equalizer')"
-          @click="player.toggleEqualizer"
+          @click="fx.toggleEqualizer"
         >
           <SlidersHorizontal :size="16" />
         </button>
         <button
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
-          :class="{ 'text-primary!': player.queueVisible }"
+          :class="{ 'text-primary-text!': player.queueVisible }"
           :aria-label="$t('common.queue')"
           @click="player.toggleQueue"
         >
           <ListMusic :size="16" />
         </button>
-        <SubtitleTrackSelector />
+        <SubtitleButton />
         <button
           class="text-neutral-content/50 hover:text-neutral-content transition-colors"
           :aria-label="$t('common.mute')"

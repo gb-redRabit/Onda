@@ -16,6 +16,20 @@ try {
 const USER_AGENT = `Onda/${appVersion} (onda-player.app; contact: onda-player.app)`;
 const MB_URL = 'https://musicbrainz.org/ws/2';
 const CA_URL = 'https://coverartarchive.org';
+// Hosty, na które wolno podążać za przekierowaniem okładki (Cover Art Archive
+// redirectuje do archive.org). Wszystko inne jest odrzucane.
+const COVER_ALLOWED_HOSTS = ['coverartarchive.org', 'musicbrainz.org', 'archive.org'];
+
+function isAllowedCoverHost(rawUrl: string): boolean {
+  try {
+    const u = new URL(rawUrl);
+    if (u.protocol !== 'https:') return false;
+    const h = u.hostname.toLowerCase();
+    return COVER_ALLOWED_HOSTS.some((suffix) => h === suffix || h.endsWith(`.${suffix}`));
+  } catch {
+    return false;
+  }
+}
 
 // Release ID z renderera trafia do ścieżki URL — walidujemy format MBID (UUID),
 // zamiast ufać, że to czysty identyfikator (inaczej `../`/`?` manipulowałyby URL-em).
@@ -118,6 +132,10 @@ function mbFetch(url: string, rateLimitAttempt = 0): Promise<Record<string, unkn
 function fetchCoverWithRedirect(url: string, redirects = 0): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     if (redirects > 3) return reject(new Error('Too many redirects'));
+    // Cover Art Archive redirectuje do archive.org (ia*/dn*.us.archive.org). Śledzimy
+    // tylko https na dozwolonych hostach — wcześniej dowolny Location był podążany,
+    // więc przejęty redirect mógłby celować w host wewnętrzny (SSRF).
+    if (!isAllowedCoverHost(url)) return reject(new Error('Redirected to a non-allowed host'));
     https
       .get(url, { headers: { 'User-Agent': USER_AGENT } }, (res) => {
         if (

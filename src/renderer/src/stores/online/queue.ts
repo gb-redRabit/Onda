@@ -10,20 +10,25 @@ import type {
   YouTubeResolvedItem,
   YouTubeVideo
 } from '@renderer/types/online';
-import type { IpcDownloadJobInput } from '@shared/types/ipc';
+import type { IpcDownloadJobInput, IpcDownloadTask } from '@shared/types/ipc';
 import { buildJob, type JobExtra } from '@renderer/utils/onlineJob';
 import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
 import { resolveAllPlaylistItems } from '@renderer/utils/onlineResolveAll';
+import { mapLimit } from '@renderer/utils/mapLimit';
+
+// Ile linków rozwiązujemy równolegle. Bez limitu wklejenie 100 linków uruchamiało
+// 100 równoległych yt-dlp w procesie głównym (ryzyko throttlingu/bot-blocku YouTube).
+const RESOLVE_CONCURRENCY = 4;
 
 export interface OnlineQueueDeps {
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, unknown>) => string;
   channel: Ref<YouTubeChannel | null>;
   resolved: Ref<YouTubeResolveResult | null>;
   downloads: Ref<DownloadTask[]>;
   getSubscription: (channelId: string) => Subscription | undefined;
   addSubscription: (sub: Subscription) => void;
-  submitJobs: (jobs: IpcDownloadJobInput[]) => Promise<unknown>;
+  submitJobs: (jobs: IpcDownloadJobInput[]) => Promise<IpcDownloadTask[]>;
 }
 
 // Akcje kolejkowania dla elementów online (pojedynczy, partia rozwiązana i całe kanały)
@@ -31,8 +36,34 @@ export interface OnlineQueueDeps {
 // zwrócone refy/akcje z powrotem do tych samych nazw, więc miejsca wywołań pozostają bez zmian.
 export function createOnlineQueue(deps: OnlineQueueDeps) {
   const { t, channel, resolved, downloads, getSubscription, addSubscription, submitJobs } = deps;
-  const queuingId = ref<string | null>(null);
-  const queueingChannelId = ref<string | null>(null);
+  // Zbiory zamiast pojedynczych slotów: dwa równoległe `queueChannelVideos` (np.
+  // auto-pobieranie wielu subskrypcji) nie mogą się wzajemnie zerować — wcześniej
+  // `finally` pierwszego kasowało spinne drugiego.
+  const queuingIds = ref<Set<string>>(new Set());
+  const queueingChannelIds = ref<Set<string>>(new Set());
+
+  function isQueuing(videoId: string): boolean {
+    return queuingIds.value.has(videoId);
+  }
+
+  function isChannelQueuing(channelId: string): boolean {
+    return queueingChannelIds.value.has(channelId);
+  }
+
+  function markQueuing(videoId: string, on: boolean): void {
+    const next = new Set(queuingIds.value);
+    if (on) next.add(videoId);
+    else next.delete(videoId);
+    queuingIds.value = next;
+  }
+
+  function markChannelQueuing(channelId: string, on: boolean): void {
+    const next = new Set(queueingChannelIds.value);
+    if (on) next.add(channelId);
+    else next.delete(channelId);
+    queueingChannelIds.value = next;
+  }
+
   // Rozwiązywanie linków z dyspozycją po platformie (wykrywa platformę z samego
   // linku, a nie z aktywnej zakładki UI).
   async function resolveOnline(url: string): Promise<OnlineResolveResponse> {
@@ -72,11 +103,11 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     // więc oznacz zadanie kanałem aktualnie przeglądanym.
     if (!job.channelId && channel.value?.id) job.channelId = channel.value.id;
     if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
-    queuingId.value = video.id;
+    markQueuing(video.id, true);
     try {
       await submitJobs([job]);
     } finally {
-      queuingId.value = null;
+      markQueuing(video.id, false);
     }
   }
 
@@ -85,13 +116,16 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     if (!ids.length) return;
     const sub = getSubscription(channelId);
     const merged = Array.from(new Set([...(sub?.queuedVideoIds || []), ...ids]));
+    // pendingCount to liczba filmów z kanału jeszcze niezakolejkowanych/niepobranych.
+    // Po zakolejkowaniu nowej partii, odejmujemy dodane pozycje od oczekujących.
+    const nextPending = Math.max(0, (sub?.pendingCount ?? ids.length) - ids.length);
     if (sub) {
-      addSubscription({ ...sub, queuedVideoIds: merged, pendingCount: merged.length });
+      addSubscription({ ...sub, queuedVideoIds: merged, pendingCount: nextPending });
     }
     try {
       const updated = (await window.api.invoke('yt:subs:update', channelId, {
         queuedVideoIds: merged,
-        pendingCount: merged.length
+        pendingCount: nextPending
       })) as Subscription | null;
       if (updated) addSubscription(updated);
     } catch {
@@ -109,15 +143,17 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
     const downloadedIds = includeDownloaded
       ? new Set<string>()
       : new Set(subscription?.downloadedVideoIds || []);
-    // Tylko aktywne lub zakończone zadania blokują ponowne zakolejkowanie — nieudana/anulowana próba
-    // musi być możliwa do ponownego zakolejkowania, inaczej "pobierz wszystko" po cichu ją pomija na zawsze.
-    const existingIds = new Set(
+    // Tylko aktywne zadania w kolejce (pobierane, oczekujące, wstrzymane) blokują ponowne zakolejkowanie.
+    // O tym, czy film został już trwale pobrany z kanału, decyduje zbiór downloadedIds.
+    const activeQueueIds = new Set(
       downloads.value
-        .filter((d) => d.status !== 'error' && d.status !== 'cancelled')
+        .filter(
+          (d) => d.status === 'pending' || d.status === 'downloading' || d.status === 'paused'
+        )
         .map((d) => d.videoId)
     );
     const jobs: IpcDownloadJobInput[] = [];
-    queueingChannelId.value = channelId;
+    markChannelQueuing(channelId, true);
     try {
       const res = isSc
         ? ((await window.api.invoke('sc:channelAll', {
@@ -134,7 +170,7 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
             channelId,
             channel.value?.title,
             prefs,
-            existingIds,
+            activeQueueIds,
             downloadedIds
           )
         );
@@ -144,13 +180,24 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
       if (res?.success && jobs.length === 0) {
         useUIStore().notify('info', t('youtube.downloadAll'), t('youtube.nothingToQueue'));
       }
-      await submitJobs(jobs);
+      // `submitJobs` zwraca TYLKO przyjęte zadania (main deduplikuje i odrzuca
+      // duplikaty), więc zakolejkowane id liczymy z wyniku, a nie z `jobs` — inaczej
+      // UI zaniżał/oznaczał jako zakolejkowane wideo bez zadania.
+      const created = jobs.length ? await submitJobs(jobs) : [];
+      const addedCount = created.length;
+      if (addedCount > 0) {
+        useUIStore().notify(
+          'success',
+          t('youtube.downloadAll'),
+          t('youtube.channelQueued', { count: addedCount })
+        );
+      }
       await recordQueuedVideos(
         channelId,
-        jobs.map((j) => j.videoId || '')
+        created.map((task) => task.videoId || '')
       );
     } finally {
-      queueingChannelId.value = null;
+      markChannelQueuing(channelId, false);
     }
   }
 
@@ -162,41 +209,35 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
   // `queueVideo` (osobne IPC `yt:download:add`) per element — wcześniej partia
   // N linków robiła do 1+N round-tripów sekwencyjnie.
   async function queueBatch(urls: string[], extra?: JobExtra): Promise<number> {
-    queuingId.value = 'batch';
-    try {
-      // Rozwiązywanie równoległe (bezpieczne: tylko sieć), kolejność zachowana.
-      const resolvedList = await Promise.all(
-        urls.map(async (url) => {
-          try {
-            const res = await resolveOnline(url);
-            return res?.success && res.result ? res.result : null;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      const jobs: IpcDownloadJobInput[] = [];
-      for (const result of resolvedList) {
-        if (!result) continue;
-        const items =
-          result.kind === 'video'
-            ? result.items.slice(0, 1)
-            : result.kind === 'playlist'
-              ? result.items
-              : [];
-        for (const item of items) {
-          const job = buildJob(item, undefined, extra);
-          if (!job.channelId && channel.value?.id) job.channelId = channel.value.id;
-          if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
-          jobs.push(job);
-        }
+    // Rozwiązywanie z ograniczoną współbieżnością (zachowuje kolejność); bez
+    // limitu partia N linków startowała N procesów yt-dlp naraz.
+    const resolvedList = await mapLimit(urls, RESOLVE_CONCURRENCY, async (url) => {
+      try {
+        const res = await resolveOnline(url);
+        return res?.success && res.result ? res.result : null;
+      } catch {
+        return null;
       }
-      if (jobs.length) await submitJobs(jobs);
-      return jobs.length;
-    } finally {
-      queuingId.value = null;
+    });
+
+    const jobs: IpcDownloadJobInput[] = [];
+    for (const result of resolvedList) {
+      if (!result) continue;
+      const items =
+        result.kind === 'video'
+          ? result.items.slice(0, 1)
+          : result.kind === 'playlist'
+            ? result.items
+            : [];
+      for (const item of items) {
+        const job = buildJob(item, undefined, extra);
+        if (!job.channelId && channel.value?.id) job.channelId = channel.value.id;
+        if (!job.channelTitle && channel.value?.title) job.channelTitle = channel.value.title;
+        jobs.push(job);
+      }
     }
+    if (jobs.length) await submitJobs(jobs);
+    return jobs.length;
   }
 
   // Ładuje każdą stronę aktualnie istotnej playlisty (używane, gdy użytkownik
@@ -206,8 +247,10 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
   }
 
   return {
-    queuingId,
-    queueingChannelId,
+    queuingIds,
+    isQueuing,
+    queueingChannelIds,
+    isChannelQueuing,
     resolveOnline,
     queueFromResolved,
     queueVideo,

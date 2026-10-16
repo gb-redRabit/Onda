@@ -84,8 +84,8 @@ async function applyProperties() {
         id="explorer-properties-dialog-title"
         class="text-sm font-semibold text-base-content flex items-center gap-2"
       >
-        <FolderOpen v-if="item.isDirectory" :size="16" class="text-primary" />
-        <FileText v-else :size="16" class="text-primary" />
+        <FolderOpen v-if="item.isDirectory" :size="16" class="text-primary-text" />
+        <FileText v-else :size="16" class="text-primary-text" />
         {{ $t('explorer.properties') }}
       </h3>
       <button

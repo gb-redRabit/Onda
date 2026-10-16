@@ -21,6 +21,7 @@ function update(patch: Partial<DraftPassKey>): void {
       type="text"
       :list="`${idBase}-from`"
       placeholder="anime_episode_number"
+      :aria-label="t('sources.passKeyFrom')"
       class="flex-1 min-w-0 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
       @input="update({ from: ($event.target as HTMLInputElement).value })"
     />
@@ -32,11 +33,13 @@ function update(patch: Partial<DraftPassKey>): void {
       :value="modelValue.as"
       type="text"
       placeholder="n"
+      :aria-label="t('sources.passKeyAs')"
       class="w-24 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
       @input="update({ as: ($event.target as HTMLInputElement).value })"
     />
     <select
       :value="modelValue.type"
+      :aria-label="t('sources.passKeyType')"
       class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none"
       @change="update({ type: ($event.target as HTMLSelectElement).value as 'string' | 'number' })"
     >

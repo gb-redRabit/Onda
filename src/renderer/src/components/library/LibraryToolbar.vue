@@ -20,7 +20,7 @@ const { t } = useI18n();
     <div class="relative flex-1 group">
       <Search
         :size="14"
-        class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 group-focus-within:text-primary transition-colors"
+        class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 group-focus-within:text-primary-text transition-colors"
       />
       <input
         v-model="query"
@@ -56,7 +56,7 @@ const { t } = useI18n();
         />
       </div>
       <button
-        class="p-2.5 rounded-selector bg-base-100 border border-base-300 hover:border-primary/30 text-base-content/60 hover:text-primary transition-colors"
+        class="p-2.5 rounded-selector bg-base-100 border border-base-300 hover:border-primary/30 text-base-content/60 hover:text-primary-text transition-colors"
         :title="sortDir === 'asc' ? '↑' : '↓'"
         @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
       >
@@ -70,7 +70,7 @@ const { t } = useI18n();
 
     <button
       v-if="tab === 'tracks'"
-      class="hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-field bg-primary/10 text-primary text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0 border border-primary/20 fx-depth"
+      class="hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-field bg-primary/10 text-primary-text text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0 border border-primary/20 fx-depth"
       :title="t('library.searchInMusicBrainz')"
       @click="emit('openMusicbrainz')"
     >

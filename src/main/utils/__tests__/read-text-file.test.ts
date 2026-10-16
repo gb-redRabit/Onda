@@ -96,6 +96,15 @@ describe('readTextFileWithinBounds', () => {
     expect(result.ok && result.text).toBe('[é]');
   });
 
+  it('decodes Windows-1250 (typical Polish subtitles) rather than latin1', async () => {
+    const p = join(dir, 'polish.srt');
+    // 0xB9 to 'ą' w CP1250, ale '¹' w latin1.
+    await writeFile(p, Buffer.from([0x5b, 0xb9, 0x5d]));
+    const result = await readTextFileWithinBounds(p, SUBTITLE_EXTS, SUBTITLE_MAX_BYTES, 'test');
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.text).toBe('[ą]');
+  });
+
   it('keeps the two callers scoped to their own extension sets', () => {
     expect(SUBTITLE_EXTS.has('.srt')).toBe(true);
     expect(SUBTITLE_EXTS.has('.txt')).toBe(false);

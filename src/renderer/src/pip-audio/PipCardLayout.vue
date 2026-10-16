@@ -22,6 +22,7 @@ const {
   duration,
   progressPct,
   onProgressClick,
+  onProgressKeydown,
   send,
   shuffle,
   repeat,
@@ -29,6 +30,7 @@ const {
   onVolumeInput,
   volLabel,
   volPct,
+  isMuted,
   eqPreset,
   selectEqPreset
 } = props.state;
@@ -51,24 +53,31 @@ const {
         <div class="truncate text-xs font-semibold leading-tight text-base-content">
           {{ trackName }}
         </div>
-        <div v-if="artist" class="truncate text-[10px] leading-tight text-base-content/50">
+        <div v-if="artist" class="truncate text-[11px] leading-tight text-base-content/50">
           {{ artist }}
         </div>
         <div
           v-if="has('nextTrack') && nextTrackName"
-          class="truncate text-[10px] leading-tight text-base-content/60"
+          class="truncate text-[11px] leading-tight text-base-content/60"
         >
           &#x21B3; {{ nextTrackName }}{{ nextTrackArtist ? ' — ' + nextTrackArtist : '' }}
         </div>
       </template>
       <div v-if="has('progress')" class="flex items-center gap-1.5">
-        <span class="whitespace-nowrap tabular-nums text-[9px] text-base-content/50">{{
+        <span class="whitespace-nowrap tabular-nums text-[10px] text-base-content/50">{{
           fmt(currentTime)
         }}</span>
         <div
           data-testid="pip-progress"
           class="h-1 flex-1 cursor-pointer rounded bg-base-content/10"
+          role="slider"
+          tabindex="0"
+          aria-label="Seek"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="Math.round(progressPct)"
           @click="onProgressClick"
+          @keydown="onProgressKeydown"
           @dblclick.stop
         >
           <div
@@ -76,7 +85,7 @@ const {
             :style="{ width: progressPct + '%' }"
           ></div>
         </div>
-        <span class="whitespace-nowrap tabular-nums text-[9px] text-base-content/50">{{
+        <span class="whitespace-nowrap tabular-nums text-[10px] text-base-content/50">{{
           fmt(duration)
         }}</span>
       </div>
@@ -103,6 +112,7 @@ const {
         :vol-label="volLabel"
         :vol-pct="volPct"
         :on-volume-input="onVolumeInput"
+        :muted="isMuted"
         slider-class="w-14"
       />
       <PipEqPresets v-if="has('eq')" :eq-preset="eqPreset" :select-eq-preset="selectEqPreset" />

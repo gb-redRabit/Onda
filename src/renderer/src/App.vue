@@ -12,6 +12,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { i18n, loadLocaleMessages } from './i18n';
 import { useSettingsStore } from './stores/settings';
 import { usePlayerStore } from './stores/player';
+import { useAudioFxStore } from './stores/audioFx';
 import { useUIStore } from './stores/ui';
 import { useLibraryStore } from './stores/library';
 import { matchesShortcut, matchesPluginShortcut, navShortcutBindings } from './utils/shortcuts';
@@ -40,6 +41,7 @@ import ErrorBoundary from './components/ErrorBoundary.vue';
 
 const FirstRunWizard = defineAsyncComponent(() => import('./components/FirstRunWizard.vue'));
 const QueuePanel = defineAsyncComponent(() => import('./components/player/QueuePanel.vue'));
+const SubtitlePanel = defineAsyncComponent(() => import('./components/player/SubtitlePanel.vue'));
 const Equalizer = defineAsyncComponent(() => import('./components/player/Equalizer.vue'));
 const AppSearch = defineAsyncComponent(() => import('./components/layout/AppSearch.vue'));
 const ToastNotification = defineAsyncComponent(() => import('./components/ToastNotification.vue'));
@@ -47,6 +49,7 @@ const ContextMenu = defineAsyncComponent(() => import('./components/ContextMenu.
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const ui = useUIStore();
 const library = useLibraryStore();
 const pluginsStore = usePluginsStore();
@@ -128,6 +131,12 @@ onMounted(async () => {
     audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
   }, onBootStepError);
 
+  // Zarejestruj globalne nasłuchy IPC ZANIM zgłosimy gotowość i pokażemy okno.
+  // Wcześniej działo się to dopiero po `await libraryReady`, więc przy dużej
+  // bibliotece klawisze mediów i akcje z tray nie reagowały przez kilka sekund po
+  // pokazaniu okna (wyglądało to jak awaria).
+  unregisterAppIpc = registerAppIpc({ player, router, route });
+
   // Zgłoś gotowość, gdy tylko powłoka jest wystrojona, zlokalizowana i namalowana —
   // main zamyka wtedy splash i pokazuje okno. Aktywacja modułów, rozgrzewanie audio,
   // przywracanie sesji i kreator pierwszego uruchomienia nie mogą go wstrzymywać.
@@ -170,8 +179,6 @@ onMounted(async () => {
     /* pamięć niedostępna */
   }
   if (!settings.general.firstRunDone) ui.openSetupWizard();
-
-  unregisterAppIpc = registerAppIpc({ player, router, route });
 });
 
 onBeforeUnmount(() => {
@@ -306,7 +313,7 @@ function onWindowBlur() {
     <a
       v-if="!isStandaloneWindow"
       href="#main-content"
-      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-field focus:bg-primary focus:text-primary-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-100 focus:px-3 focus:py-2 focus:rounded-field focus:bg-primary focus:text-primary-content"
       >{{ $t('common.skipToContent') }}</a
     >
     <div class="relative flex flex-1 min-h-0">
@@ -336,17 +343,27 @@ function onWindowBlur() {
             : 'w-75 shrink-0'
         "
       />
+      <SubtitlePanel
+        v-if="!isStandaloneWindow && player.subtitlePanelVisible"
+        :class="
+          isNarrowLayout
+            ? 'absolute inset-y-0 right-0 z-30 w-80 max-w-[90vw] fx-depth'
+            : 'w-75 shrink-0'
+        "
+      />
       <Sidebar v-if="!isStandaloneWindow && settings.appearance.sidebarPosition === 'right'" />
-      <div
-        v-if="!isStandaloneWindow && player.equalizerVisible"
-        class="fixed bottom-24 right-6 z-40"
-      >
+      <div v-if="!isStandaloneWindow && fx.equalizerVisible" class="fixed bottom-24 right-6 z-40">
         <Equalizer />
       </div>
       <div
         v-if="!isStandaloneWindow && player.queueVisible && isNarrowLayout"
         class="absolute inset-0 z-20 bg-neutral/35"
         @click="player.toggleQueue"
+      />
+      <div
+        v-if="!isStandaloneWindow && player.subtitlePanelVisible && isNarrowLayout"
+        class="absolute inset-0 z-20 bg-neutral/35"
+        @click="player.toggleSubtitlePanel"
       />
     </div>
     <PlayerBar

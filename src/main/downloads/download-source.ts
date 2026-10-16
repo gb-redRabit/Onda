@@ -58,6 +58,24 @@ export function buildJobSource(
       fileName: safeDownloadFileName(input.fileName)
     };
   }
+  if (input.mode === 'provider') {
+    const ref = input.providerRef;
+    return {
+      mode: 'provider',
+      ...common,
+      fileName: safeDownloadFileName(input.fileName),
+      providerId: typeof input.providerId === 'string' ? input.providerId.slice(0, 50) : undefined,
+      providerRef:
+        ref && typeof ref === 'object'
+          ? {
+              provider: String(ref.provider || '').slice(0, 50),
+              shareId: String(ref.shareId || '').slice(0, 2048)
+            }
+          : undefined,
+      providerItemId:
+        typeof input.providerItemId === 'string' ? input.providerItemId.slice(0, 2048) : undefined
+    };
+  }
   return {
     mode: 'ytdlp',
     ...common,

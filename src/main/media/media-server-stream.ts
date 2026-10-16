@@ -2,9 +2,13 @@ import http from 'http';
 import https from 'https';
 import { logger } from '../../shared/logger';
 import { createPinnedLookup, resolveNetworkTarget } from '../ipc/network-target';
-import { isAllowedRadioHost } from '../ipc/radio-store';
-import { isRegisteredGenericStreamUrl } from './media-server-stream-registry';
 import {
+  isRegisteredGenericStreamUrl,
+  getProviderStreamFactory
+} from './media-server-stream-registry';
+import { detectProviderLimit, formatProviderLimit } from '../ipc/providers/provider-limits';
+import {
+  isAllowedRadioHost,
   validateStreamUrl,
   STREAM_MAX_REDIRECTS,
   STREAM_MAX_ATTEMPTS,
@@ -167,6 +171,19 @@ export async function handleStreamProxy(
         break;
       }
       if (status !== 200 && status !== 206) {
+        // 416 (zakres nieobsługiwany) jest odpowiedzią TERMINALNĄ — przekazujemy ją
+        // wprost (z content-range), zamiast ponawiać 3× i zamieniać na 502.
+        if (status === 416) {
+          const rangeHeaders: http.OutgoingHttpHeaders = {};
+          const contentRange = upRes.headers['content-range'];
+          const acceptRanges = upRes.headers['accept-ranges'];
+          if (contentRange !== undefined) rangeHeaders['content-range'] = contentRange;
+          if (acceptRanges !== undefined) rangeHeaders['accept-ranges'] = acceptRanges;
+          res.writeHead(416, rangeHeaders);
+          upRes.destroy();
+          res.end();
+          return;
+        }
         let body = '';
         upRes.on('data', (chunk: Buffer) => {
           if (body.length < 400) body += chunk.toString('utf8');
@@ -204,7 +221,9 @@ export async function handleStreamProxy(
       }
       res.writeHead(status, headers);
 
-      req.on('close', () => {
+      // Kanonicznym sygnałem rozłączenia klienta jest `res.on('close')` (żądanie
+      // 'close' w nowszych Node bywa po odebraniu żądania, a nie po zerwaniu).
+      res.on('close', () => {
         if (!res.writableEnded) upRes.destroy();
       });
       upRes.on('error', () => res.destroy());
@@ -219,4 +238,113 @@ export async function handleStreamProxy(
   }
   res.writeHead(502);
   res.end('too many redirects');
+}
+
+// Proksuje /{token}/stream?provider=<token> do strumienia providera (np. MEGA),
+// deszyfrowanego w procesie głównym (z obsługą Range 206).
+export async function handleProviderStreamProxy(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  token: string
+): Promise<void> {
+  if (!token) {
+    res.writeHead(400);
+    res.end('missing provider token');
+    return;
+  }
+  const factory = getProviderStreamFactory(token);
+  if (!factory) {
+    res.writeHead(404);
+    res.end('unknown provider stream');
+    return;
+  }
+  // Zakresy bajtów (przewijanie wideo): `bytes=start-end` / `bytes=start-`.
+  let range: { start: number; end?: number } | undefined;
+  const rangeHeader = req.headers.range;
+  if (typeof rangeHeader === 'string') {
+    const m = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
+    if (m) range = { start: Number(m[1]), end: m[2] ? Number(m[2]) : undefined };
+  }
+
+  let stream: NodeJS.ReadableStream;
+  let mime = 'application/octet-stream';
+  let size: number | undefined;
+  try {
+    const resolved = await factory(range);
+    stream = resolved.stream;
+    if (resolved.mime) mime = resolved.mime;
+    size = resolved.size;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const limit = detectProviderLimit(msg);
+    if (limit.limited) {
+      const formatted = formatProviderLimit(limit);
+      logger.warn('media-server', `provider limit: ${formatted}`);
+      // Powiadom UI (widok przełącza się na player — bez tego limit ginie w ciszy).
+      void (async () => {
+        try {
+          const { broadcastToAllWindows } = await import('../utils/broadcast');
+          broadcastToAllWindows('providers:limit', {
+            message: formatted,
+            retryAfterSeconds: limit.retryAfterSeconds
+          });
+        } catch {
+          /* brak okien / brak Electrona (testy) */
+        }
+      })();
+      res.writeHead(429, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        ...(limit.retryAfterSeconds ? { 'Retry-After': String(limit.retryAfterSeconds) } : {})
+      });
+      res.end(`provider limit: ${formatted}`);
+      return;
+    }
+    logger.warn('media-server', 'provider stream failed', e);
+    res.writeHead(502);
+    res.end('provider stream error');
+    return;
+  }
+  logger.info(
+    'media-server',
+    `provider stream mime=${mime} size=${size ?? '?'} range=${req.headers.range ?? 'none'}`
+  );
+  const headers: http.OutgoingHttpHeaders = {
+    'Content-Type': mime,
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'no-store'
+  };
+  let status = 200;
+  if (range) {
+    status = 206;
+    const end = range.end ?? (size !== undefined ? size - 1 : range.start);
+    if (size !== undefined) headers['Content-Range'] = `bytes ${range.start}-${end}/${size}`;
+    headers['Content-Length'] = String(Math.max(0, end - range.start + 1));
+  } else if (size !== undefined) {
+    headers['Content-Length'] = String(size);
+  }
+  res.writeHead(status, headers);
+  // Zob. handleStreamProxy: rozłączenie klienta obserwujemy na odpowiedzi.
+  res.on('close', () => {
+    try {
+      (stream as import('stream').Readable).destroy?.();
+    } catch {
+      /* już zamknięty */
+    }
+  });
+  (stream as import('stream').Readable).on('error', (e) => {
+    // Zerwanie przez klienta (zmiana zakresu/przewijanie) niszczy strumień, a megajs
+    // potrafi jeszcze dopisać chunk → „Cannot call write after a stream was destroyed".
+    // To nieszkodliwy wyścig przy zamykaniu — nie logujemy go jako błąd.
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!/destroy|premature close|aborted|EPIPE|ECONNRESET/i.test(msg)) {
+      logger.warn('media-server', 'provider stream body error', e);
+    }
+    res.destroy();
+  });
+  if (req.method === 'HEAD') {
+    (stream as import('stream').Readable).destroy?.();
+    res.end();
+    return;
+  }
+  (stream as import('stream').Readable).pipe(res);
 }

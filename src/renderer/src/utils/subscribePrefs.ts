@@ -1,4 +1,5 @@
 import type { SubscriptionDownloadPrefs, CoverSpec, MetaOverride } from '@renderer/types/online';
+import { buildCoverSpec } from '@shared/coverSpec';
 
 // Czysty builder preferencji subskrypcji wydzielony z
 // `components/online/SubscribeConfigDialog.vue` (plan 2.8). Zapisywane są tylko wartości
@@ -79,18 +80,23 @@ export function buildSubscribePrefs(
       // jawne wyłączenie, undefined oznacza "zachowaj domyślne".
       return i.coverType === 'none' ? { type: 'none' } : undefined;
     }
+    // Covery z parametrami (clip/frame/custom) zapisujemy ZAWSZE: równość samego TYPU
+    // z domyślnym nie oznacza równości WARTOŚCI (np. domyślny „clip" 0–30 vs wybrany
+    // 10–40). Wcześniej `coverType === d.cover` gubiło czasy klipu, gdy globalna
+    // domyślna okładka była również „clip".
+    if (i.coverType === 'clip' || i.coverType === 'frame' || i.coverType === 'custom') {
+      return buildCoverSpec({
+        type: i.coverType,
+        customPath: i.customCoverPath,
+        frameTime: i.coverFrameTime,
+        clipStart: i.coverClipStart,
+        clipEnd: i.coverClipEnd,
+        clipFormat: i.coverClipFormat
+      });
+    }
+    // Typy bez parametrów: pomiń tylko, gdy równe domyślnemu.
     if (i.coverType === d.cover) return undefined;
     if (i.coverType === 'thumbnail') return { type: 'thumbnail' };
-    if (i.coverType === 'custom')
-      return i.customCoverPath ? { type: 'custom', customPath: i.customCoverPath } : undefined;
-    if (i.coverType === 'frame') return { type: 'frame', frameTime: Number(i.coverFrameTime) || 0 };
-    if (i.coverType === 'clip')
-      return {
-        type: 'clip',
-        clipStart: Number(i.coverClipStart) || 0,
-        clipEnd: Number(i.coverClipEnd) || 0,
-        clipFormat: i.coverClipFormat
-      };
     return undefined;
   })();
   if (cover) prefs.cover = cover;

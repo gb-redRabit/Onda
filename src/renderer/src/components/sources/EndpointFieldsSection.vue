@@ -20,6 +20,7 @@ const { t } = useI18n();
       type="text"
       :list="fieldId('path')"
       placeholder="/series/list"
+      :aria-label="t('sources.endpointPath')"
       class="w-full px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
     />
     <datalist :id="fieldId('path')">
@@ -40,6 +41,7 @@ const { t } = useI18n();
           type="text"
           :list="fieldId('title')"
           :placeholder="t('sources.fTitle')"
+          :aria-label="t('sources.fTitle')"
           class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('title')">
@@ -52,6 +54,7 @@ const { t } = useI18n();
           type="text"
           :list="fieldId('thumb')"
           :placeholder="t('sources.fThumbnail')"
+          :aria-label="t('sources.fThumbnail')"
           class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('thumb')">
@@ -64,6 +67,7 @@ const { t } = useI18n();
           type="text"
           :list="fieldId('sub')"
           :placeholder="t('sources.fSubtitle')"
+          :aria-label="t('sources.fSubtitle')"
           class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('sub')">
@@ -80,6 +84,7 @@ const { t } = useI18n();
       type="text"
       :list="fieldId('media')"
       :placeholder="t('sources.downloadNone')"
+      :aria-label="t('sources.downloadField')"
       class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
     />
     <datalist :id="fieldId('media')">
@@ -93,6 +98,7 @@ const { t } = useI18n();
       type="text"
       :list="fieldId('player')"
       :placeholder="t('sources.fPlayerUrlPh')"
+      :aria-label="t('sources.fPlayerUrl')"
       class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
     />
     <datalist :id="fieldId('player')">

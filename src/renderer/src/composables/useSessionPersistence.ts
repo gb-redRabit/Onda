@@ -67,8 +67,25 @@ export function useSessionPersistence() {
       ? data.queue.filter((p): p is string => typeof p === 'string')
       : [];
     const paths = [data.currentPath, ...queue];
+    // Sprzątanie: odrzuć ścieżki plików usuniętych z dysku między uruchomieniami,
+    // żeby nie odtwarzać nieistniejącego utworu (i nie sypać błędami serwera mediów).
+    let existing = paths;
     try {
-      await openMediaFiles(paths, router);
+      const filtered = (await window.api.invoke('fs:existing', paths)) as string[] | undefined;
+      if (Array.isArray(filtered)) existing = filtered;
+    } catch {
+      /* brak weryfikacji — spróbuj odtworzyć jak jest */
+    }
+    if (!existing.length) {
+      try {
+        localStorage.removeItem(SESSION_KEY);
+      } catch {
+        /* pamięć niedostępna */
+      }
+      return false;
+    }
+    try {
+      await openMediaFiles(existing, router);
     } catch {
       return false;
     }

@@ -106,7 +106,7 @@ async function pasteThemeJson() {
             }"
             :title="`${tokenLabel(id)} ${resolved.colors[id]}`"
           />
-          <span class="text-[10px] font-mono text-base-content/50">{{ resolved.colors[id] }}</span>
+          <span class="text-[11px] font-mono text-base-content/50">{{ resolved.colors[id] }}</span>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ async function pasteThemeJson() {
               class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
               :class="
                 (settings.appearance.customBase ?? 'dark') === seed
-                  ? 'border-primary bg-primary/10 text-primary font-medium'
+                  ? 'border-primary bg-primary/10 text-primary-text font-medium'
                   : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
               "
               @click="setScheme(seed)"

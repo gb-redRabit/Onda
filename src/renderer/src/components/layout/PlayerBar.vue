@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Volume2,
@@ -12,6 +12,7 @@ import {
   Disc3
 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { formatDuration } from '@renderer/utils/formatters';
 import MediaCover from '@renderer/components/MediaCover.vue';
@@ -19,12 +20,24 @@ import TrackInfo from '@renderer/components/TrackInfo.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import PlayerBarMini from './PlayerBarMini.vue';
 import TransportButtons from '@renderer/components/player/TransportButtons.vue';
+import AbRepeatButton from '@renderer/components/player/AbRepeatButton.vue';
+import AbRepeatMarkers from '@renderer/components/player/AbRepeatMarkers.vue';
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const router = useRouter();
 const pluginsStore = usePluginsStore();
 const isMini = ref(false);
+
+// Pętla A–B dla audio: egzekwowana na zegarze silnika (element audio nie jest w tym widoku).
+watch(
+  () => audio.currentTime.value,
+  (t) => {
+    const target = player.abLoopTarget(t);
+    if (target !== null) audio.seek(target);
+  }
+);
 
 const COVER_SHAPE_CLIP: Record<string, string> = {
   circle: 'circle(50%)',
@@ -166,6 +179,7 @@ function togglePlay() {
         class="absolute inset-y-0 left-0 h-full bg-primary rounded-r-full"
         :style="{ width: progressPct + '%' }"
       />
+      <AbRepeatMarkers :duration="audio.duration.value" />
     </div>
 
     <div class="flex items-center gap-3 min-w-0 w-70 shrink-0 max-lg:w-56 max-md:w-44">
@@ -237,19 +251,20 @@ function togglePlay() {
     </div>
 
     <div class="flex items-center gap-1.5 justify-end w-64 shrink-0 max-lg:w-auto">
+      <AbRepeatButton :current-time="audio.currentTime.value" />
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary!': player.equalizerVisible }"
+        :class="{ 'text-primary-text!': fx.equalizerVisible }"
         data-eq-toggle
         data-testid="player-eq"
         :aria-label="$t('common.equalizer')"
-        @click="player.toggleEqualizer"
+        @click="fx.toggleEqualizer"
       >
         <SlidersHorizontal :size="15" />
       </button>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary!': player.queueVisible }"
+        :class="{ 'text-primary-text!': player.queueVisible }"
         data-testid="player-queue"
         :aria-label="$t('common.queue')"
         @click="player.toggleQueue"
@@ -289,7 +304,7 @@ function togglePlay() {
         />
       </div>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
+        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
         :title="$t('common.audioView')"
         :aria-label="$t('common.audioView')"
         @click="router.push('/audio')"

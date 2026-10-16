@@ -54,7 +54,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
         class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors whitespace-nowrap"
         :class="
           explorer.viewMode === mode.key
-            ? 'text-primary bg-primary/10'
+            ? 'text-primary-text bg-primary/10'
             : 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
         "
         :data-testid="`explorer-view-${mode.key}`"

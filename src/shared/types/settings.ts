@@ -1,4 +1,5 @@
 import type { AudioPipDock, AudioPipElementId } from './pip';
+import type { EqBand } from './audio';
 
 /**
  * Jak dobrze system chroni zapisany sekret. Patrz main/ipc/settings-crypto.ts:
@@ -219,6 +220,24 @@ export interface PlaybackSettings {
   playbackSpeed: number;
   videoFilter: string;
   visualization: VisualizationSettings;
+  /** Zapisany zestaw pasm parametrycznego korektora. */
+  equalizerBands?: EqBand[];
+  /** Czy korektor jest włączony (bypass bez utraty pasm). */
+  equalizerEnabled?: boolean;
+  /** Preamp korektora w dB. */
+  equalizerPreamp?: number;
+  /** Własne presety korektora (nazwa → pasma). */
+  equalizerUserPresets?: Record<string, EqBand[]>;
+  /** Różnokolorowe pasma (domyślnie wszystkie w jednym kolorze). */
+  equalizerMulticolor?: boolean;
+  /** Przyciąganie częstotliwości do typowych wartości (tercje). */
+  equalizerSnap?: boolean;
+  /** Tryb nocny: kompresja dynamiki + podbicie dialogów. */
+  nightMode?: boolean;
+  /** Kompensacja opóźnienia dźwięku w ms (0–500; dźwięk później niż obraz). */
+  audioDelayMs?: number;
+  /** Opóźnienie napisów w ms (±60 000; dodatnie = napisy później). */
+  subtitleDelayMs?: number;
 }
 
 export interface DownloadSettings {
@@ -241,6 +260,7 @@ export interface DownloadSettings {
   retryBaseMs: number;
   tempDir: string;
   autoDownloadSubscriptions: boolean;
+  autoCheckLinkSubscriptions: boolean;
   hashFiles: boolean;
   smartMode: boolean;
   defaultSubs: boolean;

@@ -12,6 +12,8 @@ export interface MediaFile {
   type: 'audio' | 'video' | 'image' | 'unknown' | 'stream';
   metadata?: MediaMetadata;
   thumbnail?: string;
+  /** Czy aplikacja potrafi pokazać okładkę (osadzony obraz w tagach ALBO towarzyszące wideo). */
+  hasCover?: boolean;
   addedAt: number;
   lastPlayed?: number;
   playCount: number;

@@ -74,6 +74,8 @@ export interface PipSubtitleData {
   subContent: string;
   fonts: Array<{ name: string; data: number[] }>;
   availableFonts: Record<string, string>;
+  /** Opóźnienie napisów w ms (dodatnie = napisy później). */
+  subtitleDelayMs?: number;
 }
 
 export interface AudioPipState {
@@ -88,7 +90,6 @@ export interface AudioPipState {
   isMuted?: boolean;
   shuffle?: boolean;
   repeat?: 'none' | 'all' | 'one';
-  equalizerBands?: number[];
   equalizerPreset?: string;
   vizData?: number[];
   nextTrackName?: string;

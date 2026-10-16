@@ -145,6 +145,7 @@ onMounted(() => {
           <select
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
+            :aria-label="$t('sources.level')"
             class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
             @change="onEndpointChange(($event.target as HTMLSelectElement).value)"
           >
@@ -167,11 +168,12 @@ onMounted(() => {
               </button>
               <span class="text-base-content/50">/</span>
             </span>
-            <span class="text-primary font-medium">{{ activeEndpoint?.name }}</span>
+            <span class="text-primary-text font-medium">{{ activeEndpoint?.name }}</span>
           </div>
           <input
             v-model="queryText"
             type="text"
+            :aria-label="$t('sources.queryParams')"
             :placeholder="$t('sources.queryParams')"
             class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -188,6 +190,7 @@ onMounted(() => {
               min="1"
               class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
               :title="$t('sources.currentPage')"
+              :aria-label="$t('sources.currentPage')"
               @change="goToPage"
             />
             <IconButton
@@ -266,7 +269,7 @@ onMounted(() => {
         />
         <p
           v-if="currentUrl"
-          class="px-4 py-1 text-[10px] font-mono text-base-content/50 truncate border-b border-base-300"
+          class="px-4 py-1 text-[11px] font-mono text-base-content/50 truncate border-b border-base-300"
           :title="currentUrl"
         >
           {{ currentUrl }}

@@ -14,7 +14,7 @@ const { t } = useI18n();
     <div class="relative flex-1 min-w-0">
       <Search
         :size="14"
-        class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40"
+        class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/55"
       />
       <input
         v-model="filterText"

@@ -290,7 +290,7 @@ function setSubRef(i: number) {
             tabindex="-1"
             :aria-haspopup="item.children?.length ? 'menu' : undefined"
             :aria-expanded="item.children?.length ? openSubIndex === idx : undefined"
-            class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+            class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors"
             :class="{ 'opacity-40 pointer-events-none': item.disabled }"
             :disabled="item.disabled"
             @mousemove="activeIndex = idx"
@@ -300,7 +300,7 @@ function setSubRef(i: number) {
               <component :is="item.icon" :size="14" />
             </span>
             <span class="flex-1 truncate">{{ item.label }}</span>
-            <span v-if="item.checked" class="shrink-0 text-primary">✓</span>
+            <span v-if="item.checked" class="shrink-0 text-primary-text">✓</span>
             <span
               v-if="item.children?.length"
               class="shrink-0 text-base-content/50"
@@ -308,7 +308,7 @@ function setSubRef(i: number) {
             >
               <ChevronRight :size="12" />
             </span>
-            <span v-else-if="item.shortcut" class="text-[10px] text-base-content/60 font-mono">{{
+            <span v-else-if="item.shortcut" class="text-[11px] text-base-content/60 font-mono">{{
               item.shortcut
             }}</span>
           </button>
@@ -332,7 +332,7 @@ function setSubRef(i: number) {
                   data-testid="context-menu-subitem"
                   role="menuitem"
                   tabindex="-1"
-                  class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+                  class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors"
                   :class="{ 'opacity-40 pointer-events-none': child.disabled }"
                   :disabled="child.disabled"
                   @mousemove="subActiveIndex = cidx"
@@ -342,8 +342,8 @@ function setSubRef(i: number) {
                     <component :is="child.icon" :size="14" />
                   </span>
                   <span class="flex-1 truncate">{{ child.label }}</span>
-                  <span v-if="child.checked" class="shrink-0 text-primary">✓</span>
-                  <span v-if="child.shortcut" class="text-[10px] text-base-content/60 font-mono">{{
+                  <span v-if="child.checked" class="shrink-0 text-primary-text">✓</span>
+                  <span v-if="child.shortcut" class="text-[11px] text-base-content/60 font-mono">{{
                     child.shortcut
                   }}</span>
                 </button>

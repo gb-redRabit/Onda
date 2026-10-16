@@ -31,8 +31,10 @@ export function createSourcesItems(deps: SourcesItemsDeps) {
   const tableLoading = ref(false);
   let loadId = 0;
 
-  /** Czyści listę/tabelę przy zmianie źródła, endpointu lub poziomu. */
+  /** Czyści listę/tabelę przy zmianie źródła, endpointu lub poziomu i unieważnia trwający odczyt. */
   function resetItems() {
+    loadId++;
+    loading.value = false;
     items.value = [];
     hasMore.value = false;
     nextFrom.value = null;
@@ -90,7 +92,9 @@ export function createSourcesItems(deps: SourcesItemsDeps) {
       hasMore.value = !!res?.hasMore;
       nextFrom.value = res?.nextFrom ?? null;
       if (res?.error) lastError.value = res.error;
-      if (endpoint.type === 'page' && endpoint.table && !res?.error) {
+      if (Array.isArray(res?.tableRows)) {
+        tableRows.value = res.tableRows;
+      } else if (endpoint.type === 'page' && endpoint.table && !res?.error) {
         await fetchTableRows();
       }
     } catch (e) {

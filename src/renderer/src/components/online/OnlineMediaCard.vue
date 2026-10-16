@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
         <div class="text-xs text-base-content/70 mt-0.5">
           <button
             v-if="showChannel && channelTarget"
-            class="hover:text-primary transition-colors"
+            class="hover:text-primary-text transition-colors"
             @click.stop="onOpenChannel"
           >
             {{ video.channelTitle }}
@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
       <!-- Akcje listy -->
       <div
         v-if="layout === 'list'"
-        class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
       >
         <OnlineIconButton :title="$t('youtube.play')" @click="onListPlay">
           <Play :size="14" />

@@ -10,7 +10,7 @@ defineProps<{
   subscriptions: Subscription[];
   loaded: boolean;
   checkingChannelId: string | null;
-  queueingChannelId: string | null;
+  isQueuing: (channelId: string) => boolean;
 }>();
 const emit = defineEmits<{
   openChannel: [string];
@@ -41,7 +41,7 @@ const { t } = useI18n();
         :key="sub.channelId"
         :sub="sub"
         :loading-channel-id="checkingChannelId"
-        :queueing-channel-id="queueingChannelId"
+        :is-queuing="isQueuing"
         @open-channel="emit('openChannel', $event)"
         @download-all="emit('downloadAll', $event)"
         @check-now="emit('checkNow', $event)"

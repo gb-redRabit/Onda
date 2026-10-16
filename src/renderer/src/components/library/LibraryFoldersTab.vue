@@ -9,6 +9,7 @@ import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMe
 import { formatDuration } from '@renderer/utils/formatters';
 import { pluralCategory } from '@renderer/utils/plural';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
+import { shuffled } from '@renderer/utils/shuffle';
 import { readStringArray, writeJson } from '@renderer/utils/localStore';
 import DirNode from '@renderer/components/library/DirNode.vue';
 import LibraryFolderTile from '@renderer/components/library/LibraryFolderTile.vue';
@@ -72,14 +73,10 @@ function shuffleFolder(fp: string) {
     (t) => t.type !== 'image'
   );
   if (tracks.length === 0) return;
-  const shuffled = [...tracks];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
+  const order = shuffled(tracks);
   player.clearQueue();
-  if (shuffled.length > 1) player.addToQueueMultiple(shuffled.slice(1));
-  player.setTrack(shuffled[0]);
+  if (order.length > 1) player.addToQueueMultiple(order.slice(1));
+  player.setTrack(order[0]);
   player.play();
 }
 
@@ -218,7 +215,7 @@ const noMatch = computed(
             <Play :size="14" class="ml-0.5 fill-current" />
           </button>
           <button
-            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-base-300 text-base-content/60 hover:text-primary hover:border-primary/30 items-center justify-center transition-colors"
+            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-base-300 text-base-content/60 hover:text-primary-text hover:border-primary/30 items-center justify-center transition-colors"
             :title="$t('library.folderShuffle')"
             @click.stop="shuffleFolder(meta.path)"
           >

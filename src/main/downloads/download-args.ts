@@ -22,6 +22,9 @@ const AUDIO_QUALITY_MAP: Record<string, string> = {
 };
 
 export async function buildBaseArgs(job: Job): Promise<string[]> {
+  // Tryb providera (PikPak/MEGA/Drive…) nie używa yt-dlp: URL jest syntetyczny
+  // (`provider://…`), a walidacja http niżej by go odrzuciła. Bez efektów ubocznych.
+  if (job.source?.mode === 'provider') return [];
   const dir = resolveOutputDir(job);
   await mkdir(dir, { recursive: true });
   // Serwer mediów zna tylko foldery biblioteki + jawnie otwarte pliki.

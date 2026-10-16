@@ -53,13 +53,13 @@ test.describe('equalizer', () => {
       // Preset Bass wypycha niskie pasmo do +8 dB.
       await page.getByTestId('eq-preset-bassBoost').click();
       await expect(page.getByTestId('eq-band-0')).toHaveAttribute('aria-valuenow', '8');
-      await expect(page.getByTestId('eq-band-9')).toHaveAttribute('aria-valuenow', '0');
+      await expect(page.getByTestId('eq-band-4')).toHaveAttribute('aria-valuenow', '0');
 
       // Klawiatura: ArrowUp na zaznaczonym paśmie podnosi je o 1 dB.
-      const band9 = page.getByTestId('eq-band-9');
-      await band9.focus();
-      await band9.press('ArrowUp');
-      await expect(band9).toHaveAttribute('aria-valuenow', '1');
+      const band4 = page.getByTestId('eq-band-4');
+      await band4.focus();
+      await band4.press('ArrowUp');
+      await expect(band4).toHaveAttribute('aria-valuenow', '1');
 
       expect(onda.pageErrors).toEqual([]);
     } finally {

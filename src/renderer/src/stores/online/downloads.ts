@@ -1,6 +1,8 @@
 import { ref } from 'vue';
 import { i18n } from '@renderer/i18n';
+import { logger } from '@shared/logger';
 import { useUIStore } from '@renderer/stores/ui';
+import { clonePlain } from '@renderer/utils/clone';
 import type { CoverStatus, DownloadTask, MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadJobInput, IpcDownloadTask } from '@shared/types/ipc';
 import { pluginHookBus } from '@renderer/utils/pluginHooks';
@@ -71,14 +73,23 @@ export function createOnlineDownloads(
     }
   }
 
-  async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<number> {
-    if (!inputs.length) return 0;
+  // Zwraca UTWORZONE zadania (main deduplikuje i może odrzucić część) — wywołujący
+  // decyduje po liczbie/wideoId, a `retryDownload` po samej niepustości (zadania bez
+  // `videoId`, np. bezpośredni URL, też muszą być rozpoznane jako utworzone).
+  async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> {
+    if (!inputs.length) return [];
     try {
-      const created = (await window.api.invoke('yt:download:add', inputs)) as IpcDownloadTask[];
+      // IPC serializuje argumenty structured-clone'em, który rzuca "An object could
+      // not be cloned" na reaktywnych proxy Vue. `prefs` subskrypcji pochodzą z Pinia
+      // (proxy), a buildJob wstawia zagnieżdżone `cover`/`metaOverride` do zadania —
+      // bez sprowadzenia do zwykłych obiektów cała partia była po cichu odrzucana.
+      const payload = clonePlain(inputs);
+      const created = (await window.api.invoke('yt:download:add', payload)) as IpcDownloadTask[];
       for (const task of created || []) upsertTask(toDownloadTask(task));
-      return created?.length || 0;
-    } catch {
-      return 0;
+      return created || [];
+    } catch (e) {
+      logger.error('yt', '[submitJobs] yt:download:add FAILED', e);
+      return [];
     }
   }
 
@@ -164,7 +175,7 @@ export function createOnlineDownloads(
 
   async function retryDownload(task: DownloadTask) {
     const created = await submitJobs([buildTaskInput(task)]);
-    if (!created) {
+    if (!created.length) {
       // Proces main zastąpił nieudane zadanie nowym tylko wtedy, gdy nie istniało
       // aktywne zadanie z tym samym id wideo. Jeśli zostało pominięte, powiadom
       // użytkownika zamiast cichej porażki.

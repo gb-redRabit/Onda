@@ -190,7 +190,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         class="flex items-start gap-3 p-3 rounded-field border border-base-300/70 bg-base-100"
       >
         <div
-          class="w-8 h-8 rounded-box bg-primary/10 text-primary flex items-center justify-center shrink-0"
+          class="w-8 h-8 rounded-box bg-primary/10 text-primary-text flex items-center justify-center shrink-0"
         >
           <Puzzle :size="14" />
         </div>
@@ -206,7 +206,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <span
               v-for="capability in capabilityLabels(ex.permissions)"
               :key="capability"
-              class="inline-flex items-center px-1.5 py-0.5 rounded-selector bg-base-content/10 text-base-content/60 text-[10px] font-medium"
+              class="inline-flex items-center px-1.5 py-0.5 rounded-selector bg-base-content/10 text-base-content/60 text-[11px] font-medium"
               >{{ capability }}</span
             >
           </div>
@@ -223,7 +223,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <code
               v-for="hook in ex.hooks"
               :key="hook"
-              class="rounded-field bg-base-200 px-1.5 py-0.5 text-[10px] text-base-content/60"
+              class="rounded-field bg-base-200 px-1.5 py-0.5 text-[11px] text-base-content/60"
               >{{ hook }}</code
             >
           </div>
@@ -266,7 +266,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
       <div class="p-4">
         <div class="flex items-start gap-3">
           <div
-            class="w-9 h-9 rounded-box bg-primary/10 text-primary flex items-center justify-center shrink-0"
+            class="w-9 h-9 rounded-box bg-primary/10 text-primary-text flex items-center justify-center shrink-0"
           >
             <Puzzle :size="16" />
           </div>

@@ -6,17 +6,20 @@ import type { MediaFile } from '../../../shared/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../../shared/constants';
 import { MIME_TYPES } from '../../../shared/mime';
 import { logger } from '../../../shared/logger';
+import { mapLimit } from '../../utils/map-limit';
 import { getDuration } from '../media/media-handlers';
 import {
   classifyFolderType,
   filterFilesForFolderType,
   filterCoverSiblingVideos,
+  markSiblingVideoCovers,
   FOLDER_TYPE_RATIO
 } from './library-scan-filters';
 export {
   classifyFolderType,
   filterFilesForFolderType,
   filterCoverSiblingVideos,
+  markSiblingVideoCovers,
   FOLDER_TYPE_RATIO
 };
 
@@ -25,23 +28,6 @@ const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
 const SUBDIR_CONCURRENCY = 16;
-
-async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let index = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
-    while (index < items.length) {
-      const i = index++;
-      results[i] = await fn(items[i]);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
 
 async function getAudioMetadata(
   filePath: string,
@@ -63,6 +49,7 @@ async function getAudioMetadata(
   isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
+  hasCover: boolean;
 } | null> {
   try {
     const meta = await parseFile(filePath, { duration: true });
@@ -86,6 +73,7 @@ async function getAudioMetadata(
       codec: formatInfo?.codec || undefined,
       isVideo: false,
       size: s.size,
+      hasCover: (meta.common.picture?.length ?? 0) > 0,
       replayGainTrackGain:
         typeof gainDb === 'number' && Number.isFinite(gainDb)
           ? Math.pow(10, gainDb / 20)
@@ -117,6 +105,7 @@ async function getMetadata(
   isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
+  hasCover?: boolean;
 } | null> {
   try {
     const isVideo = VIDEO_EXTS.includes(ext);
@@ -151,8 +140,9 @@ async function processAudioFile(
 ): Promise<{ file: MediaFile | null }> {
   const s = await stat(fullPath).catch(() => null);
   if (!s) return { file: null };
-  // Użyj ponownie poprzednich metadanych, gdy plik się nie zmienił (size + mtime).
-  if (prev && prev.size === s.size && prev.mtime === s.mtimeMs) {
+  // Użyj ponownie poprzednich metadanych, gdy plik się nie zmienił (size + mtime) —
+  // ale NIE gdy brakuje flagi `hasCover` (starsze skany), aby wymusić jednorazową migrację.
+  if (prev && prev.size === s.size && prev.mtime === s.mtimeMs && prev.hasCover !== undefined) {
     return { file: prev };
   }
   const meta = await getMetadata(fullPath, ext, s);
@@ -181,6 +171,7 @@ async function processAudioFile(
           }
         : undefined,
       duration: meta?.duration || 0,
+      hasCover: meta?.hasCover,
       addedAt: s.birthtimeMs ?? Date.now(),
       playCount: 0,
       mtime: s.mtimeMs
@@ -383,6 +374,8 @@ export async function scanDir(
     // powyższe wywołanie rekurencyjne): odrzuć wideo animowanych okładek, które duplikują
     // utwór audio w tym samym folderze.
     const localFiles = fileResults.map((r) => r.file).filter((f): f is MediaFile => f !== null);
+    // Zaznacz okładki z towarzyszącego wideo, ZANIM odrzucimy te wideo z biblioteki.
+    markSiblingVideoCovers(localFiles);
     for (const f of filterCoverSiblingVideos(localFiles)) files.push(f);
     totalAudio += audioCount;
     totalVideo += videoCount;

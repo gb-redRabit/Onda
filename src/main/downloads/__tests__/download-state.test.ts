@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { ChildProcess } from 'child_process';
 
 // Regresja, dla której istnieje ten plik: `persist()` ZASTĘPOWAŁ obiekt w
@@ -9,6 +9,14 @@ import type { ChildProcess } from 'child_process';
 
 vi.mock('electron', () => ({
   app: { getPath: () => process.cwd(), isPackaged: false }
+}));
+
+// Kolejka zapisywana na dysk jest nieistotna dla tych testów; izolujemy się od fs,
+// żeby fałszywe zegary mogły bezpiecznie odpalać debounce zapisu.
+vi.mock('../download-queue-store', () => ({
+  persistJobs: vi.fn(async () => {}),
+  queueFilePath: () => 'queue.json',
+  capPersistedJobs: (jobs: unknown[]) => jobs
 }));
 
 const emit = vi.fn();
@@ -106,6 +114,63 @@ describe('download job identity', () => {
     state.persist(job);
     state.persist(job);
     expect(emit).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('progress emit throttling', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    emit.mockReset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('coalesces rapid progress ticks but flushes the last one', async () => {
+    const state = await loadState();
+    state.setDownloadEmit(emit);
+    const job = { id: 'job-t', url: 'https://x/y', title: 't', status: 'downloading' } as any;
+    state.jobs.set(job.id, job);
+
+    state.persistThrottled(job); // pierwsze tyknięcie — natychmiast
+    state.persistThrottled(job);
+    state.persistThrottled(job);
+    expect(emit).toHaveBeenCalledTimes(1);
+
+    // Po oknie dławienia domyka się z ostatnim tyknięciem (postęp nie ginie).
+    await vi.advanceTimersByTimeAsync(600);
+    expect(emit).toHaveBeenCalledTimes(2);
+  });
+
+  it('emits a status change immediately and drops the queued progress tick', async () => {
+    const state = await loadState();
+    state.setDownloadEmit(emit);
+    const job = { id: 'job-u', url: 'https://x/y', title: 't', status: 'downloading' } as any;
+    state.jobs.set(job.id, job);
+
+    state.persistThrottled(job); // natychmiast (1)
+    state.persistThrottled(job); // zakolejkowane tyknięcie
+    state.persist(job); // natychmiast (2) — unieważnia zakolejkowane
+    expect(emit).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(600);
+    expect(emit).toHaveBeenCalledTimes(2); // brak spóźnionego duplikatu
+  });
+
+  it('does not resurrect a job that was dropped before the trailing tick', async () => {
+    const state = await loadState();
+    state.setDownloadEmit(emit);
+    const job = { id: 'job-v', url: 'https://x/y', title: 't', status: 'downloading' } as any;
+    state.jobs.set(job.id, job);
+
+    state.persistThrottled(job); // natychmiast (1)
+    state.persistThrottled(job); // zakolejkowane
+    state.jobs.delete(job.id);
+    state.forgetJob(job.id);
+    await vi.advanceTimersByTimeAsync(600);
+
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(state.jobs.has(job.id)).toBe(false);
   });
 });
 

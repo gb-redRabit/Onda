@@ -12,10 +12,8 @@ import {
   SUBTITLE_EXTS,
   SUBTITLE_MAX_BYTES
 } from '../utils/read-text-file';
-
-function uniqueId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
+import { readCachedFonts, writeCachedFonts, fontCacheStats, clearFontCache } from './font-cache';
+import { uniqueId } from '../utils/ids';
 
 // Prosty semafor: te kanały spawnują ffprobe/ffmpeg, więc przejęty renderer mógł
 // nimi zalewać system procesami. Limit współbieżności jest globalny (nie per okno),
@@ -272,6 +270,9 @@ export function registerSubtitleHandlers(): void {
       filePath: string
     ): Promise<Array<{ name: string; ext: string; data: number[] }>> => {
       if (!isSafeAbsolutePath(filePath)) return [];
+      // Trafienie w trwały cache pomija ffprobe + mkvextract/ffmpeg.
+      const cached = await readCachedFonts(filePath);
+      if (cached) return cached;
       const dumpDir = join(
         getTempDir(),
         `fonts_${Date.now()}_${Math.random().toString(36).slice(2)}`
@@ -364,6 +365,12 @@ export function registerSubtitleHandlers(): void {
         const realDumpDir = await realpath(dumpDir);
         const dumped = await readdir(dumpDir);
         const seen = new Set<string>();
+        // Zrzucone pliki to `att_<i>.<ext>`, a napisy dopasowują czcionki po NAZWIE
+        // rodziny — mapujemy więc z powrotem na oryginalną nazwę załącznika.
+        const nameByDump = new Map<string, string>();
+        for (const [i, s] of attachmentStreams.entries()) {
+          nameByDump.set(`att_${i}`, basename(s.filename).replace(/\.[^.]+$/, ''));
+        }
         let totalBytes = 0;
         for (const fname of dumped) {
           if (seen.has(fname)) continue;
@@ -382,8 +389,9 @@ export function registerSubtitleHandlers(): void {
             const buf = await readFile(fpath);
             totalBytes += buf.length;
             const ext = safeFontExt(fname);
+            const base = fname.replace(/\.[^.]+$/, '');
             fonts.push({
-              name: fname.replace(/\.(ttf|otf|ttc)$/i, ''),
+              name: nameByDump.get(base) ?? base,
               ext,
               data: Array.from(buf)
             });
@@ -399,7 +407,18 @@ export function registerSubtitleHandlers(): void {
         });
       }
 
+      if (fonts.length) await writeCachedFonts(filePath, fonts);
       return fonts;
     }
+  );
+
+  ipcMain.handle(
+    'subtitles:fontCacheStats',
+    async (): Promise<{ files: number; bytes: number; videos: number }> => fontCacheStats()
+  );
+
+  ipcMain.handle(
+    'subtitles:fontCacheClear',
+    async (): Promise<{ removed: number; bytesFreed: number }> => clearFontCache()
   );
 }

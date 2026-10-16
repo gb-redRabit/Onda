@@ -1,11 +1,27 @@
 <script setup lang="ts">
+import { nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { CircleCheck, CircleX, CircleAlert, Plus, Trash2 } from '@lucide/vue';
 import type { PhaseItem } from './sourcePhases';
 
-defineProps<{ phases: PhaseItem[]; active: number }>();
+const props = defineProps<{ phases: PhaseItem[]; active: number }>();
 const emit = defineEmits<{ select: [index: number]; add: []; remove: [index: number] }>();
 const { t } = useI18n();
+
+// Wzorzec WAI-ARIA tabs (pionowy): strzałki/Home/End przenoszą focus i wybór.
+function onKeydown(e: KeyboardEvent, index: number): void {
+  const n = props.phases.length;
+  let next = index;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (index + 1) % n;
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (index - 1 + n) % n;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = n - 1;
+  else return;
+  e.preventDefault();
+  emit('select', next);
+  const rail = (e.currentTarget as HTMLElement).parentElement;
+  nextTick(() => rail?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus());
+}
 </script>
 
 <template>
@@ -18,7 +34,7 @@ const { t } = useI18n();
       v-for="(p, i) in phases"
       :key="p.key"
       role="tab"
-      tabindex="0"
+      :tabindex="i === active ? 0 : -1"
       :aria-selected="i === active"
       class="group w-full flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs transition-colors"
       :class="
@@ -27,17 +43,18 @@ const { t } = useI18n();
           : 'text-base-content/70 hover:bg-base-content/5'
       "
       @click="emit('select', i)"
+      @keydown="onKeydown($event, i)"
       @keydown.enter="emit('select', i)"
       @keydown.space.prevent="emit('select', i)"
     >
       <span
-        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono"
+        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-mono"
         :class="i === active ? 'bg-primary text-primary-content' : 'bg-base-content/10'"
         >{{ i }}</span
       >
       <span class="min-w-0 flex-1">
         <span class="block truncate font-medium">{{ p.label }}</span>
-        <span class="block text-[10px] text-base-content/50 truncate">
+        <span class="block text-[11px] text-base-content/50 truncate">
           {{
             p.kind === 'source'
               ? t('sources.phaseSource')
@@ -54,7 +71,7 @@ const { t } = useI18n();
       <CircleAlert v-else-if="p.status === 'invalid'" :size="13" class="shrink-0 text-warning" />
       <button
         v-if="p.kind === 'endpoint'"
-        class="shrink-0 p-0.5 rounded text-base-content/40 hover:text-error transition-colors"
+        class="shrink-0 p-0.5 rounded text-base-content/55 hover:text-error transition-colors"
         :aria-label="t('common.delete')"
         @click.stop="emit('remove', i)"
       >
@@ -62,7 +79,7 @@ const { t } = useI18n();
       </button>
     </div>
     <button
-      class="mt-1 w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
+      class="mt-1 w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors"
       data-testid="sources-phase-add"
       @click="emit('add')"
     >

@@ -20,16 +20,19 @@ const { t } = useI18n();
         v-model="artist"
         class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         :placeholder="t('youtube.metaArtist')"
+        :aria-label="t('youtube.metaArtist')"
       />
       <input
         v-model="album"
         class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         :placeholder="t('youtube.metaAlbum')"
+        :aria-label="t('youtube.metaAlbum')"
       />
       <input
         v-model="year"
         class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
         :placeholder="t('youtube.metaYear')"
+        :aria-label="t('youtube.metaYear')"
       />
     </div>
   </section>

@@ -46,7 +46,7 @@ async function onCancel(): Promise<void> {
     <button
       v-if="task.status === 'completed' && task.outputPath"
       data-testid="download-action-play"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
       :title="t('downloads.play')"
       :aria-label="t('downloads.play')"
       @click="emit('play')"
@@ -82,7 +82,7 @@ async function onCancel(): Promise<void> {
     </button>
     <button
       v-if="task.inLibrary"
-      class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
+      class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary-text text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
       :title="t('downloads.inLibraryTitle')"
       @click="emit('openLibrary')"
     >
@@ -102,7 +102,7 @@ async function onCancel(): Promise<void> {
     <button
       v-if="task.status === 'paused'"
       data-testid="download-action-resume"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
       :title="t('downloads.resume')"
       :aria-label="t('downloads.resume')"
       @click="yt.resumeDownload(task.id)"
@@ -111,7 +111,7 @@ async function onCancel(): Promise<void> {
     </button>
     <button
       v-if="task.status === 'pending'"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-base-content/10 transition-colors"
+      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
       :title="t('downloads.moveToFront')"
       :aria-label="t('downloads.moveToFront')"
       @click="yt.moveToFront(task.id)"

@@ -2,16 +2,18 @@ import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 
+const alias = {
+  '@renderer': resolve('src/renderer/src'),
+  '@shared': resolve('src/shared')
+};
+
+// Dwa „projekty”: testy procesu głównego/scripts działają w środowisku `node`,
+// a renderer (komponenty .vue, DOM) w `jsdom`. Wcześniej WSZYSTKIE testy tworzyły
+// jsdom (~280×, ~70% czasu testów), mimo że main go nie potrzebuje.
+// `extends: false` — każdy projekt definiuje własne opcje, żeby nie dziedziczyć
+// (`setupFiles`/`include`) drugiego środowiska.
 export default defineConfig({
-  plugins: [vue()],
-  resolve: {
-    alias: { '@renderer': resolve('src/renderer/src'), '@shared': resolve('src/shared') }
-  },
   test: {
-    environment: 'jsdom',
-    include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
-    globals: true,
-    setupFiles: ['src/renderer/src/vitest.setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'json-summary'],
@@ -37,6 +39,32 @@ export default defineConfig({
         functions: 30,
         branches: 29
       }
-    }
+    },
+    projects: [
+      {
+        // Proces główny + skrypty narzędziowe: bez DOM.
+        extends: false,
+        resolve: { alias },
+        test: {
+          name: 'main',
+          environment: 'node',
+          globals: true,
+          include: ['src/main/**/*.test.ts', 'scripts/**/*.test.ts']
+        }
+      },
+      {
+        // Renderer: komponenty .vue + DOM.
+        extends: false,
+        plugins: [vue()],
+        resolve: { alias },
+        test: {
+          name: 'renderer',
+          environment: 'jsdom',
+          globals: true,
+          setupFiles: ['src/renderer/src/vitest.setup.ts'],
+          include: ['src/renderer/**/*.test.ts', 'src/shared/**/*.test.ts']
+        }
+      }
+    ]
   }
 });

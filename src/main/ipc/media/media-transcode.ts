@@ -6,19 +6,13 @@ import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
 import { resolveBin } from '../../binaries';
+import { sourceStamp } from '../../utils/source-stamp';
 
 const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
 const videoTempDir = join(os.tmpdir(), 'onda', 'video-transcodes');
 
-// Uwzględnij size + mtime, aby zastąpiony plik nigdy nie użył nieaktualnego transkodowania.
-async function sourceStamp(filePath: string): Promise<string> {
-  try {
-    const s = await stat(filePath);
-    return `${s.size}:${s.mtimeMs}`;
-  } catch {
-    return '';
-  }
-}
+// Stempel size+mtime jest współdzielony z cache miniatur (`utils/source-stamp`);
+// zastąpiony plik nigdy nie użyje nieaktualnego transkodowania.
 
 export async function transcodeAudioChunk(
   filePath: string,

@@ -8,6 +8,7 @@ import { syncDownloadToLibrary } from './library-sync';
 import { addToChannelPlaylist } from './channel-playlist';
 import { sha256File } from './hash-file';
 import { findSiblingSubtitleFiles, moveSubtitlesToFolder } from './subtitle-files';
+import { redactSecrets } from './error-classifier';
 
 // Pipeline po pobraniu (Faza 5/6): nadpisanie metadanych, przetwarzanie covera
 // i odświeżenie biblioteki. Wyodrębniony z `download-manager.ts` (plan 2.8).
@@ -49,9 +50,14 @@ export async function postProcess(job: Job): Promise<void> {
       taskId: job.id,
       url: job.url,
       cover: job.cover,
-      outputPath
+      outputPath,
+      sourceMode: job.source?.mode
     });
     job.coverStatus = res.status;
+    // Zachowuje przyczynę, gdy okładka się nie powiodła — wcześniej `res.error` był
+    // gubiony, więc UI pokazywało tylko ikonę błędu bez wyjaśnienia.
+    job.coverError =
+      res.status === 'error' ? redactSecrets(res.error || '') || undefined : undefined;
     persist(job);
   } else if (job.cover?.type === 'thumbnail') {
     job.coverStatus = 'embedded';

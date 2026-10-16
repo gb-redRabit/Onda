@@ -1,5 +1,7 @@
 import type { MkvFont } from '@renderer/types/subtitles';
+import { watch } from 'vue';
 import { createJassub } from '@renderer/utils/jassub';
+import { subtitleDelayMs, subtitleTimeOffsetSeconds } from './subtitleDelay';
 import { logger } from '@shared/logger';
 
 export interface SubtitleData {
@@ -68,7 +70,8 @@ export async function createJassubInstance(
       video: videoEl,
       subContent: opts.subContent,
       fonts: opts.fonts,
-      availableFonts: opts.availableFonts
+      availableFonts: opts.availableFonts,
+      timeOffset: subtitleTimeOffsetSeconds()
     });
     if (!opts.isCurrent()) {
       instance.destroy();
@@ -87,6 +90,19 @@ export async function createJassubInstance(
 export function saveLastSubtitleData(data: SubtitleData): void {
   lastSubtitleData = data;
 }
+
+/** Ustawia offset napisów na żywo (bez przeładowania napisów). */
+export function setSubtitleTimeOffset(seconds: number): void {
+  if (jassubInstance) jassubInstance.timeOffset = seconds;
+}
+
+/** Stosuje bieżące opóźnienie napisów do aktywnej instancji JASSUB. */
+export function applySubtitleDelay(): void {
+  setSubtitleTimeOffset(subtitleTimeOffsetSeconds());
+}
+
+// Regulacja skrótami zmienia stan; tu jest jedno miejsce, które przekłada go na renderer.
+watch(subtitleDelayMs, () => applySubtitleDelay());
 
 export function getLastSubtitleData(): SubtitleData | null {
   if (!lastSubtitleData) return null;

@@ -25,7 +25,7 @@ const { t } = useI18n();
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">X</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">{{ element.x }}%</span>
+        <span class="text-[11px] font-mono text-primary-text tabular-nums">{{ element.x }}%</span>
       </div>
       <input
         type="range"
@@ -41,7 +41,7 @@ const { t } = useI18n();
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">Y</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">{{ element.y }}%</span>
+        <span class="text-[11px] font-mono text-primary-text tabular-nums">{{ element.y }}%</span>
       </div>
       <input
         type="range"
@@ -57,7 +57,9 @@ const { t } = useI18n();
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.width') }}</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">{{ element.width }}%</span>
+        <span class="text-[11px] font-mono text-primary-text tabular-nums"
+          >{{ element.width }}%</span
+        >
       </div>
       <input
         type="range"
@@ -73,7 +75,9 @@ const { t } = useI18n();
     <div v-if="!hasLockedAspect">
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.height') }}</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">{{ element.height }}%</span>
+        <span class="text-[11px] font-mono text-primary-text tabular-nums"
+          >{{ element.height }}%</span
+        >
       </div>
       <input
         type="range"
@@ -88,18 +92,18 @@ const { t } = useI18n();
     <div v-else>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.height') }}</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">
+        <span class="text-[11px] font-mono text-primary-text tabular-nums">
           {{ element.height }}% · 16:9
         </span>
       </div>
-      <p class="text-[10px] text-base-content/60">{{ t('audioView.coverAspectLocked') }}</p>
+      <p class="text-[11px] text-base-content/60">{{ t('audioView.coverAspectLocked') }}</p>
     </div>
 
     <!-- Krycie -->
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.opacity') }}</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums"
+        <span class="text-[11px] font-mono text-primary-text tabular-nums"
           >{{ element.opacity ?? 100 }}%</span
         >
       </div>
@@ -117,7 +121,9 @@ const { t } = useI18n();
     <div>
       <div class="flex items-center justify-between mb-1">
         <label class="text-[11px] text-base-content/50">{{ t('audioView.layer') }}</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">{{ element.layer }}</span>
+        <span class="text-[11px] font-mono text-primary-text tabular-nums">{{
+          element.layer
+        }}</span>
       </div>
       <input
         type="range"
@@ -151,7 +157,7 @@ const { t } = useI18n();
         <label class="text-[11px] text-base-content/50">{{
           t('audioView.elementBgOpacity')
         }}</label>
-        <span class="text-[11px] font-mono text-primary tabular-nums">
+        <span class="text-[11px] font-mono text-primary-text tabular-nums">
           {{ element.bgOpacity ?? 40 }}%
         </span>
       </div>

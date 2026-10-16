@@ -100,14 +100,14 @@ function onSeekKeydown(e: KeyboardEvent): void {
         <SkipForward :size="14" fill="currentColor" />
       </button>
     </div>
-    <span v-if="isLive" class="text-[10px] font-bold tracking-widest text-error shrink-0">{{
+    <span v-if="isLive" class="text-[11px] font-bold tracking-widest text-error shrink-0">{{
       $t('player.live')
     }}</span>
-    <span v-else class="text-[10px] text-base-content/50 font-mono tabular-nums">{{
+    <span v-else class="text-[11px] text-base-content/50 font-mono tabular-nums">{{
       formatDuration(audio.currentTime.value)
     }}</span>
     <button
-      class="p-1.5 text-base-content/50 hover:text-primary transition-colors"
+      class="p-1.5 text-base-content/50 hover:text-primary-text transition-colors"
       :title="$t('common.audioView')"
       :aria-label="$t('common.audioView')"
       @click="emit('audio-view')"

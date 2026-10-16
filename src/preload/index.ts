@@ -27,6 +27,23 @@ import type {
 import type { IpcArgs, IpcChannel, IpcResult } from '../shared/ipc/contract';
 import type { OndaAPI } from '../shared/ipc/api';
 import type { PipSubtitleData } from '../shared/types/pip';
+import type {
+  OpenSubtitlesDownloadParams,
+  OpenSubtitlesDownloadResult,
+  OpenSubtitlesSearchParams,
+  OpenSubtitlesSearchResult
+} from '../shared/types/opensubtitles';
+import type {
+  NapiProjektCheckResult,
+  NapiProjektDownloadParams,
+  NapiProjektDownloadResult
+} from '../shared/types/napiprojekt';
+import type {
+  AnimeSubDownloadParams,
+  AnimeSubDownloadResult,
+  AnimeSubSearchParams,
+  AnimeSubSearchResult
+} from '../shared/types/animesub';
 import {
   ALLOWED_INVOKE_CHANNELS,
   ALLOWED_RECEIVE_CHANNELS,
@@ -172,6 +189,13 @@ const api: OndaAPI = {
   getCover: (filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> =>
     tryInvoke('media:getCover', filePath),
   getDuration: (filePath: string): Promise<number> => tryInvoke('media:getDuration', filePath),
+  getVideoFps: (filePath: string): Promise<number> => tryInvoke('media:getVideoFps', filePath),
+  saveScreenshot: (
+    videoPath: string,
+    data: number[],
+    timeSec: number
+  ): Promise<{ success: boolean; path?: string; error?: string }> =>
+    tryInvoke('media:saveScreenshot', videoPath, data, timeSec),
   getDurations: (paths: string[]): Promise<Record<string, number>> =>
     tryInvoke('media:batchDurations', paths),
   writeTags: (
@@ -239,6 +263,23 @@ const api: OndaAPI = {
     filePath: string
   ): Promise<Array<{ name: string; ext: string; data: number[] }>> =>
     tryInvoke('subtitles:extractAttachments', filePath),
+  getFontCacheStats: (): Promise<{ files: number; bytes: number; videos: number }> =>
+    tryInvoke('subtitles:fontCacheStats'),
+  clearFontCache: (): Promise<{ removed: number; bytesFreed: number }> =>
+    tryInvoke('subtitles:fontCacheClear'),
+  openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
+    tryInvoke('opensubtitles:search', params),
+  openSubtitlesDownload: (
+    params: OpenSubtitlesDownloadParams
+  ): Promise<OpenSubtitlesDownloadResult> => tryInvoke('opensubtitles:download', params),
+  napiProjektCheck: (params: NapiProjektDownloadParams): Promise<NapiProjektCheckResult> =>
+    tryInvoke('napiprojekt:check', params),
+  napiProjektDownload: (params: NapiProjektDownloadParams): Promise<NapiProjektDownloadResult> =>
+    tryInvoke('napiprojekt:download', params),
+  animeSubSearch: (params: AnimeSubSearchParams): Promise<AnimeSubSearchResult> =>
+    tryInvoke('animesub:search', params),
+  animeSubDownload: (params: AnimeSubDownloadParams): Promise<AnimeSubDownloadResult> =>
+    tryInvoke('animesub:download', params),
   getPlaybackPosition: (filePath: string): Promise<number> =>
     tryInvoke('playback:getPosition', filePath),
   setPlaybackPosition: (filePath: string, position: number): Promise<void> =>

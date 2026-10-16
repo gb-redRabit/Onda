@@ -37,6 +37,7 @@ function geomValue(key: keyof ThemeGeometry): number {
           :value="
             slider === 'radiusBox' && glassActive ? 0 : geomValue(slider as keyof ThemeGeometry)
           "
+          :aria-label="$t(`creator.${slider}`)"
           class="w-full"
           :class="{ 'opacity-40 pointer-events-none': slider === 'radiusBox' && glassActive }"
           @input="
@@ -58,6 +59,7 @@ function geomValue(key: keyof ThemeGeometry): number {
           max="5"
           step="1"
           :value="geomValue(sz as keyof ThemeGeometry)"
+          :aria-label="$t(`creator.${sz}`)"
           class="w-full"
           @input="
             updateGeometry(
@@ -77,6 +79,7 @@ function geomValue(key: keyof ThemeGeometry): number {
           min="0"
           max="4"
           :value="geomValue('border')"
+          :aria-label="$t('creator.borderWidth')"
           class="w-full"
           @input="updateGeometry('border', parseInt(($event.target as HTMLInputElement).value))"
         />

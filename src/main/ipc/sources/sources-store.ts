@@ -1,8 +1,7 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
-import { dirname } from 'path';
+import { readFile } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { logger } from '../../../shared/logger';
-import { createWriteLock } from '../../utils/write-queue';
+import { createWriteLock, writeJsonAtomic } from '../../utils/write-queue';
 import type {
   MediaSource,
   SourceEndpoint,
@@ -268,8 +267,7 @@ async function readList(filePath: string): Promise<MediaSource[]> {
 }
 
 async function writeList(filePath: string, list: MediaSource[]): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, JSON.stringify(list, null, 2), 'utf-8');
+  await writeJsonAtomic(filePath, list);
 }
 
 export async function loadSources(filePath: string): Promise<MediaSource[]> {

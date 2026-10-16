@@ -9,6 +9,7 @@ export const SETTINGS_TAB_COMPONENTS: Record<string, ReturnType<typeof defineAsy
   playback: defineAsyncComponent(() => import('./SettingsPlayback.vue')),
   'pip-video': defineAsyncComponent(() => import('./SettingsPiPVideo.vue')),
   'pip-audio': defineAsyncComponent(() => import('./SettingsPiPAudio.vue')),
+  subtitles: defineAsyncComponent(() => import('./SettingsSubtitles.vue')),
   download: defineAsyncComponent(() => import('./SettingsDownload.vue')),
   'download-paths': defineAsyncComponent(() => import('./SettingsDownloadPaths.vue')),
   'download-queue': defineAsyncComponent(() => import('./SettingsDownloadQueue.vue')),
@@ -25,5 +26,6 @@ export const SETTINGS_TAB_COMPONENTS: Record<string, ReturnType<typeof defineAsy
   diagnostics: defineAsyncComponent(() => import('./SettingsDiagnostics.vue')),
   about: defineAsyncComponent(() => import('./SettingsAbout.vue')),
   apiKeys: defineAsyncComponent(() => import('./SettingsApiKeys.vue')),
+  providerCredentials: defineAsyncComponent(() => import('./SettingsProviderCredentials.vue')),
   plugins: defineAsyncComponent(() => import('./SettingsPlugins.vue'))
 };

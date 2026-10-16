@@ -65,18 +65,19 @@ export function useLibraryDerivations(
   const videoTracks = computed(() => trackStats.value.videoArr);
   const imageTracks = computed(() => trackStats.value.imageArr);
 
+  // Tylko AUDIO i tylko faktycznie odtwarzane. Wcześniej pracowały na `tracks`
+  // (cała biblioteka, łącznie z wideo i obrazami) bez progu `playCount`, więc
+  // „Ostatnio odtwarzane"/„Najczęściej odtwarzane" pokazywały losowe, nieodtwarzane
+  // pozycje, w tym pliki nie-audio.
   const recentTracks = computed(() => {
     void statsRevision.value;
-    const ts = tracks.value;
-    const withPlayed = ts.filter((t) => t.lastPlayed);
-    if (withPlayed.length === 0) return [];
-    return topN(withPlayed, 20, (t) => t.lastPlayed || 0);
+    const played = audioTracks.value.filter((t) => (t.lastPlayed ?? 0) > 0);
+    return played.length ? topN(played, 20, (t) => t.lastPlayed || 0) : [];
   });
   const mostPlayed = computed(() => {
     void statsRevision.value;
-    const ts = tracks.value;
-    if (ts.length === 0) return [];
-    return topN(ts, 20, (t) => t.playCount);
+    const played = audioTracks.value.filter((t) => (t.playCount ?? 0) > 0);
+    return played.length ? topN(played, 20, (t) => t.playCount) : [];
   });
 
   // Grupowanie działa na już odfiltrowanej domenie audio (`audioTracks`), a nie na
@@ -87,9 +88,33 @@ export function useLibraryDerivations(
     groupAudioByMetadataKey(audioTracks.value, 'artist', 'Unknown Artist')
   );
 
-  const albums = computed(() =>
-    groupAudioByMetadataKey(audioTracks.value, 'album', 'Unknown Album')
-  );
+  // Albumy grupujemy po nazwie ORAZ wykonawcy albumu (`albumArtist`, w razie braku
+  // `artist`). Wcześniej kluczem była sama nazwa, więc „Greatest Hits" różnych
+  // wykonawców zlewało się w jeden album. Gdy ta sama nazwa albumu występuje u
+  // kilku wykonawców, etykietę rozróżniamy jako „Album — Wykonawca" (zachowując
+  // krotkę `[name, tracks]`, której oczekują konsumenci).
+  const albums = computed(() => {
+    const groups = new Map<string, { album: string; artist: string; tracks: MediaFile[] }>();
+    for (const track of audioTracks.value) {
+      const album = track.metadata?.album || 'Unknown Album';
+      const artist = track.metadata?.albumArtist || track.metadata?.artist || 'Unknown Artist';
+      const key = `${album.toLowerCase()}\u0000${artist.toLowerCase()}`;
+      const bucket = groups.get(key);
+      if (bucket) bucket.tracks.push(track);
+      else groups.set(key, { album, artist, tracks: [track] });
+    }
+    const nameCounts = new Map<string, number>();
+    for (const g of groups.values()) {
+      const key = g.album.toLowerCase();
+      nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+    }
+    return Array.from(groups.values())
+      .map((g): [string, MediaFile[]] => [
+        (nameCounts.get(g.album.toLowerCase()) ?? 1) > 1 ? `${g.album} — ${g.artist}` : g.album,
+        g.tracks
+      ])
+      .sort((a, b) => nameCollator.compare(a[0], b[0]));
+  });
 
   return {
     trackStats,

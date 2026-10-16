@@ -76,7 +76,7 @@ async function onPlayFromStart(): Promise<void> {
         @click="a.route()"
       >
         <div class="w-12 h-12 rounded-box bg-primary/10 flex items-center justify-center">
-          <component :is="a.icon" :size="22" class="text-primary" />
+          <component :is="a.icon" :size="22" class="text-primary-text" />
         </div>
         <div class="flex-1">
           <div class="text-sm font-semibold">{{ $t(a.labelKey) }}</div>

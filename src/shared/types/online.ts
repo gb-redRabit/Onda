@@ -1,5 +1,9 @@
-import type { IpcDownloadErrorCode, IpcDownloadSource, IpcDownloadTask } from './ipc/download';
-import type { IpcCoverSpec, IpcCoverStatus, IpcMetaOverride } from './ipc/download';
+import type {
+  IpcDownloadTask,
+  IpcCoverSpec,
+  IpcCoverStatus,
+  IpcMetaOverride
+} from './ipc/download';
 import type { IpcSubscription, IpcSubscriptionDownloadPrefs, IpcYoutubeVideo } from './ipc/youtube';
 
 // Rendererowe typy domenowe DERIVUJĄ z kontraktu IPC (jedno źródło prawdy).
@@ -52,8 +56,6 @@ export interface YouTubeChannel {
 export type CoverStatus = IpcCoverStatus;
 export type CoverSpec = IpcCoverSpec;
 export type MetaOverride = IpcMetaOverride;
-export type DownloadSource = IpcDownloadSource;
-export type DownloadErrorCode = IpcDownloadErrorCode;
 export type SubscriptionDownloadPrefs = IpcSubscriptionDownloadPrefs;
 export type Subscription = IpcSubscription;
 

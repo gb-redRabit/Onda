@@ -7,10 +7,6 @@ export class PlayerModule implements AppModule {
   name = 'Player';
   private _active = false;
 
-  init(): void {
-    audioEngine.init();
-  }
-
   activate(context?: unknown): void {
     this._active = true;
     audioEngine.resumeContext();

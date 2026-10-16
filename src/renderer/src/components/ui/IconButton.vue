@@ -29,7 +29,7 @@ defineEmits<{ click: [e: MouseEvent] }>();
       variant === 'danger'
         ? 'text-error hover:text-error/80'
         : variant === 'primary'
-          ? 'text-primary hover:text-primary/80'
+          ? 'text-primary-text hover:text-primary-text/80'
           : 'text-base-content/50 hover:text-base-content'
     "
     :title="title ?? label"

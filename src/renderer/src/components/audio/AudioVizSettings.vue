@@ -45,7 +45,7 @@ function updateLayout(partial: Record<string, unknown>) {
   <div class="p-3 bg-base-100 border border-base-300 rounded-box shadow-xl min-w-55 space-y-3">
     <div>
       <label
-        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizModeLabel') }}</label
       >
       <div class="flex flex-wrap gap-1">
@@ -67,7 +67,7 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <label
-        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizPrimaryColor') }}</label
       >
       <div class="flex items-center gap-2">
@@ -83,7 +83,7 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <label
-        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizSecondaryColor') }}</label
       >
       <div class="flex items-center gap-2">
@@ -99,7 +99,7 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <label
-        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizSensitivity') }}: {{ Math.round(viz.sensitivity * 100) }}%</label
       >
       <input
@@ -117,7 +117,7 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <label
-        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizSmoothing') }}: {{ Math.round(viz.smoothing * 100) }}%</label
       >
       <input
@@ -135,7 +135,7 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <label
-        class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
         >{{ $t('audioView.vizFpsCap') }}: {{ viz.fpsCap }}</label
       >
       <input
@@ -152,7 +152,7 @@ function updateLayout(partial: Record<string, unknown>) {
     <div class="border-t border-base-300 pt-3 space-y-3">
       <div>
         <label
-          class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+          class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
           >{{ $t('audioView.hudOpacity') }}: {{ hudOpacityInput }}%</label
         >
         <input
@@ -168,7 +168,7 @@ function updateLayout(partial: Record<string, unknown>) {
 
       <div>
         <label
-          class="text-[10px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
+          class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-1.5 block"
           >{{ $t('audioView.vizQuality') }}</label
         >
         <div class="flex gap-1">

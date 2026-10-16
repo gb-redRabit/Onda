@@ -1,7 +1,10 @@
 import { ref, computed, watch, effectScope } from 'vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { cloneEqBands, type EqBand } from '@renderer/utils/constants/audio';
+import { subtitleDelayMs } from './subtitleDelay';
 import { logger } from '@shared/logger';
 import { wireAudioEvents } from './audioPlayerEvents';
 
@@ -27,6 +30,16 @@ function resumeAndPlay() {
 
 let moduleInitialized = false;
 
+// Debounce przebudowy łańcucha EQ (IIR ma stałe współczynniki — zmiana = rozłączenie).
+let eqGraphTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleEqGraph(bands: EqBand[]): void {
+  if (eqGraphTimer) clearTimeout(eqGraphTimer);
+  eqGraphTimer = setTimeout(() => {
+    eqGraphTimer = null;
+    audioEngine.setEqBands(bands);
+  }, 120);
+}
+
 function ensureModule() {
   if (moduleInitialized) return;
   moduleInitialized = true;
@@ -43,6 +56,7 @@ function ensureModule() {
   });
 
   const player = usePlayerStore();
+  const fx = useAudioFxStore();
   const settings = useSettingsStore();
 
   audioEngine.setStateProvider({
@@ -56,6 +70,28 @@ function ensureModule() {
     settings.playback.replayGain || settings.playback.normalization
   );
   audioEngine.setRememberPosition(settings.playback.rememberPosition);
+  // Zapisany korektor parametryczny: nałóż na store + silnik (graf zastosuje przy tworzeniu kontekstu).
+  const savedEq = settings.playback.equalizerBands;
+  if (savedEq?.length) {
+    fx.equalizerBands = cloneEqBands(savedEq);
+    audioEngine.setEqBands(fx.equalizerBands);
+  }
+  if (settings.playback.equalizerEnabled === false) {
+    fx.equalizerEnabled = false;
+    audioEngine.setEqEnabled(false);
+  }
+  const preamp = settings.playback.equalizerPreamp ?? 0;
+  fx.equalizerPreamp = preamp;
+  audioEngine.setEqPreamp(preamp);
+  fx.equalizerUserPresets = settings.playback.equalizerUserPresets ?? {};
+  fx.equalizerMulticolor = settings.playback.equalizerMulticolor === true;
+  fx.equalizerSnap = settings.playback.equalizerSnap !== false;
+  fx.nightMode = settings.playback.nightMode === true;
+  audioEngine.setNightMode(fx.nightMode);
+  fx.audioDelayMs = settings.playback.audioDelayMs ?? 0;
+  audioEngine.setAudioDelayMs(fx.audioDelayMs);
+  // Opóźnienie napisów zapisujemy w tych samych ustawieniach odtwarzania co dźwięk.
+  subtitleDelayMs.value = settings.playback.subtitleDelayMs ?? 0;
 
   const scope = effectScope(true);
 
@@ -68,6 +104,9 @@ function ensureModule() {
       () => settings.playback.rememberPosition,
       (rem) => audioEngine.setRememberPosition(rem)
     );
+
+    // Regulacja skrótami/UI zmienia ref — tu jest jedyne miejsce zapisu do ustawień.
+    watch(subtitleDelayMs, (ms) => useSettingsStore().updatePlayback({ subtitleDelayMs: ms }));
 
     watch(
       () => player.currentTrack?.path ?? null,
@@ -173,17 +212,57 @@ export function useAudioPlayer() {
       usePlayerStore().setVolume(v);
       audioEngine.setVolume(usePlayerStore().isMuted ? 0 : v);
     },
-    setPlaybackRate: (rate: number) => audioEngine.setPlaybackRate(rate),
-    setEqualizerBand: (index: number, gain: number) => {
-      usePlayerStore().equalizerBands[index] = gain;
-      audioEngine.setEqualizerBand(index, gain);
+    applyEqBands: (bands: EqBand[]) => {
+      const fx = useAudioFxStore();
+      fx.equalizerBands = cloneEqBands(bands);
+      useSettingsStore().updatePlayback({ equalizerBands: cloneEqBands(bands) });
+      // Graf przebudowujemy dopiero po chwili bez zmian — IIR ma stałe współczynniki,
+      // więc każda zmiana rozłącza łańcuch (podczas kręcenia dawałoby to dropy/trzaski).
+      scheduleEqGraph(fx.equalizerBands);
     },
-    applyEqPreset: (preset: Record<number, number>) => {
-      Object.entries(preset).forEach(([idx, gain]) => {
-        const i = parseInt(idx);
-        usePlayerStore().equalizerBands[i] = gain;
-      });
-      audioEngine.applyEqPreset(preset);
+    setEqEnabled: (enabled: boolean) => {
+      useAudioFxStore().equalizerEnabled = enabled;
+      audioEngine.setEqEnabled(enabled);
+      useSettingsStore().updatePlayback({ equalizerEnabled: enabled });
+    },
+    setEqPreamp: (db: number) => {
+      useAudioFxStore().equalizerPreamp = db;
+      audioEngine.setEqPreamp(db);
+      useSettingsStore().updatePlayback({ equalizerPreamp: db });
+    },
+    setEqUserPresets: (presets: Record<string, EqBand[]>) => {
+      useAudioFxStore().equalizerUserPresets = presets;
+      useSettingsStore().updatePlayback({ equalizerUserPresets: presets });
+    },
+    setEqMulticolor: (on: boolean) => {
+      useAudioFxStore().equalizerMulticolor = on;
+      useSettingsStore().updatePlayback({ equalizerMulticolor: on });
+    },
+    setEqSnap: (on: boolean) => {
+      useAudioFxStore().equalizerSnap = on;
+      useSettingsStore().updatePlayback({ equalizerSnap: on });
+    },
+    /** Nakłada pasma TYLKO na graf (bez zapisu) — np. do „solo". */
+    applyEqGraph: (bands: EqBand[]) => {
+      audioEngine.setEqBands(bands);
+    },
+    /** Odsłuch mono (kontrola fazy) — tylko na graf, bez zapisu. */
+    setEqMono: (on: boolean) => {
+      useAudioFxStore().equalizerMono = on;
+      audioEngine.setEqMono(on);
+    },
+    /** Tryb nocny: kompresja dynamiki + podbicie dialogów. */
+    setNightMode: (on: boolean) => {
+      useAudioFxStore().nightMode = on;
+      audioEngine.setNightMode(on);
+      useSettingsStore().updatePlayback({ nightMode: on });
+    },
+    /** Kompensacja opóźnienia dźwięku (ms) względem obrazu. */
+    setAudioDelay: (ms: number) => {
+      const clamped = Math.max(0, Math.min(500, Math.round(ms) || 0));
+      useAudioFxStore().audioDelayMs = clamped;
+      audioEngine.setAudioDelayMs(clamped);
+      useSettingsStore().updatePlayback({ audioDelayMs: clamped });
     },
     savePosition: () => audioEngine.savePosition(),
     getAudioContext: () => audioEngine.getAudioContext()

@@ -7,7 +7,9 @@ import {
   normalizeCoverSpec,
   buildThumbnailArgs,
   buildSectionArgs,
-  siblingCoverPath
+  siblingCoverPath,
+  clipFormatSelector,
+  clipCopiedCodecAcceptable
 } from '../cover-spec';
 
 describe('sanitizeDirSegment', () => {
@@ -103,6 +105,20 @@ describe('normalizeCoverSpec', () => {
       normalizeCoverSpec({ type: 'clip', clipStart: 0, clipEnd: 5, clipFormat: 'mp4' })
     ).toEqual({ type: 'clip', clipStart: 0, clipEnd: 5, clipFormat: 'mp4' });
   });
+  it('caps the animated clip length to avoid unbounded ffmpeg/yt-dlp work', () => {
+    expect(normalizeCoverSpec({ type: 'clip', clipStart: 0, clipEnd: 24 * 3600 })).toEqual({
+      type: 'clip',
+      clipStart: 0,
+      clipEnd: 120,
+      clipFormat: 'webm'
+    });
+    expect(normalizeCoverSpec({ type: 'clip', clipStart: 600, clipEnd: 100000 })).toEqual({
+      type: 'clip',
+      clipStart: 600,
+      clipEnd: 720,
+      clipFormat: 'webm'
+    });
+  });
 });
 
 describe('yt-dlp arg builders', () => {
@@ -130,5 +146,44 @@ describe('siblingCoverPath', () => {
       join('C:', 'Music', 'Utwór - Artysta.webm')
     );
     expect(siblingCoverPath('/a/b/file.flac', 'mp4')).toBe(join('/', 'a', 'b', 'file.mp4'));
+  });
+});
+
+// Regresja: okładka-klip ma iść w najwyższej dostępnej rozdzielczości (bez limitu).
+// Wcześniej selektory miały `[height<=1080]`, co ucinało klip do 1080p.
+describe('clipFormatSelector', () => {
+  it('has no resolution cap (highest available, incl. 4K/8K)', () => {
+    for (const fmt of ['webm', 'mp4'] as const) {
+      expect(clipFormatSelector(fmt)).not.toMatch(/height<=/);
+    }
+  });
+
+  it('prefers natively copyable codecs for WebM (VP9/AV1)', () => {
+    const sel = clipFormatSelector('webm');
+    expect(sel.startsWith('bestvideo[vcodec^=vp9]')).toBe(true);
+    expect(sel).toContain('bestvideo[vcodec^=av01]');
+    expect(sel).toContain('bestvideo[ext=webm]');
+  });
+
+  it('prefers AV1 before H.264 for MP4 (H.264 maxes at 1080p on YouTube)', () => {
+    const sel = clipFormatSelector('mp4');
+    expect(sel.startsWith('bestvideo[vcodec^=av01]')).toBe(true);
+    expect(sel.indexOf('av01')).toBeLessThan(sel.indexOf('avc1'));
+    expect(sel).toContain('bestvideo[ext=mp4]');
+  });
+});
+
+// Regresja: skopiowany strumień AV1 w MP4 nie może być re-enkodowany — Chromium go odtwarza.
+describe('clipCopiedCodecAcceptable', () => {
+  it('accepts H.264 and AV1 copy without re-encoding', () => {
+    expect(clipCopiedCodecAcceptable('h264')).toBe(true);
+    expect(clipCopiedCodecAcceptable('av01')).toBe(true);
+    expect(clipCopiedCodecAcceptable('h264\n')).toBe(true);
+  });
+
+  it('rejects codecs that must be re-encoded for MP4', () => {
+    expect(clipCopiedCodecAcceptable('vp9')).toBe(false);
+    expect(clipCopiedCodecAcceptable('av1')).toBe(false);
+    expect(clipCopiedCodecAcceptable('')).toBe(false);
   });
 });

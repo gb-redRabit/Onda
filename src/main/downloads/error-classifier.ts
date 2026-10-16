@@ -1,4 +1,5 @@
 import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
+import { detectProviderLimit } from '../ipc/providers/provider-limits';
 
 // Klasyfikuje stderr yt-dlp do stabilnej, widocznej dla użytkownika kategorii błędu.
 // Kolejność sprawdzeń ma znaczenie: najbardziej szczegółowe warunki (private,
@@ -6,6 +7,22 @@ import type { IpcDownloadErrorCode } from '../../shared/types/ipc';
 // aby prywatne lub usunięte wideo nigdy nie było zgłaszane jako ogólny problem auth.
 export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
   const s = stderr.toLowerCase();
+
+  if (/(this video is private|video is private|private video)/.test(s)) {
+    return 'private';
+  }
+  if (
+    /(bot|recaptcha|captcha|http error 429|too many requests|automated traffic|unusual traffic)/.test(
+      s
+    )
+  ) {
+    return 'bot-block';
+  }
+  // Limit serwisu (transfer/kwota/rate-limit) — np. MEGA „Bandwidth limit reached".
+  // Po „bot-block" (żeby nie zabrać YouTube 429), przed ogólnym „network".
+  if (detectProviderLimit(stderr).limited) {
+    return 'rate-limited';
+  }
 
   if (/(this video is private|video is private|private video)/.test(s)) {
     return 'private';
@@ -80,6 +97,8 @@ export function describeError(code: IpcDownloadErrorCode): string {
       return 'Missing dependency (FFmpeg/FFprobe)';
     case 'disk-full':
       return 'Not enough disk space — free up space and retry';
+    case 'rate-limited':
+      return 'Provider limit reached — try again later';
     default:
       return 'Download failed';
   }

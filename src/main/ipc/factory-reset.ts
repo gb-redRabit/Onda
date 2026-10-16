@@ -8,6 +8,8 @@ import { getStore } from './cover/cover-store';
 import { clearAppCaches } from './app-cache';
 import { clearLogFile, getLogDir } from '../log-file';
 import { AUTH_PARTITION } from '../youtube/youtube-auth-session';
+import { providerLoginPartitions } from './providers/provider-login';
+import { PREVIEW_PARTITION } from '../preview/preview-session';
 import { removeProfileState } from '../utils/profile-state';
 import { CURRENT_STORE_VERSION, MAX_STORE_BACKUPS, STORE_VERSION_KEY } from '../state-migrations';
 
@@ -69,7 +71,12 @@ function restartDevCommand(): void {
 async function clearSessionStorages(): Promise<void> {
   const sessions: Array<[string, Electron.Session]> = [
     ['default', session.defaultSession],
-    ['youtube-auth', session.fromPartition(AUTH_PARTITION)]
+    ['youtube-auth', session.fromPartition(AUTH_PARTITION)],
+    ...providerLoginPartitions().map((p): [string, Electron.Session] => [
+      p,
+      session.fromPartition(p)
+    ]),
+    ['onda-preview', session.fromPartition(PREVIEW_PARTITION)]
   ];
   for (const [label, ses] of sessions) {
     try {

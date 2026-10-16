@@ -1,18 +1,18 @@
 import { ipcMain } from 'electron';
-import { readFile, rename, unlink, stat, realpath } from 'fs/promises';
+import { readFile, rename, stat, realpath } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
 import {
-  getStore,
   getCachedDuration,
   setCachedDuration,
   deleteCachedDuration,
   invalidateCachedCover,
-  COVER_CACHE_MAP_KEY,
   PERSISTENT_COVER_DIR,
   clearCoverCache
 } from '../cover/cover-cache';
+import { readCoverMap, writeCoverMap } from '../cover/cover-map';
+import { safeUnlink } from '../../utils/fs-atomic';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
@@ -26,7 +26,8 @@ import {
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
 import { isProtectedPath, isSensitivePath } from '../../path-policy';
-import { isPathWithinAllowedRoots } from '../../media/media-server';
+import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-server';
+import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
 
 // Mutujące operacje plikowe (zmiana nazwy, tagi, okładka) muszą przejść tę samą
 // politykę co destrukcyjne kanały `fs:*`: odrzucamy wyłącznie korzenie wolumenów i
@@ -36,7 +37,6 @@ import { isPathWithinAllowedRoots } from '../../media/media-server';
 function isProtectedTarget(filePath: string): boolean {
   return isProtectedPath(filePath) || isProtectedPath(dirname(filePath));
 }
-import { addAllowedRoot } from '../../media/media-server';
 
 export async function getDuration(filePath: string): Promise<number> {
   const cached = getCachedDuration(filePath);
@@ -85,6 +85,16 @@ export async function writeCoverToAudioFile(
   mimeOverride?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Okładkę osadzamy TYLKO w kontenerach, które ją bezpiecznie przyjmą. Wcześniej
+    // NodeID3 był wołany bezwarunkowo i dla m4a/flac/opus doklejał blok ID3 na
+    // początku pliku, uszkadzając kontener. `embedCover` dobiera metodę (ID3 vs
+    // ffmpeg `attached_pic`) lub rzuca dla nieobsługiwanych formatów.
+    if (!coverEmbedSupported(filePath)) {
+      return {
+        success: false,
+        error: `cover embedding unsupported for ${extname(filePath).toLowerCase() || 'unknown'}`
+      };
+    }
     let imageBuffer: Buffer;
     let mime = 'image/jpeg';
     if (typeof imageSource === 'string') {
@@ -102,26 +112,17 @@ export async function writeCoverToAudioFile(
       imageBuffer = Buffer.from(imageSource);
       if (mimeOverride) mime = mimeOverride;
     }
-    await NodeID3.Promise.update(
-      {
-        image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
-      },
-      filePath
-    );
+    await embedCover(filePath, { buffer: imageBuffer, mime });
     invalidateCachedCover(filePath);
-    const store = await getStore();
-    const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
-      Record<string, { cacheFile: string; mtime: number }> | undefined;
-    if (cacheMap?.[filePath]) {
-      const old = cacheMap[filePath];
-      const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
-      try {
-        await unlink(cachePath);
-      } catch {
-        // zbuforowana okładka zniknęła — można pominąć
-      }
+    // Mapa okładek żyje we własnym pliku JSON (`cover-map`), NIE w szyfrowanym
+    // electron-store — wcześniej ta gałąź przepisywała całą konfigurację przy każdej
+    // aktualizacji okładki.
+    const cacheMap = await readCoverMap();
+    const old = cacheMap[filePath];
+    if (old) {
+      await safeUnlink(join(PERSISTENT_COVER_DIR, old.cacheFile));
       delete cacheMap[filePath];
-      store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
+      await writeCoverMap(cacheMap);
     }
     return { success: true };
   } catch (e: unknown) {

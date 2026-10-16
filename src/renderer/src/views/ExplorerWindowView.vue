@@ -76,12 +76,12 @@ watch(
       style="-webkit-app-region: drag"
     >
       <div class="flex items-center gap-2 text-xs text-base-content/70 min-w-0">
-        <FolderOpen :size="14" class="text-primary shrink-0" />
+        <FolderOpen :size="14" class="text-primary-text shrink-0" />
         <span class="truncate font-medium">{{ titleText }}</span>
       </div>
       <div class="flex items-center gap-0.5 shrink-0" style="-webkit-app-region: no-drag">
         <button
-          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary hover:bg-primary/10 transition-colors"
+          class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-primary/10 transition-colors"
           :title="$t('explorer.pinAsTab')"
           :aria-label="$t('explorer.pinAsTab')"
           @click="pinAsTab"

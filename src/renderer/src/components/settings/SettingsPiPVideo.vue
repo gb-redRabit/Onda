@@ -118,6 +118,7 @@ onBeforeUnmount(() => {
         max="1200"
         step="10"
         :value="settings.playback.pipWidth"
+        :aria-label="$t('settings.width')"
         class="w-full"
         @input="
           settings.updatePlayback({
@@ -135,6 +136,7 @@ onBeforeUnmount(() => {
         max="800"
         step="10"
         :value="settings.playback.pipHeight"
+        :aria-label="$t('settings.height')"
         class="w-full"
         @input="
           settings.updatePlayback({

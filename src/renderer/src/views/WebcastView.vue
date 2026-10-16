@@ -30,6 +30,24 @@ function selectTab(tab: WebcastTab) {
   writeString('onda.webcastTab', tab);
 }
 
+// Wzorzec WAI-ARIA tabs: strzałki/Home/End przenoszą focus i wybór.
+const webcastTablistRef = ref<HTMLElement | null>(null);
+const WEBCAST_TABS: WebcastTab[] = ['radio', 'saved'];
+function onTabKeydown(e: KeyboardEvent, index: number): void {
+  const n = WEBCAST_TABS.length;
+  let next = index;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % n;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + n) % n;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = n - 1;
+  else return;
+  e.preventDefault();
+  selectTab(WEBCAST_TABS[next]!);
+  nextTick(() =>
+    webcastTablistRef.value?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus()
+  );
+}
+
 const radioDialogOpen = ref(false);
 const trackGridRef = ref<HTMLElement | null>(null);
 const trackGrid = useVirtualGrid(trackGridRef, 220, 4);
@@ -94,13 +112,20 @@ const trackCount = computed(() => saved.tracks.length);
 <template>
   <div data-testid="webcast-view" class="flex flex-col h-full">
     <PageHeader :title="$t('saved.title')" :icon="RadioTower" sticky>
-      <div class="ui-segmented" role="tablist" :aria-label="$t('saved.title')">
+      <div
+        ref="webcastTablistRef"
+        class="ui-segmented"
+        role="tablist"
+        :aria-label="$t('saved.title')"
+      >
         <button
           type="button"
           role="tab"
           data-testid="webcast-tab-radio"
           :aria-selected="activeTab === 'radio'"
+          :tabindex="activeTab === 'radio' ? 0 : -1"
           @click="selectTab('radio')"
+          @keydown="onTabKeydown($event, 0)"
         >
           {{ $t('saved.radioTitle') }}
         </button>
@@ -109,7 +134,9 @@ const trackCount = computed(() => saved.tracks.length);
           role="tab"
           data-testid="webcast-tab-saved"
           :aria-selected="activeTab === 'saved'"
+          :tabindex="activeTab === 'saved' ? 0 : -1"
           @click="selectTab('saved')"
+          @keydown="onTabKeydown($event, 1)"
         >
           {{ $t('saved.tabSaved') }}
         </button>
@@ -125,7 +152,7 @@ const trackCount = computed(() => saved.tracks.length);
         <!-- Zapisane utwory -->
         <section>
           <h2 class="flex items-center gap-2 text-sm font-semibold text-base-content/70 mb-3">
-            <Play :size="14" class="text-primary" />
+            <Play :size="14" class="text-primary-text" />
             {{ $t('saved.tracksTitle') }}
             <span class="text-base-content/60 text-xs">({{ trackCount }})</span>
           </h2>
@@ -167,7 +194,7 @@ const trackCount = computed(() => saved.tracks.length);
                       class="absolute inset-0 w-full h-full object-cover"
                     />
                     <div
-                      class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 bg-neutral/30 transition-opacity"
+                      class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 bg-neutral/30 transition-opacity"
                     >
                       <button
                         type="button"
@@ -199,7 +226,7 @@ const trackCount = computed(() => saved.tracks.length);
                     </div>
                     <span
                       v-if="s.duration"
-                      class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[10px] px-1.5 py-0.5 rounded-field"
+                      class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[11px] px-1.5 py-0.5 rounded-field"
                     >
                       {{ s.duration }}
                     </span>

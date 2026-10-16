@@ -26,7 +26,7 @@ const showBulkPlaylist = ref(false);
     data-testid="library-selection-bar"
     class="flex items-center gap-2 px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs shrink-0"
   >
-    <span class="font-medium text-primary">{{ count }} {{ $t('common.selected') }}</span>
+    <span class="font-medium text-primary-text">{{ count }} {{ $t('common.selected') }}</span>
     <div class="flex items-center gap-1 ml-auto">
       <button
         class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise"

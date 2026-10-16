@@ -26,7 +26,9 @@ const {
   onVolumeInput,
   volLabel,
   volPct,
-  onProgressClick
+  isMuted,
+  onProgressClick,
+  onProgressKeydown
 } = props.state;
 </script>
 
@@ -37,7 +39,14 @@ const {
       v-if="has('progress')"
       class="group"
       :class="[EDGE_PROGRESS_TRACK_V, dock === 'left' ? 'order-2' : 'order-1']"
+      role="slider"
+      tabindex="0"
+      aria-label="Seek"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(progressPct)"
       @click="onProgressClick"
+      @keydown="onProgressKeydown"
       @dblclick.stop
     >
       <div :class="EDGE_PROGRESS_FILL_V" :style="{ height: progressPct + '%' }"></div>
@@ -62,7 +71,7 @@ const {
         v-if="has('nextTrack') && nextTrackName"
         class="max-h-[18%] px-1 text-center [writing-mode:vertical-rl]"
       >
-        <span class="truncate text-[9px] text-base-content/60">&#x21B3; {{ nextTrackName }}</span>
+        <span class="truncate text-[10px] text-base-content/60">&#x21B3; {{ nextTrackName }}</span>
       </div>
 
       <PipTransport
@@ -76,7 +85,7 @@ const {
       />
 
       <div class="min-h-1 flex-1"></div>
-      <div v-if="has('progress')" class="shrink-0 tabular-nums text-[9px] text-base-content/50">
+      <div v-if="has('progress')" class="shrink-0 tabular-nums text-[10px] text-base-content/50">
         {{ fmt(currentTime) }} / {{ fmt(duration) }}
       </div>
 
@@ -89,6 +98,7 @@ const {
         :vol-label="volLabel"
         :vol-pct="volPct"
         :on-volume-input="onVolumeInput"
+        :muted="isMuted"
       />
     </div>
   </div>

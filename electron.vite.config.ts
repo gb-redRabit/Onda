@@ -23,7 +23,23 @@ function wasmMime() {
 }
 
 export default defineConfig({
-  main: {},
+  main: {
+    build: {
+      rollupOptions: {
+        // Ostrzeżenie Rollupa „dynamic import will not move module into another chunk"
+        // dotyczy modułów ładowanych dynamicznie CELOWO — żeby import modułu nie ciągnął
+        // Electrona/`sharp`/`music-metadata` (izolacja testów), mimo że są też w statycznym
+        // grafie (main to jeden bundle). To zamierzone i nieszkodliwe, więc wyciszamy tylko
+        // to jedno ostrzeżenie; pozostałe przechodzą do domyślnego handlera.
+        onwarn(warning, warn) {
+          if (warning.message?.includes('dynamic import will not move module into another chunk')) {
+            return;
+          }
+          warn(warning);
+        }
+      }
+    }
+  },
   preload: {
     build: {
       rollupOptions: {

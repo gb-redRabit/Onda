@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PictureInPicture } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { getPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
 import AppMenuItem from './AppMenuItem.vue';
 
@@ -10,6 +11,7 @@ defineProps<{ action: (fn: () => void) => void }>();
 defineEmits<{ restorePip: []; close: [] }>();
 
 const player = usePlayerStore();
+const fx = useAudioFxStore();
 </script>
 
 <template>
@@ -60,6 +62,6 @@ const player = usePlayerStore();
       }}</template>
     </AppMenuItem>
     <div class="border-t border-base-300 my-1 mx-2" />
-    <AppMenuItem @click="action(player.toggleEqualizer)">{{ $t('menu.eq') }}</AppMenuItem>
+    <AppMenuItem @click="action(fx.toggleEqualizer)">{{ $t('menu.eq') }}</AppMenuItem>
   </div>
 </template>

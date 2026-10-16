@@ -97,7 +97,7 @@ async function onNavDrop(e: DragEvent, path: string) {
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- szybkie linki -->
       <div
-        class="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-base-content/50"
+        class="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.quickAccess') }}
       </div>
@@ -106,7 +106,7 @@ async function onNavDrop(e: DragEvent, path: string) {
         :key="link.label"
         class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left disabled:opacity-40"
         :class="{
-          'bg-primary/10 text-primary': isActiveLink(link),
+          'bg-primary/10 text-primary-text': isActiveLink(link),
           'ring-2 ring-primary bg-primary/50': dropTargetPath === resolvePath(link)
         }"
         :disabled="link.label !== 'This PC' && !resolvePath(link)"
@@ -122,7 +122,7 @@ async function onNavDrop(e: DragEvent, path: string) {
 
       <!-- dyski -->
       <div
-        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-base-content/50"
+        class="mt-3 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.drives') }}
       </div>
@@ -131,7 +131,7 @@ async function onNavDrop(e: DragEvent, path: string) {
         :key="drive.path"
         class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left"
         :class="{
-          'bg-primary/10 text-primary': explorer.currentPath === drive.path,
+          'bg-primary/10 text-primary-text': explorer.currentPath === drive.path,
           'ring-2 ring-primary bg-primary/50': dropTargetPath === drive.path
         }"
         @click="explorer.navigateTo(drive.path)"
@@ -140,13 +140,13 @@ async function onNavDrop(e: DragEvent, path: string) {
         @dragleave="onNavDragLeave"
         @drop="onNavDrop($event, drive.path)"
       >
-        <HardDrive :size="14" class="shrink-0 text-primary" />
+        <HardDrive :size="14" class="shrink-0 text-primary-text" />
         <span class="truncate">{{ drive.name }}</span>
       </button>
 
       <!-- foldery biblioteki -->
       <div
-        class="mt-3 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-base-content/50"
+        class="mt-3 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.libraryFolders') }}
       </div>
@@ -155,7 +155,7 @@ async function onNavDrop(e: DragEvent, path: string) {
         :key="folder"
         class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left"
         :class="{
-          'bg-primary/10 text-primary': explorer.currentPath === folder,
+          'bg-primary/10 text-primary-text': explorer.currentPath === folder,
           'ring-2 ring-primary bg-primary/50': dropTargetPath === folder
         }"
         @click="explorer.navigateTo(folder)"
@@ -164,10 +164,10 @@ async function onNavDrop(e: DragEvent, path: string) {
         @dragleave="onNavDragLeave"
         @drop="onNavDrop($event, folder)"
       >
-        <FolderOpen :size="14" class="shrink-0 text-primary" />
+        <FolderOpen :size="14" class="shrink-0 text-primary-text" />
         <span class="truncate flex-1">{{ folder.replace(/.*[\\/]/, '') || folder }}</span>
         <span
-          class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary font-bold border border-primary/40 leading-none"
+          class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
           :title="t('explorer.libraryFolder')"
         >
           LIB

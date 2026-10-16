@@ -21,7 +21,7 @@ onMounted(() => {
     >
       <span
         class="w-11 h-11 shrink-0 rounded-field flex items-center justify-center"
-        :class="status.loggedIn ? 'bg-success/15 text-success' : 'bg-primary/15 text-primary'"
+        :class="status.loggedIn ? 'bg-success/15 text-success' : 'bg-primary/15 text-primary-text'"
       >
         <component :is="status.loggedIn ? Check : LogIn" :size="20" />
       </span>

@@ -1,43 +1,26 @@
 ﻿import { app, BrowserWindow, ipcMain, globalShortcut, dialog } from 'electron';
-import { join } from 'path';
-import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { createMediaServer } from './media/media-server';
+import { createMediaServer, addAllowedRoot } from './media/media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './windows/window-ipc';
-import { setAutoLaunch } from './windows/auto-launch';
 import { registerIPC } from './ipc/handlers';
 import { pipManager } from './pip/pip-manager';
 import { audioPipManager } from './pip/audio-pip-manager';
-import { closeLoginWindow } from './youtube/youtube-auth';
 import { logger } from '../shared/logger';
 import { extractMediaPaths } from './media/media-paths';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media/media-url-args';
-import {
-  setAllowedRoots,
-  addAllowedRoot,
-  setRootsChangedHandler,
-  getExtraRoots
-} from './media/media-server';
-import { getStore } from './ipc/cover/cover-cache';
-import { flushQueueNow } from './downloads/download-manager';
-import { jobs, jobAbortControllers } from './downloads/download-state';
-import { killDownloadProcess } from './downloads/kill-download-process';
 import {
   installProcessSafetyNets,
   installSessionHardening,
   installRendererRecovery
 } from './bootstrap/safety-nets';
-import { flushLibraryScanned, flushStats } from './ipc/library/library-store';
-import { flushPlaybackPositions } from './ipc/playback-handlers';
-import { stopSubscriptionChecker } from './ipc/subscriptions/subscription-checker';
-import { setupFileLogging, applyLogSettings, flushLogWrites } from './log-file';
-import { applyCoverCacheSettings, initCoverCache } from './ipc/cover/cover-cache';
+import { setupFileLogging } from './log-file';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-handlers';
-import { shouldCloseToTray, setCloseToTray } from './windows/close-behavior';
+import { syncLinkSubsScheduler } from './ipc/providers/providers-handlers';
+import { shouldCloseToTray } from './windows/close-behavior';
 import { windowIcon } from './windows/window-icon';
 import { createWindow as createBrowserWindow } from './windows/window-factory';
 import { GLASS_WINDOW_OPTS } from './windows/window-presets';
@@ -46,18 +29,12 @@ import { SplashController } from './windows/splash';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
-import { initMainLocale, setMainLocale, mainMessages } from './i18n-main';
-import { asPositiveNumber, asNonEmptyString } from './utils/store-guards';
+import { initMainLocale, mainMessages } from './i18n-main';
+import { installGracefulShutdown } from './bootstrap/shutdown';
+import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
 
 let mainWindow: BrowserWindow | null = null;
 let startHidden = false;
-// Chroni jednorazowe asynchroniczne sprzątanie w handlerze `before-quit` poniżej.
-let isAppQuitting = false;
-
-// Górny limit opróżniania persystencji przy wyjściu. Bez niego zawieszony flush
-// (np. niedostępny dysk sieciowy) blokowałby `app.quit()` na zawsze, zostawiając
-// proces-widmo w tle.
-const SHUTDOWN_FLUSH_TIMEOUT_MS = 5000;
 
 const splash = new SplashController({
   windowIcon,
@@ -198,69 +175,7 @@ app.whenReady().then(async () => {
 
   splash.send(mainMessages().bootRestoringSettings, 25);
 
-  let bootFolders = 0;
-  let bootRoots = 0;
-
-  try {
-    const store = await getStore();
-    // Rozmiar cache okładek z Ustawienia → Biblioteka. Wartości pochodzą z pliku
-    // JSON na dysku, więc są walidowane, a nie rzutowane.
-    const library = store.get('library') as Record<string, unknown> | undefined;
-    applyCoverCacheSettings(asPositiveNumber(library?.coverCacheMaxEntries));
-    await initCoverCache();
-    // Zapisane locale UI napędza teraz pozostałe komunikaty procesu głównego.
-    const appearance = store.get('appearance') as Record<string, unknown> | undefined;
-    setMainLocale(asNonEmptyString(appearance?.locale));
-    const folders = store.get('libraryFolders', []);
-    bootFolders = Array.isArray(folders) ? folders.length : 0;
-    if (Array.isArray(folders)) {
-      await setAllowedRoots(folders);
-    }
-    // Utrwala korzenie przyznane w czasie działania (katalogi wyjściowe pobierania,
-    // otwarte pliki), aby pobrane media pozostały odtwarzalne po restarcie.
-    let rootsPersistTimer: ReturnType<typeof setTimeout> | null = null;
-    setRootsChangedHandler(() => {
-      if (rootsPersistTimer) return;
-      rootsPersistTimer = setTimeout(() => {
-        rootsPersistTimer = null;
-        void store.set('mediaRoots', getExtraRoots().slice(0, 50));
-      }, 500);
-    });
-    // Zasiewa wcześniej przyznane korzenie plus domyślny katalog pobierania, aby
-    // świeże pobrania i stare spoza biblioteki były serwowane od razu.
-    const storedRoots = store.get('mediaRoots', []);
-    bootRoots = Array.isArray(storedRoots) ? storedRoots.length : 0;
-    const seedRoots = new Set<string>([
-      ...(Array.isArray(storedRoots) ? storedRoots : []),
-      app.getPath('downloads'),
-      // Transkodowane audio/wideo (fallback dla nieobsługiwanych kodeków) też
-      // są serwowane przez media-server — katalogi muszą być w allowed roots.
-      join(os.tmpdir(), 'onda', 'audio-transcodes'),
-      join(os.tmpdir(), 'onda', 'video-transcodes')
-    ]);
-    for (const root of seedRoots) {
-      await addAllowedRoot(root);
-    }
-    logger.info('boot', `settings: folders=${bootFolders} roots=${bootRoots}`);
-    // Stosuje utrwalone ustawienia ogólne (close-to-tray + synchronizacja
-    // auto-uruchamiania + poziom/limit logów z Ustawienia → System → Logi).
-    const general = store.get('general') as
-      | {
-          autoLaunch?: boolean;
-          startMinimized?: boolean;
-          closeToTray?: boolean;
-          logLevel?: string;
-          logMaxSizeMB?: number;
-        }
-      | undefined;
-    applyLogSettings(general?.logLevel, general?.logMaxSizeMB);
-    if (general?.closeToTray !== undefined) setCloseToTray(general.closeToTray !== false);
-    if (general?.autoLaunch !== undefined) {
-      setAutoLaunch({ enabled: !!general.autoLaunch, hidden: !!general.startMinimized });
-    }
-  } catch (e) {
-    logger.warn('main', 'seeding media server roots from library folders failed', e);
-  }
+  const { folders: bootFolders, roots: bootRoots } = await seedMediaServerAndSettings();
 
   // Uruchomienie przy logowaniu z "start zminimalizowany" — trzymaj okno ukryte,
   // dopóki użytkownik nie otworzy go z tray.
@@ -291,70 +206,9 @@ app.whenReady().then(async () => {
     app.quit();
   });
 
-  // Łagodne wyłączanie. `will-quit` jest synchroniczne: pętla zdarzeń Node jest
-  // rozbierana, gdy tylko listener zwróci, więc asynchroniczne opróżnienia
-  // rozpoczęte tam nigdy się nie kończą — ostatnie debounce'owane zapisy przepadają,
-  // pliki .tmp mogą zostać, a pliki biblioteki/statystyk mogą pozostać w połowie
-  // zapisane. Opóźnij wyjście raz na `before-quit`, zaczekaj na każde opróżnienie,
-  // potem wyjdź naprawdę.
-  app.on('before-quit', (event) => {
-    if (isAppQuitting) return;
-    event.preventDefault();
-    isAppQuitting = true;
-    void (async () => {
-      try {
-        globalShortcut.unregisterAll();
-        // Zatrzymaj harmonogramy w tle, aby żadne przeglądanie yt-dlp/sieci nie zaczęło się podczas wyjścia.
-        stopSubscriptionChecker();
-        mediaServer.close();
-        closeLoginWindow();
-        // Najpierw zatrzymaj pracę: procesy potomne yt-dlp/ffmpeg i strumienie HTTP
-        // inaczej piszą do plików w trakcie opróżniania persystencji (i przeżywają
-        // zamknięcie aplikacji).
-        for (const job of jobs.values()) {
-          if (job.status !== 'downloading') continue;
-          if (job.child) {
-            try {
-              killDownloadProcess(job.child);
-            } catch {
-              /* już nie istnieje */
-            }
-          } else {
-            jobAbortControllers.get(job.id)?.abort();
-          }
-        }
-        // Opróżnij debounce'owaną persystencję, aby ostatnie zmiany nie przepadły.
-        // Limit czasu gwarantuje, że zamknięcie zawsze się kończy.
-        const flushes = Promise.allSettled([
-          // Linie zapisane podczas zamykania są tymi, które warto mieć, gdy
-          // doprowadziła nas tu awaria.
-          flushLogWrites(),
-          flushLibraryScanned(),
-          // Statystyki odtwarzania są debounce'owane (400 ms); opróżnij je, inaczej ostatnie odtworzenia przepadną.
-          flushStats(),
-          // Pozycje odtwarzania są debounce'owane (15 s) — bez tego ostatnie ~15 s przepada.
-          flushPlaybackPositions(),
-          // Kolejka pobierania jest debounce'owana (400 ms) — bez awaitowania
-          // ostatni zapis mógł przepaść.
-          flushQueueNow(),
-          getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
-        ]);
-        const shutdownTimeout = new Promise<'timeout'>((r) =>
-          setTimeout(() => r('timeout'), SHUTDOWN_FLUSH_TIMEOUT_MS)
-        );
-        if ((await Promise.race([flushes, shutdownTimeout])) === 'timeout') {
-          logger.warn(
-            'main',
-            `graceful shutdown flush exceeded ${SHUTDOWN_FLUSH_TIMEOUT_MS}ms — quitting anyway`
-          );
-        }
-      } catch (e) {
-        logger.error('main', 'graceful shutdown failed', e);
-      } finally {
-        app.quit();
-      }
-    })();
-  });
+  // Łagodne wyłączanie: opróżnia debounce'owaną persystencję i zatrzymuje pracę
+  // w tle przed `app.quit()` (szczegóły w `bootstrap/shutdown.ts`).
+  installGracefulShutdown({ getMediaServer: () => mediaServer });
 
   registerOndaProtocolHandler();
 
@@ -365,11 +219,15 @@ app.whenReady().then(async () => {
     perf('did-finish-load');
     splash.onMainReady();
   });
+  // Renderer zaczyna się ładować/przeładowywać — wróć do buforowania plików z OS,
+  // żeby zdarzenie nie trafiło do starego (lub jeszcze niezamontowanego) kontekstu.
+  mainWindow.webContents.on('did-start-loading', () => openFiles.resetListening());
 
   splash.send(mainMessages().bootPipTray, 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);
   configureAutoCheck();
   syncSubscriptionsScheduler();
+  void syncLinkSubsScheduler();
   pipManager.setMainWindow(mainWindow);
   pipManager.init();
   audioPipManager.setMainWindow(mainWindow);

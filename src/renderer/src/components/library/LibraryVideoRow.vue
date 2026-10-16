@@ -67,12 +67,12 @@ function onDragStart(e: DragEvent) {
       >
         <Play
           :size="14"
-          class="text-neutral-content opacity-0 group-hover:opacity-100 transition-opacity"
+          class="text-neutral-content opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         />
       </button>
       <div
         v-if="track.duration"
-        class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[9px] font-medium leading-none"
+        class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[10px] font-medium leading-none"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>
@@ -87,7 +87,7 @@ function onDragStart(e: DragEvent) {
     </div>
 
     <div
-      class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+      class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
     >
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"

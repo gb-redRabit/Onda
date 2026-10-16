@@ -1,13 +1,30 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Download, Pause, Play, Trash2, Upload, X } from '@lucide/vue';
+import { Download, Pause, Play, Trash2, Upload, X, Gauge } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
+import { useSettingsStore } from '@renderer/stores/settings';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 defineProps<{ activeCount: number; pausedCount: number; hasFinished: boolean }>();
 
 const yt = useOnlineStore();
+const settings = useSettingsStore();
 const { t } = useI18n();
+const prompt = usePromptDialog();
+
+async function clearFinished(): Promise<void> {
+  if (!(await prompt.showConfirm(t('downloads.clearFinishedConfirm')))) return;
+  await yt.clearFinishedDownloads();
+}
+
+/** Limity w KB/s; 0 = bez limitu. Wartość jest stosowana przez yt-dlp (`--limit-rate`). */
+const SPEED_OPTIONS = [0, 1024, 2048, 5120, 10240];
+
+function setSpeedLimit(kb: number): void {
+  settings.updateNetwork({ downloadSpeedLimit: kb });
+}
 
 const scheduleTime = ref('');
 const scheduledAt = ref<number | null>(null);
@@ -40,11 +57,11 @@ onMounted(async () => {
   <div
     class="ui-page-header flex flex-wrap items-center gap-3 border-b border-base-300 bg-base-100/(--glass-alpha) p-4"
   >
-    <Download :size="24" class="text-primary" />
+    <Download :size="24" class="text-primary-text" />
     <h1 class="shrink-0 text-lg font-bold tracking-tight">{{ t('downloads.title') }}</h1>
     <span
       v-if="activeCount"
-      class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
+      class="text-xs bg-primary/10 text-primary-text px-2 py-0.5 rounded-full font-medium"
       >{{ activeCount }} {{ t('status.active') }}</span
     >
     <div class="flex-1" />
@@ -82,12 +99,27 @@ onMounted(async () => {
       <Download :size="12" />
       {{ t('downloads.importQueue') }}
     </button>
+    <div class="flex items-center gap-1.5 text-xs text-base-content/70">
+      <Gauge :size="12" />
+      <select
+        :value="settings.network.downloadSpeedLimit"
+        class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+        :title="t('downloads.speedLimit')"
+        :aria-label="t('downloads.speedLimit')"
+        @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
+      >
+        <option v-for="kb in SPEED_OPTIONS" :key="kb" :value="kb">
+          {{ kb === 0 ? t('settings.speedUnlimited') : `${kb / 1024} MB/s` }}
+        </option>
+      </select>
+    </div>
     <div class="flex items-center gap-1">
       <input
         v-model="scheduleTime"
         type="time"
         class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
         :title="t('downloads.scheduleStart')"
+        :aria-label="t('downloads.scheduleStart')"
       />
       <button
         class="fx-noise px-2 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
@@ -109,10 +141,20 @@ onMounted(async () => {
       v-if="hasFinished"
       data-testid="downloads-clear-finished"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      @click="yt.clearFinishedDownloads"
+      @click="clearFinished"
     >
       <Trash2 :size="12" />
       {{ t('downloads.clearFinished') }}
     </button>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </div>
 </template>

@@ -10,9 +10,17 @@ type FakeNode = {
   gain: { value: number };
   frequency: { value: number };
   Q: { value: number };
+  threshold: { value: number };
+  knee: { value: number };
+  ratio: { value: number };
+  attack: { value: number };
+  release: { value: number };
+  delayTime: { value: number };
   type: string;
   fftSize: number;
   state: string;
+  feedforward?: number[];
+  feedback?: number[];
 };
 
 type TestableAudioEngine = {
@@ -33,6 +41,12 @@ function createFakeNode(): FakeNode {
     gain: { value: 0 },
     frequency: { value: 0 },
     Q: { value: 0 },
+    threshold: { value: 0 },
+    knee: { value: 0 },
+    ratio: { value: 0 },
+    attack: { value: 0 },
+    release: { value: 0 },
+    delayTime: { value: 0 },
     type: '',
     fftSize: 2048,
     state: 'running'
@@ -45,6 +59,14 @@ class FakeAudioContext {
   createAnalyser = (): FakeNode => createFakeNode();
   createGain = (): FakeNode => createFakeNode();
   createBiquadFilter = (): FakeNode => createFakeNode();
+  createDynamicsCompressor = (): FakeNode => createFakeNode();
+  createDelay = (): FakeNode => createFakeNode();
+  createIIRFilter = (ff: number[], fb: number[]): FakeNode => {
+    const node = createFakeNode();
+    node.feedforward = ff;
+    node.feedback = fb;
+    return node;
+  };
   createMediaElementSource = (): FakeNode => createFakeNode();
   resume = (): Promise<void> => {
     this.state = 'running';
@@ -109,8 +131,45 @@ describe('audioEngine video element routing', () => {
     expect(engine.sourceNode?.connect).toHaveBeenCalledWith(firstFilter);
   });
 
+  it('setEqBands (re)builds the IIR chain from the band definitions', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const before = engine.eqFilters[0];
+
+    audioEngine.setEqBands([
+      { type: 'lowshelf', frequency: 60, q: 0.7, gain: 4 },
+      { type: 'peaking', frequency: 2000, q: 2, gain: -3 }
+    ]);
+
+    // Łańcuch jest przebudowywany (nowe węzły IIR), więc pierwszy filtr się zmienia.
+    expect(engine.eqFilters[0]).not.toBe(before);
+    const first = engine.eqFilters[0] as unknown as { feedforward: number[] };
+    expect(Array.isArray(first.feedforward)).toBe(true);
+    expect(first.feedforward).toHaveLength(3);
+  });
+
   it('disconnectVideoElement is a no-op without a source node', () => {
     expect(() => engine.disconnectVideoElement()).not.toThrow();
+  });
+
+  it('setNightMode applies compression + dialogue boost, and clears them when off', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const graph = (
+      audioEngine as unknown as {
+        graph: { nightCompressor: FakeNode; nightDialogueEq: FakeNode; nightMakeup: FakeNode };
+      }
+    ).graph;
+
+    audioEngine.setNightMode(true);
+    expect(graph.nightCompressor.ratio.value).toBeGreaterThan(1);
+    expect(graph.nightCompressor.threshold.value).toBeLessThan(0);
+    expect(graph.nightDialogueEq.gain.value).toBeGreaterThan(0);
+
+    audioEngine.setNightMode(false);
+    expect(graph.nightCompressor.ratio.value).toBe(1);
+    expect(graph.nightCompressor.threshold.value).toBe(0);
+    expect(graph.nightDialogueEq.gain.value).toBe(0);
   });
 
   it('connectVideoElement is a no-op without a source node', () => {
@@ -130,6 +189,21 @@ describe('audioEngine video element routing', () => {
     expect(videoSource!.connect).toHaveBeenCalledWith(videoGain);
     const firstFilter = engine.eqFilters[0];
     expect(videoGain!.connect).toHaveBeenCalledWith(firstFilter);
+  });
+
+  it('setAudioDelayMs clamps to 0-500 ms and drives the delay node', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const graph = (audioEngine as unknown as { graph: { delayNode: FakeNode } }).graph;
+
+    audioEngine.setAudioDelayMs(120);
+    expect(graph.delayNode.delayTime.value).toBeCloseTo(0.12);
+
+    audioEngine.setAudioDelayMs(-50);
+    expect(graph.delayNode.delayTime.value).toBe(0);
+
+    audioEngine.setAudioDelayMs(9999);
+    expect(graph.delayNode.delayTime.value).toBeCloseTo(0.5);
   });
 
   it('emits trackEnd when the audio element ends', () => {
@@ -212,6 +286,50 @@ describe('audioEngine video element routing', () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith('4');
     off();
+  });
+
+  it('does not rebuild the IIR chain when switching tracks (only reconnects the head)', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const first = engine.eqFilters[0];
+
+    // Drugie wczytanie tego samego elementu (kolejny utwór) nie może alokować nowych filtrów.
+    engine.connectAudio(el);
+    expect(engine.eqFilters[0]).toBe(first);
+    expect(engine.sourceNode?.connect).toHaveBeenCalledWith(first);
+  });
+
+  it('skips the IIR rebuild when the same bands are set again', () => {
+    const el = new FakeAudio() as unknown as HTMLAudioElement;
+    engine.connectAudio(el);
+    const before = engine.eqFilters[0];
+
+    audioEngine.setEqBands([{ type: 'lowshelf', frequency: 60, q: 0.7, gain: 4 }]);
+    const after = engine.eqFilters[0];
+    expect(after).not.toBe(before);
+
+    audioEngine.setEqBands([{ type: 'lowshelf', frequency: 60, q: 0.7, gain: 4 }]);
+    expect(engine.eqFilters[0]).toBe(after);
+  });
+
+  it('preloadNext does not re-load the same track twice', () => {
+    const track = {
+      id: 'x',
+      name: 'x.mp3',
+      path: 'D:/music/x.mp3',
+      extension: 'mp3',
+      mimeType: 'audio/mpeg',
+      size: 1,
+      type: 'audio' as const,
+      addedAt: 0,
+      playCount: 0
+    };
+    audioEngine.preloadNext(track);
+    const preloadEl = (audioEngine as unknown as { preloadEl: FakeAudio }).preloadEl;
+    expect(preloadEl.load).toHaveBeenCalledTimes(1);
+
+    audioEngine.preloadNext(track);
+    expect(preloadEl.load).toHaveBeenCalledTimes(1);
   });
 });
 

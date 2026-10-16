@@ -22,6 +22,12 @@ export interface HttpRequestOptions {
   timeoutMs?: number;
   maxBytes?: number;
   maxRedirects?: number;
+  /**
+   * Kodowanie odpowiedzi. Domyślnie `utf-8`; `latin1` mapuje bajty 1:1, więc pozwala
+   * odtworzyć surowe bajty (`Buffer.from(text, 'latin1')`) dla treści w starszych
+   * kodowaniach, np. Windows-1250 w napisach NapiProjekt.
+   */
+  encoding?: BufferEncoding;
   /** Zezwala na niepubliczne adresy dla celu zatwierdzonego przez użytkownika. */
   allowPrivateNetwork?: boolean;
   /** Origin używany do decyzji o sieci prywatnej; domyślnie origin żądania. */
@@ -135,7 +141,7 @@ function request(
                 status,
                 statusText: res.statusMessage || '',
                 headers: res.headers,
-                text: Buffer.concat(chunks).toString('utf-8')
+                text: Buffer.concat(chunks).toString(options.encoding ?? 'utf-8')
               })
             );
             res.on('error', reject);

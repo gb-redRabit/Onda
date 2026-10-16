@@ -7,6 +7,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { Heart, Clock, Flame, Sparkles, Shuffle, Play } from '@lucide/vue';
 import LibraryTrackCard from './LibraryTrackCard.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import { shuffled } from '@renderer/utils/shuffle';
 
 const { t } = useI18n();
 const library = useLibraryStore();
@@ -84,12 +85,8 @@ function playAll(tracks: MediaFile[]) {
 }
 
 function shuffleAll(tracks: MediaFile[]) {
-  const shuffled = [...tracks];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  if (shuffled.length) emit('playTracks', shuffled);
+  const order = shuffled(tracks);
+  if (order.length) emit('playTracks', order);
 }
 
 const sections = computed(() => [
@@ -107,7 +104,7 @@ const sections = computed(() => [
     icon: Clock,
     tracks: recentTracks.value,
     empty: t('library.noAudio'),
-    color: 'text-primary'
+    color: 'text-primary-text'
   },
   {
     id: 'most',
@@ -239,7 +236,7 @@ const sections = computed(() => [
             </button>
             <button
               v-if="sec.tracks.length > 0"
-              class="text-xs text-primary hover:underline px-2 py-1"
+              class="text-xs text-primary-text hover:underline px-2 py-1"
               @click="emit('showAll', sec.id)"
             >
               {{ $t('library.showAll') }}

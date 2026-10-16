@@ -32,19 +32,19 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
               {{ dep.name }}
               <span
                 v-if="dep.source === 'bundled' && dep.installed"
-                class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
+                class="text-[11px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-medium"
               >
                 {{ $t('settings.depBundled') }}
               </span>
               <span
                 v-else-if="dep.source === 'managed' && dep.installed"
-                class="text-[10px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary font-medium"
+                class="text-[11px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-medium"
               >
                 {{ $t('settings.depManaged') }}
               </span>
               <span
                 v-else-if="dep.installed"
-                class="text-[10px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
+                class="text-[11px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
               >
                 {{ $t('settings.depSystem') }}
               </span>

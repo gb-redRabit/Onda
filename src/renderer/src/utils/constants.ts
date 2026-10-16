@@ -9,10 +9,12 @@ import type {
   GeneralSettings,
   HomeSettings,
   PlaybackSettings,
-  DownloadSettings
+  DownloadSettings,
+  StatusBarSettings
 } from '@renderer/types/settings';
 
 export * from './constants/audio';
+import { DEFAULT_EQ_BANDS, cloneEqBands } from './constants/audio';
 
 export const DEFAULT_NETWORK: NetworkSettings = {
   proxy: { enabled: false, type: 'http', host: '', port: 8080 },
@@ -78,8 +80,6 @@ export const DEFAULT_TOAST: ToastSettings = {
   showNative: true
 };
 
-import type { StatusBarSettings } from '@renderer/types/settings';
-
 export const DEFAULT_STATUS_BAR: StatusBarSettings = {
   visible: true,
   sections: [
@@ -109,8 +109,22 @@ export const DEFAULT_SHORTCUTS: Record<string, string> = {
   'speed-up': '>',
   'speed-down': '<',
   'jump-start': '0',
+  'frame-back': ',',
+  'frame-forward': '.',
   'next-track': 'MediaTrackNext',
   'prev-track': 'MediaTrackPrevious',
+  'ab-set-a': '[',
+  'ab-set-b': ']',
+  'ab-clear': '\\',
+  'subtitle-delay-down': 'Z',
+  'subtitle-delay-up': 'X',
+  'subtitle-delay-reset': 'Ctrl+Shift+D',
+  'eq-toggle': 'Ctrl+Shift+E',
+  'eq-bypass': 'Ctrl+Shift+B',
+  'eq-add-band': 'Ctrl+Shift+A',
+  'eq-reset': 'Ctrl+Shift+R',
+  'eq-snap': 'Ctrl+Shift+P',
+  'eq-mono': 'Ctrl+Shift+M',
   search: 'Ctrl+K',
   'view-search': 'Ctrl+F',
   settings: 'Ctrl+,',
@@ -146,7 +160,16 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
     sensitivity: 0.5,
     smoothing: 0.8,
     fpsCap: 60
-  }
+  },
+  equalizerBands: cloneEqBands(DEFAULT_EQ_BANDS),
+  equalizerEnabled: true,
+  nightMode: false,
+  audioDelayMs: 0,
+  subtitleDelayMs: 0,
+  equalizerPreamp: 0,
+  equalizerUserPresets: {},
+  equalizerMulticolor: false,
+  equalizerSnap: true
 };
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {
@@ -171,6 +194,7 @@ export const DEFAULT_DOWNLOAD: DownloadSettings = {
   retryBaseMs: 1500,
   tempDir: '',
   autoDownloadSubscriptions: false,
+  autoCheckLinkSubscriptions: false,
   hashFiles: true,
   smartMode: true,
   defaultSubs: false,

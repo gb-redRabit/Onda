@@ -69,12 +69,22 @@ async function runJob(job: Job): Promise<void> {
     // ważna sesja — publiczne filmy nadal można pobierać bez cookies, a yt-dlp
     // zgłasza konkretny błąd dla treści z ograniczeniem wieku / prywatnych / tylko dla członków.
     auth = await getYtAuthConfig();
-    const base = await buildBaseArgs(job);
+    // Tryb providera (PikPak/MEGA/Drive…) nie używa yt-dlp ani jego argumentów —
+    // URL jest syntetyczny (`provider://…`) i walidacja http w buildBaseArgs by go odrzuciła.
+    const base = job.source?.mode === 'provider' ? [] : await buildBaseArgs(job);
     const retryCfg = await readRetryConfig();
     for (let attempt = 1; attempt <= Math.max(1, retryCfg.attempts); attempt++) {
       const result = await runJobAttempt(job, bin, auth, base);
       if (result.finishedOk) {
-        await postProcess(job);
+        // Post-processing (metadane/okładka/sync biblioteki) jest NIEKRYTYCZNE:
+        // plik jest już pobrany, a `reportCompleted` zaksięgował go jako ukończony.
+        // Wyjątek tutaj NIE MOŻE przekręcić statusu na `error` — użytkownik ponowiłby
+        // pobranie i powstałby duplikat. Logujemy i kończymy jako sukces.
+        try {
+          await postProcess(job);
+        } catch (e) {
+          logger.warn('downloads', `post-process failed for ${job.id}`, e);
+        }
         return;
       }
       // Ponowienia warte jest tylko niepowodzenie transportu. `bot-block` to YouTube

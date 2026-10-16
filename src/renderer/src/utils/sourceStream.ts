@@ -1,24 +1,13 @@
 import type { MediaFile } from '@renderer/types/media';
 import type { MediaSource, SourceItem } from '@renderer/types/sources';
 import { parseDurationText } from '@renderer/utils/onlineHelpers';
+import { AUDIO_EXTS } from '@shared/constants';
+import { getMimeType } from '@shared/mime';
 
 // Odtwarzanie elementów źródła bez pobierania: elementy z bezpośrednim `mediaUrl`
 // idą do playerа jako utwory typu 'stream' (silnik audio serwuje je przez lokalny
 // proxy `/stream`, tak jak strumienie online). `playerUrl` (embed) nie jest tu
 // obsługiwany — trafia do okna podglądu.
-
-const AUDIO_EXT = new Set([
-  'mp3',
-  'flac',
-  'wav',
-  'ogg',
-  'aac',
-  'm4a',
-  'opus',
-  'wma',
-  'aiff',
-  'alac'
-]);
 
 /** Bezpośredni, odtwarzalny adres elementu (plik media) albo pusty string. */
 export function sourceItemPlayUrl(item: SourceItem): string {
@@ -43,14 +32,15 @@ function extensionOf(url: string): string {
 }
 
 function mimeFor(extension: string): string {
-  if (AUDIO_EXT.has(extension)) return extension === 'mp3' ? 'audio/mpeg' : `audio/${extension}`;
-  return 'video/mp4';
+  const ext = `.${extension}`;
+  return AUDIO_EXTS.includes(ext) ? getMimeType(ext) : 'video/mp4';
 }
 
 /**
  * Buduje utwór strumieniowy do playerа z elementu źródła. `type: 'stream'` sprawia,
  * że `useAudioPlayer` kieruje go do `audioEngine.loadRemote` (proxy/direct fallback),
- * więc nie wymaga lokalnego pliku ani `grantMediaAccess`.
+ * więc nie wymaga lokalnego pliku ani `grantMediaAccess` i nie przenosi widoku do
+ * globalnego odtwarzacza — wideo zostaje w widoku Źródeł.
  */
 export function buildSourceStreamTrack(
   source: MediaSource,

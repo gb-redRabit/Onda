@@ -16,6 +16,7 @@ withDefaults(
     volLabel: string;
     volPct: string;
     onVolumeInput: (e: Event) => void;
+    muted?: boolean;
     layout?: 'horizontal' | 'vertical';
     sliderClass?: string;
     showPct?: boolean;
@@ -23,7 +24,8 @@ withDefaults(
   {
     layout: 'horizontal',
     sliderClass: 'w-16',
-    showPct: true
+    showPct: true,
+    muted: false
   }
 );
 </script>
@@ -34,7 +36,15 @@ withDefaults(
     :class="layout === 'vertical' ? 'flex-col' : ''"
     @dblclick.stop
   >
-    <span data-testid="pip-mute" :class="VOL_LABEL" @click.stop="send('mute')">{{ volLabel }}</span>
+    <button
+      type="button"
+      data-testid="pip-mute"
+      :class="[VOL_LABEL, 'border-0 bg-transparent font-inherit']"
+      :aria-label="muted ? 'Unmute' : 'Mute'"
+      @click.stop="send('mute')"
+    >
+      {{ volLabel }}
+    </button>
     <input
       data-testid="pip-volume"
       type="range"
@@ -43,12 +53,13 @@ withDefaults(
       max="1"
       step="0.05"
       :value="volume"
+      aria-label="Volume"
       @input="onVolumeInput"
       @click.stop
     />
     <span
       v-if="showPct"
-      class="text-[9px] tabular-nums text-base-content/50"
+      class="text-[10px] tabular-nums text-base-content/50"
       :class="layout === 'vertical' ? '' : 'min-w-5 text-right'"
     >
       {{ volPct }}

@@ -8,7 +8,7 @@ import { useUIStore } from './stores/ui';
 import { useSettingsStore } from './stores/settings';
 import { usePluginsStore } from './stores/plugins';
 import { usePluginsHooks } from './composables/usePluginsHooks';
-import { ensureMediaServerUrl } from './utils/imageLoader';
+import { ensureMediaServerUrl } from './utils/mediaUrl';
 import { vActivate } from './utils/activateDirective';
 import { logger } from '@shared/logger';
 

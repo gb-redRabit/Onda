@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
                 :class="
                   settings.appearance.audioPipDock ===
                   DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id
-                    ? 'border-primary bg-primary/10 text-primary'
+                    ? 'border-primary bg-primary/10 text-primary-text'
                     : 'border-base-300 bg-base-100 text-base-content/60 hover:bg-base-content/5'
                 "
                 :title="dockLabel(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
                 v-else
                 class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center"
               >
-                <span class="text-[10px] text-base-content/60 text-center leading-tight">
+                <span class="text-[11px] text-base-content/60 text-center leading-tight">
                   {{ sizeHint }}
                 </span>
               </div>
@@ -228,7 +228,7 @@ onBeforeUnmount(() => {
               class="fx-noise px-2.5 py-1.5 fx-depth rounded-field text-xs font-medium border transition-colors"
               :class="
                 isChecked(id)
-                  ? 'border-primary bg-primary/10 text-primary'
+                  ? 'border-primary bg-primary/10 text-primary-text'
                   : 'border-base-300 bg-base-100 text-base-content/60 hover:bg-base-content/5'
               "
               @click="toggleElement(id)"

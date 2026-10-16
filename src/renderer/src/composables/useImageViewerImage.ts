@@ -1,6 +1,6 @@
 import { ref, reactive, onScopeDispose } from 'vue';
 import type { Ref } from 'vue';
-import { toMediaServerUrl, loadScaledImageUrl } from '@renderer/utils/imageLoader';
+import { toMediaServerUrl, loadScaledImageUrl } from '@renderer/utils/mediaUrl';
 import { useTimeoutFn } from './useTimers';
 import type { FileItem } from '@renderer/types/explorer';
 

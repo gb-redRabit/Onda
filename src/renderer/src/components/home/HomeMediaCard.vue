@@ -39,7 +39,7 @@ const emit = defineEmits<{
       <MediaCover :path="coverPath" :size="coverSize" :fallback="fallback" class="w-full h-full" />
       <button
         v-if="openLabel"
-        class="absolute top-1.5 right-1.5 z-10 p-1 rounded-field bg-base-content/60 text-base-100 opacity-0 group-hover:opacity-100 hover:bg-base-content transition-opacity"
+        class="absolute top-1.5 right-1.5 z-10 p-1 rounded-field bg-base-content/60 text-base-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-base-content transition-opacity"
         :title="openLabel"
         :aria-label="openLabel"
         @click.stop="emit('open')"
@@ -47,7 +47,7 @@ const emit = defineEmits<{
         <ArrowRight :size="14" />
       </button>
       <button
-        class="absolute inset-0 flex items-center justify-center bg-base-content/40 opacity-0 group-hover:opacity-100 transition-opacity"
+        class="absolute inset-0 flex items-center justify-center bg-base-content/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         :aria-label="$t('common.play')"
         @click.stop="emit('play')"
       >

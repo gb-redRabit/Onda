@@ -75,7 +75,7 @@ function clearSearch(): void {
     @close="emit('close')"
   >
     <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
-      <BookOpen :size="16" class="text-primary shrink-0" />
+      <BookOpen :size="16" class="text-primary-text shrink-0" />
       <h2 id="plugins-guide-modal-title" class="text-lg font-medium truncate flex-1">
         {{ t('plugins.guide.title') }}
       </h2>
@@ -136,7 +136,7 @@ function clearSearch(): void {
 
       <div v-for="{ section, index } in sections" :key="index" class="flex gap-3">
         <span
-          class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center mt-0.5"
+          class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary-text text-sm font-semibold flex items-center justify-center mt-0.5"
         >
           {{ index + 1 }}
         </span>
@@ -156,7 +156,7 @@ function clearSearch(): void {
               :key="j"
               class="flex gap-2 text-sm leading-relaxed text-base-content/70"
             >
-              <span class="text-primary shrink-0 mt-0.5">•</span>
+              <span class="text-primary-text shrink-0 mt-0.5">•</span>
               <span class="whitespace-pre-line">{{ braces(item) }}</span>
             </li>
           </ul>

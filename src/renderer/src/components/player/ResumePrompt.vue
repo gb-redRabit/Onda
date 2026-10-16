@@ -8,12 +8,20 @@ defineProps<{
 defineEmits<{
   continue: [];
   start: [];
+  /** Wstrzymanie odliczania (hover/fokus) — WCAG 2.2.1. */
+  pause: [];
+  /** Wznowienie odliczania. */
+  resume: [];
 }>();
 </script>
 
 <template>
   <div
     class="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 bg-neutral/80 border border-white/15 rounded-box px-5 py-4 flex items-center gap-4 shadow-2xl shadow-black/50"
+    @mouseenter="$emit('pause')"
+    @mouseleave="$emit('resume')"
+    @focusin="$emit('pause')"
+    @focusout="$emit('resume')"
   >
     <div class="text-neutral-content text-sm">
       <div class="font-semibold">{{ $t('resume.title') }}</div>

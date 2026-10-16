@@ -41,7 +41,7 @@ function setFilter(filter: (typeof videoFilters)[0]) {
   <div ref="container" class="relative">
     <button
       class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors mt-1"
-      :class="{ 'text-primary!': settings.playback.videoFilter !== 'none' }"
+      :class="{ 'text-primary-text!': settings.playback.videoFilter !== 'none' }"
       :aria-label="$t('settings.videoFilter')"
       :aria-expanded="showFilters"
       @click="showFilters = !showFilters"
@@ -54,7 +54,7 @@ function setFilter(filter: (typeof videoFilters)[0]) {
         class="absolute bottom-full right-0 mb-3 w-44 bg-neutral/60 backdrop-blur-xl border border-white/10 rounded-box shadow-2xl shadow-black/60 py-1.5 z-50"
       >
         <div
-          class="px-3 py-1.5 text-[10px] text-neutral-content/60 font-medium uppercase tracking-wider"
+          class="px-3 py-1.5 text-[11px] text-neutral-content/60 font-medium uppercase tracking-wider"
         >
           {{ $t('videoFilters.title') }}
         </div>
@@ -62,7 +62,7 @@ function setFilter(filter: (typeof videoFilters)[0]) {
           v-for="f in videoFilters"
           :key="f.id"
           class="w-full px-3 py-1.5 text-left text-sm text-neutral-content/50 hover:text-neutral-content hover:bg-neutral-content/6 transition-colors flex items-center gap-2"
-          :class="{ 'text-primary!': settings.playback.videoFilter === f.css }"
+          :class="{ 'text-primary-text!': settings.playback.videoFilter === f.css }"
           @click="setFilter(f)"
         >
           <span

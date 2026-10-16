@@ -85,12 +85,12 @@ function iconComponent() {
         :is="iconComponent()"
         v-else
         :size="14"
-        :class="isAtDrives || item.isDirectory ? 'text-primary shrink-0' : 'shrink-0'"
+        :class="isAtDrives || item.isDirectory ? 'text-primary-text shrink-0' : 'shrink-0'"
       />
       <span class="truncate">{{ item.name }}</span>
       <span
         v-if="isLibraryFolder && !isAtDrives"
-        class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary font-bold border border-primary/40 leading-none"
+        class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
         >LIB</span
       >
     </div>

@@ -5,6 +5,8 @@ import { logger } from '../../shared/logger';
 import { isPathInside } from '../path-security';
 import { mainMessages } from '../i18n-main';
 import { AUTH_PARTITION } from '../youtube/youtube-auth-session';
+import { providerLoginPartitions } from '../ipc/providers/provider-login';
+import { PREVIEW_PARTITION } from '../preview/preview-session';
 
 // Siatki bezpieczeństwa procesu głównego: globalne handlery błędów, hardening
 // uprawnień sesji i odzyskiwanie po crashu renderera. Zebrane tutaj, aby `index.ts`
@@ -50,11 +52,14 @@ export function hardenSessionPermissions(ses: Session, trusted: (origin: string)
 /** Uruchom raz, najlepiej tuż po `app.whenReady()` — łapie błędy z handlerów IPC. */
 export function installSessionHardening(): void {
   hardenSessionPermissions(session.defaultSession, isTrustedAppOrigin);
-  // Partycja logowania YouTube: treść zdalna, więc żadne uprawnienie nie jest zaufane.
-  try {
-    hardenSessionPermissions(session.fromPartition(AUTH_PARTITION), () => false);
-  } catch (e) {
-    logger.warn('main', 'failed to harden auth partition permissions', e);
+  // Partycje z treścią zdalną (logowanie YouTube/providerów, podgląd <webview>):
+  // żadne uprawnienie nie jest zaufane.
+  for (const partition of [AUTH_PARTITION, ...providerLoginPartitions(), PREVIEW_PARTITION]) {
+    try {
+      hardenSessionPermissions(session.fromPartition(partition), () => false);
+    } catch (e) {
+      logger.warn('main', `failed to harden partition permissions (${partition})`, e);
+    }
   }
 }
 

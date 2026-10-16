@@ -24,8 +24,9 @@ const ui = useUIStore();
 const settings = useSettingsStore();
 
 const panelRef = ref<HTMLElement | null>(null);
-// Semantyka dialogu + focus trap; Escape działa jak przycisk zamknięcia.
-useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => skipAll() });
+// Semantyka dialogu + focus trap; Escape zamyka bez trwałego pomijania kreatora
+// („później"), więc pokaże się ponownie przy następnym starcie.
+useDialogFocus(panelRef, { closeOnEscape: true, onEscape: () => dismiss() });
 
 const steps: Component[] = [
   WizardWelcome,
@@ -82,13 +83,19 @@ function skipAll() {
   markDone();
   emit('close');
 }
+
+// Zamknięcie „na później" (Escape/tło/X): NIE ustawia `firstRunDone`, więc kreator
+// wróci przy następnym starcie. Wcześniej te akcje po cichu trwale go pomijały.
+function dismiss() {
+  emit('close');
+}
 </script>
 
 <template>
   <div
     data-testid="wizard"
     class="fixed inset-0 z-50 bg-neutral/60 backdrop-blur-sm flex items-center justify-center p-6"
-    @click.self="skipAll"
+    @click.self="dismiss"
   >
     <div
       ref="panelRef"
@@ -108,12 +115,19 @@ function skipAll() {
             class="p-1.5 rounded hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
             :title="t('wizard.later')"
             :aria-label="t('wizard.later')"
-            @click="skipAll"
+            @click="dismiss"
           >
             <X :size="16" />
           </button>
         </div>
-        <div class="mt-2 h-1.5 rounded-full bg-base-300 overflow-hidden">
+        <div
+          class="mt-2 h-1.5 rounded-full bg-base-300 overflow-hidden"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="progress"
+          :aria-label="t('wizard.title')"
+        >
           <div
             data-testid="wizard-progress"
             class="h-full rounded-full bg-primary transition-all duration-300"

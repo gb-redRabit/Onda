@@ -1,5 +1,20 @@
 import { matchesShortcut } from '@renderer/utils/shortcuts';
 import { applyVolumeTarget, seekTarget } from '@renderer/utils/mediaTransport';
+import { getActivePinia } from 'pinia';
+import { usePlayerStore } from '@renderer/stores/player';
+import { useAudioFxStore } from '@renderer/stores/audioFx';
+import { useSettingsStore } from '@renderer/stores/settings';
+import { useUIStore } from '@renderer/stores/ui';
+import { useAudioPlayer } from './useAudioPlayer';
+import { EQUALIZER_PRESETS, EQ_LIMITS, cloneEqBands } from '@renderer/utils/constants';
+import {
+  SUBTITLE_DELAY_STEP_MS,
+  SUBTITLE_DELAY_COARSE_MS,
+  adjustSubtitleDelay,
+  resetSubtitleDelay,
+  formatSubtitleDelay
+} from './subtitleDelay';
+import { i18n } from '@renderer/i18n';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -80,14 +95,175 @@ function setTransportVolume(volume: number): void {
   applyVolumeTarget(c.getVideoRef(), c.player.isMuted, volume);
 }
 
+function abCurrentTime(): number {
+  const video = ctx?.getVideoRef();
+  if (video) return video.currentTime;
+  return useAudioPlayer().currentTime.value;
+}
+
+/**
+ * Krok o jedną klatkę wideo. fps bierzemy z ffprobe (cache w main), z fallbackiem 25,
+ * bo `HTMLVideoElement` nie udostępnia liczby klatek na sekundę.
+ */
+async function stepFrame(direction: 1 | -1): Promise<void> {
+  const video = ctx?.getVideoRef();
+  if (!video) return;
+  const path = usePlayerStore().currentTrack?.path;
+  let fps = path ? await window.api.getVideoFps(path).catch(() => 0) : 0;
+  if (!Number.isFinite(fps) || fps <= 0) fps = 25;
+  const duration = Number.isFinite(video.duration) ? video.duration : Number.POSITIVE_INFINITY;
+  video.currentTime = Math.max(0, Math.min(duration, video.currentTime + direction / fps));
+  ctx?.notify(`${direction > 0 ? '+' : '−'}${(1 / fps).toFixed(3)} s`, 900);
+}
+
+/**
+ * Skróty pętli A–B działają niezależnie od widoku (wideo i audio): czas bierzemy z elementu
+ * wideo, gdy jest na ekranie, w przeciwnym razie z silnika audio.
+ */
+function handleAbShortcuts(e: KeyboardEvent): boolean {
+  // Bez aktywnej instancji Pinia (np. w teście jednostkowym) nie ma skrótów do sprawdzenia.
+  if (!getActivePinia()) return false;
+  const shortcuts = useSettingsStore().shortcuts;
+  const player = usePlayerStore();
+  const a = shortcuts['ab-set-a'];
+  if (a && matchesShortcut(a, e)) {
+    e.preventDefault();
+    player.setAbA(abCurrentTime());
+    return true;
+  }
+  const b = shortcuts['ab-set-b'];
+  if (b && matchesShortcut(b, e)) {
+    e.preventDefault();
+    player.setAbB(abCurrentTime());
+    return true;
+  }
+  const clear = shortcuts['ab-clear'];
+  if (clear && matchesShortcut(clear, e)) {
+    e.preventDefault();
+    player.clearAb();
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Globalne skróty korektora (działają wszędzie): pokaż/ukryj, bypass, dodaj pasmo, reset,
+ * snap, mono. Wartości edytowalne w Ustawieniach → Skróty.
+ */
+function handleEqShortcuts(e: KeyboardEvent): boolean {
+  if (!getActivePinia()) return false;
+  const shortcuts = useSettingsStore().shortcuts;
+  const fx = useAudioFxStore();
+  const audio = useAudioPlayer();
+
+  const toggle = shortcuts['eq-toggle'];
+  if (toggle && matchesShortcut(toggle, e)) {
+    e.preventDefault();
+    fx.equalizerVisible = !fx.equalizerVisible;
+    return true;
+  }
+  const bypass = shortcuts['eq-bypass'];
+  if (bypass && matchesShortcut(bypass, e)) {
+    e.preventDefault();
+    audio.setEqEnabled(!fx.equalizerEnabled);
+    return true;
+  }
+  const add = shortcuts['eq-add-band'];
+  if (add && matchesShortcut(add, e)) {
+    e.preventDefault();
+    if (fx.equalizerBands.length < EQ_LIMITS.maxBands) {
+      const next = cloneEqBands(fx.equalizerBands);
+      next.push({ type: 'peaking', frequency: 1000, q: 1, gain: 0 });
+      fx.equalizerPreset = 'custom';
+      audio.applyEqBands(next);
+    }
+    return true;
+  }
+  const reset = shortcuts['eq-reset'];
+  if (reset && matchesShortcut(reset, e)) {
+    e.preventDefault();
+    fx.equalizerPreset = 'flat';
+    audio.applyEqBands(cloneEqBands(EQUALIZER_PRESETS.flat));
+    return true;
+  }
+  const snap = shortcuts['eq-snap'];
+  if (snap && matchesShortcut(snap, e)) {
+    e.preventDefault();
+    audio.setEqSnap(!fx.equalizerSnap);
+    return true;
+  }
+  const mono = shortcuts['eq-mono'];
+  if (mono && matchesShortcut(mono, e)) {
+    e.preventDefault();
+    audio.setEqMono(!fx.equalizerMono);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Dopasowanie z luźnym Shiftem: Shift jest dodatkowym modyfikatorem „krok gruby",
+ * więc surowy klawisz musi pasować także przy wciśniętym Shift (sam skrót go nie zawiera).
+ */
+function matchesLooseShift(shortcut: string, e: KeyboardEvent): boolean {
+  if (matchesShortcut(shortcut, e)) return true;
+  return (
+    e.shiftKey &&
+    matchesShortcut(shortcut, {
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      altKey: e.altKey,
+      shiftKey: false
+    } as KeyboardEvent)
+  );
+}
+
+function notifySubtitleDelay(ms: number): void {
+  useUIStore().notify(
+    'info',
+    i18n.global.t('player.subtitleDelay', { delay: formatSubtitleDelay(ms) }),
+    undefined,
+    1400
+  );
+}
+
+/**
+ * Skróty przesunięcia napisów (Subtitle Delay / Offset). Krok 50 ms, Shift = 500 ms.
+ * Dodatnia wartość = napisy później. Wartości edytowalne w Ustawieniach → Skróty.
+ */
+function handleSubtitleDelayShortcuts(e: KeyboardEvent): boolean {
+  if (!getActivePinia()) return false;
+  const shortcuts = useSettingsStore().shortcuts;
+  const step = e.shiftKey ? SUBTITLE_DELAY_COARSE_MS : SUBTITLE_DELAY_STEP_MS;
+
+  const down = shortcuts['subtitle-delay-down'];
+  if (down && matchesLooseShift(down, e)) {
+    e.preventDefault();
+    notifySubtitleDelay(adjustSubtitleDelay(-step));
+    return true;
+  }
+  const up = shortcuts['subtitle-delay-up'];
+  if (up && matchesLooseShift(up, e)) {
+    e.preventDefault();
+    notifySubtitleDelay(adjustSubtitleDelay(step));
+    return true;
+  }
+  const reset = shortcuts['subtitle-delay-reset'];
+  if (reset && matchesLooseShift(reset, e)) {
+    e.preventDefault();
+    notifySubtitleDelay(resetSubtitleDelay());
+    return true;
+  }
+  return false;
+}
+
 /**
  * Obsługuje skróty widoku odtwarzacza. Wywoływane z pojedynczego nasłuchu keydown
  * na poziomie App (zawsze zarejestrowanego, gdy okno jest aktywne), dzięki czemu klawisze
  * odtwarzania działają mimo ciągłego montowania/odmontowywania widoków.
  */
 export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
-  const c = ctx;
-  if (!c) return;
   if (document.body.dataset.shortcutRecording) return;
 
   const target = e.target as HTMLElement | null;
@@ -98,6 +274,14 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
     target.isContentEditable
   )
     return;
+
+  // Pętla A–B działa w wideo i audio, więc obsługujemy ją przed sprawdzeniem kontekstu widoku.
+  if (handleAbShortcuts(e)) return;
+  if (handleEqShortcuts(e)) return;
+  if (handleSubtitleDelayShortcuts(e)) return;
+
+  const c = ctx;
+  if (!c) return;
 
   if (matches('play-pause', e)) {
     e.preventDefault();
@@ -172,6 +356,18 @@ export function handlePlayerShortcutKeydown(e: KeyboardEvent): void {
     seekTarget(c.getVideoRef(), 0);
     c.player.currentTime = 0;
     c.notify('0:00', 1000);
+    return;
+  }
+
+  if (matches('frame-back', e)) {
+    e.preventDefault();
+    void stepFrame(-1);
+    return;
+  }
+
+  if (matches('frame-forward', e)) {
+    e.preventDefault();
+    void stepFrame(1);
     return;
   }
 

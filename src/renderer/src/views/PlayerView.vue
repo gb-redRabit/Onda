@@ -34,6 +34,13 @@ const playerContainerRef = ref<HTMLDivElement | null>(null);
 const isVideo = computed(() => player.currentTrack?.type === 'video');
 const isAudio = computed(() => player.currentTrack?.type === 'audio');
 
+// Pętla A–B: po przekroczeniu B wracamy do A (egzekwowane na żywo na elemencie <video>).
+function onVideoTimeUpdate(e: Event): void {
+  const video = e.target as HTMLVideoElement;
+  const target = player.abLoopTarget(video.currentTime);
+  if (target !== null) video.currentTime = target;
+}
+
 // Wspólny powrót z PiP — onClosed i onMaximize różniły się wyłącznie pełnym ekranem.
 function resumeFromPiP(time: number): void {
   player.exitPiP(time);
@@ -145,6 +152,7 @@ onUnmounted(() => {
   if (
     vp.videoRef.value &&
     player.currentTrack?.type === 'video' &&
+    !/^https?:\/\//i.test(player.currentTrack.path) &&
     vp.videoRef.value.currentTime > 5
   ) {
     window.api
@@ -188,6 +196,7 @@ onUnmounted(() => {
         :aria-label="player.currentTrack?.metadata?.title || player.currentTrack?.name"
         @click="ctl.handleClick"
         @dblclick="ctl.handleDoubleClick"
+        @timeupdate="onVideoTimeUpdate"
         @contextmenu="
           playerContextMenu.showVideoMenu($event, {
             vp,
@@ -258,6 +267,8 @@ onUnmounted(() => {
       :position="player.resumePrompt.position"
       @continue="ctl.onResumeContinue"
       @start="ctl.onResumeStart"
+      @pause="ctl.pauseResumePrompt"
+      @resume="ctl.resumeResumePrompt"
     />
 
     <PlayerControls

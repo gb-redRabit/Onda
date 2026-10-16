@@ -27,7 +27,7 @@ const steps = computed(
     @close="emit('close')"
   >
     <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
-      <BookOpen :size="16" class="text-primary shrink-0" />
+      <BookOpen :size="16" class="text-primary-text shrink-0" />
       <h2 id="source-guide-modal-title" class="text-lg font-medium truncate flex-1">
         {{ t('sources.guide.title') }}
       </h2>
@@ -48,7 +48,7 @@ const steps = computed(
       <ol class="space-y-4">
         <li v-for="(step, i) in steps" :key="i" class="flex gap-3">
           <span
-            class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-sm font-semibold flex items-center justify-center mt-0.5"
+            class="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary-text text-sm font-semibold flex items-center justify-center mt-0.5"
           >
             {{ i + 1 }}
           </span>

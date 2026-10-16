@@ -92,6 +92,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
       max="51200"
       step="1024"
       :value="settings.network.downloadSpeedLimit"
+      :aria-label="$t('settings.downloadSpeedLimit')"
       class="w-full"
       @input="
         settings.updateNetwork({
@@ -99,7 +100,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
         })
       "
     />
-    <div class="flex justify-between text-[10px] text-base-content/60 mt-1">
+    <div class="flex justify-between text-[11px] text-base-content/60 mt-1">
       <span>{{ $t('settings.speedUnlimited') }}</span
       ><span>50 MB/s</span>
     </div>

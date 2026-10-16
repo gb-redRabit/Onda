@@ -4,6 +4,7 @@ import { RefreshCw } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import OnlineButton from './OnlineButton.vue';
 import OnlineMediaCard from './OnlineMediaCard.vue';
+import OnlineMediaGrid from './OnlineMediaGrid.vue';
 import OnlineSourceHeader from './OnlineSourceHeader.vue';
 import OnlineSelectionToolbar from './OnlineSelectionToolbar.vue';
 import type { YouTubeResolvedItem } from '@renderer/types/online';
@@ -43,7 +44,7 @@ function watchUrl(item: { id: string; url?: string }): string {
 }
 
 function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' | null {
-  if (yt.queuingId === videoId) return 'queuing';
+  if (yt.isQueuing(videoId)) return 'queuing';
   const status = yt.downloadStatusFor(videoId);
   if (status === 'downloading' || status === 'pending' || status === 'paused') {
     return 'downloading';
@@ -57,44 +58,38 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
 </script>
 
 <template>
-  <div v-if="yt.resolved" class="mb-8 space-y-4">
-    <OnlineSourceHeader
-      :kind="yt.resolved.kind"
-      :title="yt.resolved.title"
-      :channel-title="yt.resolved.meta.channelTitle"
-      :total-items="yt.resolved.meta.totalItems"
-      :loaded-count="yt.resolved.items.length"
-      :loading="resolvedLoading"
-      :can-download-all="yt.resolved.kind !== 'video'"
-      :can-play-all="yt.resolved.kind !== 'video'"
-      :can-save="yt.resolved.kind !== 'video'"
-      :saved="saved"
-      :saving="saving"
-      @download-all="emit('downloadAll')"
-      @play-all="emit('playAll')"
-      @save="emit('save')"
-      @clear="emit('clear')"
-    />
-
-    <div
-      v-if="yt.resolved.items.length === 0"
-      class="text-sm text-base-content/50 py-8 text-center"
+  <div v-if="yt.resolved" class="flex h-full flex-col">
+    <OnlineMediaGrid
+      class="flex-1"
+      :items="yt.resolved.items"
+      :col-width="yt.resolved.kind === 'video' ? 1200 : 300"
+      :min-cols="yt.resolved.kind === 'video' ? 1 : 2"
+      :estimate-row-height="yt.resolved.kind === 'video' ? 220 : 300"
     >
-      {{ t('youtube.itemsCount', { count: 0 }) }}
-    </div>
+      <template #header>
+        <div class="pb-4">
+          <OnlineSourceHeader
+            :kind="yt.resolved.kind"
+            :title="yt.resolved.title"
+            :channel-title="yt.resolved.meta.channelTitle"
+            :total-items="yt.resolved.meta.totalItems"
+            :loaded-count="yt.resolved.items.length"
+            :loading="resolvedLoading"
+            :can-download-all="yt.resolved.kind !== 'video'"
+            :can-play-all="yt.resolved.kind !== 'video'"
+            :can-save="yt.resolved.kind !== 'video'"
+            :saved="saved"
+            :saving="saving"
+            @download-all="emit('downloadAll')"
+            @play-all="emit('playAll')"
+            @save="emit('save')"
+            @clear="emit('clear')"
+          />
+        </div>
+      </template>
 
-    <div v-else class="space-y-4">
-      <div
-        class="grid gap-4"
-        :class="[
-          yt.resolved.kind === 'video'
-            ? 'grid-cols-1'
-            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-        ]"
-      >
+      <template #default="{ item }">
         <OnlineMediaCard
-          v-for="item in yt.resolved.items"
-          :key="item.id"
           :video="item"
           :expanded="expandedId === item.id"
           :selectable="yt.resolved.kind !== 'video'"
@@ -111,32 +106,41 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
           @open-window="emit('openWindow', watchUrl(item))"
           @open-channel="emit('openChannel', $event)"
         />
-      </div>
+      </template>
 
-      <OnlineSelectionToolbar
-        v-if="yt.resolved.kind !== 'video'"
-        :selected-count="selectedCount"
-        :total-count="yt.resolved.items.length"
-        :range-start="rangeStart"
-        :range-end="rangeEnd"
-        @update:range-start="rangeStart = $event"
-        @update:range-end="rangeEnd = $event"
-        @select-all="emit('selectAll')"
-        @select-range="emit('selectRange')"
-        @add-selected="emit('addSelected')"
-      />
-
-      <div v-if="resolvedCapped" class="flex justify-center">
-        <OnlineButton
-          variant="secondary"
-          size="sm"
-          :disabled="resolvedLoading"
-          @click="emit('loadMore')"
+      <template #footer>
+        <p
+          v-if="yt.resolved.items.length === 0"
+          class="text-sm text-base-content/50 py-8 text-center"
         >
-          <RefreshCw v-if="resolvedLoading" :size="12" class="animate-spin" />
-          {{ t('youtube.loadMore') }}
-        </OnlineButton>
-      </div>
-    </div>
+          {{ t('youtube.itemsCount', { count: 0 }) }}
+        </p>
+        <template v-else>
+          <div v-if="resolvedCapped" class="flex justify-center py-4">
+            <OnlineButton
+              variant="secondary"
+              size="sm"
+              :disabled="resolvedLoading"
+              @click="emit('loadMore')"
+            >
+              <RefreshCw v-if="resolvedLoading" :size="12" class="animate-spin" />
+              {{ t('youtube.loadMore') }}
+            </OnlineButton>
+          </div>
+          <OnlineSelectionToolbar
+            v-if="yt.resolved.kind !== 'video'"
+            :selected-count="selectedCount"
+            :total-count="yt.resolved.items.length"
+            :range-start="rangeStart"
+            :range-end="rangeEnd"
+            @update:range-start="rangeStart = $event"
+            @update:range-end="rangeEnd = $event"
+            @select-all="emit('selectAll')"
+            @select-range="emit('selectRange')"
+            @add-selected="emit('addSelected')"
+          />
+        </template>
+      </template>
+    </OnlineMediaGrid>
   </div>
 </template>

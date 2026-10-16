@@ -6,13 +6,22 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
 import { FolderPlus, FolderSearch, Trash2 } from '@lucide/vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const library = useLibraryStore();
 const ui = useUIStore();
 const settings = useSettingsStore();
 const { t } = useI18n();
+const prompt = usePromptDialog();
+
+async function removeFolder(path: string) {
+  if (!(await prompt.showConfirm(t('settings.libRemoveConfirm')))) return;
+  library.removeFolder(path);
+}
 
 async function clearCoverCache() {
+  if (!(await prompt.showConfirm(t('settings.coverCacheClearConfirm')))) return;
   try {
     const res = await window.api?.invoke('coverCache:clear');
     if (res?.success) ui.notify('success', t('settings.coverCacheCleared'));
@@ -113,7 +122,7 @@ function folderIcon(type: string): string {
       </div>
       <button
         class="px-2 py-1 text-xs text-error hover:text-error/80 transition-colors shrink-0"
-        @click="library.removeFolder(entry.path)"
+        @click="removeFolder(entry.path)"
       >
         {{ $t('settings.libRemove') }}
       </button>
@@ -143,6 +152,7 @@ function folderIcon(type: string): string {
       max="10000"
       step="500"
       :value="settings.library.coverCacheMaxEntries ?? 2000"
+      :aria-label="$t('settings.coverCache')"
       class="w-full"
       @input="
         settings.updateLibrary({
@@ -150,7 +160,7 @@ function folderIcon(type: string): string {
         })
       "
     />
-    <div class="flex justify-between text-[10px] text-base-content/60 mt-1">
+    <div class="flex justify-between text-[11px] text-base-content/60 mt-1">
       <span>500</span><span>10 000</span>
     </div>
     <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
@@ -161,4 +171,14 @@ function folderIcon(type: string): string {
       <Trash2 :size="14" />{{ $t('settings.coverCacheClear') }}
     </button>
   </SettingsGroup>
+
+  <ExplorerPromptDialog
+    :visible="prompt.promptVisible.value"
+    :is-confirm="prompt.promptIsConfirm.value"
+    :message="prompt.promptMessage.value"
+    :value="prompt.promptValue.value"
+    @update:value="prompt.promptValue.value = $event"
+    @confirm="prompt.promptConfirm"
+    @cancel="prompt.promptCancel"
+  />
 </template>

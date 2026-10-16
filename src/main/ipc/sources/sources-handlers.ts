@@ -1,5 +1,6 @@
+import { CHROME_USER_AGENT } from '../../../shared/constants';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
-import { join, extname } from 'path';
+import { join } from 'path';
 import { writeFile, readFile } from 'fs/promises';
 import {
   loadSources,
@@ -17,7 +18,8 @@ import {
   fetchSourceItems,
   testSourceConnection,
   fetchTableRows,
-  resolveSourceHeaders
+  resolveSourceHeaders,
+  registerPlayableMediaUrls
 } from '../generic-fetch';
 import { scrapePlayerUrl } from '../player-scraper';
 import { resolveNetworkTarget, privateNetworkAllowedForTarget } from '../network-target';
@@ -30,20 +32,10 @@ import {
 import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../../shared/types/sources';
 import { logger } from '../../../shared/logger';
+import { mapLimit } from '../../utils/map-limit';
 
-function mimeFromExtension(ext: string): string | null {
-  const map: Record<string, string> = {
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.gif': 'image/gif',
-    '.bmp': 'image/bmp',
-    '.ico': 'image/x-icon',
-    '.svg': 'image/svg+xml'
-  };
-  return map[ext.toLowerCase()] || null;
-}
+// Współbieżność walidacji/kolejkowania elementów źródła (DNS + scrape per element).
+const ENQUEUE_CONCURRENCY = 6;
 
 function getSourcesFile(): string {
   return join(app.getPath('userData'), 'sources.json');
@@ -106,7 +98,7 @@ export function registerSourcesHandlers(): void {
         : await dialog.showSaveDialog(options);
       if (result.canceled || !result.filePath) return { success: false, canceled: true };
       try {
-        const list = loadSources(getSourcesFile());
+        const list = await loadSources(getSourcesFile());
         await writeFile(
           result.filePath,
           JSON.stringify({ version: 1, sources: list }, null, 2),
@@ -175,38 +167,6 @@ export function registerSourcesHandlers(): void {
     return resolved;
   });
 
-  /** Wybór ikony źródła z komputera; zwraca data URL (limit 2 MB) lub URL. */
-  ipcMain.handle(
-    'sources:pickIcon',
-    async (
-      event
-    ): Promise<{ success: boolean; canceled?: boolean; dataUrl?: string; error?: string }> => {
-      const win = BrowserWindow.fromWebContents(event.sender);
-      const options = {
-        title: 'Wybierz ikonę źródła',
-        filters: [
-          { name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'ico', 'svg'] }
-        ],
-        properties: ['openFile' as const]
-      };
-      const result = win
-        ? await dialog.showOpenDialog(win, options)
-        : await dialog.showOpenDialog(options);
-      if (result.canceled || !result.filePaths?.[0]) return { success: false, canceled: true };
-      try {
-        const filePath = result.filePaths[0];
-        const buf = await readFile(filePath);
-        if (buf.byteLength > 2 * 1024 * 1024)
-          return { success: false, error: 'File too large (max 2 MB)' };
-        const mime = mimeFromExtension(extname(filePath)) || 'image/png';
-        const dataUrl = `data:${mime};base64,${buf.toString('base64')}`;
-        return { success: true, dataUrl };
-      } catch (e) {
-        return { success: false, error: e instanceof Error ? e.message : String(e) };
-      }
-    }
-  );
-
   ipcMain.handle(
     'sources:save',
     async (
@@ -218,7 +178,7 @@ export function registerSourcesHandlers(): void {
 
   ipcMain.handle('sources:delete', async (_event, id: string): Promise<MediaSource[]> => {
     const sourceId = typeof id === 'string' ? id : '';
-    const list = deleteSource(getSourcesFile(), sourceId);
+    const list = await deleteSource(getSourcesFile(), sourceId);
     // Usunięcie API usuwa też jego oznaczenia „pobrane" (nie zostawiamy sierot w store).
     if (sourceId) await removeDownloadedItems(getDownloadedFile(), sourceId, []);
     return list;
@@ -275,7 +235,11 @@ export function registerSourcesHandlers(): void {
         ? sanitizeEndpoint(endpointRaw ?? source.endpoints[0], 0)
         : null;
       if (!source || !endpoint) return { items: [], hasMore: false, error: 'Invalid source' };
-      return fetchSourceItems(source, endpoint, opts);
+      const res = await fetchSourceItems(source, endpoint, opts);
+      // Odtwarzanie bez pobierania idzie przez proxy serwera mediów (`/stream?url=`) —
+      // zarejestruj publiczne adresy elementów, zanim renderer zacznie je odtwarzać.
+      registerPlayableMediaUrls(res.items);
+      return res;
     }
   );
 
@@ -307,7 +271,8 @@ export function registerSourcesHandlers(): void {
         // Waliduj każdy URL źródła, zanim przekażesz go do downloadera. Prywatne
         // cele wymagają jawnej flagi zaufania per źródło; jeden zły element nie
         // blokuje dodania innych prawidłowych elementów w masowej kolejce.
-        const safeList: IpcDownloadJobInput[] = [];
+        // Ograniczona współbieżność: wcześniej sekwencyjny DNS + scrape per element
+        // (do 500) blokował zakolejkowanie całej partii.
         const trustedOrigins = new Map<string, string>();
         // Origin podstawy KAŻDEGO zapisanego źródła — do wiązania kluczy API.
         const baseOrigins = new Map<string, string>();
@@ -326,58 +291,60 @@ export function registerSourcesHandlers(): void {
             // nieprawidłowy baseUrl nie przyznaje niczego
           }
         }
-        for (const input of list) {
-          try {
-            // Zaufanie do sieci prywatnej wiążemy z ORIGINEM zapisanego źródła, a
-            // nie samym id: inaczej zaufane źródło dałoby się sparować z dowolnym
-            // adresem loopback/LAN/metadanych.
-            const sourceId = input.source?.sourceId;
-            const trustedOrigin =
-              typeof sourceId === 'string' ? trustedOrigins.get(sourceId) : undefined;
-            const allowPrivateNetwork = trustedOrigin
-              ? privateNetworkAllowedForTarget(input.url, trustedOrigin, true)
-              : false;
-            if (input.source) {
-              input.source = { ...input.source, allowPrivateNetwork };
-            }
-            await resolveNetworkTarget(input.url, { allowPrivateNetwork });
+        const safeList = (
+          await mapLimit(list, ENQUEUE_CONCURRENCY, async (input) => {
+            try {
+              // Zaufanie do sieci prywatnej wiążemy z ORIGINEM zapisanego źródła, a
+              // nie samym id: inaczej zaufane źródło dałoby się sparować z dowolnym
+              // adresem loopback/LAN/metadanych.
+              const sourceId = input.source?.sourceId;
+              const trustedOrigin =
+                typeof sourceId === 'string' ? trustedOrigins.get(sourceId) : undefined;
+              const allowPrivateNetwork = trustedOrigin
+                ? privateNetworkAllowedForTarget(input.url, trustedOrigin, true)
+                : false;
+              if (input.source) {
+                input.source = { ...input.source, allowPrivateNetwork };
+              }
+              await resolveNetworkTarget(input.url, { allowPrivateNetwork });
 
-            // Fallback dla embedów playera, których yt-dlp nie potrafi sam rozwiązać.
-            if (input.source?.mode === 'ytdlp' && /^https:\/\//i.test(input.url)) {
-              // Klucz API wysyłamy TYLKO gdy cel ma origin zapisanego źródła —
-              // wcześniej apiKeyId/headerName z renderera można było sparować z
-              // dowolnym publicznym URL-em i wyeksfiltrować poświadczenia.
-              const targetOrigin = new URL(input.url).origin;
-              const boundOrigin =
-                typeof sourceId === 'string' ? baseOrigins.get(sourceId) : undefined;
-              const authHeaders =
-                boundOrigin && targetOrigin === boundOrigin
-                  ? await resolveSourceHeaders(input.source.apiKeyId, input.source.headerName)
-                  : {};
-              const scraped = await scrapePlayerUrl(input.url, authHeaders, allowPrivateNetwork);
-              if (scraped) {
-                input.url = scraped.url;
-                if (scraped.kind === 'hls') {
-                  input.source = {
-                    ...input.source,
-                    mode: 'ytdlp',
-                    headers: {
-                      ...(input.source.headers || {}),
-                      Referer: scraped.referer,
-                      'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
-                    }
-                  };
-                } else {
-                  input.source = { ...input.source, mode: 'http' };
+              // Fallback dla embedów playera, których yt-dlp nie potrafi sam rozwiązać.
+              if (input.source?.mode === 'ytdlp' && /^https:\/\//i.test(input.url)) {
+                // Klucz API wysyłamy TYLKO gdy cel ma origin zapisanego źródła —
+                // wcześniej apiKeyId/headerName z renderera można było sparować z
+                // dowolnym publicznym URL-em i wyeksfiltrować poświadczenia.
+                const targetOrigin = new URL(input.url).origin;
+                const boundOrigin =
+                  typeof sourceId === 'string' ? baseOrigins.get(sourceId) : undefined;
+                const authHeaders =
+                  boundOrigin && targetOrigin === boundOrigin
+                    ? await resolveSourceHeaders(input.source.apiKeyId, input.source.headerName)
+                    : {};
+                const scraped = await scrapePlayerUrl(input.url, authHeaders, allowPrivateNetwork);
+                if (scraped) {
+                  input.url = scraped.url;
+                  if (scraped.kind === 'hls') {
+                    input.source = {
+                      ...input.source,
+                      mode: 'ytdlp',
+                      headers: {
+                        ...(input.source.headers || {}),
+                        Referer: scraped.referer,
+                        'User-Agent': CHROME_USER_AGENT
+                      }
+                    };
+                  } else {
+                    input.source = { ...input.source, mode: 'http' };
+                  }
                 }
               }
+              return input;
+            } catch (e) {
+              logger.warn('sources', `blocked download target for ${input.title}`, e);
+              return null;
             }
-            safeList.push(input);
-          } catch (e) {
-            logger.warn('sources', `blocked download target for ${input.title}`, e);
-          }
-        }
+          })
+        ).filter((i): i is IpcDownloadJobInput => i !== null);
         return await addDownloadJobs(safeList);
       } catch (e) {
         logger.warn('sources', 'sources:enqueue failed', e);

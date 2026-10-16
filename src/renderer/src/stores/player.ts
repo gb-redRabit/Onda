@@ -7,6 +7,7 @@ import { usePlayerSubtitles } from './player-subtitles';
 import { usePlayerCover } from './player-cover';
 import { usePlayerQueue } from './player-queue';
 import { usePlayerNavigation } from './player-navigation';
+import { usePlayerAb } from './player-ab';
 
 export type { CoverResult } from './player-cover';
 
@@ -14,10 +15,7 @@ export const usePlayerStore = defineStore('player', () => {
   const isMuted = ref(false);
   const volume = ref(0.8);
   const duration = ref(0);
-  const playbackRate = ref(1);
-  const equalizerVisible = ref(false);
-  const equalizerBands = ref<number[]>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-  const equalizerPreset = ref('flat');
+  const subtitlePanelVisible = ref(false);
   const pendingFullscreen = ref(false);
   const resumePrompt = ref<{ path: string; position: number } | null>(null);
   // Utwór tylko do wyświetlania pokazywany, gdy URL strumienia YouTube jest rozwiązywany, więc
@@ -76,6 +74,18 @@ export const usePlayerStore = defineStore('player', () => {
     enterPiP,
     exitPiP
   } = usePlayerNavigation(queue, pendingQueue, recordPlay);
+  const {
+    abA,
+    abB,
+    abActive,
+    setA: setAbA,
+    setB: setAbB,
+    toggle: toggleAb,
+    clear: clearAb,
+    moveA: moveAbA,
+    moveB: moveAbB,
+    loopTarget: abLoopTarget
+  } = usePlayerAb();
 
   const hasTrack = computed(() => currentTrack.value !== null);
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));
@@ -86,8 +96,8 @@ export const usePlayerStore = defineStore('player', () => {
   function toggleMute() {
     isMuted.value = !isMuted.value;
   }
-  function toggleEqualizer() {
-    equalizerVisible.value = !equalizerVisible.value;
+  function toggleSubtitlePanel() {
+    subtitlePanelVisible.value = !subtitlePanelVisible.value;
   }
   function showResumePrompt(path: string, position: number): void {
     resumePrompt.value = { path, position };
@@ -105,18 +115,25 @@ export const usePlayerStore = defineStore('player', () => {
     volume,
     currentTime,
     duration,
-    playbackRate,
     shuffle,
     repeat,
     queueVisible,
-    equalizerVisible,
-    equalizerBands,
-    equalizerPreset,
+    subtitlePanelVisible,
     pipActive,
     pipTime,
     pendingFullscreen,
     hasTrack,
     progress,
+    abA,
+    abB,
+    abActive,
+    setAbA,
+    setAbB,
+    toggleAb,
+    clearAb,
+    moveAbA,
+    moveAbB,
+    abLoopTarget,
     queueLength,
     displayQueue,
     setTrack,
@@ -138,7 +155,7 @@ export const usePlayerStore = defineStore('player', () => {
     reorderQueue,
     insertInQueue,
     toggleQueue,
-    toggleEqualizer,
+    toggleSubtitlePanel,
     nextTrack,
     prevTrack,
     playFromHistory,

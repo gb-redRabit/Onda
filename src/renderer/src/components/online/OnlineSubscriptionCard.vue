@@ -13,7 +13,7 @@ import type { Subscription } from '@renderer/types/online';
 const props = defineProps<{
   sub: Subscription;
   loadingChannelId?: string | null;
-  queueingChannelId?: string | null;
+  isQueuing?: (channelId: string) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -56,7 +56,7 @@ function openMenu(e: MouseEvent) {
     },
     {
       label: t('ctx.online.downloadAll'),
-      disabledWhen: (s) => props.queueingChannelId === s.channelId,
+      disabledWhen: (s) => props.isQueuing?.(s.channelId) ?? false,
       action: (s) => emit('downloadAll', s)
     },
     {
@@ -115,7 +115,7 @@ function lastCheckedLabel(ts?: number): string {
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <button
-            class="text-sm font-semibold text-base-content truncate hover:text-primary transition-colors"
+            class="text-sm font-semibold text-base-content truncate hover:text-primary-text transition-colors"
             @click="emit('openChannel', sub.channelId)"
           >
             {{ sub.channelTitle }}
@@ -161,17 +161,13 @@ function lastCheckedLabel(ts?: number): string {
       <OnlineButton
         variant="primary"
         size="sm"
-        :disabled="queueingChannelId === sub.channelId"
+        :disabled="isQueuing?.(sub.channelId) ?? false"
         :title="$t('youtube.downloadAllTitle')"
         @click="emit('downloadAll', sub)"
       >
-        <RefreshCw v-if="queueingChannelId === sub.channelId" :size="12" class="animate-spin" />
+        <RefreshCw v-if="isQueuing?.(sub.channelId)" :size="12" class="animate-spin" />
         <Download v-else :size="12" />
-        {{
-          queueingChannelId === sub.channelId
-            ? $t('youtube.downloading')
-            : $t('youtube.downloadAll')
-        }}
+        {{ isQueuing?.(sub.channelId) ? $t('youtube.downloading') : $t('youtube.downloadAll') }}
       </OnlineButton>
       <OnlineIconButton
         :disabled="loadingChannelId === sub.channelId"

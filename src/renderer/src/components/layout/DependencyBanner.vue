@@ -50,7 +50,7 @@ function openDependencies(): void {
         <span
           v-for="issue in issues"
           :key="issue.tool"
-          class="text-[10px] px-1.5 py-0.5 rounded-field font-medium"
+          class="text-[11px] px-1.5 py-0.5 rounded-field font-medium"
           :class="
             issue.required ? 'bg-error/15 text-error' : 'bg-base-content/10 text-base-content/60'
           "

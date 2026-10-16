@@ -23,7 +23,7 @@ const { t } = useI18n();
     <div class="flex items-center gap-1.5 shrink-0">
       <button
         v-if="showShuffle"
-        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-base-100/(--glass-alpha) border border-base-300 text-xs hover:border-primary/50 hover:text-primary transition-colors"
+        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-base-100/(--glass-alpha) border border-base-300 text-xs hover:border-primary/50 hover:text-primary-text transition-colors"
         :title="t('library.shuffleAll')"
         @click="emit('shuffle')"
       >
@@ -31,7 +31,7 @@ const { t } = useI18n();
         <span class="hidden lg:inline">{{ t('library.shuffle') }}</span>
       </button>
       <button
-        class="p-2 rounded-full bg-base-100/(--glass-alpha) border border-base-300 hover:border-primary/30 hover:text-primary transition-colors"
+        class="p-2 rounded-full bg-base-100/(--glass-alpha) border border-base-300 hover:border-primary/30 hover:text-primary-text transition-colors"
         :title="t('library.rescan')"
         @click="emit('rescan')"
       >

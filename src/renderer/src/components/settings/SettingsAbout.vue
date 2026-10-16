@@ -24,7 +24,7 @@ onMounted(async () => {
   <SettingsGroup>
     <div class="flex items-center gap-4">
       <div
-        class="w-16 h-16 rounded-box bg-primary/10 flex items-center justify-center text-primary text-2xl font-black"
+        class="w-16 h-16 rounded-box bg-primary/10 flex items-center justify-center text-primary-text text-2xl font-black"
       >
         O
       </div>

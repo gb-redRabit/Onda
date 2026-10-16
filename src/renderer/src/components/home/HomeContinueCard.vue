@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Play, History, RotateCcw } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import { formatDuration } from '@renderer/utils/formatters';
+import { RESUME_MIN_SECONDS } from '@shared/constants';
 import type { MediaFile } from '@renderer/types/media';
 
 const props = defineProps<{
@@ -19,13 +20,13 @@ const subtitle = computed(() => props.track.metadata?.artist || props.track.meta
 const percent = computed(() =>
   duration.value > 0 ? Math.min(100, (props.position / duration.value) * 100) : 0
 );
-const hasProgress = computed(() => props.position > 5);
+const hasProgress = computed(() => props.position > RESUME_MIN_SECONDS);
 </script>
 
 <template>
   <section class="mb-8" data-testid="home-continue">
     <h2 class="text-base font-semibold flex items-center gap-2 mb-3">
-      <History :size="16" class="text-primary" />
+      <History :size="16" class="text-primary-text" />
       {{ $t('home.continueTitle') }}
     </h2>
     <div
@@ -45,7 +46,15 @@ const hasProgress = computed(() => props.position > 5);
           {{ subtitle }}
         </div>
         <div v-if="hasProgress" class="mt-2.5">
-          <div v-if="duration > 0" class="h-1.5 rounded-full bg-base-content/10 overflow-hidden">
+          <div
+            v-if="duration > 0"
+            class="h-1.5 rounded-full bg-base-content/10 overflow-hidden"
+            role="progressbar"
+            :aria-valuenow="Math.round(percent)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-label="title"
+          >
             <div class="h-full bg-primary" :style="{ width: percent + '%' }" />
           </div>
           <div class="mt-1 text-[11px] text-base-content/50 font-mono">
@@ -61,6 +70,7 @@ const hasProgress = computed(() => props.position > 5);
         <button
           v-if="hasProgress"
           class="fx-noise flex items-center gap-2 px-3 py-2 rounded-field bg-base-200 border border-base-300 text-base-content text-sm font-medium hover:bg-base-content/10 transition-colors fx-depth"
+          :aria-label="`${$t('home.playFromStart')}: ${title}`"
           @click="emit('playFromStart')"
         >
           <RotateCcw :size="16" />
@@ -68,6 +78,7 @@ const hasProgress = computed(() => props.position > 5);
         </button>
         <button
           class="fx-noise flex items-center gap-2 px-4 py-2 rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors fx-depth"
+          :aria-label="`${hasProgress ? $t('home.resume') : $t('common.play')}: ${title}`"
           @click="emit('play')"
         >
           <Play :size="16" />

@@ -1,8 +1,12 @@
 import { extname, join, dirname, basename } from 'path';
 import type { IpcCoverSpec } from '../../shared/types/ipc';
+import { COVER_CLIP_END_DEFAULT, COVER_FRAME_DEFAULT } from '../../shared/coverSpec';
 
 const INVALID_DIR_CHARS = /[<>:"/\\|?*]/g;
 const MAX_SEGMENT_LENGTH = 120;
+// Górny limit długości okładki-klipu. Bez niego `end - start` sięgał 24 h, co
+// spawnowało yt-dlp/ffmpeg na dziesiątki GB wideo 4K/8K w %TEMP% (DoS).
+const MAX_CLIP_SECONDS = 120;
 
 // Sanityzuje nazwę kanału/playlisty do użycia jako segment katalogu (bezpieczny dla
 // Windows, bez końcowych kropek/spacji, ograniczona długość).
@@ -51,11 +55,12 @@ export function normalizeCoverSpec(cover: unknown): IpcCoverSpec | undefined {
     return { type: 'custom', customPath };
   }
   if (type === 'frame') {
-    return { type: 'frame', frameTime: clampSeconds(c.frameTime as number, 30) };
+    return { type: 'frame', frameTime: clampSeconds(c.frameTime as number, COVER_FRAME_DEFAULT) };
   }
   if (type === 'clip') {
     const start = clampSeconds(c.clipStart as number, 0);
-    const end = clampSeconds(c.clipEnd as number, 30);
+    let end = clampSeconds(c.clipEnd as number, COVER_CLIP_END_DEFAULT);
+    if (end - start > MAX_CLIP_SECONDS) end = start + MAX_CLIP_SECONDS;
     if (end <= start) return undefined;
     const clipFormat = c.clipFormat === 'mp4' ? 'mp4' : 'webm';
     return { type: 'clip', clipStart: start, clipEnd: end, clipFormat };
@@ -79,4 +84,31 @@ export function siblingCoverPath(audioPath: string, format: 'webm' | 'mp4'): str
   const dir = dirname(audioPath);
   const base = basename(audioPath, extname(audioPath));
   return join(dir, `${base}.${format}`);
+}
+
+// Selektor formatu dla okładki-klipu: natywny koder, który da się skopiować 1:1 do
+// kontenera docelowego, w NAJWYŻSZEJ dostępnej rozdzielczości (bez limitu wysokości,
+// więc sięga też 4K/8K).
+//  - MP4: AV1 (av01) przed H.264 (avc1) — YouTube daje H.264 tylko do 1080p, więc AV1
+//    jest potrzebny, by sięgnąć wyższych rozdzielczości,
+//  - WebM: VP9 lub AV1.
+// Regresja: selektory miały `[height<=1080]`, co ucinało klip do 1080p.
+export function clipFormatSelector(format: 'webm' | 'mp4'): string {
+  return format === 'mp4'
+    ? 'bestvideo[vcodec^=av01]/bestvideo[vcodec^=avc1]/bestvideo[ext=mp4]/bestvideo/best'
+    : 'bestvideo[vcodec^=vp9]/bestvideo[vcodec^=av01]/bestvideo[ext=webm]/bestvideo/best';
+}
+
+// Czy strumień skopiowany bez rekompresji (kodowanie z ffprobe) można zostawić w
+// kontenerze MP4 bez pogorszenia jakości. Chromium odtwarza AV1 (av01) i H.264 (avc1).
+export function clipCopiedCodecAcceptable(codecName: string): boolean {
+  const codec = (codecName || '').toLowerCase();
+  return codec.includes('h264') || codec.includes('av01');
+}
+
+// To samo dla WebM: Chromium odtwarza VP8/VP9/AV1. Kopia 1:1 jest OK, dopóki kodek
+// mieści się w kontenerze WebM — dopiero niezgodność uzasadnia re-enkod.
+export function clipCopiedCodecWebmAcceptable(codecName: string): boolean {
+  const codec = (codecName || '').toLowerCase();
+  return codec.includes('vp8') || codec.includes('vp9') || codec.includes('av01');
 }

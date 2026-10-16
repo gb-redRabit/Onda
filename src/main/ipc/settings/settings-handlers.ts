@@ -1,10 +1,9 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { writeFile, readFile } from 'fs/promises';
-import { getStore } from '../cover/cover-cache';
+import { getStore, applyCoverCacheSettings } from '../cover/cover-cache';
 import { isResetting } from '../factory-reset';
 import { configureAutoCheck } from '../../updater-scheduler';
 import { applyLogSettings } from '../../log-file';
-import { applyCoverCacheSettings } from '../cover/cover-cache';
 import { sanitizeSettings } from './settings-schema';
 import {
   encryptApiKeys,
@@ -15,6 +14,7 @@ import {
   SecretStorageUnavailableError
 } from './settings-crypto';
 import { syncSubscriptionsScheduler } from '../subscriptions/subscriptions-handlers';
+import { syncLinkSubsScheduler } from '../providers/providers-handlers';
 import { setCloseToTray } from '../../windows/close-behavior';
 import type { AppSettings, NetworkSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
@@ -121,16 +121,19 @@ export function registerSettingsHandlers(): void {
       const storedNetwork = sanitizeSettings(store.store || {}).sanitized.network;
       restoreProxyPasswords(sanitized.network, storedNetwork);
       const secretSaved = encryptKeysOrDrop(sanitized);
-      for (const [key, value] of Object.entries(sanitized)) {
-        store.set(key, value);
-      }
+      // Jeden zapis zamiast N osobnych `store.set` — każde `set` re-szyfrowało cały
+      // config (pbkdf2Sync) i synchronicznie przepisywało plik na wątku głównym.
+      store.store = { ...(store.store || {}), ...sanitized };
       if (sanitized.general) {
         setCloseToTray(sanitized.general.closeToTray !== false);
         applyLogSettings(sanitized.general.logLevel, sanitized.general.logMaxSizeMB);
       }
       if (sanitized.library) applyCoverCacheSettings(sanitized.library.coverCacheMaxEntries);
       if (sanitized.updates) void configureAutoCheck();
-      if (sanitized.download) void syncSubscriptionsScheduler();
+      if (sanitized.download) {
+        void syncSubscriptionsScheduler();
+        void syncLinkSubsScheduler();
+      }
       return secretSaved;
     } catch (e) {
       logger.warn('settings', 'settings:set failed', e);
@@ -212,7 +215,10 @@ export function registerSettingsHandlers(): void {
         }
         if (toPersist.library) applyCoverCacheSettings(toPersist.library.coverCacheMaxEntries);
         if (toPersist.updates) void configureAutoCheck();
-        if (toPersist.download) void syncSubscriptionsScheduler();
+        if (toPersist.download) {
+          void syncSubscriptionsScheduler();
+          void syncLinkSubsScheduler();
+        }
         // Zwróć klucze zamaskowane (bez sekretów) — renderer nigdy ich nie potrzebuje;
         // przy kolejnym zapisie puste `key` zachowa zapisaną wartość (mergeApiKeys).
         const data: Partial<AppSettings> = { ...toPersist };
