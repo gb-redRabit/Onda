@@ -43,10 +43,12 @@ describe('createOnlineDownloads.submitJobs', () => {
     expect(sent.metaOverride).toEqual({ artist: 'A', album: 'B' });
   });
 
-  it('returns the videoIds of the created tasks', async () => {
+  it('returns the created tasks', async () => {
     invoke.mockResolvedValueOnce([{ id: '1', videoId: 'x' }]);
     const dl = createOnlineDownloads(() => {});
-    await expect(dl.submitJobs([input({ videoId: 'x' }) as never])).resolves.toEqual(['x']);
+    await expect(dl.submitJobs([input({ videoId: 'x' }) as never])).resolves.toEqual([
+      { id: '1', videoId: 'x' }
+    ]);
   });
 
   it('is a no-op for an empty batch', async () => {

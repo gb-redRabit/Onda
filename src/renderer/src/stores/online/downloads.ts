@@ -73,9 +73,10 @@ export function createOnlineDownloads(
     }
   }
 
-  // Zwraca videoIds PRZYJĘTYCH zadań (main deduplikuje i może odrzucić część), żeby
-  // wywołujący oznaczał jako zakolejkowane tylko to, co faktycznie powstało.
-  async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<string[]> {
+  // Zwraca UTWORZONE zadania (main deduplikuje i może odrzucić część) — wywołujący
+  // decyduje po liczbie/wideoId, a `retryDownload` po samej niepustości (zadania bez
+  // `videoId`, np. bezpośredni URL, też muszą być rozpoznane jako utworzone).
+  async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> {
     if (!inputs.length) return [];
     try {
       // IPC serializuje argumenty structured-clone'em, który rzuca "An object could
@@ -85,7 +86,7 @@ export function createOnlineDownloads(
       const payload = clonePlain(inputs);
       const created = (await window.api.invoke('yt:download:add', payload)) as IpcDownloadTask[];
       for (const task of created || []) upsertTask(toDownloadTask(task));
-      return (created || []).map((task) => task.videoId).filter((id): id is string => !!id);
+      return created || [];
     } catch (e) {
       logger.error('yt', '[submitJobs] yt:download:add FAILED', e);
       return [];

@@ -10,7 +10,7 @@ import type {
   YouTubeResolvedItem,
   YouTubeVideo
 } from '@renderer/types/online';
-import type { IpcDownloadJobInput } from '@shared/types/ipc';
+import type { IpcDownloadJobInput, IpcDownloadTask } from '@shared/types/ipc';
 import { buildJob, type JobExtra } from '@renderer/utils/onlineJob';
 import { buildChannelJobs } from '@renderer/utils/onlineChannelJobs';
 import { resolveOnlineUrl, type OnlineResolveResponse } from '@renderer/utils/onlineResolve';
@@ -28,7 +28,7 @@ export interface OnlineQueueDeps {
   downloads: Ref<DownloadTask[]>;
   getSubscription: (channelId: string) => Subscription | undefined;
   addSubscription: (sub: Subscription) => void;
-  submitJobs: (jobs: IpcDownloadJobInput[]) => Promise<string[]>;
+  submitJobs: (jobs: IpcDownloadJobInput[]) => Promise<IpcDownloadTask[]>;
 }
 
 // Akcje kolejkowania dla elementów online (pojedynczy, partia rozwiązana i całe kanały)
@@ -183,8 +183,8 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
       // `submitJobs` zwraca TYLKO przyjęte zadania (main deduplikuje i odrzuca
       // duplikaty), więc zakolejkowane id liczymy z wyniku, a nie z `jobs` — inaczej
       // UI zaniżał/oznaczał jako zakolejkowane wideo bez zadania.
-      const addedVideoIds = jobs.length ? await submitJobs(jobs) : [];
-      const addedCount = addedVideoIds.length;
+      const created = jobs.length ? await submitJobs(jobs) : [];
+      const addedCount = created.length;
       if (addedCount > 0) {
         useUIStore().notify(
           'success',
@@ -192,7 +192,10 @@ export function createOnlineQueue(deps: OnlineQueueDeps) {
           t('youtube.channelQueued', { count: addedCount })
         );
       }
-      await recordQueuedVideos(channelId, addedVideoIds);
+      await recordQueuedVideos(
+        channelId,
+        created.map((task) => task.videoId || '')
+      );
     } finally {
       markChannelQueuing(channelId, false);
     }
