@@ -1942,6 +1942,7 @@ api.registerCommand({
     savePreset: 'Save preset',
     presetName: 'Preset name',
     presetExists: 'A preset with this name already exists',
+    presetDeleteConfirm: 'Delete the preset "{name}"?',
     importError: 'Clipboard does not contain a valid equalizer preset',
     exportError: 'Could not copy to the clipboard',
     export: 'Copy to clipboard (export)',

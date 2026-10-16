@@ -1948,6 +1948,7 @@ api.registerCommand({
     savePreset: 'Zapisz preset',
     presetName: 'Nazwa presetu',
     presetExists: 'Preset o tej nazwie już istnieje',
+    presetDeleteConfirm: 'Usunąć preset „{name}”?',
     importError: 'Schowek nie zawiera poprawnego presetu korektora',
     exportError: 'Nie udało się skopiować do schowka',
     export: 'Kopiuj do schowka (eksport)',

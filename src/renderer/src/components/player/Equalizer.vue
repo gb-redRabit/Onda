@@ -32,11 +32,14 @@ import {
 } from '@renderer/utils/constants/audio';
 import { sanitizeEqBands, sanitizeEqPreamp } from '@shared/eqSanitize';
 import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
 const player = usePlayerStore();
 const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const ui = useUIStore();
+const prompt = usePromptDialog();
 const { applyEqBands } = audio;
 const { t } = useI18n();
 
@@ -335,7 +338,8 @@ function confirmSavePreset() {
   naming.value = false;
   presetName.value = '';
 }
-function deletePreset(name: string) {
+async function deletePreset(name: string) {
+  if (!(await prompt.showConfirm(t('equalizer.presetDeleteConfirm', { name })))) return;
   const next = { ...userPresets.value };
   delete next[name];
   audio.setEqUserPresets(next);
@@ -938,5 +942,15 @@ onUnmounted(() => cancelAnimationFrame(raf));
         </div>
       </div>
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </div>
 </template>
