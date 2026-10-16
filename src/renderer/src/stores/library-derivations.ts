@@ -65,18 +65,19 @@ export function useLibraryDerivations(
   const videoTracks = computed(() => trackStats.value.videoArr);
   const imageTracks = computed(() => trackStats.value.imageArr);
 
+  // Tylko AUDIO i tylko faktycznie odtwarzane. Wcześniej pracowały na `tracks`
+  // (cała biblioteka, łącznie z wideo i obrazami) bez progu `playCount`, więc
+  // „Ostatnio odtwarzane"/„Najczęściej odtwarzane" pokazywały losowe, nieodtwarzane
+  // pozycje, w tym pliki nie-audio.
   const recentTracks = computed(() => {
     void statsRevision.value;
-    const ts = tracks.value;
-    const withPlayed = ts.filter((t) => t.lastPlayed);
-    if (withPlayed.length === 0) return [];
-    return topN(withPlayed, 20, (t) => t.lastPlayed || 0);
+    const played = audioTracks.value.filter((t) => (t.lastPlayed ?? 0) > 0);
+    return played.length ? topN(played, 20, (t) => t.lastPlayed || 0) : [];
   });
   const mostPlayed = computed(() => {
     void statsRevision.value;
-    const ts = tracks.value;
-    if (ts.length === 0) return [];
-    return topN(ts, 20, (t) => t.playCount);
+    const played = audioTracks.value.filter((t) => (t.playCount ?? 0) > 0);
+    return played.length ? topN(played, 20, (t) => t.playCount) : [];
   });
 
   // Grupowanie działa na już odfiltrowanej domenie audio (`audioTracks`), a nie na
