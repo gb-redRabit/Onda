@@ -25,4 +25,3 @@ export function registerPreviewHandlers(): void {
     return { success: true };
   });
 }
-

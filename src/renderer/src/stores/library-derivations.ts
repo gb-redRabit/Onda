@@ -109,14 +109,10 @@ export function useLibraryDerivations(
       nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
     }
     return Array.from(groups.values())
-      .map(
-        (g): [string, MediaFile[]] => [
-          (nameCounts.get(g.album.toLowerCase()) ?? 1) > 1
-            ? `${g.album} — ${g.artist}`
-            : g.album,
-          g.tracks
-        ]
-      )
+      .map((g): [string, MediaFile[]] => [
+        (nameCounts.get(g.album.toLowerCase()) ?? 1) > 1 ? `${g.album} — ${g.artist}` : g.album,
+        g.tracks
+      ])
       .sort((a, b) => nameCollator.compare(a[0], b[0]));
   });
 

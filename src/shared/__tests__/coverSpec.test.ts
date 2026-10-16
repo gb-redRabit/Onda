@@ -41,9 +41,9 @@ describe('buildCoverSpec', () => {
       clipEnd: COVER_CLIP_END_DEFAULT,
       clipFormat: 'webm'
     });
-    expect(
-      buildCoverSpec({ type: 'clip', clipStart: 10, clipEnd: 40, clipFormat: 'mp4' })
-    ).toEqual({ type: 'clip', clipStart: 10, clipEnd: 40, clipFormat: 'mp4' });
+    expect(buildCoverSpec({ type: 'clip', clipStart: 10, clipEnd: 40, clipFormat: 'mp4' })).toEqual(
+      { type: 'clip', clipStart: 10, clipEnd: 40, clipFormat: 'mp4' }
+    );
   });
 
   it('honours explicit defaults', () => {

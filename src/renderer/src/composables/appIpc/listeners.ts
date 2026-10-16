@@ -3,10 +3,7 @@
 // i pozwala je wszystkie zwolnić jednym wywołaniem `dispose`.
 import type { IpcReceiveChannel } from '@shared/ipc/contract';
 
-export type Listen = (
-  channel: IpcReceiveChannel,
-  callback: (...args: unknown[]) => void
-) => void;
+export type Listen = (channel: IpcReceiveChannel, callback: (...args: unknown[]) => void) => void;
 
 export interface ListenerScope {
   listen: Listen;

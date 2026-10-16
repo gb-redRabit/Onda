@@ -109,9 +109,7 @@ describe('providers:streamUrl — pre-flight', () => {
 
   it('zwraca streamToken, gdy strumień startuje', async () => {
     h.request.mockImplementation(
-      fakeRequest(
-        withMeta(Readable.from([Buffer.from([1])]), 200, { 'content-type': 'video/mp4' })
-      )
+      fakeRequest(withMeta(Readable.from([Buffer.from([1])]), 200, { 'content-type': 'video/mp4' }))
     );
 
     const res = (await call('providers:streamUrl', { ref: REF, itemId: 'f1' })) as {
