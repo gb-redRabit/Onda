@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
-import { join, extname } from 'path';
+import { join } from 'path';
 import { writeFile, readFile } from 'fs/promises';
 import {
   loadSources,
@@ -31,20 +31,6 @@ import {
 import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../../shared/types/sources';
 import { logger } from '../../../shared/logger';
-
-function mimeFromExtension(ext: string): string | null {
-  const map: Record<string, string> = {
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.gif': 'image/gif',
-    '.bmp': 'image/bmp',
-    '.ico': 'image/x-icon',
-    '.svg': 'image/svg+xml'
-  };
-  return map[ext.toLowerCase()] || null;
-}
 
 function getSourcesFile(): string {
   return join(app.getPath('userData'), 'sources.json');
@@ -175,38 +161,6 @@ export function registerSourcesHandlers(): void {
     const resolved = (dir || join(app.getPath('downloads'), 'api')).replace(/[\\/]+$/, '');
     return resolved;
   });
-
-  /** Wybór ikony źródła z komputera; zwraca data URL (limit 2 MB) lub URL. */
-  ipcMain.handle(
-    'sources:pickIcon',
-    async (
-      event
-    ): Promise<{ success: boolean; canceled?: boolean; dataUrl?: string; error?: string }> => {
-      const win = BrowserWindow.fromWebContents(event.sender);
-      const options = {
-        title: 'Wybierz ikonę źródła',
-        filters: [
-          { name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'ico', 'svg'] }
-        ],
-        properties: ['openFile' as const]
-      };
-      const result = win
-        ? await dialog.showOpenDialog(win, options)
-        : await dialog.showOpenDialog(options);
-      if (result.canceled || !result.filePaths?.[0]) return { success: false, canceled: true };
-      try {
-        const filePath = result.filePaths[0];
-        const buf = await readFile(filePath);
-        if (buf.byteLength > 2 * 1024 * 1024)
-          return { success: false, error: 'File too large (max 2 MB)' };
-        const mime = mimeFromExtension(extname(filePath)) || 'image/png';
-        const dataUrl = `data:${mime};base64,${buf.toString('base64')}`;
-        return { success: true, dataUrl };
-      } catch (e) {
-        return { success: false, error: e instanceof Error ? e.message : String(e) };
-      }
-    }
-  );
 
   ipcMain.handle(
     'sources:save',

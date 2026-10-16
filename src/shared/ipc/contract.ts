@@ -210,7 +210,6 @@ export const INVOKE_CHANNELS = [
   'profiles:delete',
   'sources:list',
   'sources:downloadDir',
-  'sources:pickIcon',
   'sources:export',
   'sources:import',
   'sources:save',
@@ -223,7 +222,6 @@ export const INVOKE_CHANNELS = [
   'sources:downloaded',
   'sources:unmarkDownloaded',
   'preview:prepare',
-  'preview:openExternal',
   'preview:setAdblock',
   // nakładki
   'pip:start',
@@ -322,9 +320,7 @@ export const RECEIVE_CHANNELS = [
   'explorer:add-tab',
   'explorer:refresh',
   'explorer:remove-tab',
-  'imageViewer:files',
-  'app:rendererReady',
-  'app:setBackgroundMaterial'
+  'imageViewer:files'
 ] as const;
 
 // Strażnik czasu kompilacji: kanał dodany do typów kontraktu, ale nieobecny w

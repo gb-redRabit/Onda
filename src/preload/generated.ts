@@ -193,7 +193,6 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'profiles:delete',
   'sources:list',
   'sources:downloadDir',
-  'sources:pickIcon',
   'sources:export',
   'sources:import',
   'sources:save',
@@ -206,7 +205,6 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'sources:downloaded',
   'sources:unmarkDownloaded',
   'preview:prepare',
-  'preview:openExternal',
   'preview:setAdblock',
   'pip:start',
   'pip:stop',
@@ -303,7 +301,5 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'explorer:add-tab',
   'explorer:refresh',
   'explorer:remove-tab',
-  'imageViewer:files',
-  'app:rendererReady',
-  'app:setBackgroundMaterial'
+  'imageViewer:files'
 ]);

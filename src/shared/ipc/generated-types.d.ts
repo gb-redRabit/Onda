@@ -193,7 +193,6 @@ export type IpcInvokeChannel =
   | 'profiles:delete'
   | 'sources:list'
   | 'sources:downloadDir'
-  | 'sources:pickIcon'
   | 'sources:export'
   | 'sources:import'
   | 'sources:save'
@@ -206,7 +205,6 @@ export type IpcInvokeChannel =
   | 'sources:downloaded'
   | 'sources:unmarkDownloaded'
   | 'preview:prepare'
-  | 'preview:openExternal'
   | 'preview:setAdblock'
   | 'pip:start'
   | 'pip:stop'
@@ -301,6 +299,4 @@ export type IpcReceiveChannel =
   | 'explorer:add-tab'
   | 'explorer:refresh'
   | 'explorer:remove-tab'
-  | 'imageViewer:files'
-  | 'app:rendererReady'
-  | 'app:setBackgroundMaterial';
+  | 'imageViewer:files';

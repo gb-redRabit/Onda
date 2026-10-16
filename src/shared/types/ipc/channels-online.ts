@@ -206,10 +206,6 @@ export interface OnlineChannels {
   'profiles:delete': { args: [id: string]; result: IpcDownloadProfile[] };
   'sources:list': { args: []; result: MediaSource[] };
   'sources:downloadDir': { args: []; result: string };
-  'sources:pickIcon': {
-    args: [];
-    result: { success: boolean; canceled?: boolean; dataUrl?: string; error?: string };
-  };
   'sources:export': {
     args: [];
     result: { success: boolean; canceled?: boolean; error?: string };
@@ -260,7 +256,6 @@ export interface OnlineChannels {
   'sources:downloaded': { args: [sourceId: string]; result: string[] };
   'sources:unmarkDownloaded': { args: [sourceId: string, itemIds: string[]]; result: string[] };
   'preview:prepare': { args: []; result: { success: boolean } };
-  'preview:openExternal': { args: [url: string]; result: void };
   'preview:setAdblock': { args: [enabled: boolean]; result: boolean };
   // Providery linków (PikPak, MEGA, Drive…): auto-detekcja, przeglądanie folderów
   // i rozwiązywanie bezpośredniego URL. Pobranie idzie przez `yt:download:add`
