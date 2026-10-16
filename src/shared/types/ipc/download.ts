@@ -159,6 +159,8 @@ export interface IpcDownloadTask {
   playlistTitle?: string;
   cover?: IpcCoverSpec;
   coverStatus: IpcCoverStatus;
+  // Przyczyna niepowodzenia osadzania okładki (gdy `coverStatus === 'error'`).
+  coverError?: string;
   metaOverride?: IpcMetaOverride;
   inLibrary?: boolean;
   fileHash?: string;

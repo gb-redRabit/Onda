@@ -27,6 +27,7 @@ export function toDownloadTask(ipc: IpcDownloadTask): DownloadTask {
     playlistTitle: ipc.playlistTitle,
     cover: ipc.cover,
     coverStatus: ipc.coverStatus,
+    coverError: ipc.coverError,
     metaOverride: ipc.metaOverride,
     inLibrary: ipc.inLibrary,
     fileHash: ipc.fileHash,

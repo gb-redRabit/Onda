@@ -76,7 +76,15 @@ async function runJob(job: Job): Promise<void> {
     for (let attempt = 1; attempt <= Math.max(1, retryCfg.attempts); attempt++) {
       const result = await runJobAttempt(job, bin, auth, base);
       if (result.finishedOk) {
-        await postProcess(job);
+        // Post-processing (metadane/okładka/sync biblioteki) jest NIEKRYTYCZNE:
+        // plik jest już pobrany, a `reportCompleted` zaksięgował go jako ukończony.
+        // Wyjątek tutaj NIE MOŻE przekręcić statusu na `error` — użytkownik ponowiłby
+        // pobranie i powstałby duplikat. Logujemy i kończymy jako sukces.
+        try {
+          await postProcess(job);
+        } catch (e) {
+          logger.warn('downloads', `post-process failed for ${job.id}`, e);
+        }
         return;
       }
       // Ponowienia warte jest tylko niepowodzenie transportu. `bot-block` to YouTube

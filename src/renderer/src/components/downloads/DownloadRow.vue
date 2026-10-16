@@ -189,6 +189,7 @@ const colors = {
         v-if="coverStatusKey(task)"
         class="text-[11px] shrink-0 flex items-center gap-1"
         :class="coverStatusClass(task)"
+        :title="task.coverStatus === 'error' && task.coverError ? task.coverError : undefined"
       >
         <RefreshCw v-if="task.coverStatus === 'fetching'" :size="10" class="animate-spin" />
         {{ t(coverStatusKey(task)) }}

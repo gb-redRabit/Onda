@@ -30,6 +30,7 @@ export function snapshotDownloadTask(task: IpcDownloadTask): IpcDownloadTask {
     playlistTitle: task.playlistTitle,
     cover: task.cover,
     coverStatus: task.coverStatus,
+    coverError: task.coverError,
     metaOverride: task.metaOverride,
     inLibrary: task.inLibrary,
     fileHash: task.fileHash,
