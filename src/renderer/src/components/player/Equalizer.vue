@@ -32,6 +32,17 @@ import {
 } from '@renderer/utils/constants/audio';
 import { sanitizeEqBands, sanitizeEqPreamp } from '@shared/eqSanitize';
 import { eqCurvePath, freqToRatio, ratioToFreq } from '@renderer/utils/eqCurve';
+import {
+  EQ_CURVE as CURVE,
+  EQ_GRID_DBS as GRID_DBS,
+  EQ_GRID_FREQS as GRID_FREQS,
+  bandX,
+  bandY,
+  dbToY,
+  gainPct as gainPctRange,
+  markerRadius
+} from '@renderer/utils/eqGeometry';
+import { useEqSpectrum } from '@renderer/composables/useEqSpectrum';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 
@@ -89,9 +100,6 @@ function toggleSolo(i: number) {
 watch(bands, () => {
   if (solo.value !== null) applySoloGraph();
 });
-const markerRadius = (type: EqBandType): string =>
-  type === 'lowshelf' ? '50% 50% 18% 18%' : type === 'highshelf' ? '18% 18% 50% 50%' : '50%';
-
 const userPresets = computed(() => fx.equalizerUserPresets ?? {});
 const activePreset = computed(() => {
   for (const name of Object.keys(userPresets.value)) {
@@ -104,57 +112,14 @@ const activePreset = computed(() => {
 });
 
 // --- krzywa ---
-const CURVE = { width: 480, height: 110, minFreq: 20, maxFreq: 20000, minDb: -18, maxDb: 18 };
 const curvePath = computed(() => eqCurvePath(bands.value, CURVE, fx.equalizerPreamp));
-const dbToY = (db: number) =>
-  CURVE.height -
-  ((Math.max(CURVE.minDb, Math.min(CURVE.maxDb, db)) - CURVE.minDb) / (CURVE.maxDb - CURVE.minDb)) *
-    CURVE.height;
 const zeroLineY = dbToY(0);
-const GRID_FREQS = [100, 1000, 10000];
-const GRID_DBS = [-12, -6, 6, 12];
-const bandX = (freq: number) => freqToRatio(freq, CURVE.minFreq, CURVE.maxFreq) * 100;
-const bandY = (gain: number) =>
-  ((CURVE.maxDb - Math.max(CURVE.minDb, Math.min(CURVE.maxDb, gain))) /
-    (CURVE.maxDb - CURVE.minDb)) *
-  100;
 
 // spektrum na żywo
-const spectrum = ref<number[]>([]);
-const SPECTRUM_BARS = 48;
-let raf = 0;
-// Bufor alokujemy raz (rozmiar zależy od fftSize, nie od klatki) — wcześniej `new Uint8Array`
-// powstawał 60×/s, co generowało stałą presję na GC.
-let spectrumBuf: Uint8Array<ArrayBuffer> | null = null;
-function tick() {
-  raf = requestAnimationFrame(tick);
-  // Na pauzie nic nie rysujemy — animowanie wykresu dla zatrzymanego dźwięku to zgadywanie.
-  if (!player.isPlaying) return;
-  const analyser = audio.getAnalyserNode();
-  if (!analyser) return;
-  spectrumBuf ??= new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(spectrumBuf);
-  // Nyquist z realnego próbkowania kontekstu (44.1/48/96 kHz), nie zaszyte 24 kHz.
-  const nyquist = (audio.getAudioContext()?.sampleRate ?? 48000) / 2;
-  const bars: number[] = [];
-  for (let i = 0; i < SPECTRUM_BARS; i++) {
-    const f = Math.pow(
-      10,
-      Math.log10(20) + (i / SPECTRUM_BARS) * (Math.log10(20000) - Math.log10(20))
-    );
-    const bin = Math.round((f / nyquist) * spectrumBuf.length);
-    bars.push((spectrumBuf[Math.min(spectrumBuf.length - 1, bin)] ?? 0) / 255);
-  }
-  spectrum.value = bars;
-}
-const spectrumPath = computed(() => {
-  if (!spectrum.value.length) return '';
-  const pts = spectrum.value.map((v, i) => {
-    const x = (i / (SPECTRUM_BARS - 1)) * CURVE.width;
-    const y = CURVE.height - v * CURVE.height;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  return `M 0,${CURVE.height} L ${pts.join(' L ')} L ${CURVE.width},${CURVE.height} Z`;
+const { spectrumPath } = useEqSpectrum({
+  isPlaying: () => player.isPlaying,
+  getAnalyser: () => audio.getAnalyserNode(),
+  getSampleRate: () => audio.getAudioContext()?.sampleRate ?? 48000
 });
 
 const curveEl = ref<HTMLElement | null>(null);
@@ -309,8 +274,9 @@ function onGainDrag(e: MouseEvent, index: number) {
 function typeLabel(type: EqBandType): string {
   return t(`equalizer.type_${type}`);
 }
-const gainPct = (gain: number) =>
-  ((gain - limits.minGain) / (limits.maxGain - limits.minGain)) * 100;
+
+// Gain → procent zakresu suwaka (z limitami tego komponentu).
+const gainPct = (gain: number): number => gainPctRange(gain, limits.minGain, limits.maxGain);
 
 // --- własne presety + eksport/import ---
 // Nazwę zbieramy we własnym polu w panelu, bo `window.prompt()` nie jest obsługiwane
@@ -369,10 +335,6 @@ async function importEq() {
     ui.notify('error', t('equalizer.import'), t('equalizer.importError'));
   }
 }
-onMounted(() => {
-  raf = requestAnimationFrame(tick);
-});
-onUnmounted(() => cancelAnimationFrame(raf));
 </script>
 
 <template>
