@@ -1,5 +1,6 @@
 import { extname, join, dirname, basename } from 'path';
 import type { IpcCoverSpec } from '../../shared/types/ipc';
+import { COVER_CLIP_END_DEFAULT, COVER_FRAME_DEFAULT } from '../../shared/coverSpec';
 
 const INVALID_DIR_CHARS = /[<>:"/\\|?*]/g;
 const MAX_SEGMENT_LENGTH = 120;
@@ -54,11 +55,11 @@ export function normalizeCoverSpec(cover: unknown): IpcCoverSpec | undefined {
     return { type: 'custom', customPath };
   }
   if (type === 'frame') {
-    return { type: 'frame', frameTime: clampSeconds(c.frameTime as number, 30) };
+    return { type: 'frame', frameTime: clampSeconds(c.frameTime as number, COVER_FRAME_DEFAULT) };
   }
   if (type === 'clip') {
     const start = clampSeconds(c.clipStart as number, 0);
-    let end = clampSeconds(c.clipEnd as number, 30);
+    let end = clampSeconds(c.clipEnd as number, COVER_CLIP_END_DEFAULT);
     if (end - start > MAX_CLIP_SECONDS) end = start + MAX_CLIP_SECONDS;
     if (end <= start) return undefined;
     const clipFormat = c.clipFormat === 'mp4' ? 'mp4' : 'webm';

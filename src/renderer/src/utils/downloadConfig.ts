@@ -1,5 +1,6 @@
 import type { CoverSpec, MetaOverride } from '@renderer/types/online';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
+import { buildCoverSpec } from '@shared/coverSpec';
 
 // Czysty builder konfiguracji pobierania wydzielony z
 // `components/online/DownloadConfigDialog.vue` (plan 2.8).
@@ -36,29 +37,21 @@ export interface DownloadConfigInput {
 }
 
 export function buildDownloadConfig(input: DownloadConfigInput): IpcDownloadConfig {
-  const cover: CoverSpec | undefined = (() => {
-    if (input.kind === 'video') {
-      // Pobierania wideo domyślnie osadzają miniaturę YouTube; "none" to
-      // jawne wyłączenie (animowane okładki są funkcją audio).
-      return input.coverType === 'none' ? { type: 'none' } : { type: 'thumbnail' };
-    }
-    if (input.coverType === 'none') return { type: 'none' };
-    if (input.coverType === 'custom') {
-      return input.customPath ? { type: 'custom', customPath: input.customPath } : undefined;
-    }
-    if (input.coverType === 'frame') {
-      return { type: 'frame', frameTime: Number(input.frameTime) || 0 };
-    }
-    if (input.coverType === 'clip') {
-      return {
-        type: 'clip',
-        clipStart: Number(input.clipStart) || 0,
-        clipEnd: Number(input.clipEnd) || 0,
-        clipFormat: input.clipFormat
-      };
-    }
-    return { type: 'thumbnail' };
-  })();
+  const cover: CoverSpec | undefined =
+    input.kind === 'video'
+      ? // Pobierania wideo domyślnie osadzają miniaturę YouTube; "none" to
+        // jawne wyłączenie (animowane okładki są funkcją audio).
+        input.coverType === 'none'
+        ? { type: 'none' }
+        : { type: 'thumbnail' }
+      : buildCoverSpec({
+          type: input.coverType,
+          customPath: input.customPath,
+          frameTime: input.frameTime,
+          clipStart: input.clipStart,
+          clipEnd: input.clipEnd,
+          clipFormat: input.clipFormat
+        });
   const metaOverride: MetaOverride = {};
   if (input.artist.trim()) metaOverride.artist = input.artist.trim();
   if (input.album.trim()) metaOverride.album = input.album.trim();
