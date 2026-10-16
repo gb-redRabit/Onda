@@ -3,7 +3,7 @@ import { existsSync } from 'fs';
 import { runCommand } from '../../utils/exec';
 import { logger } from '../../../shared/logger';
 import { errMsg } from '../../../shared/helpers';
-import type { DepSource } from '../../../shared/types/ipc/channels-system';
+import type { DepSource } from '../../../shared/types/ipc/channels-diagnostics';
 import binaries from '../../../../binaries.json';
 
 export type BinTool = 'ffmpeg' | 'ffprobe' | 'yt-dlp' | 'mkvextract';

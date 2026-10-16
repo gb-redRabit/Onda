@@ -1,4 +1,4 @@
-import type { IpcWarningEntry } from '../shared/types/ipc/channels-system';
+import type { IpcWarningEntry } from '../shared/types/ipc/channels-diagnostics';
 
 // Bufor pierścieniowy najnowszych ostrzeżeń procesu głównego (plan 5.3). Identyczne
 // ostrzeżenia powtarzane w obrębie RATE_WINDOW_MS scalają się w jeden wpis z licznikiem,
