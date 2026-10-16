@@ -70,4 +70,21 @@ describe('library derivations follow metadata edits, not just the track count', 
     expect(d.artists.value).toHaveLength(1);
     expect(d.albums.value).toHaveLength(1);
   });
+
+  it('splits same-named albums by artist and disambiguates the label', () => {
+    const tracks = ref<MediaFile[]>([
+      track('/a1.mp3', 'Alice', 'Greatest Hits'),
+      track('/b1.mp3', 'Bob', 'Greatest Hits'),
+      track('/c1.mp3', 'Alice', 'Solo')
+    ]);
+    const d = useLibraryDerivations(tracks);
+
+    const names = d.albums.value.map(([n]) => n);
+    expect(d.albums.value).toHaveLength(3);
+    // Unikalna nazwa zostaje bez wykonawcy...
+    expect(names).toContain('Solo');
+    // ...a powtarzalna jest rozróżniona wykonawcą.
+    expect(names).toContain('Greatest Hits — Alice');
+    expect(names).toContain('Greatest Hits — Bob');
+  });
 });
