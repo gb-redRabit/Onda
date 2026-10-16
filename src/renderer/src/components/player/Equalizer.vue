@@ -381,7 +381,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
       <div class="flex items-center gap-1.5">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
-          :class="fx.equalizerEnabled ? 'text-primary-text' : 'text-base-content/40'"
+          :class="fx.equalizerEnabled ? 'text-primary-text' : 'text-base-content/55'"
           data-testid="eq-power"
           :title="fx.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
           :aria-label="fx.equalizerEnabled ? $t('equalizer.disable') : $t('equalizer.enable')"
@@ -666,12 +666,12 @@ onUnmounted(() => cancelAnimationFrame(raf));
       </svg>
 
       <!-- etykiety siatki -->
-      <span class="absolute left-1 top-0.5 text-[10px] text-base-content/30">+18</span>
-      <span class="absolute left-1 bottom-0.5 text-[10px] text-base-content/30">-18</span>
+      <span class="absolute left-1 top-0.5 text-[10px] text-base-content/55">+18</span>
+      <span class="absolute left-1 bottom-0.5 text-[10px] text-base-content/55">-18</span>
       <span
         v-for="f in GRID_FREQS"
         :key="'lf' + f"
-        class="absolute bottom-0.5 text-[10px] text-base-content/30 -translate-x-1/2"
+        class="absolute bottom-0.5 text-[10px] text-base-content/55 -translate-x-1/2"
         :style="{ left: freqToRatio(f, CURVE.minFreq, CURVE.maxFreq) * 100 + '%' }"
         >{{ f >= 1000 ? f / 1000 + 'k' : f }}</span
       >
@@ -773,7 +773,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
             class="ml-auto shrink-0 p-1 rounded-field transition-colors"
             :class="
               band.enabled === false
-                ? 'text-base-content/30 hover:text-base-content/60'
+                ? 'text-base-content/55 hover:text-base-content/60'
                 : 'text-primary-text hover:bg-base-content/10'
             "
             :data-testid="'eq-enable-' + i"
@@ -790,7 +790,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
             :class="
               solo === i
                 ? 'bg-primary text-primary-content'
-                : 'text-base-content/40 hover:text-base-content hover:bg-base-content/10'
+                : 'text-base-content/55 hover:text-base-content hover:bg-base-content/10'
             "
             :data-testid="'eq-solo-' + i"
             :title="$t('equalizer.solo')"
@@ -802,7 +802,7 @@ onUnmounted(() => cancelAnimationFrame(raf));
           </button>
           <button
             type="button"
-            class="shrink-0 p-1 rounded-field text-base-content/40 hover:text-error hover:bg-base-content/10 transition-colors disabled:opacity-30"
+            class="shrink-0 p-1 rounded-field text-base-content/55 hover:text-error hover:bg-base-content/10 transition-colors disabled:opacity-30"
             :disabled="bands.length <= 1"
             :data-testid="'eq-remove-' + i"
             :aria-label="$t('equalizer.removeBand')"

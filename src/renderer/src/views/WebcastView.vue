@@ -30,6 +30,24 @@ function selectTab(tab: WebcastTab) {
   writeString('onda.webcastTab', tab);
 }
 
+// Wzorzec WAI-ARIA tabs: strzałki/Home/End przenoszą focus i wybór.
+const webcastTablistRef = ref<HTMLElement | null>(null);
+const WEBCAST_TABS: WebcastTab[] = ['radio', 'saved'];
+function onTabKeydown(e: KeyboardEvent, index: number): void {
+  const n = WEBCAST_TABS.length;
+  let next = index;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % n;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + n) % n;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = n - 1;
+  else return;
+  e.preventDefault();
+  selectTab(WEBCAST_TABS[next]!);
+  nextTick(() =>
+    webcastTablistRef.value?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus()
+  );
+}
+
 const radioDialogOpen = ref(false);
 const trackGridRef = ref<HTMLElement | null>(null);
 const trackGrid = useVirtualGrid(trackGridRef, 220, 4);
@@ -94,13 +112,20 @@ const trackCount = computed(() => saved.tracks.length);
 <template>
   <div data-testid="webcast-view" class="flex flex-col h-full">
     <PageHeader :title="$t('saved.title')" :icon="RadioTower" sticky>
-      <div class="ui-segmented" role="tablist" :aria-label="$t('saved.title')">
+      <div
+        ref="webcastTablistRef"
+        class="ui-segmented"
+        role="tablist"
+        :aria-label="$t('saved.title')"
+      >
         <button
           type="button"
           role="tab"
           data-testid="webcast-tab-radio"
           :aria-selected="activeTab === 'radio'"
+          :tabindex="activeTab === 'radio' ? 0 : -1"
           @click="selectTab('radio')"
+          @keydown="onTabKeydown($event, 0)"
         >
           {{ $t('saved.radioTitle') }}
         </button>
@@ -109,7 +134,9 @@ const trackCount = computed(() => saved.tracks.length);
           role="tab"
           data-testid="webcast-tab-saved"
           :aria-selected="activeTab === 'saved'"
+          :tabindex="activeTab === 'saved' ? 0 : -1"
           @click="selectTab('saved')"
+          @keydown="onTabKeydown($event, 1)"
         >
           {{ $t('saved.tabSaved') }}
         </button>

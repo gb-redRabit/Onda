@@ -69,18 +69,34 @@ watch(
   () => nextTick(measureTabMode)
 );
 onUnmounted(() => tabResizeObserver?.disconnect());
+
+// Wzorzec WAI-ARIA tabs: strzałki/Home/End przenoszą focus (roving tabindex) i wybór.
+function onTabKeydown(e: KeyboardEvent, index: number): void {
+  const n = props.tabs.length;
+  let next = index;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (index + 1) % n;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (index - 1 + n) % n;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = n - 1;
+  else return;
+  e.preventDefault();
+  emit('update:modelValue', props.tabs[next]!.id);
+  const row = tabRow.value;
+  nextTick(() => row?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus());
+}
 </script>
 
 <template>
   <div class="relative -mx-1" role="tablist" :aria-label="$t('library.title')">
     <div ref="tabRow" class="flex gap-1 sm:gap-1.5 px-1 pb-1 overflow-hidden" :data-mode="tabMode">
       <button
-        v-for="tabItem in props.tabs"
+        v-for="(tabItem, i) in props.tabs"
         :key="tabItem.id"
         role="tab"
         data-tab
         :data-testid="'library-tab-' + tabItem.id"
         :aria-selected="props.modelValue === tabItem.id"
+        :tabindex="props.modelValue === tabItem.id ? 0 : -1"
         :aria-label="tabItem.label"
         class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth hover:border-primary/30"
         :class="
@@ -90,13 +106,16 @@ onUnmounted(() => tabResizeObserver?.disconnect());
         "
         :title="tabItem.label + ' (' + tabItem.count + ')'"
         @click="emit('update:modelValue', tabItem.id)"
+        @keydown="onTabKeydown($event, i)"
       >
         <component
           :is="tabItem.icon"
           :size="14"
           class="shrink-0"
           :class="
-            props.modelValue === tabItem.id ? 'opacity-90' : 'opacity-60 group-hover:opacity-100 group-focus-within:opacity-100'
+            props.modelValue === tabItem.id
+              ? 'opacity-90'
+              : 'opacity-60 group-hover:opacity-100 group-focus-within:opacity-100'
           "
         />
         <span data-tab-label class="truncate">{{ tabItem.label }}</span>

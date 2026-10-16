@@ -34,6 +34,7 @@ const { t } = useI18n();
           v-model="name"
           type="text"
           :placeholder="t('sources.namePlaceholder')"
+          :aria-label="t('sources.name')"
           class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -43,6 +44,7 @@ const { t } = useI18n();
           v-model="baseUrl"
           type="text"
           placeholder="https://api.example.com"
+          :aria-label="t('sources.baseUrl')"
           class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -68,6 +70,7 @@ const { t } = useI18n();
       <div class="flex flex-wrap gap-2">
         <select
           v-model="authType"
+          :aria-label="t('sources.auth')"
           class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="none">{{ t('sources.authNone') }}</option>
@@ -77,6 +80,7 @@ const { t } = useI18n();
         <template v-if="authType !== 'none'">
           <select
             v-model="apiKeyId"
+            :aria-label="t('sources.chooseKey')"
             class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">{{ t('sources.chooseKey') }}</option>
@@ -87,12 +91,14 @@ const { t } = useI18n();
               v-model="headerName"
               type="text"
               :placeholder="t('sources.headerName')"
+              :aria-label="t('sources.headerName')"
               class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <input
               v-model="queryParam"
               type="text"
               :placeholder="t('sources.queryParam')"
+              :aria-label="t('sources.queryParam')"
               class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </template>

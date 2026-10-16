@@ -110,7 +110,7 @@ function browserUrl(item: SourceItem): string {
           class="flex flex-col gap-4 p-4 md:border-l border-t md:border-t-0 border-base-300 overflow-y-auto bg-base-100"
         >
           <div>
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.titleField') }}
             </p>
             <p class="text-sm font-medium leading-snug">
@@ -118,19 +118,19 @@ function browserUrl(item: SourceItem): string {
             </p>
           </div>
           <div v-if="props.item.subtitle">
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.subtitleField') }}
             </p>
             <p class="text-xs text-base-content/70">{{ props.item.subtitle }}</p>
           </div>
           <div v-if="props.item.duration">
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.durationField') }}
             </p>
             <p class="text-xs font-mono text-base-content/70">{{ props.item.duration }}</p>
           </div>
           <div v-if="browserUrl(props.item)" class="min-w-0">
-            <p class="text-[11px] uppercase tracking-wider text-base-content/40 mb-1">
+            <p class="text-[11px] uppercase tracking-wider text-base-content/55 mb-1">
               {{ $t('sources.sourceUrlField') }}
             </p>
             <a

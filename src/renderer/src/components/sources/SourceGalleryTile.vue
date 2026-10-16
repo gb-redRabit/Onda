@@ -46,7 +46,7 @@ const typeIcon = {
         class="w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-105"
       />
       <div v-else class="w-full h-full flex items-center justify-center bg-neutral">
-        <component :is="typeIcon[item.type]" :size="32" class="text-base-content/40" />
+        <component :is="typeIcon[item.type]" :size="32" class="text-base-content/55" />
       </div>
     </div>
 
