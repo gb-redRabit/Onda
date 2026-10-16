@@ -6,8 +6,7 @@
     "e2e/**/*.ts",
     "src/main/**/*",
     "src/preload/**/*",
-    "src/shared/**/*",
-    "src/renderer/src/types/**/*.ts"
+    "src/shared/**/*"
   ],
   "compilerOptions": {
     "composite": true,
