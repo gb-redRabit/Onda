@@ -171,6 +171,19 @@ export async function handleStreamProxy(
         break;
       }
       if (status !== 200 && status !== 206) {
+        // 416 (zakres nieobsługiwany) jest odpowiedzią TERMINALNĄ — przekazujemy ją
+        // wprost (z content-range), zamiast ponawiać 3× i zamieniać na 502.
+        if (status === 416) {
+          const rangeHeaders: http.OutgoingHttpHeaders = {};
+          const contentRange = upRes.headers['content-range'];
+          const acceptRanges = upRes.headers['accept-ranges'];
+          if (contentRange !== undefined) rangeHeaders['content-range'] = contentRange;
+          if (acceptRanges !== undefined) rangeHeaders['accept-ranges'] = acceptRanges;
+          res.writeHead(416, rangeHeaders);
+          upRes.destroy();
+          res.end();
+          return;
+        }
         let body = '';
         upRes.on('data', (chunk: Buffer) => {
           if (body.length < 400) body += chunk.toString('utf8');
@@ -208,7 +221,9 @@ export async function handleStreamProxy(
       }
       res.writeHead(status, headers);
 
-      req.on('close', () => {
+      // Kanonicznym sygnałem rozłączenia klienta jest `res.on('close')` (żądanie
+      // 'close' w nowszych Node bywa po odebraniu żądania, a nie po zerwaniu).
+      res.on('close', () => {
         if (!res.writableEnded) upRes.destroy();
       });
       upRes.on('error', () => res.destroy());
@@ -308,7 +323,8 @@ export async function handleProviderStreamProxy(
     headers['Content-Length'] = String(size);
   }
   res.writeHead(status, headers);
-  req.on('close', () => {
+  // Zob. handleStreamProxy: rozłączenie klienta obserwujemy na odpowiedzi.
+  res.on('close', () => {
     try {
       (stream as import('stream').Readable).destroy?.();
     } catch {
