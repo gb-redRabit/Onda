@@ -27,6 +27,7 @@ import {
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
 import { isProtectedPath, isSensitivePath } from '../../path-policy';
 import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-server';
+import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
 
 // Mutujące operacje plikowe (zmiana nazwy, tagi, okładka) muszą przejść tę samą
 // politykę co destrukcyjne kanały `fs:*`: odrzucamy wyłącznie korzenie wolumenów i
@@ -84,6 +85,16 @@ export async function writeCoverToAudioFile(
   mimeOverride?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Okładkę osadzamy TYLKO w kontenerach, które ją bezpiecznie przyjmą. Wcześniej
+    // NodeID3 był wołany bezwarunkowo i dla m4a/flac/opus doklejał blok ID3 na
+    // początku pliku, uszkadzając kontener. `embedCover` dobiera metodę (ID3 vs
+    // ffmpeg `attached_pic`) lub rzuca dla nieobsługiwanych formatów.
+    if (!coverEmbedSupported(filePath)) {
+      return {
+        success: false,
+        error: `cover embedding unsupported for ${extname(filePath).toLowerCase() || 'unknown'}`
+      };
+    }
     let imageBuffer: Buffer;
     let mime = 'image/jpeg';
     if (typeof imageSource === 'string') {
@@ -101,12 +112,7 @@ export async function writeCoverToAudioFile(
       imageBuffer = Buffer.from(imageSource);
       if (mimeOverride) mime = mimeOverride;
     }
-    await NodeID3.Promise.update(
-      {
-        image: { mime, type: { id: 3 }, imageBuffer, description: 'Cover' }
-      },
-      filePath
-    );
+    await embedCover(filePath, { buffer: imageBuffer, mime });
     invalidateCachedCover(filePath);
     const store = await getStore();
     const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
