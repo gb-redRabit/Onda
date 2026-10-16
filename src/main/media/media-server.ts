@@ -63,6 +63,7 @@ export function getExtraRoots(): string[] {
 export async function setAllowedRoots(roots: string[]): Promise<void> {
   libraryRoots.length = 0;
   libraryRoots.push(...(await resolveAll(roots)));
+  clearPathResolveCache();
   rootsChanged?.();
 }
 
@@ -89,6 +90,7 @@ export async function addAllowedRoot(root: string): Promise<boolean> {
     return false;
   }
   extraRoots.push(real);
+  clearPathResolveCache();
   rootsChanged?.();
   return true;
 }
@@ -142,10 +144,33 @@ export function isPathWithinAllowedRoots(realPath: string): boolean {
 type MediaPathResolution =
   { ok: true; path: string } | { ok: false; reason: 'invalid' | 'forbidden' };
 
+// Rozstrzygnięcie ścieżki (realpath + test korzenia) jest cache'owane, bo seek w
+// <video>/<audio> generuje wiele żądań Range, z których każde robiło `realpath`
+// i liniowy skan korzeni. Krótki TTL ogranicza nieświeżość, a zmiana korzeni
+// czyści cache natychmiast.
+const PATH_RESOLVE_TTL_MS = 2000;
+const MAX_PATH_RESOLVE_ENTRIES = 512;
+const pathResolveCache = new Map<string, { at: number; resolution: MediaPathResolution }>();
+
+function clearPathResolveCache(): void {
+  pathResolveCache.clear();
+}
+
 async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolution> {
   const normalized = normalize(rawPath);
   if (!isAbsolute(normalized)) return { ok: false, reason: 'invalid' };
+  const cached = pathResolveCache.get(normalized);
+  if (cached && Date.now() - cached.at < PATH_RESOLVE_TTL_MS) return cached.resolution;
+  const resolution = await computeAllowedMediaPath(normalized);
+  pathResolveCache.set(normalized, { at: Date.now(), resolution });
+  if (pathResolveCache.size > MAX_PATH_RESOLVE_ENTRIES) {
+    const oldest = pathResolveCache.keys().next().value;
+    if (oldest !== undefined) pathResolveCache.delete(oldest);
+  }
+  return resolution;
+}
 
+async function computeAllowedMediaPath(normalized: string): Promise<MediaPathResolution> {
   let realPath = normalized;
   try {
     realPath = await fs.promises.realpath(normalized);
