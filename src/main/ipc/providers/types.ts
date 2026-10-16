@@ -49,6 +49,11 @@ export interface Provider {
 
 export const GDRIVE_DOMAINS = ['drive.google.com', 'googleusercontent.com', 'google.com'];
 
+// Górny limit pojedynczego żądania HTTP providera. Zawieszone połączenie TCP
+// (częste przy serwerach spoza regionu) inaczej blokowałoby `providers:list`,
+// `remote-subs-checker` (`running` latch) czy rozwiązywanie URL bez końca.
+export const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
+
 export function domainMatches(cookieDomain: string, target: string): boolean {
   const clean = cookieDomain.replace(/^\./, '').toLowerCase();
   return clean === target || clean.endsWith(`.${target}`);

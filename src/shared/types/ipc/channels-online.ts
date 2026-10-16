@@ -270,10 +270,6 @@ export interface OnlineChannels {
     args: [{ ref: ProviderRef; folderId?: string; force?: boolean }];
     result: { success: boolean; error?: string; code?: IpcDownloadErrorCode; items: RemoteItem[] };
   };
-  'providers:resolveUrl': {
-    args: [{ ref: ProviderRef; itemId: string }];
-    result: { success: boolean; error?: string; code?: IpcDownloadErrorCode; url?: string };
-  };
   'providers:downloaded': {
     args: [{ provider: string; shareId: string }];
     result: string[];
@@ -300,7 +296,12 @@ export interface OnlineChannels {
   };
   'providers:streamUrl': {
     args: [{ ref: ProviderRef; itemId: string; mime?: string }];
-    result: { success: boolean; error?: string; url?: string; streamToken?: string };
+    result: {
+      success: boolean;
+      error?: string;
+      code?: IpcDownloadErrorCode;
+      streamToken?: string;
+    };
   };
   'providers:subs:list': { args: []; result: RemoteSubscription[] };
   'providers:subs:add': {

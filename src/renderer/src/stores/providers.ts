@@ -229,17 +229,14 @@ export const useProvidersStore = defineStore('providers', () => {
         ref,
         itemId: item.id,
         mime
-      })) as { success: boolean; url?: string; streamToken?: string; error?: string };
-      let path: string;
-      if (res?.success && res.url) {
-        path = res.url;
-      } else if (res?.success && res.streamToken) {
-        // Strumień providera — proxy `/stream?provider=`.
-        path = `${mediaServerBase()}/stream?provider=${res.streamToken}`;
-      } else {
+      })) as { success: boolean; streamToken?: string; error?: string };
+      // Serwer mediów: zawsze proxy `/stream?provider=<token>` (main wystawia strumień
+      // z nagłówkami providera / deszyfrowaniem). Bez tokenu — błąd (np. rate-limited).
+      if (!res?.success || !res.streamToken) {
         error.value = res?.error || 'Nie można odtworzyć tego pliku';
         return false;
       }
+      const path = `${mediaServerBase()}/stream?provider=${res.streamToken}`;
       const isVideo = VIDEO_EXT.test(item.name);
       const track: MediaFile = {
         id: `provider:${ref.provider}:${ref.shareId}:${item.id}`,

@@ -48,9 +48,10 @@ import {
 } from './remote-subs-checker';
 
 // IPC providerów linków. `providers:detect` rozpoznaje serwis po URL; `providers:list`
-// przegląda folder; `providers:resolveUrl` zwraca świeży bezpośredni URL. Pobranie
-// enqueuje renderer przez `yt:download:add` (source.mode = 'provider'). Kanały `providers:subs:*`
-// obsługują subskrypcje LINKÓW (trwałe, w JSON) — z ostrzeżeniem o wygasaniu.
+// przegląda folder (z cache; `force` omija cache). `providers:streamUrl` wystawia strumień
+// przez proxy `/stream?provider=<token>`. Pobranie enqueuje renderer przez `yt:download:add`
+// (source.mode = 'provider'). Kanały `providers:subs:*` obsługują subskrypcje LINKÓW
+// (trwałe, w JSON) — z ostrzeżeniem o wygasaniu.
 
 const sanitizeRef = sanitizeProviderRef;
 const MAX_STREAM_REDIRECTS = 5;
@@ -210,24 +211,6 @@ export function registerProvidersHandlers(): void {
     }
   );
 
-  ipcMain.handle(
-    'providers:resolveUrl',
-    async (_event, opts: { ref?: unknown; itemId?: string }) => {
-      const ref = sanitizeRef(opts?.ref);
-      if (!ref || typeof opts?.itemId !== 'string' || !opts.itemId) {
-        return { success: false, error: 'Invalid request' };
-      }
-      try {
-        const resolved = await resolveProviderFileUrl(ref.provider, ref, opts.itemId);
-        return { success: true, url: resolved.url };
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        logger.warn('providers', 'resolveUrl failed', msg);
-        return { success: false, error: msg, code: classifyYtDlpError(msg) };
-      }
-    }
-  );
-
   // ── Poświadczenia providerów (cookie) ──────────────────────────────────────
   ipcMain.handle('providers:auth:list', async () => {
     if (e2eFixturesEnabled()) return e2eProviderAuthList();
@@ -375,7 +358,8 @@ export function registerProvidersHandlers(): void {
     const sub = subs.find((s) => s.id === id);
     if (!sub) return null;
     try {
-      await listProviderFolder(sub.ref);
+      // `force` omija cache folderów — ręczne „Sprawdź" ma realnie odpytać serwis.
+      await listProviderFolder(sub.ref, undefined, true);
       return updateRemoteSubscription(subsFile(), id, { status: 'ok', lastCheckedAt: Date.now() });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

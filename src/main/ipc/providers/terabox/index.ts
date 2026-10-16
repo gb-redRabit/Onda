@@ -1,5 +1,5 @@
 import type { ProviderRef, RemoteItem } from '../../../../shared/types/providers';
-import type { Provider } from '../types';
+import { PROVIDER_FETCH_TIMEOUT_MS, type Provider } from '../types';
 import { throttleProvider } from '../provider-rate-limit';
 
 // Provider TeraBox (dawniej Baidu Netdisk international). EKSPERYMENTALNY: oparty na
@@ -45,7 +45,11 @@ interface TbEntry {
 
 async function getJson<T>(url: string): Promise<T> {
   await throttleProvider('terabox');
-  const res = await fetch(url, { headers: HEADERS, redirect: 'follow' });
+  const res = await fetch(url, {
+    headers: HEADERS,
+    redirect: 'follow',
+    signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS)
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
 }

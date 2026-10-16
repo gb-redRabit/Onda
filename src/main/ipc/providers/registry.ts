@@ -61,14 +61,6 @@ export function listProvidersRequiringAuth(): Array<{ id: string; label: string;
   }));
 }
 
-export function parseProviderUrl(url: string): { provider: Provider; ref: ProviderRef } | null {
-  for (const provider of PROVIDERS) {
-    const ref = provider.parse(url);
-    if (ref) return { provider, ref };
-  }
-  return null;
-}
-
 export async function listProviderFolder(
   ref: ProviderRef,
   folderId?: string,

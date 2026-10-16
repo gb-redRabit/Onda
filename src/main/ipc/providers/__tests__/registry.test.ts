@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectProvider, getProvider, parseProviderUrl } from '../registry';
+import { detectProvider, getProvider } from '../registry';
 
 // Siatka regresyjna rejestru providerów: rozpoznawanie URL, budowa ref
 // i dobór providera. Czyste — bez sieci.
@@ -67,18 +67,6 @@ describe('detectProvider', () => {
   it('detects a direct media link last, and leaves ordinary pages alone', () => {
     expect(detectProvider('https://example.com/a/b/movie.mp4')?.id).toBe('direct');
     expect(detectProvider('https://example.com/page')).toBeNull();
-  });
-});
-
-describe('parseProviderUrl', () => {
-  it('returns the provider and ref for a share link', () => {
-    const parsed = parseProviderUrl('https://mypikpak.com/s/XYZ');
-    expect(parsed?.provider.id).toBe('pikpak');
-    expect(parsed?.ref).toEqual({ provider: 'pikpak', shareId: 'XYZ' });
-  });
-
-  it('returns null for an unknown url', () => {
-    expect(parseProviderUrl('https://example.com/x')).toBeNull();
   });
 });
 

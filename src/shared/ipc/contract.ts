@@ -192,7 +192,6 @@ export const INVOKE_CHANNELS = [
   'sc:stream:get',
   'providers:detect',
   'providers:list',
-  'providers:resolveUrl',
   'providers:downloaded',
   'providers:cred:get',
   'providers:auth:list',

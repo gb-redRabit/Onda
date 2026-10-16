@@ -28,7 +28,9 @@ export async function checkRemoteSubscriptions(filePath: string): Promise<{
     let errors = 0;
     for (const sub of subs) {
       try {
-        const items = await listProviderFolder(sub.ref);
+        // `force` omija trwały cache folderów — inaczej pierwsze sprawdzenie
+        // zapisałoby listę na stałe i kolejne nigdy nie zobaczyłyby nowych pozycji.
+        const items = await listProviderFolder(sub.ref, undefined, true);
         const ids = items.map((i) => i.id);
         const seen = new Set(sub.seenItemIds || []);
         // Pierwsze sprawdzenie (brak bazy) nie raportuje „nowych" — tylko ustawia punkt odniesienia.

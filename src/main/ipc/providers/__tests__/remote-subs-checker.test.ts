@@ -36,6 +36,8 @@ describe('checkRemoteSubscriptions', () => {
     listMock.mockResolvedValueOnce([item('a'), item('b')]);
     const res = await checkRemoteSubscriptions(file);
     expect(res).toMatchObject({ checked: 1, newItems: 0, errors: 0 });
+    // Musi omijać trwały cache folderów, inaczej nowe pozycje nigdy nie zostaną wykryte.
+    expect(listMock).toHaveBeenCalledWith({ provider: 'pikpak', shareId: 'S1' }, undefined, true);
     const sub = (await loadRemoteSubscriptions(file))[0];
     expect(sub.status).toBe('ok');
     expect(sub.seenItemIds).toEqual(['a', 'b']);

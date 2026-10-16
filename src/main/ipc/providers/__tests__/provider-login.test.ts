@@ -69,11 +69,7 @@ vi.mock('../provider-credentials', () => ({
   setProviderRefresh: vi.fn(async () => true)
 }));
 
-import {
-  startProviderLogin,
-  isProviderLoginSupported,
-  listLoginProviderIds
-} from '../provider-login';
+import { startProviderLogin, listLoginProviderIds } from '../provider-login';
 import { setProviderCookie, setProviderRefresh, setProviderToken } from '../provider-credentials';
 
 const fakeWindow = (): (typeof h.windows)[number] | undefined => h.windows.at(-1);
@@ -93,11 +89,7 @@ afterEach(() => {
 });
 
 describe('LOGIN_META', () => {
-  it('supports the expected providers (PikPak + Google Drive)', () => {
-    expect(isProviderLoginSupported('gdrive')).toBe(true);
-    expect(isProviderLoginSupported('pikpak')).toBe(true);
-    expect(isProviderLoginSupported('mega')).toBe(false);
-    expect(isProviderLoginSupported('115')).toBe(false);
+  it('lists the providers that support login (PikPak + Google Drive)', () => {
     expect(listLoginProviderIds()).toEqual(['pikpak', 'gdrive']);
   });
 });

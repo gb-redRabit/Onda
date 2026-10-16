@@ -175,7 +175,7 @@ async function confirmDownloadFolder(): Promise<void> {
       <div class="flex flex-wrap items-center gap-2">
         <span class="flex items-center gap-1.5" data-testid="providers-detected">
           <ProviderIcon :provider-id="store.detected.id" :label="store.detected.label" :size="18" />
-          <span class="text-xs font-semibold text-primary">{{
+          <span class="text-xs font-semibold text-primary-text">{{
             providerLabel(store.detected.id, store.detected.label, t)
           }}</span>
         </span>
@@ -249,7 +249,7 @@ async function confirmDownloadFolder(): Promise<void> {
           <span v-if="i > 0" class="text-base-content/50">/</span>
           <button
             type="button"
-            class="max-w-[16rem] truncate hover:text-primary"
+            class="max-w-[16rem] truncate hover:text-primary-text"
             :class="i === store.crumbs.length - 1 ? 'text-base-content' : 'text-base-content/60'"
             @click="store.goToCrumb(i)"
           >
@@ -294,7 +294,7 @@ async function confirmDownloadFolder(): Promise<void> {
             @click="onItem(item)"
           >
             <div class="flex h-16 items-center justify-center rounded-lg bg-primary/10">
-              <Folder :size="28" class="text-primary" />
+              <Folder :size="28" class="text-primary-text" />
             </div>
             <span class="line-clamp-2 pr-7 text-sm font-medium" :title="item.name">{{
               item.name
@@ -302,7 +302,7 @@ async function confirmDownloadFolder(): Promise<void> {
             <span class="mt-auto text-xs text-base-content/50">{{ t('providers.folder') }}</span>
             <button
               type="button"
-              class="absolute bottom-2 right-2 rounded-md border border-base-300 p-1 text-base-content/70 transition-colors hover:border-primary hover:text-primary"
+              class="absolute bottom-2 right-2 rounded-md border border-base-300 p-1 text-base-content/70 transition-colors hover:border-primary hover:text-primary-text"
               data-testid="providers-download-folder"
               :title="t('providers.downloadFolder')"
               @click.stop="pendingFolder = item"
@@ -354,7 +354,7 @@ async function confirmDownloadFolder(): Promise<void> {
                 v-else
                 type="button"
                 data-testid="providers-download"
-                class="flex shrink-0 items-center gap-1 rounded-md border border-base-300 px-2 py-1 text-xs text-base-content/80 transition-colors hover:border-primary hover:text-primary"
+                class="flex shrink-0 items-center gap-1 rounded-md border border-base-300 px-2 py-1 text-xs text-base-content/80 transition-colors hover:border-primary hover:text-primary-text"
                 :title="t('providers.download')"
                 @click="store.download(item)"
               >
@@ -368,7 +368,7 @@ async function confirmDownloadFolder(): Promise<void> {
       <div v-if="hasMore" class="flex justify-center">
         <button
           type="button"
-          class="rounded-md border border-base-300 px-3 py-1.5 text-xs text-base-content/80 hover:border-primary hover:text-primary"
+          class="rounded-md border border-base-300 px-3 py-1.5 text-xs text-base-content/80 hover:border-primary hover:text-primary-text"
           data-testid="providers-show-more"
           @click="visibleCount += PAGE_SIZE"
         >
@@ -417,7 +417,7 @@ async function confirmDownloadFolder(): Promise<void> {
     >
       <div class="flex items-start gap-3 p-5">
         <div
-          class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary"
+          class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary-text"
         >
           <KeyRound :size="18" />
         </div>

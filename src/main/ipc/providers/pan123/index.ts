@@ -1,5 +1,5 @@
 import type { ProviderRef, RemoteItem } from '../../../../shared/types/providers';
-import type { Provider } from '../types';
+import { PROVIDER_FETCH_TIMEOUT_MS, type Provider } from '../types';
 import { throttleProvider } from '../provider-rate-limit';
 import { getProviderCookie } from '../provider-credentials';
 
@@ -48,7 +48,10 @@ function headers(cookie?: string): Record<string, string> {
 
 async function getJson<T>(url: string, cookie?: string): Promise<T> {
   await throttleProvider('123pan');
-  const res = await fetch(url, { headers: headers(cookie) });
+  const res = await fetch(url, {
+    headers: headers(cookie),
+    signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS)
+  });
   const text = await res.text();
   let data: unknown = null;
   try {
@@ -131,7 +134,8 @@ export const pan123Provider: Provider = {
         sharePwd: pwd,
         DownloadType: '',
         etag: ''
-      })
+      }),
+      signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS)
     });
     const text = await res.text();
     let data: { code?: number; data?: { DownloadUrl?: string; downloadUrl?: string } } | null =

@@ -1,5 +1,6 @@
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { writeJsonAtomic } from '../../utils/write-queue';
 import type { RemoteItem } from '../../../shared/types/providers';
 
 // Trwały cache providerów, żeby ograniczyć liczbę zapytań do serwisów (PikPak itd.).
@@ -76,9 +77,7 @@ async function persist(): Promise<void> {
   const path = await cacheFile();
   if (!path) return;
   try {
-    await mkdir(join(path, '..'), { recursive: true });
-    const data = { folders: Object.fromEntries(folders) };
-    await writeFile(path, JSON.stringify(data), 'utf-8');
+    await writeJsonAtomic(path, { folders: Object.fromEntries(folders) });
   } catch {
     // zapis cache jest niekrytyczny
   }

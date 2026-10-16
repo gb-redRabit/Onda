@@ -1,5 +1,5 @@
 import type { ProviderRef, RemoteItem } from '../../../../shared/types/providers';
-import type { Provider } from '../types';
+import { PROVIDER_FETCH_TIMEOUT_MS, type Provider } from '../types';
 import { throttleProvider } from '../provider-rate-limit';
 import { getProviderCookie } from '../provider-credentials';
 
@@ -43,7 +43,8 @@ async function fetchText(url: string, cookie?: string): Promise<string> {
   await throttleProvider('gdrive');
   const res = await fetch(url, {
     headers,
-    redirect: 'follow'
+    redirect: 'follow',
+    signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS)
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
@@ -60,7 +61,8 @@ async function fetchFileMeta(
     const res = await fetch(downloadUrl(id), {
       method: 'GET',
       headers,
-      redirect: 'follow'
+      redirect: 'follow',
+      signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS)
     });
     const disposition = res.headers.get('content-disposition') || '';
     const nameMatch = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(disposition);

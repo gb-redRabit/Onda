@@ -76,7 +76,7 @@ function saveReplace(): void {
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <button
-            class="text-sm font-semibold text-base-content truncate hover:text-primary transition-colors"
+            class="text-sm font-semibold text-base-content truncate hover:text-primary-text transition-colors"
             :title="sub.title"
             @click="emit('open')"
           >
@@ -101,7 +101,7 @@ function saveReplace(): void {
       <button
         v-if="!editing"
         type="button"
-        class="rounded-field border border-base-300 px-2.5 py-1 text-xs text-base-content/80 hover:border-primary hover:text-primary"
+        class="rounded-field border border-base-300 px-2.5 py-1 text-xs text-base-content/80 hover:border-primary hover:text-primary-text"
         data-testid="providers-replace"
         @click="editing = true"
       >

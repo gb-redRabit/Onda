@@ -152,10 +152,6 @@ async function readAuthToken(
   }
 }
 
-export function isProviderLoginSupported(providerId: string): boolean {
-  return !!LOGIN_META[providerId];
-}
-
 export function listLoginProviderIds(): string[] {
   return Object.keys(LOGIN_META);
 }

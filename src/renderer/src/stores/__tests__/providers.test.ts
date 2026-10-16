@@ -20,7 +20,7 @@ let listResult: { success: boolean; items: RemoteItem[] } = { success: true, ite
 let listByFolder: Record<string, { success: boolean; items: RemoteItem[] }> = {};
 let downloadedIds: string[] = [];
 let addResult: unknown = [{ id: 'task-1' }];
-let streamResult: unknown = { success: true, url: 'https://cdn.example.com/song.mp3' };
+let streamResult: unknown = { success: true, streamToken: 'TOK' };
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -273,7 +273,7 @@ describe('download', () => {
   it('plays an audio file by resolving the stream URL and setting a track', async () => {
     detectResult = DETECT;
     listResult = { success: true, items: [{ id: 'a1', name: 'song.mp3', kind: 'file' }] };
-    streamResult = { success: true, url: 'https://cdn.example.com/song.mp3' };
+    streamResult = { success: true, streamToken: 'TOK' };
     const store = useProvidersStore();
     await store.detect('https://mypikpak.com/s/S1');
     const ok = await store.play({ id: 'a1', name: 'song.mp3', kind: 'file' });
@@ -282,6 +282,6 @@ describe('download', () => {
       'providers:streamUrl',
       expect.objectContaining({ ref: DETECT.ref, itemId: 'a1' })
     );
-    expect(usePlayerStore().currentTrack?.path).toBe('https://cdn.example.com/song.mp3');
+    expect(usePlayerStore().currentTrack?.path).toContain('/stream?provider=TOK');
   });
 });
