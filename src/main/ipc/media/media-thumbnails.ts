@@ -1,5 +1,5 @@
 import { app, nativeImage } from 'electron';
-import { mkdir, access, readFile, writeFile, stat, rm, mkdtemp } from 'fs/promises';
+import { mkdir, access, readFile, writeFile, rm, mkdtemp } from 'fs/promises';
 import { join, extname } from 'path';
 import { createHash } from 'crypto';
 import sharp from 'sharp';
@@ -11,6 +11,7 @@ import { clearDirContents } from '../../utils/clear-dir';
 import { runCommand } from '../../utils/exec';
 import { resolveBin } from '../../binaries';
 import { logger } from '../../../shared/logger';
+import { sourceStamp } from '../../utils/source-stamp';
 
 const cacheDir = join(os.tmpdir(), 'onda', 'thumbs');
 
@@ -38,14 +39,7 @@ async function readCache(cacheFile: string): Promise<string | null> {
 }
 
 // Uwzględnij size + mtime, aby zastąpiony plik nigdy nie użył nieaktualnej miniatury.
-async function sourceStamp(filePath: string): Promise<string> {
-  try {
-    const s = await stat(filePath);
-    return `${s.size}:${s.mtimeMs}`;
-  } catch {
-    return '';
-  }
-}
+// (Współdzielone z cache transkodowania — `utils/source-stamp`.)
 
 /**
  * Argumenty FFmpeg do wyciągnięcia pojedynczej klatki jako JPEG. Wydzielone (czysta

@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, isAbsolute, join } from 'path';
+import { dirname, join } from 'path';
 import os from 'os';
-import { app } from 'electron';
 import { getStore } from './cover-store';
+import { safeUserDataPath } from '../../utils/profile-state';
 
 // Mapa cache okładek zapisywana we własnym pliku JSON (zamiast szyfrowanego
 // electron-store), aby uniknąć przepisywania całej konfiguracji przy każdym zapisie okładki.
@@ -24,16 +24,6 @@ function getCoverMapFile(): string {
       : join(os.tmpdir(), 'onda', 'cover-cache-map.json');
   }
   return coverMapFile;
-}
-
-/** Katalog profilu lub null, gdy Electron nie może go jeszcze podać. */
-function safeUserDataPath(): string | null {
-  try {
-    const dir = app.getPath('userData');
-    return dir && isAbsolute(dir) ? dir : null;
-  } catch {
-    return null;
-  }
 }
 
 let coverMapData: Record<string, { cacheFile: string; mtime: number }> | null = null;

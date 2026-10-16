@@ -1,3 +1,4 @@
+import { CHROME_USER_AGENT } from '../../shared/constants';
 import { ipcMain } from 'electron';
 import https from 'node:https';
 import { isIP } from 'node:net';
@@ -19,8 +20,7 @@ const TIMEOUT_MS = 15_000;
 const CACHE_MAX = 200;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_REDIRECTS = 3;
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const USER_AGENT = CHROME_USER_AGENT;
 
 const cache = new Map<string, { data: string; at: number }>();
 const inflight = new Map<string, Promise<string | null>>();

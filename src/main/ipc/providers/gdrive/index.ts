@@ -1,3 +1,4 @@
+import { CHROME_USER_AGENT } from '../../../../shared/constants';
 import type { ProviderRef, RemoteItem } from '../../../../shared/types/providers';
 import { PROVIDER_FETCH_TIMEOUT_MS, type Provider } from '../types';
 import { throttleProvider } from '../provider-rate-limit';
@@ -18,8 +19,7 @@ const ID_PATTERNS = [
   /[?&]id=([a-zA-Z0-9_-]+)/
 ];
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const UA = CHROME_USER_AGENT;
 
 function extractDriveId(url: string): string | null {
   for (const re of ID_PATTERNS) {

@@ -29,3 +29,8 @@ export const MAX_RESIZE_WIDTH = 4000;
 // dla silnika audio (zapis pozycji), mostka do store głównego, karty „Kontynuuj" i openMedia;
 // wcześniej literał `5` był powielony w czterech miejscach.
 export const RESUME_MIN_SECONDS = 5;
+
+// User-Agent przypominający przeglądarkę. Współdzielony przez serwery providerów,
+// scrapery i proxy strumieni (wcześniej ten sam literał w ośmiu miejscach).
+export const CHROME_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';

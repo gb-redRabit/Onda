@@ -1,3 +1,4 @@
+import { CHROME_USER_AGENT } from '../../../shared/constants';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { join } from 'path';
 import { writeFile, readFile } from 'fs/promises';
@@ -323,8 +324,7 @@ export function registerSourcesHandlers(): void {
                     headers: {
                       ...(input.source.headers || {}),
                       Referer: scraped.referer,
-                      'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+                      'User-Agent': CHROME_USER_AGENT
                     }
                   };
                 } else {

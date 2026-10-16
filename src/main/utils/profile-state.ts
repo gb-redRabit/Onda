@@ -1,10 +1,25 @@
 import { rm } from 'fs/promises';
-import { join } from 'path';
+import { isAbsolute, join } from 'path';
+import { app } from 'electron';
 import { logger } from '../../shared/logger';
 
 // Stan profilu czyszczony przez reset fabryczny (IPC `app:factoryReset`). Utrzymuj
 // w zgodzie z `docs/state.md` §3 — `bin/` (zarządzane ffmpeg/yt-dlp) i
 // `onda-store-key` (klucz szyfrowania na instalację) celowo NIE są wymienione.
+
+/**
+ * Katalog profilu Electron lub null, gdy nie jest jeszcze dostępny. Przed
+ * `app.whenReady()` `getPath('userData')` bywa pusty — `join('', name)` dałby wtedy
+ * ścieżkę WZGLĘDNĄ i zapisał dane w katalogu roboczym procesu.
+ */
+export function safeUserDataPath(): string | null {
+  try {
+    const dir = app.getPath('userData');
+    return dir && isAbsolute(dir) ? dir : null;
+  } catch {
+    return null;
+  }
+}
 
 export const RESET_STATE_FILES = [
   'library-scanned.json',

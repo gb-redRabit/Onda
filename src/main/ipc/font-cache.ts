@@ -1,9 +1,9 @@
 import { createHash } from 'crypto';
 import { mkdir, readFile, writeFile, stat, rm } from 'fs/promises';
-import { dirname, isAbsolute, join } from 'path';
+import { dirname, join } from 'path';
 import os from 'os';
-import { app } from 'electron';
 import { logger } from '../../shared/logger';
+import { safeUserDataPath } from '../utils/profile-state';
 
 // Trwały cache czcionek napisów (załączniki MKV). Ekstrakcja (ffprobe + mkvextract/
 // ffmpeg) była powtarzana przy KAŻDYM otwarciu tego samego pliku — tu wynik jest
@@ -45,15 +45,6 @@ interface FontCacheIndex {
 // Budżet dyskowy cache. Po przekroczeniu najstarsze (LRU) wpisy wideo są usuwane
 // razem z plikami czcionek, do których już nic nie odwołuje się.
 const DEFAULT_MAX_BYTES = 256 * 1024 * 1024;
-
-function safeUserDataPath(): string | null {
-  try {
-    const dir = app.getPath('userData');
-    return dir && isAbsolute(dir) ? dir : null;
-  } catch {
-    return null;
-  }
-}
 
 let cacheDir: string | null = null;
 export function getFontCacheDir(): string {

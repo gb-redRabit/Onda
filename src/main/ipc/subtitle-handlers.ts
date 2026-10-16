@@ -13,10 +13,7 @@ import {
   SUBTITLE_MAX_BYTES
 } from '../utils/read-text-file';
 import { readCachedFonts, writeCachedFonts, fontCacheStats, clearFontCache } from './font-cache';
-
-function uniqueId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
+import { uniqueId } from '../utils/ids';
 
 // Prosty semafor: te kanały spawnują ffprobe/ffmpeg, więc przejęty renderer mógł
 // nimi zalewać system procesami. Limit współbieżności jest globalny (nie per okno),

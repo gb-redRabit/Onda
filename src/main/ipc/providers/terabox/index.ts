@@ -1,3 +1,4 @@
+import { CHROME_USER_AGENT } from '../../../../shared/constants';
 import type { ProviderRef, RemoteItem } from '../../../../shared/types/providers';
 import { PROVIDER_FETCH_TIMEOUT_MS, type Provider } from '../types';
 import { throttleProvider } from '../provider-rate-limit';
@@ -25,8 +26,7 @@ const HOST_RE = new RegExp(
 );
 const SHARE_RE = /\/s\/([^/?#]+)/;
 const APP_ID = '250528';
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const UA = CHROME_USER_AGENT;
 const BASE = 'https://www.terabox.com';
 const HEADERS = {
   'User-Agent': UA,
