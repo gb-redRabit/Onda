@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { nudgeElement } from '@renderer/utils/audioLayoutNudge';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
 // Przeciąganie elementów tylko w pełnym ekranie: utrzymuje tymczasową pozycję przeciągania
@@ -39,19 +40,39 @@ export function useAudioElementDrag(isFullscreen: Ref<boolean>) {
     dragPos.value = { id: dragging.value.id, x: newX, y: newY };
   }
 
+  function commitElementPosition(id: string, x: number, y: number): void {
+    const currentElements = settings.appearance.audioLayout?.elements ?? [];
+    const updated = currentElements.map((el) => (el.id === id ? { ...el, x, y } : el));
+    settings.updateAppearance({
+      audioLayout: { ...settings.appearance.audioLayout, elements: updated }
+    });
+  }
+
   function onDragMouseUp() {
     if (dragging.value && dragPos.value) {
-      const currentElements = settings.appearance.audioLayout?.elements ?? [];
-      const updated = currentElements.map((el) =>
-        el.id === dragPos.value!.id ? { ...el, x: dragPos.value!.x, y: dragPos.value!.y } : el
-      );
-      settings.updateAppearance({
-        audioLayout: { ...settings.appearance.audioLayout, elements: updated }
-      });
+      commitElementPosition(dragPos.value.id, dragPos.value.x, dragPos.value.y);
     }
     dragging.value = null;
     dragPos.value = null;
   }
 
-  return { dragging, dragPos, onElementMouseDown, onDragMouseMove, onDragMouseUp };
+  // Klawiatura: strzałki przesuwają zaznaczony element (Shift = skok 5%) — te same
+  // ograniczenia co przeciąganie myszą (pełny ekran, poza wizualizacją).
+  function onElementKeydown(e: KeyboardEvent, el: AudioLayoutElement): void {
+    if (!isFullscreen.value || el.id === 'visualization') return;
+    const next = nudgeElement(el, e.key, e.shiftKey);
+    if (!next) return;
+    e.preventDefault();
+    if (next.x === el.x && next.y === el.y) return;
+    commitElementPosition(el.id, next.x, next.y);
+  }
+
+  return {
+    dragging,
+    dragPos,
+    onElementMouseDown,
+    onDragMouseMove,
+    onDragMouseUp,
+    onElementKeydown
+  };
 }
