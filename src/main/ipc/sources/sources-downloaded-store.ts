@@ -16,11 +16,19 @@ export interface DownloadedSourceItems {
 // czasie nie zgubiły nawzajem swoich id.
 const withWriteLock = createWriteLock();
 
+// Cache sparsowanego pliku per ścieżka. Bez niego każde ukończone pobranie ponownie
+// czytało i parsowało CAŁY plik (O(n²) I/O przy masowej partii) — to jedyny moduł,
+// który pisze ten plik, więc cache jest spójny.
+const cache = new Map<string, DownloadedSourceItems>();
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 async function read(filePath: string): Promise<DownloadedSourceItems> {
+  const cached = cache.get(filePath);
+  if (cached) return cached;
+  let result: DownloadedSourceItems = { version: 1, bySource: {} };
   try {
     const raw = await readFile(filePath, 'utf-8');
     const parsed: unknown = JSON.parse(raw);
@@ -31,12 +39,13 @@ async function read(filePath: string): Promise<DownloadedSourceItems> {
           bySource[sourceId] = ids.filter((id): id is string => typeof id === 'string' && !!id);
         }
       }
-      return { version: 1, bySource };
+      result = { version: 1, bySource };
     }
   } catch {
     // Brakujący lub uszkodzony plik — traktowany jako "nic jeszcze nie pobrano".
   }
-  return { version: 1, bySource: {} };
+  cache.set(filePath, result);
+  return result;
 }
 
 async function write(filePath: string, data: DownloadedSourceItems): Promise<void> {
@@ -49,7 +58,8 @@ export async function getDownloadedForSource(
 ): Promise<string[]> {
   if (!sourceId) return [];
   const data = await read(filePath);
-  return data.bySource[sourceId] || [];
+  // Kopia — wywołujący nie może zmutować wpisu cache w miejscu.
+  return [...(data.bySource[sourceId] || [])];
 }
 
 // Dopisuje jedno ukończone id elementu do listy pobranych źródła. Idempotentne.
