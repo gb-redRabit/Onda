@@ -10,6 +10,10 @@ const EQ = readFileSync(
   join(process.cwd(), 'src/renderer/src/components/player/Equalizer.vue'),
   'utf8'
 );
+const BAND = readFileSync(
+  join(process.cwd(), 'src/renderer/src/components/player/EqBandRow.vue'),
+  'utf8'
+);
 
 describe('Equalizer wiring', () => {
   it('confirms before deleting a user preset', () => {
@@ -30,9 +34,9 @@ describe('Equalizer wiring', () => {
   });
 
   it('exposes band sliders as accessible sliders', () => {
-    expect(EQ).toMatch(/role="slider"/);
-    expect(EQ).toMatch(/aria-valuenow/);
-    expect(EQ).toMatch(/aria-valuemin/);
-    expect(EQ).toMatch(/aria-valuemax/);
+    expect(BAND).toMatch(/role="slider"/);
+    expect(BAND).toMatch(/aria-valuenow/);
+    expect(BAND).toMatch(/aria-valuemin/);
+    expect(BAND).toMatch(/aria-valuemax/);
   });
 });

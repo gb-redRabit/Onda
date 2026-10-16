@@ -152,6 +152,43 @@ describe('Equalizer — user presets', () => {
   });
 });
 
+describe('Equalizer — band row', () => {
+  it('changes a band filter type', async () => {
+    const w = mountEq();
+    await w.find('[data-testid="eq-type-0"]').setValue('lowshelf');
+    const committed = h.audio.applyEqBands.mock.calls[0][0] as Array<{ type: string }>;
+    expect(committed[0].type).toBe('lowshelf');
+    w.unmount();
+  });
+
+  it('adjusts gain with the keyboard', async () => {
+    const w = mountEq();
+    await w.find('[data-testid="eq-band-0"]').trigger('keydown', { key: 'ArrowUp' });
+    const committed = h.audio.applyEqBands.mock.calls[0][0] as Array<{ gain: number }>;
+    expect(committed[0].gain).toBe(1);
+    w.unmount();
+  });
+
+  it('solos a band on the graph only', async () => {
+    const w = mountEq();
+    await w.find('[data-testid="eq-solo-0"]').trigger('click');
+    expect(h.audio.applyEqGraph).toHaveBeenCalledTimes(1);
+    w.unmount();
+  });
+
+  it('removes a band when more than one remains', async () => {
+    h.fx.equalizerBands = [
+      { type: 'peaking', frequency: 1000, q: 1, gain: 0 },
+      { type: 'peaking', frequency: 2000, q: 1, gain: 0 }
+    ];
+    const w = mountEq();
+    await w.find('[data-testid="eq-remove-0"]').trigger('click');
+    const committed = h.audio.applyEqBands.mock.calls[0][0] as unknown[];
+    expect(committed).toHaveLength(1);
+    w.unmount();
+  });
+});
+
 describe('Equalizer — import', () => {
   it('reads, sanitizes and applies an imported curve', async () => {
     Object.defineProperty(navigator, 'clipboard', {
