@@ -9,6 +9,96 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.9.0](https://github.com/gb-redRabit/Onda/compare/v0.8.0...v0.9.0) (2026-10-16)
+
+
+### Features
+
+* **a11y:** move audio-layout elements with the keyboard ([330df8b](https://github.com/gb-redRabit/Onda/commit/330df8b5d025a35efba4ef804cdea5f3a4b4ea48))
+* **audio:** adjustable shelf slope (S) via IIR filters ([13c3ab8](https://github.com/gb-redRabit/Onda/commit/13c3ab80cb799e2b031bbaeb8ee1d92eb452f77d))
+* **audio:** audio delay offset + download speed limit in the toolbar ([0919ca2](https://github.com/gb-redRabit/Onda/commit/0919ca2c8a0af7782d01cafa82792c9eb5a4256b))
+* **audio:** colour-code EQ bands and drag points on the curve ([630975d](https://github.com/gb-redRabit/Onda/commit/630975d5253f81d73f1fef6cfd6561d7a622848e))
+* **audio:** editable EQ shortcuts in Settings ([568f729](https://github.com/gb-redRabit/Onda/commit/568f7297cf2582b512c0dd64b69de77f3f6b9f90))
+* **audio:** EQ curve reflects the preamp ([225e277](https://github.com/gb-redRabit/Onda/commit/225e277afd00904ef5e9910fc208869debcbdbe8))
+* **audio:** EQ frequency snap and band solo ([223dde3](https://github.com/gb-redRabit/Onda/commit/223dde30caa9d7f90e89ad96ba428bb3f24a63bb))
+* **audio:** EQ preamp, bypass, grid, numbered bands, interactions, custom presets, live spectrum ([08dfc82](https://github.com/gb-redRabit/Onda/commit/08dfc821b809e99dc46de11e7b8054ae18c2ae8b))
+* **audio:** exact EQ curve, typed markers, tighter layout, hide-sliders toggle ([2ee7f5c](https://github.com/gb-redRabit/Onda/commit/2ee7f5ca62b30f7755cad4c32b78d8a7530869f1))
+* **audio:** graphical parametric EQ (response curve + sliders) ([0e1a4ad](https://github.com/gb-redRabit/Onda/commit/0e1a4ad7a6c3e559971d9ef21d15acd1d4a688ca))
+* **audio:** night mode (dynamic compression + dialogue boost) ([1d13372](https://github.com/gb-redRabit/Onda/commit/1d13372b12ad89ade5ddb3bf80775c40f976893c))
+* **audio:** parametric equalizer (editable frequency/Q, add/remove bands) ([7ab8bb3](https://github.com/gb-redRabit/Onda/commit/7ab8bb342663dd4a64451fbc516679ccc9d60613))
+* **audio:** per-band enable/disable and mono monitoring ([3e1fec3](https://github.com/gb-redRabit/Onda/commit/3e1fec378b06cb544d8a124743d69fc4fc29da9c))
+* **audio:** persist the parametric EQ in settings ([244c676](https://github.com/gb-redRabit/Onda/commit/244c6764e75980043fd2936383576d591d78601f))
+* **audio:** single-colour EQ by default with opt-in multicolour; borderless band cards ([f1bd10a](https://github.com/gb-redRabit/Onda/commit/f1bd10a16181de11322ad605a618bb1547eda64e))
+* **explorer:** real FFmpeg frame thumbnails for videos ([52185a5](https://github.com/gb-redRabit/Onda/commit/52185a5743cf819696b0685ab72f57aa27dc3eb5))
+* **library:** smart folders (virtual views) ([c36f109](https://github.com/gb-redRabit/Onda/commit/c36f1091731dd48b0191986b136f0991f7be0c6b))
+* **player:** A-B repeat loop (audio and video) ([a9875de](https://github.com/gb-redRabit/Onda/commit/a9875de6754f2ddadc9d05551ba9179889416327))
+* **providers:** folder cache + limits, fix link-sub refresh, tidy stream contract ([9ea4ece](https://github.com/gb-redRabit/Onda/commit/9ea4ecea8378447d47c50130fa60df40d6672c1f))
+* **providers:** link providers + YouTube/channel/cover download fixes ([2bb9ce8](https://github.com/gb-redRabit/Onda/commit/2bb9ce805bb517b3a3e63314c3f06adfa52b3070))
+* **sources:** stream source media through the media-server proxy ([0413793](https://github.com/gb-redRabit/Onda/commit/0413793ff410d1621ce747439de6f55bf35cfa20))
+* **subtitles:** allow Google Fonts fetches and decode CP1250 subtitles ([dbb4c27](https://github.com/gb-redRabit/Onda/commit/dbb4c274a42ec13b390cbb3d14c79aa23c008973))
+* **subtitles:** AnimeSub as a third online provider ([44e34c0](https://github.com/gb-redRabit/Onda/commit/44e34c083a91c20448fab0dc9eb3e0a5116e7af7))
+* **subtitles:** delay controls in Settings, player modal and PiP ([9c0d66f](https://github.com/gb-redRabit/Onda/commit/9c0d66fea9a863f9b4e8fa49dc576c66f2c4b21d))
+* **subtitles:** live subtitle delay/offset with shortcuts and HUD ([4f721da](https://github.com/gb-redRabit/Onda/commit/4f721da9e708e78833d99e3d7853d4b83664ab23))
+* **subtitles:** NapiProjekt (Polish subtitles by file hash) ([fffbf1f](https://github.com/gb-redRabit/Onda/commit/fffbf1fc97ab77ed667087f9354d545d286aa593))
+* **subtitles:** OpenSubtitles online search and download ([6a9b185](https://github.com/gb-redRabit/Onda/commit/6a9b185d238faa403a4a485d2aeff622b7474fb6))
+* **subtitles:** persist subtitle delay and stream search results as they arrive ([d0bb8e5](https://github.com/gb-redRabit/Onda/commit/d0bb8e5db63594b7c2d6f62dcb60c5c56e9956f6))
+* **subtitles:** persistent MKV font cache + Settings tab ([b4e1272](https://github.com/gb-redRabit/Onda/commit/b4e12726ed2a507074daf68ce3948b8e35cee83f))
+* **subtitles:** right-side subtitle panel with inline online search ([4d7ce66](https://github.com/gb-redRabit/Onda/commit/4d7ce66e9dd2c5b8c6547d693b8e5818d5162ede))
+* **subtitles:** tag each search result with its provider (NP/OS) ([b8cc538](https://github.com/gb-redRabit/Onda/commit/b8cc538945e18c18f0be211f0cc5b1dbed01177b))
+* **theme,ui:** readable accent-text token and an 11px font floor ([b642b9e](https://github.com/gb-redRabit/Onda/commit/b642b9eb06e7daa45eed08ca0a16150706ff143c))
+* **video:** frame stepping and PNG screenshot ([36f7545](https://github.com/gb-redRabit/Onda/commit/36f7545c5737f38555fbecbc3962e34f79ac9c18))
+
+
+### Bug Fixes
+
+* **a11y,theme:** label setting sliders and repair dead theme utilities ([33f7511](https://github.com/gb-redRabit/Onda/commit/33f7511e96b3439a0df6f8f74dd1eb5ad1332c39))
+* **a11y:** label PiP controls and nameless form fields ([950e62d](https://github.com/gb-redRabit/Onda/commit/950e62da92c3212d3a4ab4a6a793e91a0a89ea87))
+* **a11y:** label the remaining source-builder fields ([a2474e2](https://github.com/gb-redRabit/Onda/commit/a2474e26059df8df68c9c552632fa05d6fbd6dd3))
+* **a11y:** reveal hover-only action overlays on keyboard focus ([4e73aea](https://github.com/gb-redRabit/Onda/commit/4e73aea2b1c362b53d285d77eb6b1918413f147e))
+* **a11y:** tab keyboard navigation, source field labels, contrast floor ([608928b](https://github.com/gb-redRabit/Onda/commit/608928be8d26cb8d2c6f91ba37d947b971a81a8f))
+* **a11y:** wizard Escape/backdrop dismiss without permanent skip, progressbar role ([16d2aa1](https://github.com/gb-redRabit/Onda/commit/16d2aa1530a12b3e584af66fc4f74ceb907fe03a))
+* **audio:** borderless EQ markers, on-screen context menu, hide Q for shelves ([322b452](https://github.com/gb-redRabit/Onda/commit/322b4528f583d96617d440064f2ea387f6c3e0cd))
+* **audio:** debounce the EQ chain rebuild to stop dropouts while adjusting ([5041ef7](https://github.com/gb-redRabit/Onda/commit/5041ef7a207c9a40d278e5be8f2db873dcb7e925))
+* **audio:** keep the EQ band menu above the band rows ([49cd2de](https://github.com/gb-redRabit/Onda/commit/49cd2de4a3922b6245d7210d5b58039e6d3e8e5f))
+* **boot:** register app IPC before the window shows, stop replaying opened files ([6e56f44](https://github.com/gb-redRabit/Onda/commit/6e56f44965f8fe47d6c3479c71da15a759650cd5))
+* **downloads:** atomically replace media and validate untrusted cover spec ([bc6516e](https://github.com/gb-redRabit/Onda/commit/bc6516e23eb2cbe622ec66c0704a7178c7aa2e53))
+* **downloads:** keep post-processing failures non-fatal ([6c6c184](https://github.com/gb-redRabit/Onda/commit/6c6c18440a7374f8bdcdc91bdd252b04196cf015))
+* **library:** correct 'has cover' detection for smart folders ([608a5fe](https://github.com/gb-redRabit/Onda/commit/608a5fe7b15cc6789e94c9dae588fdf69fc74a19))
+* **library:** show only played audio in recent and most-played ([7fa14a3](https://github.com/gb-redRabit/Onda/commit/7fa14a304fff11b31c04059a1008a8e20bf05eee))
+* **library:** split same-named albums by album artist ([f6e7253](https://github.com/gb-redRabit/Onda/commit/f6e725397afcb1f028b04d76d02a1d1f5b3e71fb))
+* **main:** atomic state stores, download progress throttle, media-server file streaming ([0b5aa41](https://github.com/gb-redRabit/Onda/commit/0b5aa417ef31ba5a5dbe2c5a2ffbf40601a2db22))
+* **media:** gate cover embedding by container format ([9cb7c10](https://github.com/gb-redRabit/Onda/commit/9cb7c10bd4895a86811c86214dcc80a4eccb045e))
+* **media:** pass upstream 416 through and use res close for disconnect ([31fb2d0](https://github.com/gb-redRabit/Onda/commit/31fb2d06e0cbadb54ffc5db4fa034acb1ca0c824))
+* **musicbrainz:** restrict cover-art redirects to trusted hosts ([26852f2](https://github.com/gb-redRabit/Onda/commit/26852f21b0060ee55026f0d143622305def48537))
+* **online:** return created tasks from submitJobs so retry works without a videoId ([9de7db3](https://github.com/gb-redRabit/Onda/commit/9de7db3c88b5f5104da1d50b7a65e2aea63a1511))
+* **online:** scroll the channel/resolved banner with the grid ([80d9c08](https://github.com/gb-redRabit/Onda/commit/80d9c08d573dc43c1bfdd0716746f0e011dcf945))
+* **online:** show a localized search/resolve error, log the raw one ([48c1c86](https://github.com/gb-redRabit/Onda/commit/48c1c86c6cf00b5ce7e78cbfb07394879224d282))
+* **online:** track queuing with sets and record only accepted jobs ([8961a87](https://github.com/gb-redRabit/Onda/commit/8961a87b840158be1612c167c5db381d093cbe54))
+* **player:** use a distinct icon for A-B repeat (ArrowLeftRight) ([bdeab99](https://github.com/gb-redRabit/Onda/commit/bdeab993990064b42faae67e28629cefb974fa24))
+* **providers:** pin DNS in openHttpStream and drop all headers cross-origin ([9bdecfc](https://github.com/gb-redRabit/Onda/commit/9bdecfc2807466d37818cd1d7e8cd70dcbbd8145))
+* **subtitles:** keep JASSUB fallback font so plain .srt renders ([a52f624](https://github.com/gb-redRabit/Onda/commit/a52f62431d4150efd6a7bd773dae90a14ee55ede))
+* **subtitles:** map dumped fonts back to real attachment names ([9fb996b](https://github.com/gb-redRabit/Onda/commit/9fb996b0d43bdfe888bee078c512e558ab423349))
+* **subtitles:** ship JASSUB fallback font as a real asset ([bf54e09](https://github.com/gb-redRabit/Onda/commit/bf54e09d3d661ef8f2d65e770e26b9c7152c5179))
+* **subtitles:** stop logging expected provider failures as warnings ([6d8d73d](https://github.com/gb-redRabit/Onda/commit/6d8d73ded9efca99c0663cdab293e19e9839625b))
+* **ui:** confirm deleting a user EQ preset ([884b7cb](https://github.com/gb-redRabit/Onda/commit/884b7cb0b43faef244aebd7d38ba7cb83bfd6fd2))
+* **ui:** confirm destructive actions and make the settings menu an ARIA menu ([54f8740](https://github.com/gb-redRabit/Onda/commit/54f874067dad3c5ed8d9811214b4aad7928a902a))
+
+
+### Performance Improvements
+
+* **downloads:** compute file hash in a worker thread ([3659cca](https://github.com/gb-redRabit/Onda/commit/3659ccae0b4d578863359d8d90dce5dcc41268cb))
+* **downloads:** re-encode cover clips only on real codec mismatch ([ba9d92a](https://github.com/gb-redRabit/Onda/commit/ba9d92a39439cb40f7886456883efe50d86a679a))
+* **media:** cache media path resolution per request ([ad03a22](https://github.com/gb-redRabit/Onda/commit/ad03a22a8f8e08fd13154dda78a506843dc518e4))
+* **media:** dedupe thumbnail builds with an inflight map ([f6f789c](https://github.com/gb-redRabit/Onda/commit/f6f789c2ba8150d0e3f53f5470044acf056cac21))
+* **media:** write the cover map through its JSON file, not electron-store ([ef638de](https://github.com/gb-redRabit/Onda/commit/ef638de8e5332a2e2e13170db912725e672e4edf))
+* **online:** bound concurrent link resolution ([5c144b6](https://github.com/gb-redRabit/Onda/commit/5c144b640ccef5c203812c3fc006373b303e3596))
+* **online:** index saved tracks and downloaded videos as sets ([2a87530](https://github.com/gb-redRabit/Onda/commit/2a87530bfb1755b12e24445e923ffc74a5fa4650))
+* **online:** virtualize the channel and resolved media grids ([039cd87](https://github.com/gb-redRabit/Onda/commit/039cd8756d5523e14428c932de4efca845f856e6))
+* **settings:** persist a save in one store write ([c3d6d74](https://github.com/gb-redRabit/Onda/commit/c3d6d740189551c6e0ed1b7898dd57f778c2ef0d))
+* **sources:** bound concurrency of enqueue and folder listing ([7412967](https://github.com/gb-redRabit/Onda/commit/741296707898c4724451e631470753c71094b9ef))
+* **sources:** cache the downloaded-items file in memory ([f51da13](https://github.com/gb-redRabit/Onda/commit/f51da13840dd719ca7560444d58ff996d8a54e9b))
+* **subtitles:** bound provider timeouts so one slow service cannot stall the search ([fd4f59c](https://github.com/gb-redRabit/Onda/commit/fd4f59c57a69696cea1930a0081bf64343b5d279))
+
 ## [0.8.0](https://github.com/gb-redRabit/Onda/compare/v0.7.3...v0.8.0) (2026-10-11)
 
 
