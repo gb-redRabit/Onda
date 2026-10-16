@@ -50,7 +50,8 @@ export async function postProcess(job: Job): Promise<void> {
       taskId: job.id,
       url: job.url,
       cover: job.cover,
-      outputPath
+      outputPath,
+      sourceMode: job.source?.mode
     });
     job.coverStatus = res.status;
     // Zachowuje przyczynę, gdy okładka się nie powiodła — wcześniej `res.error` był

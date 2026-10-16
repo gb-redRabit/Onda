@@ -3,6 +3,7 @@ import { join, dirname, basename, extname } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../../shared/logger';
 import type { IpcCoverSpec, IpcMetaOverride } from '../../shared/types/ipc';
+import type { IpcDownloadSource } from '../../shared/types/ipc/download';
 import { resolveBin } from '../binaries';
 import { runCommand } from '../utils/exec';
 import { replaceFileAtomic, safeUnlink } from '../utils/fs-atomic';
@@ -14,6 +15,7 @@ import {
   buildSectionArgs,
   clipFormatSelector,
   clipCopiedCodecAcceptable,
+  clipCopiedCodecWebmAcceptable,
   siblingCoverPath
 } from './cover-spec';
 
@@ -23,9 +25,70 @@ import {
 const COVER_VIDEO_FORMAT = 'bestvideo[height<=1080]+bestaudio/best';
 
 async function workDirFor(taskId: string): Promise<string> {
+  // Jednorazowe sprzątanie osieroconych katalogów roboczych (po twardym zamknięciu
+  // aplikacji `finally` nie zdążył usunąć `%TEMP%/onda-cover-src/*`).
+  await cleanupStaleWorkDirsOnce();
   const dir = join(tmpdir(), 'onda-cover-src', taskId);
   await mkdir(dir, { recursive: true });
   return dir;
+}
+
+let staleWorkDirsCleaned = false;
+async function cleanupStaleWorkDirsOnce(): Promise<void> {
+  if (staleWorkDirsCleaned) return;
+  staleWorkDirsCleaned = true;
+  await rm(join(tmpdir(), 'onda-cover-src'), { recursive: true, force: true }).catch(
+    () => undefined
+  );
+}
+
+// Kodowanie pierwsze­go strumienia wideo w pliku (przez ffprobe).
+async function probeVideoCodec(file: string): Promise<string> {
+  const probeBin = (await resolveBin('ffprobe')) || 'ffprobe';
+  return runCommand(
+    probeBin,
+    [
+      '-v',
+      'error',
+      '-select_streams',
+      'v:0',
+      '-show_entries',
+      'stream=codec_name',
+      '-of',
+      'default=noprint_wrappers=1:nokey=1',
+      file
+    ],
+    { timeout: 15000 }
+  );
+}
+
+// Buduje klip okładki: najpierw próbuje `-c:v copy` (1:1), a re-enkoduje TYLKO gdy
+// skopiowany kodek nie mieści się w kontenerze docelowym. Wcześniej gałąź WebM
+// re-enkodowała przy KAŻDYM błędzie (także timeout), marnując minuty na VP9.
+async function buildClipTarget(
+  videoPath: string,
+  target: string,
+  format: 'webm' | 'mp4'
+): Promise<void> {
+  const tryCopy = async (): Promise<boolean> => {
+    try {
+      await runCommand(await ffmpegBin(), ['-y', '-i', videoPath, '-c:v', 'copy', '-an', target], {
+        timeout: 120000
+      });
+      const codec = await probeVideoCodec(target);
+      return format === 'webm'
+        ? clipCopiedCodecWebmAcceptable(codec)
+        : clipCopiedCodecAcceptable(codec);
+    } catch {
+      return false;
+    }
+  };
+  if (await tryCopy()) return;
+  const encodeArgs =
+    format === 'webm'
+      ? ['-y', '-i', videoPath, '-c:v', 'libvpx-vp9', '-crf', '24', '-b:v', '0', '-an', target]
+      : ['-y', '-i', videoPath, '-c:v', 'libopenh264', '-b:v', '8000k', '-an', target];
+  await runCommand(await ffmpegBin(), encodeArgs, { timeout: 120000 });
 }
 
 async function cleanup(dir: string): Promise<void> {
@@ -140,6 +203,8 @@ interface CoverJobContext {
   url: string;
   cover: IpcCoverSpec;
   outputPath: string;
+  /** Tryb źródła zadania; frame/clip wymagają rozwiązywalnego przez yt-dlp URL. */
+  sourceMode?: IpcDownloadSource['mode'];
 }
 
 // Uruchamia pipeline covera po pobraniu pliku audio. Miniatury są już osadzone
@@ -158,6 +223,18 @@ export async function processCover(
       const res = await writeCoverToAudioFile(ctx.outputPath, custom);
       if (!res.success) throw new Error(res.error || 'Failed to embed cover');
       return { status: 'embedded' };
+    }
+    // frame/clip pobierają wideo przez yt-dlp — nie zadziałają dla źródeł, których URL
+    // nie jest stroną yt-dlp (provider/http/soundcloud: syntetyczny lub strumieniowy URL).
+    if (
+      (cover.type === 'frame' || cover.type === 'clip') &&
+      ctx.sourceMode !== undefined &&
+      ctx.sourceMode !== 'ytdlp'
+    ) {
+      return {
+        status: 'error',
+        error: `cover type '${cover.type}' is unavailable for ${ctx.sourceMode} sources`
+      };
     }
     const workDir = await workDirFor(ctx.taskId);
     try {
@@ -199,64 +276,9 @@ export async function processCover(
       );
       const target = siblingCoverPath(ctx.outputPath, format);
 
-      if (format === 'webm') {
-        // Dla WebM: bezstratne kopiowanie VP9/AV1 (1:1 z YouTube, ułamek sekundy).
-        try {
-          await runCommand(
-            await ffmpegBin(),
-            ['-y', '-i', videoPath, '-c:v', 'copy', '-an', target],
-            { timeout: 120000 }
-          );
-        } catch {
-          await runCommand(
-            await ffmpegBin(),
-            ['-y', '-i', videoPath, '-c:v', 'libvpx-vp9', '-crf', '24', '-b:v', '0', '-an', target],
-            { timeout: 120000 }
-          );
-        }
-      } else {
-        // Dla MP4: Chromium odtwarza AV1 (av01) i H.264 (avc1). Najpierw próbujemy
-        // -c:v copy, żeby zachować źródłowy strumień 1:1 (AV1 lub H.264 z selektora
-        // formatu). Tylko gdy źródło nie było ani AV1, ani H.264 (np. sam VP9),
-        // enkodujemy do H.264 przez libopenh264.
-        let copied = false;
-        try {
-          await runCommand(
-            await ffmpegBin(),
-            ['-y', '-i', videoPath, '-c:v', 'copy', '-an', target],
-            { timeout: 120000 }
-          );
-          const probeBin = (await resolveBin('ffprobe')) || 'ffprobe';
-          const probeOutput = await runCommand(
-            probeBin,
-            [
-              '-v',
-              'error',
-              '-select_streams',
-              'v:0',
-              '-show_entries',
-              'stream=codec_name',
-              '-of',
-              'default=noprint_wrappers=1:nokey=1',
-              target
-            ],
-            { timeout: 15000 }
-          );
-          if (clipCopiedCodecAcceptable(probeOutput)) {
-            copied = true;
-          }
-        } catch {
-          copied = false;
-        }
+      // Kopiuje strumień 1:1; re-enkod tylko przy realnej niezgodności kodeka.
+      await buildClipTarget(videoPath, target, format);
 
-        if (!copied) {
-          await runCommand(
-            await ffmpegBin(),
-            ['-y', '-i', videoPath, '-c:v', 'libopenh264', '-b:v', '8000k', '-an', target],
-            { timeout: 120000 }
-          );
-        }
-      }
       // Osadza miniaturę YouTube w pliku audio (niekrytyczne: animowany klip jest
       // już zapisany, a niektóre kontenery nie mogą przechowywać tagów).
       const thumbPath = join(workDir, 'clip.jpg');

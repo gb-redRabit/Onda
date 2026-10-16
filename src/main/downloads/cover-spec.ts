@@ -105,3 +105,10 @@ export function clipCopiedCodecAcceptable(codecName: string): boolean {
   const codec = (codecName || '').toLowerCase();
   return codec.includes('h264') || codec.includes('av01');
 }
+
+// To samo dla WebM: Chromium odtwarza VP8/VP9/AV1. Kopia 1:1 jest OK, dopóki kodek
+// mieści się w kontenerze WebM — dopiero niezgodność uzasadnia re-enkod.
+export function clipCopiedCodecWebmAcceptable(codecName: string): boolean {
+  const codec = (codecName || '').toLowerCase();
+  return codec.includes('vp8') || codec.includes('vp9') || codec.includes('av01');
+}
