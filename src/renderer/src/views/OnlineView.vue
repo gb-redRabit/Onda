@@ -214,14 +214,14 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           <OnlineButton
             variant="primary"
             size="sm"
-            :disabled="yt.queueingChannelId !== null"
+            :disabled="yt.queueingChannelIds.size > 0"
             :title="$t('youtube.downloadAllSubsTitle')"
             @click="downloadAllPending"
           >
-            <RefreshCw v-if="yt.queueingChannelId !== null" :size="12" class="animate-spin" />
+            <RefreshCw v-if="yt.queueingChannelIds.size > 0" :size="12" class="animate-spin" />
             <Download v-else :size="12" />
             {{
-              yt.queueingChannelId !== null
+              yt.queueingChannelIds.size > 0
                 ? $t('youtube.downloading')
                 : $t('youtube.downloadAllSubs')
             }}
@@ -271,7 +271,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           :subscriptions="yt.subscriptions"
           :loaded="yt.subscriptionsLoaded"
           :checking-channel-id="yt.checkingChannelId"
-          :queueing-channel-id="yt.queueingChannelId"
+          :is-queuing="yt.isChannelQueuing"
           @open-channel="openSubscriptionChannel"
           @download-all="downloadSubscriptionAll"
           @check-now="yt.checkChannelNow"

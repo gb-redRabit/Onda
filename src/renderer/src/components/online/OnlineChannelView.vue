@@ -111,8 +111,7 @@ const queueTarget = ref<YouTubeVideo | null>(null);
 
 function itemDownloadState(videoId: string): OnlineItemDownloadState {
   return resolveDownloadState(
-    videoId,
-    yt.queuingId,
+    yt.isQueuing(videoId),
     yt.downloadStatusFor(videoId),
     yt.coverStatusFor(videoId)
   );

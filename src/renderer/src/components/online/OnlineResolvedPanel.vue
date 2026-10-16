@@ -44,7 +44,7 @@ function watchUrl(item: { id: string; url?: string }): string {
 }
 
 function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' | null {
-  if (yt.queuingId === videoId) return 'queuing';
+  if (yt.isQueuing(videoId)) return 'queuing';
   const status = yt.downloadStatusFor(videoId);
   if (status === 'downloading' || status === 'pending' || status === 'paused') {
     return 'downloading';

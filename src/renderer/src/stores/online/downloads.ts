@@ -73,8 +73,10 @@ export function createOnlineDownloads(
     }
   }
 
-  async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<number> {
-    if (!inputs.length) return 0;
+  // Zwraca videoIds PRZYJĘTYCH zadań (main deduplikuje i może odrzucić część), żeby
+  // wywołujący oznaczał jako zakolejkowane tylko to, co faktycznie powstało.
+  async function submitJobs(inputs: IpcDownloadJobInput[]): Promise<string[]> {
+    if (!inputs.length) return [];
     try {
       // IPC serializuje argumenty structured-clone'em, który rzuca "An object could
       // not be cloned" na reaktywnych proxy Vue. `prefs` subskrypcji pochodzą z Pinia
@@ -83,10 +85,10 @@ export function createOnlineDownloads(
       const payload = clonePlain(inputs);
       const created = (await window.api.invoke('yt:download:add', payload)) as IpcDownloadTask[];
       for (const task of created || []) upsertTask(toDownloadTask(task));
-      return created?.length || 0;
+      return (created || []).map((task) => task.videoId).filter((id): id is string => !!id);
     } catch (e) {
       logger.error('yt', '[submitJobs] yt:download:add FAILED', e);
-      return 0;
+      return [];
     }
   }
 
@@ -172,7 +174,7 @@ export function createOnlineDownloads(
 
   async function retryDownload(task: DownloadTask) {
     const created = await submitJobs([buildTaskInput(task)]);
-    if (!created) {
+    if (!created.length) {
       // Proces main zastąpił nieudane zadanie nowym tylko wtedy, gdy nie istniało
       // aktywne zadanie z tym samym id wideo. Jeśli zostało pominięte, powiadom
       // użytkownika zamiast cichej porażki.
