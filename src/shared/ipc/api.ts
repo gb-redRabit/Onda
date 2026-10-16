@@ -1,4 +1,11 @@
-import type { BoundIpcMethod, IpcArgs, IpcChannel, IpcResult } from './contract';
+import type {
+  BoundIpcMethod,
+  IpcArgs,
+  IpcChannel,
+  IpcReceiveChannel,
+  IpcResult,
+  IpcSendChannel
+} from './contract';
 
 // Współdzielona deklaracja API dla renderera (plan 1.4): preload je implementuje,
 // renderer konsumuje je przez `Window['api']`. Sygnatury wrapperów
@@ -11,9 +18,9 @@ export interface OndaAPI {
   getMediaServerUrl: () => Promise<string>;
   getWindowId: () => Promise<IpcResult<'window:id'>>;
   invoke: <C extends IpcChannel>(channel: C, ...args: IpcArgs<C>) => Promise<IpcResult<C>>;
-  send: (channel: string, ...args: unknown[]) => void;
-  on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
-  once: (channel: string, callback: (...args: unknown[]) => void) => void;
+  send: (channel: IpcSendChannel, ...args: unknown[]) => void;
+  on: (channel: IpcReceiveChannel, callback: (...args: unknown[]) => void) => () => void;
+  once: (channel: IpcReceiveChannel, callback: (...args: unknown[]) => void) => void;
   getFilePath: (file: File) => string;
 
   // wideo PiP

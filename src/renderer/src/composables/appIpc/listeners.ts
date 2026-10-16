@@ -1,7 +1,12 @@
 // Wspólna infrastruktura rejestracji globalnych nasłuchów IPC (plan 2.8).
 // Każda domena dostaje własny „scope”, który zbiera zwroty odsubskrybowania
 // i pozwala je wszystkie zwolnić jednym wywołaniem `dispose`.
-export type Listen = (channel: string, callback: (...args: unknown[]) => void) => void;
+import type { IpcReceiveChannel } from '@shared/ipc/contract';
+
+export type Listen = (
+  channel: IpcReceiveChannel,
+  callback: (...args: unknown[]) => void
+) => void;
 
 export interface ListenerScope {
   listen: Listen;
