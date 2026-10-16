@@ -11,6 +11,13 @@ export interface VirtualListOptions {
   horizontal?: boolean;
   /** Opcjonalny własny pomiar wiersza (dla wierszy o zmiennej wysokości). */
   measureElement?: (el: Element) => number;
+  /**
+   * Przesunięcie początku listy względem początku zawartości kontenera (px) — dla
+   * listy umieszczonej PONIŻEJ innej treści (np. nagłówka/bannera), która przewija
+   * się razem z nią. Bez tego wirtualizator liczy widoczne wiersze od zera i renderuje
+   * je w złym miejscu / zakresie.
+   */
+  scrollMargin?: () => number;
 }
 
 // Jedno miejsce konfiguracji wirtualizacji list. Wcześniej ten sam obiekt
@@ -25,6 +32,9 @@ export function useVirtualList(opts: VirtualListOptions) {
     estimateSize: opts.estimateSize,
     overscan: opts.overscan ?? 3,
     horizontal: opts.horizontal ?? false,
+    get scrollMargin() {
+      return opts.scrollMargin ? opts.scrollMargin() : 0;
+    },
     ...(opts.measureElement ? { measureElement: opts.measureElement } : {})
   });
 }

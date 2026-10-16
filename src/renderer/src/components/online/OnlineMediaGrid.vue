@@ -11,11 +11,10 @@ import {
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 
 // Zwirtualizowana siatka kart online. Jest WŁASNYM kontenerem przewijania
-// (`overflow-y-auto`), więc renderują się tylko widoczne wiersze — wcześniej
-// `OnlineChannelView`/`OnlineResolvedPanel` montowały wszystkie karty naraz.
-// Wiersze mają zmienną wysokość (rozwijane karty), więc mierzymy je przez
-// `measureElement`. Liczba kolumn wynika z szerokości (min. `minCols`), więc ten
-// komponent liczy ją sam zamiast `useVirtualGrid` (który wymusza min. 2 kolumny).
+// (`overflow-y-auto`). Nagłówek (`#header` slot) przewija się RAZEM z listą — dzięki
+// temu banner kanału nie zabiera na stałe miejsca. `scrollMargin` = wysokość nagłówka,
+// więc wirtualizator liczy widoczny zakres względem początku listy (a nie kontenera).
+// Wiersze mają zmienną wysokość (rozwijane karty) → mierzone przez `measureElement`.
 const props = withDefaults(
   defineProps<{
     items: readonly T[];
@@ -33,7 +32,9 @@ const props = withDefaults(
 );
 
 const scrollRef = ref<HTMLElement | null>(null);
+const bodyRef = ref<HTMLElement | null>(null);
 const cols = ref(props.minCols);
+const scrollMargin = ref(0);
 let observer: ResizeObserver | null = null;
 
 function computeCols(): void {
@@ -43,17 +44,29 @@ function computeCols(): void {
   cols.value = Math.max(props.minCols, Math.floor(inner / props.colWidth));
 }
 
+function computeScrollMargin(): void {
+  const el = scrollRef.value;
+  const body = bodyRef.value;
+  if (!el || !body) return;
+  scrollMargin.value = Math.max(
+    0,
+    body.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop
+  );
+}
+
 const rows = useVirtualList({
   count: () => Math.ceil(props.items.length / cols.value),
   scrollEl: () => scrollRef.value,
   estimateSize: () => props.estimateRowHeight,
+  scrollMargin: () => scrollMargin.value,
   overscan: 3
 });
 const visibleRows = computed(() => {
   const columns = cols.value;
+  const margin = scrollMargin.value;
   return rows.value.getVirtualItems().map((row) => ({
     index: row.index,
-    top: row.start,
+    top: row.start - margin,
     items: props.items.slice(row.index * columns, (row.index + 1) * columns)
   }));
 });
@@ -62,24 +75,34 @@ function observe(): void {
   observer?.disconnect();
   const el = scrollRef.value;
   if (!el) return;
-  observer = new ResizeObserver(() => computeCols());
+  observer = new ResizeObserver(() => {
+    computeCols();
+    computeScrollMargin();
+  });
   observer.observe(el);
+  if (bodyRef.value) observer.observe(bodyRef.value);
   computeCols();
+  computeScrollMargin();
 }
 
-onMounted(() => observe());
+onMounted(async () => {
+  observe();
+  await nextTick();
+  computeScrollMargin();
+});
 watch(
   () => props.items.length,
   async (count) => {
     if (count) {
       await nextTick();
       computeCols();
+      computeScrollMargin();
     }
   }
 );
 watch(
   () => [props.colWidth, props.minCols],
-  () => nextTick(() => computeCols())
+  () => nextTick(() => computeScrollMargin())
 );
 onBeforeUnmount(() => {
   observer?.disconnect();
@@ -93,7 +116,9 @@ function measureRow(node: Element | ComponentPublicInstance | null): void {
 
 <template>
   <div ref="scrollRef" class="min-h-0 overflow-y-auto px-4 pt-4 pb-4">
-    <div class="relative" :style="{ height: rows.getTotalSize() + 'px' }">
+    <!-- Nagłówek/banner przewija się razem z listą. -->
+    <slot name="header" />
+    <div ref="bodyRef" class="relative" :style="{ height: rows.getTotalSize() + 'px' }">
       <div
         v-for="row in visibleRows"
         :key="row.index"
@@ -109,7 +134,7 @@ function measureRow(node: Element | ComponentPublicInstance | null): void {
         <slot v-for="(item, i) in row.items" :key="i" :item="item" />
       </div>
     </div>
-    <!-- Stopka (sentinel/paginacja) przewija się razem z listą. -->
+    <!-- Stopka (sentinel/paginacja/stan pusty) przewija się razem z listą. -->
     <slot name="footer" />
   </div>
 </template>
