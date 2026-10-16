@@ -18,7 +18,7 @@ interface DragSurface {
 
 const TARGETS = [
   { file: 'src/renderer/src/components/audio/AudioProgressBar.vue', label: 'playback position' },
-  { file: 'src/renderer/src/components/player/Equalizer.vue', label: 'equalizer band' }
+  { file: 'src/renderer/src/components/player/EqBandRow.vue', label: 'equalizer band' }
 ];
 
 function readDragSurfaces(relPath: string): { surfaces: DragSurface[]; script: string } {
