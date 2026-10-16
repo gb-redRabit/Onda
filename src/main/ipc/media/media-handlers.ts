@@ -1,18 +1,18 @@
 import { ipcMain } from 'electron';
-import { readFile, rename, unlink, stat, realpath } from 'fs/promises';
+import { readFile, rename, stat, realpath } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import NodeID3 from 'node-id3';
 import { parseFile } from 'music-metadata';
 import {
-  getStore,
   getCachedDuration,
   setCachedDuration,
   deleteCachedDuration,
   invalidateCachedCover,
-  COVER_CACHE_MAP_KEY,
   PERSISTENT_COVER_DIR,
   clearCoverCache
 } from '../cover/cover-cache';
+import { readCoverMap, writeCoverMap } from '../cover/cover-map';
+import { safeUnlink } from '../../utils/fs-atomic';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
@@ -114,19 +114,15 @@ export async function writeCoverToAudioFile(
     }
     await embedCover(filePath, { buffer: imageBuffer, mime });
     invalidateCachedCover(filePath);
-    const store = await getStore();
-    const cacheMap = store.get(COVER_CACHE_MAP_KEY) as
-      Record<string, { cacheFile: string; mtime: number }> | undefined;
-    if (cacheMap?.[filePath]) {
-      const old = cacheMap[filePath];
-      const cachePath = join(PERSISTENT_COVER_DIR, old.cacheFile);
-      try {
-        await unlink(cachePath);
-      } catch {
-        // zbuforowana okładka zniknęła — można pominąć
-      }
+    // Mapa okładek żyje we własnym pliku JSON (`cover-map`), NIE w szyfrowanym
+    // electron-store — wcześniej ta gałąź przepisywała całą konfigurację przy każdej
+    // aktualizacji okładki.
+    const cacheMap = await readCoverMap();
+    const old = cacheMap[filePath];
+    if (old) {
+      await safeUnlink(join(PERSISTENT_COVER_DIR, old.cacheFile));
       delete cacheMap[filePath];
-      store.set(COVER_CACHE_MAP_KEY, structuredClone(cacheMap));
+      await writeCoverMap(cacheMap);
     }
     return { success: true };
   } catch (e: unknown) {
