@@ -1,10 +1,12 @@
-import { mkdir, rm, rename, unlink } from 'fs/promises';
+import { mkdir, rm, stat, realpath } from 'fs/promises';
 import { join, dirname, basename, extname } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../../shared/logger';
 import type { IpcCoverSpec, IpcMetaOverride } from '../../shared/types/ipc';
 import { resolveBin } from '../binaries';
 import { runCommand } from '../utils/exec';
+import { replaceFileAtomic, safeUnlink } from '../utils/fs-atomic';
+import { isProtectedPath, isSensitivePath } from '../path-policy';
 import { getYtAuthConfig, cleanupYtAuthTemp } from '../youtube/youtube-auth';
 import { buildYtArgs } from '../ipc/youtube/youtube-utils';
 import { writeCoverToAudioFile } from '../ipc/media/media-handlers';
@@ -48,7 +50,6 @@ async function downloadSource(
   const auth = await getYtAuthConfig();
   const args = buildYtArgs(
     [
-      url,
       '--newline',
       '--no-playlist',
       '--no-warnings',
@@ -58,7 +59,11 @@ async function downloadSource(
       videoFormat,
       '--merge-output-format',
       mergeFormat,
-      ...extra
+      ...extra,
+      // `--` kończy listę opcji — URL trafia jako pozycyjny, więc nie może zostać
+      // zinterpretowany jako flaga yt-dlp.
+      '--',
+      url
     ],
     auth
   );
@@ -79,7 +84,7 @@ export async function removeThumbnailFiles(audioPath: string): Promise<void> {
   const dir = dirname(audioPath);
   const base = basename(audioPath, extname(audioPath));
   for (const ext of ['.jpg', '.jpeg', '.webp', '.png']) {
-    await unlink(join(dir, base + ext)).catch(() => undefined);
+    await safeUnlink(join(dir, base + ext));
   }
 }
 
@@ -99,12 +104,35 @@ export async function applyMetadataOverride(
     await runCommand(await ffmpegBin(), ['-y', '-i', filePath, ...tags, '-c', 'copy', tmpOut], {
       timeout: 120000
     });
-    await unlink(filePath).catch(() => undefined);
-    await rename(tmpOut, filePath);
+    // `rename` nadpisuje istniejący cel atomowo — nie usuwamy oryginału wcześniej
+    // (okno pomiędzy `unlink` a `rename` mogło zostawić użytkownika bez pliku).
+    await replaceFileAtomic(tmpOut, filePath);
   } catch (e) {
-    await unlink(tmpOut).catch(() => undefined);
+    await safeUnlink(tmpOut);
     throw e;
   }
+}
+
+const COVER_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
+const MAX_CUSTOM_COVER_BYTES = 10 * 1024 * 1024;
+
+// Waliduje ścieżkę okładki dostarczoną przez renderer (pole `customPath`). Bez tego
+// przejęty renderer mógłby wskazać dowolny plik (klucz SSH, bazę cookies), który
+// zostałby wczytany do tagów audio i wyeksfiltrowany razem z pobranym plikiem.
+async function validateCustomCoverPath(imagePath: string): Promise<string | null> {
+  const ext = extname(imagePath).toLowerCase();
+  if (!COVER_IMAGE_EXTS.has(ext)) return `unsupported image type ${ext || '?'}`;
+  let info;
+  try {
+    info = await stat(imagePath);
+  } catch {
+    return 'image not found';
+  }
+  if (!info.isFile()) return 'image is not a file';
+  if (info.size === 0 || info.size > MAX_CUSTOM_COVER_BYTES) return 'image too large';
+  const real = await realpath(imagePath).catch(() => imagePath);
+  if (isProtectedPath(real) || isSensitivePath(real)) return 'image path not allowed';
+  return null;
 }
 
 interface CoverJobContext {
@@ -124,7 +152,10 @@ export async function processCover(
   try {
     if (cover.type === 'none' || cover.type === 'thumbnail') return { status: 'embedded' };
     if (cover.type === 'custom') {
-      const res = await writeCoverToAudioFile(ctx.outputPath, cover.customPath || '');
+      const custom = cover.customPath || '';
+      const invalid = await validateCustomCoverPath(custom);
+      if (invalid) throw new Error(invalid);
+      const res = await writeCoverToAudioFile(ctx.outputPath, custom);
       if (!res.success) throw new Error(res.error || 'Failed to embed cover');
       return { status: 'embedded' };
     }

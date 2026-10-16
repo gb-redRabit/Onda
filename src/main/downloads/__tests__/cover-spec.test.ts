@@ -105,6 +105,20 @@ describe('normalizeCoverSpec', () => {
       normalizeCoverSpec({ type: 'clip', clipStart: 0, clipEnd: 5, clipFormat: 'mp4' })
     ).toEqual({ type: 'clip', clipStart: 0, clipEnd: 5, clipFormat: 'mp4' });
   });
+  it('caps the animated clip length to avoid unbounded ffmpeg/yt-dlp work', () => {
+    expect(normalizeCoverSpec({ type: 'clip', clipStart: 0, clipEnd: 24 * 3600 })).toEqual({
+      type: 'clip',
+      clipStart: 0,
+      clipEnd: 120,
+      clipFormat: 'webm'
+    });
+    expect(normalizeCoverSpec({ type: 'clip', clipStart: 600, clipEnd: 100000 })).toEqual({
+      type: 'clip',
+      clipStart: 600,
+      clipEnd: 720,
+      clipFormat: 'webm'
+    });
+  });
 });
 
 describe('yt-dlp arg builders', () => {
