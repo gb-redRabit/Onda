@@ -4,7 +4,7 @@
 
 ### Your music and video, finally in one place. · Twoja muzyka i wideo wreszcie w jednym miejscu.
 
-<img src="https://img.shields.io/badge/Electron-43.2-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
+<img src="https://img.shields.io/badge/Electron-44-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
 <img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3" />
 <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
 <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
@@ -76,6 +76,11 @@
 - 🔄 Queue persistence and crash-safe restore (interrupted → paused, pending → re-queued).
 - 🐢 Download speed limit (unlimited / 1 / 2 / 5 / 10 MB/s) right in the Downloads toolbar, applied through `yt-dlp --limit-rate`.
 
+**Sources & link providers**
+
+- 🧩 **Custom Sources** — define an endpoint (URL, method, JSON field mapping, pagination) and browse whatever it returns as cards / gallery / table / carousel / player; play audio & video straight from the view (through the local media proxy) or queue items for download. Sources are plain, exportable JSON.
+- ☁️ **Link providers** for cloud shares and file hosts — **PikPak, MEGA, Google Drive, TeraBox, 123pan, Dropbox, Yandex Disk**, generic archive links and plain direct URLs. Browse folders, stream in-app and download with freshly resolved, signed URLs (MEGA is decrypted client-side); optional cookie login for private links, a folder cache and link subscriptions with expiry warnings.
+
 **Picture-in-Picture**
 
 - 📌 Separate always-on-top windows for video and audio, with position/size memory, peek/auto-hide and live theme sync.
@@ -96,7 +101,7 @@
 
 **Themes & appearance**
 
-- 🎨 29 semantic theme variables (daisyUI-compatible), transparent/acrylic window with adjustable opacity.
+- 🎨 30 semantic theme variables (daisyUI-compatible), including a dedicated readable accent-text token so `text-primary` meets WCAG AA on the base surfaces in every theme; transparent/acrylic window with adjustable opacity.
 - 🧬 Radius presets (`rounded-box` / `rounded-field` / `rounded-selector`) driving the whole UI, depth/noise effects.
 
 **Settings**
@@ -138,7 +143,8 @@ Onda/
 ├─ src/
 │  ├─ main/                 Electron main process (Windows, tray, lifecycle)
 │  │  ├─ index.ts           bootstrap, single-instance, splash, boot timeline
-│  │  ├─ media-server.ts    local HTTP media server (token, roots, Range)
+│  │  ├─ bootstrap/         settings/media seeding + graceful shutdown
+│  │  ├─ media/             local HTTP media server (token, roots, Range) + stream proxy
 │  │  ├─ ipc/               ~25 typed IPC handler modules (contract-driven)
 │  │  ├─ downloads/         yt-dlp + HTTP download pipeline (queue, retry, post-process)
 │  │  ├─ utils/             exec, sharp, validation, safe broadcast
@@ -148,9 +154,9 @@ Onda/
 │  │  ├─ views/             Home, Library, Explorer, Online, Downloads, Player, Audio, Settings, Sources
 │  │  ├─ modules/           ModuleManager + Player/Explorer/Library/YouTube/Home/Settings
 │  │  ├─ stores/            Pinia stores (player, library, settings, ui, online, sources …)
-│  │  ├─ composables/       ~76 reusable composables
+│  │  ├─ composables/       ~87 reusable composables
 │  │  ├─ components/        layout, library, online, settings, audio, explorer, sources, wizard …
-│  │  ├─ utils/             ~105 helpers (formatters, caches, media, search …)
+│  │  ├─ utils/             ~120 helpers (formatters, caches, media, search …)
 │  │  └─ locales/           en.ts / pl.ts
 │  └─ shared/               types, constants, IPC contract, logger, built-in themes
 ├─ e2e/                     Playwright + Electron end-to-end specs
@@ -171,7 +177,7 @@ npm run dev
 Quality gates:
 
 ```bash
-npm test           # 1667 unit tests (Vitest)
+npm test           # 2763 unit tests (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (run `npm run build` first)
@@ -204,14 +210,14 @@ Onda is built to stay smooth on large libraries and slow disks.
 | **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                                                                                |
 | **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence, spawn semaphore for subtitle extraction, LRU eviction for cover/thumbnail caches. |
 | **Race-free selection & search** | Request-id/token guards make stale async responses (search pagination, cover loads, module switches, library scans) no-ops.                                                                                                 |
-| **Quality gates**                | 1667 unit tests + 56 Playwright E2E tests (35 specs) + lint + typecheck + IPC codegen check run on every change.                                                                                                            |
+| **Quality gates**                | 2763 unit tests + 72 Playwright E2E tests (38 specs) + lint + typecheck + IPC codegen check run on every change.                                                                                                            |
 
 ### Security
 
 Onda treats the renderer as untrusted and enforces its boundaries in the main process:
 
 - **Process isolation** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; a single window factory applies them everywhere.
-- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **221 invoke / 15 send / 45 receive**.
+- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **237 invoke / 15 send / 46 receive**.
 - **SSRF defense** — outbound fetches resolve through a pinned-DNS guard that blocks loopback/private/metadata ranges and validates **every** redirect hop (media, sources, remote images, SoundCloud artwork).
 - **Secrets never reach the renderer** — API keys are encrypted at rest via `safeStorage`; `settings:get` returns only a masked preview, and writes merge by id so the stored secret survives round-trips.
 - **Filesystem policy** — destructive and mutating handlers refuse volume roots, system directories and sensitive locations; the media server authorizes with a timing-safe token, origin checks and realpath-contained roots.
@@ -292,6 +298,11 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - 🔄 Persystencja kolejki i bezpieczne wznowienie po restarcie (przerwane → pauza, oczekujące → ponownie w kolejce).
 - 🐢 Limit prędkości pobierania (bez limitu / 1 / 2 / 5 / 10 MB/s) wprost w pasku widoku Pobierania, egzekwowany przez `yt-dlp --limit-rate`.
 
+**Źródła i providery linków**
+
+- 🧩 **Własne źródła** — zdefiniuj endpoint (URL, metoda, mapowanie pól JSON, paginacja) i przeglądaj to, co zwraca, jako karty / galerię / tabelę / karuzelę / player; odtwarzaj audio i wideo wprost z widoku (przez lokalny proxy mediów) albo dodawaj pozycje do pobrania. Źródła to zwykły JSON z eksportem.
+- ☁️ **Providery linków** dla chmur i hostingów — **PikPak, MEGA, Google Drive, TeraBox, 123pan, Dropbox, Yandex Disk**, linki do archiwów i zwykłe adresy bezpośrednie. Przeglądanie folderów, streaming w aplikacji i pobieranie ze świeżo rozwiązanymi, podpisanymi URL-ami (MEGA odszyfrowywany po stronie klienta); opcjonalne logowanie cookie dla linków prywatnych, cache folderów i subskrypcje linków z ostrzeżeniem o wygasaniu.
+
 **Picture-in-Picture**
 
 - 📌 Osobne okna always-on-top dla wideo i audio, z pamięcią pozycji/rozmiaru, peek/auto-hide i synchronizacją motywu na żywo.
@@ -312,7 +323,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 
 **Motywy i wygląd**
 
-- 🎨 29 semantycznych zmiennych motywu (zgodnych z daisyUI), przezroczyste okno akrylowe z regulacją krycia.
+- 🎨 30 semantycznych zmiennych motywu (zgodnych z daisyUI), w tym osobny czytelny token koloru akcentu, dzięki któremu `text-primary` spełnia WCAG AA na powierzchniach bazowych w każdym motywie; przezroczyste okno akrylowe z regulacją krycia.
 - 🧬 Presety radiusów (`rounded-box` / `rounded-field` / `rounded-selector`) sterujące całym UI, efekty depth/noise.
 
 **Ustawienia**
@@ -354,7 +365,8 @@ Onda/
 ├─ src/
 │  ├─ main/                 proces główny Electrona (okna, tray, cykl życia)
 │  │  ├─ index.ts           bootstrap, single-instance, splash, boot timeline
-│  │  ├─ media-server.ts    lokalny serwer HTTP mediów (token, rooty, Range)
+│  │  ├─ bootstrap/         seeding ustawień/mediów + bezpieczne zamknięcie
+│  │  ├─ media/             lokalny serwer HTTP mediów (token, rooty, Range) + proxy strumieni
 │  │  ├─ ipc/               ~25 typowanych modułów IPC (zgodnych z kontraktem)
 │  │  ├─ downloads/         pipeline pobierania yt-dlp + HTTP (kolejka, retry, post-process)
 │  │  ├─ utils/             exec, sharp, walidacja, bezpieczny broadcast
@@ -364,9 +376,9 @@ Onda/
 │  │  ├─ views/             Home, Library, Explorer, Online, Downloads, Player, Audio, Settings, Sources
 │  │  ├─ modules/           ModuleManager + Player/Explorer/Library/YouTube/Home/Settings
 │  │  ├─ stores/            store'y Pinia (player, library, settings, ui, online, sources …)
-│  │  ├─ composables/       ~76 reużywalnych composables
+│  │  ├─ composables/       ~87 reużywalnych composables
 │  │  ├─ components/        layout, library, online, settings, audio, explorer, sources, wizard …
-│  │  ├─ utils/             ~105 helperów (formattery, cache, media, wyszukiwanie …)
+│  │  ├─ utils/             ~120 helperów (formattery, cache, media, wyszukiwanie …)
 │  │  └─ locales/           en.ts / pl.ts
 │  └─ shared/               typy, stałe, kontrakt IPC, logger, motywy wbudowane
 ├─ e2e/                     specyfikacje Playwright + Electron
@@ -387,7 +399,7 @@ npm run dev
 Bramki jakości:
 
 ```bash
-npm test           # 1667 testów jednostkowych (Vitest)
+npm test           # 2763 testy jednostkowe (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (najpierw `npm run build`)
@@ -420,14 +432,14 @@ Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i w
 | **Praca poza wątkiem głównym**                   | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                                                               |
 | **Bezpieczeństwo zasobów**                       | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki, semafor spawnu przy ekstrakcji napisów, ewiction LRU cache okładek/miniatur. |
 | **Wolne od wyścigów zaznaczanie i wyszukiwanie** | Tokeny/request-id sprawiają, że przedawnione odpowiedzi (paginacja wyszukiwania, ładowanie okładek, przełączenia modułów, skany biblioteki) są no-opami.                                                             |
-| **Bramki jakości**                               | 1667 testów jednostkowych + 56 testów E2E (35 specyfikacji) + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                                                             |
+| **Bramki jakości**                               | 2763 testy jednostkowe + 72 testy E2E (38 specyfikacji) + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                                                                 |
 
 ### Bezpieczeństwo
 
 Onda traktuje renderer jako niezaufany i egzekwuje granice w procesie głównym:
 
 - **Izolacja procesu** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; jedna fabryka okien stosuje to wszędzie.
-- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **221 invoke / 15 send / 45 receive**.
+- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **237 invoke / 15 send / 46 receive**.
 - **Obrona przed SSRF** — wychodzące żądania przechodzą przez guard z przypiętym DNS, który blokuje zakresy loopback/prywatne/metadanych i waliduje **każdy** hop przekierowania (media, źródła, zdalne obrazy, okładki SoundCloud).
 - **Sekrety nie trafiają do renderera** — klucze API są szyfrowane w spoczynku przez `safeStorage`; `settings:get` zwraca tylko zamaskowany podgląd, a zapis scala po `id`, więc zapisany sekret przetrwa rundy zapisu.
 - **Polityka systemu plików** — destrukcyjne i mutujące handlery odrzucają korzenie wolumenów, katalogi systemowe i lokalizacje wrażliwe; serwer mediów autoryzuje timing-safe tokenem, sprawdzaniem originu i realpath wewnątrz rootów.
