@@ -7,6 +7,10 @@ export interface AudioImmersiveOptions {
   isDragging: () => boolean;
   onDragMove: (e: MouseEvent) => void;
   showLayoutEditor: Ref<boolean>;
+  // Gdy zwróci true, auto-ukrywanie HUD/kursora jest wstrzymane (np. otwarty panel
+  // ustawień wizualizacji — inaczej po kilku sekundach bezruchu panel stawał się
+  // nieklikalny i trudno było go zamknąć).
+  holdUI?: () => boolean;
 }
 
 // Zachowanie trybu immersyjnego widoku audio: auto-ukrywanie HUD/kursora, przełączanie
@@ -14,7 +18,8 @@ export interface AudioImmersiveOptions {
 export function useAudioImmersive({
   isDragging,
   onDragMove,
-  showLayoutEditor
+  showLayoutEditor,
+  holdUI
 }: AudioImmersiveOptions) {
   const audio = useAudioPlayer();
   const player = usePlayerStore();
@@ -42,6 +47,13 @@ export function useAudioImmersive({
     uiFireAt.value = now + delay;
     uiTimeout.value = setTimeout(() => {
       uiTimeout.value = null;
+      // Panel ustawień wizualizacji (lub inny „trzymający" HUD) blokuje ukrycie —
+      // inaczej po `cursorTimeout` sekundach panel zniknąłby i stał się nieklikalny.
+      if (holdUI?.()) {
+        showUI.value = true;
+        setCursorVisible(true);
+        return;
+      }
       if (audio.isPlaying.value && settings.playback.cursorHide) {
         showUI.value = false;
         setCursorVisible(false);

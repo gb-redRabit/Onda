@@ -26,6 +26,5 @@ export const SETTINGS_TAB_COMPONENTS: Record<string, ReturnType<typeof defineAsy
   diagnostics: defineAsyncComponent(() => import('./SettingsDiagnostics.vue')),
   about: defineAsyncComponent(() => import('./SettingsAbout.vue')),
   apiKeys: defineAsyncComponent(() => import('./SettingsApiKeys.vue')),
-  providerCredentials: defineAsyncComponent(() => import('./SettingsProviderCredentials.vue')),
   plugins: defineAsyncComponent(() => import('./SettingsPlugins.vue'))
 };

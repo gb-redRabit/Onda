@@ -292,9 +292,43 @@ describe('sanitizeSettings', () => {
           bgOpacity: 40,
           variant: 'rounded'
         },
-        { id: 'progress', x: 0, y: 0, width: 50, height: 5, opacity: 100, layer: 3, visible: true }
+        { id: 'progress', x: 0, y: 0, width: 50, height: 5, opacity: 100, layer: 3, visible: true },
+        {
+          id: 'lyrics',
+          x: 8,
+          y: 47,
+          width: 84,
+          height: 17,
+          opacity: 100,
+          layer: 4,
+          visible: true
+        }
       ]
     });
+  });
+
+  it('does not duplicate the lyrics layout element during migration', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        audioLayout: {
+          elements: [
+            {
+              id: 'lyrics',
+              x: 10,
+              y: 10,
+              width: 30,
+              height: 30,
+              opacity: 100,
+              layer: 4,
+              visible: false
+            }
+          ]
+        }
+      }
+    });
+    const elements = sanitized.appearance?.audioLayout?.elements ?? [];
+    expect(elements.filter((el) => el.id === 'lyrics')).toHaveLength(1);
+    expect(elements[0]).toMatchObject({ id: 'lyrics', x: 10, y: 10, visible: false });
   });
 
   it('clamps legacy cursorTimeout to the seconds range and keeps valid seconds value', () => {
@@ -313,6 +347,21 @@ describe('sanitizeSettings', () => {
 
     const { sanitized: clamped } = sanitizeSettings({ playback: { resumePromptTimeout: 999 } });
     expect(clamped.playback).toEqual({ resumePromptTimeout: 60 });
+  });
+
+  it('maps legacy ReplayGain toggles to replayGainMode', () => {
+    expect(sanitizeSettings({ playback: { replayGain: true } }).sanitized.playback).toMatchObject({
+      replayGainMode: 'track'
+    });
+    expect(
+      sanitizeSettings({ playback: { normalization: true } }).sanitized.playback
+    ).toMatchObject({ replayGainMode: 'track' });
+    expect(
+      sanitizeSettings({ playback: { replayGain: false, normalization: false } }).sanitized.playback
+    ).toMatchObject({ replayGainMode: 'off' });
+    expect(
+      sanitizeSettings({ playback: { replayGainMode: 'album' } }).sanitized.playback
+    ).toMatchObject({ replayGainMode: 'album' });
   });
 
   it('allows only known AppSettings top-level keys', () => {

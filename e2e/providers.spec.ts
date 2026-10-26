@@ -87,7 +87,7 @@ test.describe('online providers (Linki)', () => {
       await expect(page.getByTestId('app-root')).toBeVisible();
       await dismissWizard(page);
       await page.evaluate(() => {
-        window.location.hash = '#/settings?tab=providerCredentials';
+        window.location.hash = '#/settings?tab=network-platform';
       });
 
       const panel = page.getByTestId('settings-provider-credentials');

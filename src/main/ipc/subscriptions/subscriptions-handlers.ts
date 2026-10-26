@@ -30,11 +30,15 @@ function broadcastSubscriptionUpdated(sub: IpcSubscription): void {
 }
 
 export function registerSubscriptionHandlers(): void {
-  // Ukończone pobrania atomowo powiększają downloadedVideoIds (most Faza 3→4).
-  setDownloadCompletedHandler((channelId, videoId) => {
-    void appendDownloadedVideos(getSubscriptionsFile(), channelId, [videoId]).then((updated) => {
-      if (updated) broadcastSubscriptionUpdated(updated);
-    });
+  // Ukończone pobrania atomowo powiększają downloadedVideoIds (most Faza 3→4) i
+  // zapisują ścieżkę pliku per videoId (do późniejszej weryfikacji istnienia).
+  setDownloadCompletedHandler((channelId, videoId, outputPath) => {
+    const files = outputPath ? { [videoId]: outputPath } : undefined;
+    void appendDownloadedVideos(getSubscriptionsFile(), channelId, [videoId], files).then(
+      (updated) => {
+        if (updated) broadcastSubscriptionUpdated(updated);
+      }
+    );
   });
   ipcMain.handle('yt:subs:list', async (): Promise<IpcSubscription[]> =>
     loadSubscriptions(getSubscriptionsFile())
@@ -59,8 +63,9 @@ export function registerSubscriptionHandlers(): void {
     async (_event, channelId: string, patch: SubscriptionPatch): Promise<IpcSubscription | null> =>
       updateSubscription(getSubscriptionsFile(), channelId, patch)
   );
+  // Ręczne sprawdzenie (przycisk) dodatkowo weryfikuje pliki na dysku i odznacza braki.
   ipcMain.handle('yt:subs:checkNow', async (): Promise<IpcSubscriptionCheckResult> =>
-    checkSubscriptions(getSubscriptionsFile())
+    checkSubscriptions(getSubscriptionsFile(), undefined, true)
   );
   ipcMain.handle(
     'yt:subs:checkChannel',

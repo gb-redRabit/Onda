@@ -1,7 +1,43 @@
 import type { AppSettings, SecretStorageStatus } from '../settings';
+import type { SmartPlaylist } from '../smart-playlist';
 import type { IpcMediaFile, IpcPlaylist } from './media';
 
+export interface LoudnessAnalysisResult {
+  /** Liczba plików, dla których udało się zmierzyć głośność. */
+  analyzed: number;
+  /** Liczba albumów, którym nadano album gain. */
+  albums: number;
+  /** Pliki, których nie udało się przeanalizować. */
+  failed: number;
+  aborted: boolean;
+  /** Limit plików na jedno uruchomienie został osiągnięty. */
+  truncated: boolean;
+  /** Liczba rekordów biblioteki faktycznie zmienionych. */
+  updated: number;
+  error?: string;
+}
+
+export interface LoudnessProgress {
+  current: number;
+  total: number;
+  path?: string;
+}
+
+export interface LibraryAddFilesResult {
+  /** Nowe pozycje dopisane do biblioteki. */
+  added: number;
+  /** Pozycje pominięte (duplikaty, nieobsługiwane rozszerzenia, błędy). */
+  skipped: number;
+  /** Liczba ścieżek przyjętych do przetworzenia. */
+  total: number;
+  error?: string;
+}
+
 export interface LibraryChannels {
+  'library:analyzeLoudness': { args: []; result: LoudnessAnalysisResult };
+  'library:loudnessCancel': { args: []; result: boolean };
+  /** Dodaje konkretne pliki (np. przeciągnięte z systemu) do biblioteki. */
+  'library:addFiles': { args: [paths: string[]]; result: LibraryAddFilesResult };
   'library:scan': {
     args: [folderPaths: string[]];
     result: { count: number; folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> };
@@ -35,6 +71,8 @@ export interface LibraryChannels {
   };
   'playlist:loadAll': { args: []; result: IpcPlaylist[] };
   'playlist:saveAll': { args: [playlists: IpcPlaylist[]]; result: void };
+  'smartPlaylists:loadAll': { args: []; result: SmartPlaylist[] };
+  'smartPlaylists:saveAll': { args: [playlists: SmartPlaylist[]]; result: void };
   'playlist:export': {
     args: [{ id: string; name: string; tracks: string[] }];
     result: { success: boolean; canceled?: boolean; error?: string };

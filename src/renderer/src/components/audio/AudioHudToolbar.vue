@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2 } from '@lucide/vue';
+import { BarChart3, Settings2, LayoutGrid, Maximize2, Minimize2, Pin, PinOff } from '@lucide/vue';
 import AudioLayoutSwitcher from './AudioLayoutSwitcher.vue';
 import { pluginIcon } from '@renderer/utils/audioView';
 
@@ -23,6 +23,7 @@ const props = defineProps<{
   isFullscreen: boolean;
   vizMode: string;
   commands: AudioHudCommand[];
+  pinned: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -30,6 +31,7 @@ const emit = defineEmits<{
   'update:vizSettingsOpen': [value: boolean];
   'cycle-viz': [];
   'toggle-fullscreen': [];
+  'toggle-pin': [];
   'run-command': [id: string];
 }>();
 
@@ -39,9 +41,15 @@ const { t } = useI18n();
 // Wtyczka może zarejestrować tryb z dowolnym id, więc nieznane id spadają
 // do samego id, a nie do pustej etykiety.
 const VIZ_MODE_LABEL_KEYS: Record<string, string> = {
+  splash: 'audioView.vizModeSplash',
   bars: 'audioView.vizModeBars',
+  spectrum: 'audioView.vizModeSpectrum',
+  wave: 'audioView.vizModeWave',
+  radial: 'audioView.vizModeRadial',
+  rings: 'audioView.vizModeRings',
+  circle: 'audioView.vizModeCircle',
   particles: 'audioView.vizModeParticles',
-  waveform: 'audioView.vizModeWaveform'
+  none: 'audioView.vizModeNone'
 };
 const vizModeLabel = computed(() => {
   const mode = props.vizMode || 'bars';
@@ -106,6 +114,21 @@ const vizModeLabel = computed(() => {
         @click.stop="emit('update:vizSettingsOpen', !props.vizSettingsOpen)"
       >
         <Settings2 :size="12" />
+      </button>
+      <button
+        data-testid="audio-always-on-top"
+        class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition-all"
+        :class="
+          props.pinned
+            ? 'text-primary-text bg-primary/10'
+            : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10 bg-base-300/80'
+        "
+        :title="$t('common.alwaysOnTop')"
+        :aria-label="$t('common.alwaysOnTop')"
+        :aria-pressed="props.pinned"
+        @click.stop="emit('toggle-pin')"
+      >
+        <Pin v-if="props.pinned" :size="12" /><PinOff v-else :size="12" />
       </button>
       <button
         data-testid="audio-fullscreen"

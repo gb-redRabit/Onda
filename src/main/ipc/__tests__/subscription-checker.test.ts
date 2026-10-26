@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm } from 'fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -276,9 +276,121 @@ describe('checkSubscriptions', () => {
     });
     const first = checkSubscriptions(file);
     const second = await checkSubscriptions(file); // widzi checkRunning = true
-    expect(second).toEqual({ checked: 0, newVideos: 0, queued: 0, errors: 0 });
+    expect(second).toEqual({ checked: 0, newVideos: 0, queued: 0, errors: 0, busy: true });
     release();
     await first;
+  });
+});
+
+describe('file reconciliation (manual checks)', () => {
+  it('manual check unmarks missing files without re-queueing them in the same run', async () => {
+    h.download = { autoDownloadSubscriptions: true, defaultPath: 'C:/dl' };
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      autoDownload: true,
+      downloadedVideoIds: ['v2'],
+      downloadedFiles: { v2: join(dir, 'missing.mp3') }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual([]); // odznaczony — pliku nie ma
+    expect(sub.downloadedFiles).toEqual({});
+    expect(sub.pendingCount).toBe(2); // oba znów „do pobrania"
+    expect(res.queued).toBe(0);
+    // Diff liczy „nowe" na starym zbiorze → odznaczony film NIE trafia do kolejki w tym przebiegu.
+    expect(addDownloadJobs).not.toHaveBeenCalled();
+  });
+
+  it('backfills downloadedFiles from the output folder and reports the deleted video', async () => {
+    const outputDir = join(dir, 'out');
+    await mkdir(outputDir, { recursive: true });
+    const existing = join(outputDir, 'Two - Chan.mp3');
+    await writeFile(existing, 'x');
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2', 'v3'],
+      downloadPrefs: { outputDir }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v3', title: 'Three' },
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual(['v2']);
+    expect(sub.downloadedFiles).toEqual({ v2: existing });
+    expect(sub.pendingCount).toBe(2);
+    expect(res.missing).toEqual([{ id: 'v3', title: 'Three' }]);
+  });
+
+  it('keeps downloaded entries whose files still exist', async () => {
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadedFiles: { v2: join(dir, 'subscriptions.json') }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual(['v2']);
+  });
+
+  it('does not reconcile on a scheduled check (reconcile defaults to off)', async () => {
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadedFiles: { v2: join(dir, 'missing.mp3') }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSubscriptions(file);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual(['v2']);
+  });
+
+  it('checkSingleChannel reconciles the requested channel', async () => {
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadedFiles: { v2: join(dir, 'missing.mp3') }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSingleChannel(file, 'UC1');
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual([]);
   });
 });
 

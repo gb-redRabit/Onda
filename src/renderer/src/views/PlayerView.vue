@@ -18,6 +18,7 @@ import { setPlayerShortcutCtx } from '@renderer/composables/playerShortcutHandle
 import { setPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
 import { usePlayerControls } from '@renderer/composables/usePlayerControls';
 import { usePlayerContextMenu } from '@renderer/composables/usePlayerContextMenu';
+import { useAlwaysOnTop } from '@renderer/composables/useAlwaysOnTop';
 
 const { t } = useI18n();
 const player = usePlayerStore();
@@ -26,6 +27,7 @@ const ui = useUIStore();
 const router = useRouter();
 const pluginsStore = usePluginsStore();
 const playerContextMenu = usePlayerContextMenu();
+const { pinned, togglePin } = useAlwaysOnTop();
 
 const coverDecoration = computed(() => pluginsStore.decorations.cover);
 
@@ -181,9 +183,11 @@ onUnmounted(() => {
     <PlayerTopBar
       :show-controls="ctl.showControls.value"
       :track="player.currentTrack"
+      :pinned="pinned"
       @back="goBack"
       @pip="vp.togglePiP"
       @fullscreen="ctl.toggleFullscreen"
+      @toggle-pin="togglePin"
     />
 
     <!-- obszar wideo -->

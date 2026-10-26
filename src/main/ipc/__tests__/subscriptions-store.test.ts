@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, readFile, rm } from 'fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -7,7 +7,8 @@ import {
   addSubscription,
   removeSubscription,
   updateSubscription,
-  appendDownloadedVideos
+  appendDownloadedVideos,
+  reconcileDownloadedFiles
 } from '../subscriptions/subscriptions-store';
 
 let dir: string;
@@ -243,5 +244,58 @@ describe('subscriptions-store', () => {
     expect(updated!.baselineVideoId).toBe('baseline-vid');
     const list = await loadSubscriptions(file);
     expect(list[0].baselineVideoId).toBe('baseline-vid');
+  });
+});
+
+describe('downloaded file reconciliation', () => {
+  it('appendDownloadedVideos records the file path per videoId', async () => {
+    await addSubscription(file, {
+      channelId: 'UC123',
+      channelTitle: 'Test Channel',
+      channelThumbnail: ''
+    });
+    await appendDownloadedVideos(file, 'UC123', ['vid-a'], { 'vid-a': 'C:/dl/a.mp3' });
+    const list = await loadSubscriptions(file);
+    expect(list[0].downloadedFiles).toEqual({ 'vid-a': 'C:/dl/a.mp3' });
+  });
+
+  it('keeps entries whose files exist and unmarks those that vanished', async () => {
+    await addSubscription(file, {
+      channelId: 'UC123',
+      channelTitle: 'Test Channel',
+      channelThumbnail: ''
+    });
+    const existing = join(dir, 'present.mp3');
+    await writeFile(existing, 'x');
+    const missing = join(dir, 'gone.mp3');
+    await appendDownloadedVideos(file, 'UC123', ['vid-present', 'vid-missing'], {
+      'vid-present': existing,
+      'vid-missing': missing
+    });
+
+    const res = await reconcileDownloadedFiles(file, 'UC123');
+
+    expect(res.removedIds).toEqual(['vid-missing']);
+    expect(res.updated?.downloadedVideoIds).toEqual(['vid-present']);
+    expect(res.updated?.downloadedFiles).toEqual({ 'vid-present': existing });
+    const list = await loadSubscriptions(file);
+    expect(list[0].downloadedVideoIds).toEqual(['vid-present']);
+  });
+
+  it('is a no-op when nothing is recorded', async () => {
+    await addSubscription(file, {
+      channelId: 'UC123',
+      channelTitle: 'Test Channel',
+      channelThumbnail: ''
+    });
+    const res = await reconcileDownloadedFiles(file, 'UC123');
+    expect(res.removedIds).toEqual([]);
+    expect(res.updated?.downloadedVideoIds).toEqual([]);
+  });
+
+  it('returns null updated for an unknown channel', async () => {
+    const res = await reconcileDownloadedFiles(file, 'nope');
+    expect(res.updated).toBeNull();
+    expect(res.removedIds).toEqual([]);
   });
 });

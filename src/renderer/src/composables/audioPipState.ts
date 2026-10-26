@@ -3,6 +3,7 @@ import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { getFrequencyBins as collectBins } from '@renderer/utils/audioViz';
 import type {
   AudioPipDock,
@@ -51,10 +52,15 @@ export function buildAudioPipState(): AudioPipState {
   const cached = player.getCover(path);
   if (path && !cached.data) void player.loadCover(path);
   const nextTrack = player.displayQueue[0];
+  // Video-okładka (rodzeństwo mp4 przy mp3) to lokalna ścieżka. URL serwera mediów MUSI
+  // powstać TU (okno główne zna bazę z tokenem); okno PiP ma własny kontekst i jego preload
+  // celowo nie eksponuje `getMediaServerUrl`, więc `toMediaServerUrl` zbudowany tam dawał
+  // `/?path=…`, a <video> cicho się ukrywał. Zdalne/miniaturowe okładki (https, data:) idą bez zmian.
+  const isVideoCover = cached.type === 'video' && !!cached.data;
   return {
     trackName: '' + (track?.name || ''),
     artist: '' + (track?.metadata?.artist || ''),
-    coverData: cached.data || null,
+    coverData: isVideoCover ? toMediaServerUrl(cached.data as string) : cached.data || null,
     coverType: cached.type || null,
     isPlaying: !!player.isPlaying,
     shuffle: !!player.shuffle,

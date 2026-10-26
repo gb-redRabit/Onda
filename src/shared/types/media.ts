@@ -36,7 +36,15 @@ export interface MediaMetadata {
   codec?: string;
   format?: string;
   lossless?: boolean;
+  /** Współczynnik ReplayGain utworu (liniowy, z tagu). */
   replayGainTrackGain?: number;
+  /** Współczynnik ReplayGain albumu (liniowy, z tagu). */
+  replayGainAlbumGain?: number;
+  /**
+   * Znacznik migracji: oba tagi ReplayGain zostały już sprawdzone. Bez niego
+   * skan przyrostowy nie wie, czy brak pola oznacza „brak tagu", czy „stary wpis".
+   */
+  replayGainScanned?: boolean;
 }
 
 interface MediaPicture {

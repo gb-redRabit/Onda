@@ -60,6 +60,9 @@ files:
 asarUnpack:
   - '**/node_modules/@img/**'
   - '**/node_modules/sharp/**'
+  # koffi ładuje prebuilt N-API `.node` (pakiet @koromix/*) — musi być poza asar.
+  - '**/node_modules/koffi/**'
+  - '**/node_modules/@koromix/**'
 # Ship the full license text inside the installed app (next to app.asar in
 # resources/) so it travels with every artifact on every platform. The installer
 # EULA pages read build/license.txt separately (see nsis/dmg/appImage below).

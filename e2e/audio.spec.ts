@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { rmSync } from 'fs';
+import { rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { createMediaFixture } from './helpers/media';
 
@@ -13,6 +14,22 @@ interface OndaTestApi {
 
 test.describe('audio playback and audio view', () => {
   const media = createMediaFixture();
+  writeFileSync(
+    join(media.dir, 'tone.srt'),
+    [
+      '1',
+      '00:00:00,000 --> 00:00:00,400',
+      'First line',
+      '',
+      '2',
+      '00:00:00,400 --> 00:00:00,700',
+      'Second line',
+      '',
+      '3',
+      '00:00:00,700 --> 00:00:00,950',
+      'Third line'
+    ].join('\n')
+  );
 
   test.afterAll(() => {
     rmSync(media.dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
@@ -66,6 +83,29 @@ test.describe('audio playback and audio view', () => {
       await expect(page.getByTestId('audio-view')).toBeVisible();
       await expect(page.getByTestId('audio-empty')).toHaveCount(0);
       await expect(page.getByTestId('audio-cycle-viz')).toBeVisible();
+      // Warstwa fali jest renderowana w elemencie postępu (piki dochodzą asynchronicznie
+      // z FFmpeg; sam canvas musi istnieć nawet w profilu bez FFmpeg).
+      await expect(page.getByTestId('audio-waveform')).toBeVisible();
+
+      // Tekst piosenki jest elementem układu audio; sidecar .srt czyta IPC.
+      await expect(page.getByTestId('lyrics-panel')).toBeVisible();
+      const progress = page.locator('[role="slider"]').first();
+      await progress.focus();
+      await page.keyboard.press('Home');
+
+      // Widoczne są tylko dwie linie: bieżąca i następna; po przewinięciu następna
+      // staje się bieżącą, a lista nie przewija się w dół.
+      const current = page.getByTestId('lyrics-current');
+      const next = page.getByTestId('lyrics-next');
+      await expect(current).toHaveText('First line');
+      await expect(next).toHaveText('Second line');
+      await next.click();
+      await expect(current).toHaveText('Second line');
+      await expect(next).toHaveText('Third line');
+      await next.click();
+      await expect(current).toHaveText('Third line');
+      await expect(next).toHaveCount(0);
+
       await page.getByTestId('audio-cycle-viz').click();
       await page.getByTestId('audio-viz-settings').click();
       await page.getByTestId('audio-layout-editor').click();

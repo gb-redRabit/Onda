@@ -42,6 +42,7 @@
   --noise: 0;
   --glass-alpha: 100%;
   --glass-blur: 14px;
+  --window-radius: 8px;
 }
 
 .contain-layout {
@@ -65,7 +66,7 @@ body,
 html,
 body {
   background: transparent !important;
-  border-radius: var(--radius-box) !important;
+  border-radius: var(--window-radius) !important;
 }
 
 body {
@@ -270,7 +271,7 @@ input[type='range']:focus-visible {
   backdrop-filter: blur(var(--glass-blur));
 }
 .app-root {
-  border-radius: min(var(--radius-box), 12px);
+  border-radius: var(--window-radius);
 }
 
 .app-root.is-maximized {
@@ -359,6 +360,19 @@ input[type='range']:focus-visible {
 
 .animate-marquee {
   animation: marquee 8s linear infinite;
+}
+
+/* Cel wyszukiwania ustawień: klasa nadawana imperatywnie na element o id wpisu
+   z `utils/settingsCatalog.ts` (SettingsRow `anchor` / SettingsGroup `id`) po
+   przeskoku. Tło + ring zamiast animacji, więc działa też przy
+   `html.no-animations` (użytkownik nadal widzi podświetlenie). */
+.settings-field-highlight {
+  background-color: color-mix(in oklab, var(--color-primary) 16%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-primary) 40%, transparent);
+  border-radius: var(--radius-field);
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 /* Long online lists (resolved results, channel videos): skip rendering of

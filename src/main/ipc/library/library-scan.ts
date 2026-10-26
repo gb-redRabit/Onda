@@ -49,12 +49,14 @@ async function getAudioMetadata(
   isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
+  replayGainAlbumGain?: number;
   hasCover: boolean;
 } | null> {
   try {
     const meta = await parseFile(filePath, { duration: true });
     const formatInfo = meta.format;
     const gainDb = meta.common.replaygain_track_gain?.dB;
+    const albumGainDb = meta.common.replaygain_album_gain?.dB;
     return {
       title: meta.common.title || basename(filePath, ext),
       artist: meta.common.artist || '',
@@ -77,6 +79,10 @@ async function getAudioMetadata(
       replayGainTrackGain:
         typeof gainDb === 'number' && Number.isFinite(gainDb)
           ? Math.pow(10, gainDb / 20)
+          : undefined,
+      replayGainAlbumGain:
+        typeof albumGainDb === 'number' && Number.isFinite(albumGainDb)
+          ? Math.pow(10, albumGainDb / 20)
           : undefined
     };
   } catch (e) {
@@ -105,6 +111,7 @@ async function getMetadata(
   isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
+  replayGainAlbumGain?: number;
   hasCover?: boolean;
 } | null> {
   try {
@@ -142,7 +149,15 @@ async function processAudioFile(
   if (!s) return { file: null };
   // Użyj ponownie poprzednich metadanych, gdy plik się nie zmienił (size + mtime) —
   // ale NIE gdy brakuje flagi `hasCover` (starsze skany), aby wymusić jednorazową migrację.
-  if (prev && prev.size === s.size && prev.mtime === s.mtimeMs && prev.hasCover !== undefined) {
+  // `replayGainScanned` wymusza jednorazowy re-skan starych wpisów, które nie znają
+  // jeszcze album gainu (samo `undefined` nie odróżnia braku tagu od starego wpisu).
+  if (
+    prev &&
+    prev.size === s.size &&
+    prev.mtime === s.mtimeMs &&
+    prev.hasCover !== undefined &&
+    prev.metadata?.replayGainScanned === true
+  ) {
     return { file: prev };
   }
   const meta = await getMetadata(fullPath, ext, s);
@@ -167,7 +182,9 @@ async function processAudioFile(
             sampleRate: meta.sampleRate || undefined,
             format: meta.format,
             codec: meta.codec,
-            replayGainTrackGain: meta.replayGainTrackGain
+            replayGainTrackGain: meta.replayGainTrackGain,
+            replayGainAlbumGain: meta.replayGainAlbumGain,
+            replayGainScanned: true
           }
         : undefined,
       duration: meta?.duration || 0,
@@ -252,6 +269,31 @@ export interface ScanBudget {
 
 export function createScanBudget(limit: number): ScanBudget {
   return { remaining: limit, truncated: false };
+}
+
+/**
+ * Skanuje konkretne pliki (np. upuszczone na bibliotekę), zamiast całego katalogu.
+ * Rozszerzenia spoza audio/wideo/obrazów są pomijane.
+ */
+export async function scanFilePaths(
+  paths: readonly string[],
+  previous?: Map<string, MediaFile>
+): Promise<MediaFile[]> {
+  const results = await mapLimit(paths, 8, async (fullPath) => {
+    const ext = extname(fullPath).toLowerCase();
+    const entryName = basename(fullPath);
+    if (AUDIO_EXT_SET.has(ext)) {
+      return (await processAudioFile(fullPath, entryName, ext, previous?.get(fullPath))).file;
+    }
+    if (VIDEO_EXT_SET.has(ext)) {
+      return (await processVideoFile(fullPath, entryName, ext, previous?.get(fullPath))).file;
+    }
+    if (IMAGE_EXT_SET.has(ext)) {
+      return (await processImageFile(fullPath, entryName, ext, previous?.get(fullPath))).file;
+    }
+    return null;
+  });
+  return results.filter((file): file is MediaFile => file !== null);
 }
 
 export async function scanDir(

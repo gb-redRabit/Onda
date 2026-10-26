@@ -28,6 +28,10 @@ export interface AppChannels {
   'window:maximize': { args: []; result: void };
   'window:close': { args: []; result: void };
   'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
+  /** Windows 11: true = systemowe zaokrąglenie DWM, false = kwadratowe narożniki. */
+  'window:setRoundedCorners': { args: [rounded: boolean]; result: boolean };
+  /** Windows 11: kolor 1px obramowania okna (DWM), np. kolor ramki aplikacji. */
+  'window:setBorderColor': { args: [color: string]; result: boolean };
   'window:id': { args: []; result: number };
   'window:toggleFullscreen': { args: []; result: boolean };
   'window:exitFullscreen': { args: []; result: void };

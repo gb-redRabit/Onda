@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pause, Play, SkipBack, SkipForward, Disc3, Maximize2 } from '@lucide/vue';
+import { Pause, Play, SkipBack, SkipForward, Disc3, Maximize2, Pin, PinOff } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -13,6 +13,7 @@ defineProps<{
   progressPct: number;
   bufferedPct: number;
   isLive: boolean;
+  pinned: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   'toggle-play': [];
   'audio-view': [];
   expand: [];
+  'toggle-pin': [];
 }>();
 
 const player = usePlayerStore();
@@ -106,6 +108,17 @@ function onSeekKeydown(e: KeyboardEvent): void {
     <span v-else class="text-[11px] text-base-content/50 font-mono tabular-nums">{{
       formatDuration(audio.currentTime.value)
     }}</span>
+    <button
+      data-testid="mini-always-on-top"
+      class="p-1.5 transition-colors"
+      :class="pinned ? 'text-primary-text' : 'text-base-content/50 hover:text-base-content'"
+      :title="$t('common.alwaysOnTop')"
+      :aria-label="$t('common.alwaysOnTop')"
+      :aria-pressed="pinned"
+      @click="emit('toggle-pin')"
+    >
+      <Pin v-if="pinned" :size="13" /><PinOff v-else :size="13" />
+    </button>
     <button
       class="p-1.5 text-base-content/50 hover:text-primary-text transition-colors"
       :title="$t('common.audioView')"

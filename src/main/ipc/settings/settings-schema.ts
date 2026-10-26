@@ -39,7 +39,7 @@ const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
 };
 
 const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
-  id: enumOf(['visualization', 'cover', 'progress', 'trackInfo', 'controls']),
+  id: enumOf(['visualization', 'cover', 'progress', 'trackInfo', 'controls', 'lyrics']),
   x: numClamped(0, 100),
   y: numClamped(0, 100),
   width: numClamped(1, 100),
@@ -60,7 +60,9 @@ const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
     'thin',
     'neon',
     'standard',
-    'compact'
+    'compact',
+    'solid',
+    'gradient'
   ])
 };
 
@@ -133,11 +135,22 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   audioPipPosition: enumOf(['bottom-right', 'bottom-left', 'top-right', 'top-left']),
   audioPipEdgePosition: enumOf(['top', 'bottom', 'left', 'right']),
   audioLayout: obj(AUDIO_LAYOUT_FIELDS),
-  previewAdblock: bool
+  previewAdblock: bool,
+  alwaysOnTop: bool
 };
 
 const VISUALIZATION_FIELDS: Record<string, Sanitizer> = {
-  mode: enumOf(['circle', 'bars', 'particles', 'wave', 'radial', 'spectrum', 'rings', 'none']),
+  mode: enumOf([
+    'splash',
+    'circle',
+    'bars',
+    'particles',
+    'wave',
+    'radial',
+    'spectrum',
+    'rings',
+    'none'
+  ]),
   primaryColor: hexStr,
   secondaryColor: hexStr,
   sensitivity: numClamped(0, 1),
@@ -152,6 +165,7 @@ const eqBands: Sanitizer = (v) => sanitizeEqBands(v);
 const PLAYBACK_FIELDS: Record<string, Sanitizer> = {
   normalization: bool,
   replayGain: bool,
+  replayGainMode: enumOf(['off', 'track', 'album']),
   gaplessPlayback: bool,
   autoPauseOnFocusLoss: bool,
   defaultVolume: numClamped(0, 1),

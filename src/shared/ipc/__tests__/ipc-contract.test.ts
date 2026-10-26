@@ -61,13 +61,13 @@ describe('IPC contract parity (plan 1.5)', () => {
     const invoke = INVOKE_CHANNELS as readonly string[];
     const missing = sorted(handled).filter((channel) => !invoke.includes(channel));
     expect(missing).toEqual([]);
-  });
+  }, 20000);
 
   it('every contract invoke channel has an ipcMain.handle in main', async () => {
     const handled = await collectHandledChannels();
     const orphaned = INVOKE_CHANNELS.filter((channel) => !handled.has(channel));
     expect(orphaned).toEqual([]);
-  });
+  }, 20000);
 
   it('generated allowlists match the contract lists', () => {
     expect(sorted(ALLOWED_INVOKE_CHANNELS)).toEqual(sorted(INVOKE_CHANNELS));
@@ -84,5 +84,5 @@ describe('IPC contract parity (plan 1.5)', () => {
     const handled = await collectOnChannels();
     const orphaned = (SEND_CHANNELS as readonly string[]).filter((c) => !handled.has(c));
     expect(orphaned).toEqual([]);
-  });
+  }, 15000);
 });

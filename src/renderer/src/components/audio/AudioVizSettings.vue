@@ -20,6 +20,7 @@ function commitHudOpacity() {
 }
 
 const modes: { value: VisualizationMode; label: string }[] = [
+  { value: 'splash', label: 'Splash' },
   { value: 'bars', label: 'Bars' },
   { value: 'spectrum', label: 'Spectrum' },
   { value: 'wave', label: 'Wave' },

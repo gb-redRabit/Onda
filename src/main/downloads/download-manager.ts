@@ -21,6 +21,7 @@ export {
   cancelDownloadJob,
   pauseDownloadJob,
   resumeDownloadJob,
+  retryCoverProcessing,
   pauseAllDownloads,
   resumeAllDownloads,
   moveDownloadToFront,

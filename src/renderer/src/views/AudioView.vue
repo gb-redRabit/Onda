@@ -15,6 +15,7 @@ import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
 import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 import { useResumePrompt } from '@renderer/composables/useResumePrompt';
+import { useAlwaysOnTop } from '@renderer/composables/useAlwaysOnTop';
 
 // Edytor układu (750+ linii) renderuje się dopiero, gdy użytkownik go otworzy — leniwie.
 const AudioLayoutEditor = defineAsyncComponent(
@@ -24,6 +25,7 @@ const AudioLayoutEditor = defineAsyncComponent(
 const player = usePlayerStore();
 const settings = useSettingsStore();
 const pluginsStore = usePluginsStore();
+const { pinned, togglePin } = useAlwaysOnTop();
 
 function cycleViz() {
   settings.updatePlayback({
@@ -49,7 +51,10 @@ useDialogFocus(layoutEditorRef, {
 const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAudioImmersive({
   isDragging: () => !!dragging.value,
   onDragMove: (e) => onDragMouseMove(e),
-  showLayoutEditor
+  showLayoutEditor,
+  // Panel ustawień wizualizacji trzyma HUD: dopóki jest otwarty, przyciski (w tym
+  // jego własny przełącznik) pozostają widoczne i klikalne.
+  holdUI: () => showVizSettings.value
 });
 
 // Stan przeciągania
@@ -84,7 +89,7 @@ const {
   <div
     :ref="setViewEl"
     data-testid="audio-view"
-    class="h-full w-full bg-base-200/(--glass-alpha) select-none"
+    class="relative h-full w-full bg-base-200/(--glass-alpha) select-none"
     @mousemove="onMouseMove"
     @mouseup="onDragMouseUp"
   >
@@ -147,21 +152,25 @@ const {
       :is-fullscreen="isFullscreen"
       :viz-mode="settings.playback.visualization.mode"
       :commands="pluginCommands"
+      :pinned="pinned"
       @cycle-viz="cycleViz"
       @toggle-fullscreen="toggleFullscreen"
+      @toggle-pin="togglePin"
       @run-command="pluginsStore.dispatchCommand($event)"
     />
 
-    <!-- ─── Panel ustawień wizualizacji (teleportowany poza kontekst stackowania wiz.) ─── -->
-    <Teleport to="body">
-      <div
-        v-if="showVizSettings && !showLayoutEditor"
-        class="fixed top-12 right-4 z-80 transition-opacity"
-        :class="{ 'opacity-0 pointer-events-none': !showUI, 'opacity-100': showUI }"
-      >
-        <AudioVizSettings />
-      </div>
-    </Teleport>
+    <!-- ─── Panel ustawień wizualizacji ─── -->
+    <!-- Renderowany wewnątrz widoku (nie teleportowany do body): dzięki temu jest
+         widoczny w pełnym ekranie (element fullscreen nie wyświetla treści poza
+         sobą) i nie „przeskakuje" nad przycisk go otwierający — panel i pasek HUD
+         używają tego samego układu współrzędnych. -->
+    <div
+      v-if="showVizSettings && !showLayoutEditor"
+      class="absolute top-12 right-4 z-80 transition-opacity"
+      :class="{ 'opacity-0 pointer-events-none': !showUI, 'opacity-100': showUI }"
+    >
+      <AudioVizSettings />
+    </div>
 
     <ResumePrompt
       v-if="player.resumePrompt"

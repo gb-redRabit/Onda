@@ -144,7 +144,7 @@ export function persistThrottled(job: Job): void {
   );
 }
 
-type DownloadCompletedHandler = (channelId: string, videoId: string) => void;
+type DownloadCompletedHandler = (channelId: string, videoId: string, outputPath?: string) => void;
 let onDownloadCompleted: DownloadCompletedHandler | null = null;
 
 // Wywoływane, gdy ukończone pobieranie niesie zadanie źródła mediów (sourceId +
@@ -179,7 +179,8 @@ export function setProviderItemDownloadedHandler(cb: ProviderItemDownloadedHandl
 
 export function reportCompleted(job: Job): void {
   try {
-    if (job.channelId && job.videoId) onDownloadCompleted?.(job.channelId, job.videoId);
+    if (job.channelId && job.videoId)
+      onDownloadCompleted?.(job.channelId, job.videoId, job.outputPath);
   } catch {
     // Niekrytyczne: następne sprawdzenie ponownie zakolejkowałoby wideo.
   }

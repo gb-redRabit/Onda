@@ -7,12 +7,13 @@ const ROOT = process.cwd();
 const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
 
 describe('GLASS_WINDOW_OPTS', () => {
-  it('describes a frameless transparent window', () => {
+  it('describes a frameless, snap-friendly window', () => {
     expect(GLASS_WINDOW_OPTS.frame).toBe(false);
     expect(GLASS_WINDOW_OPTS.titleBarStyle).toBe('hidden');
-    expect(GLASS_WINDOW_OPTS.hasShadow).toBe(false);
-    expect(GLASS_WINDOW_OPTS.transparent).toBe(true);
-    expect(GLASS_WINDOW_OPTS.backgroundColor).toBe('#00000000');
+    // Windows nie robi Aero Snap dla okien warstwowych (transparent: true).
+    expect(GLASS_WINDOW_OPTS.transparent).toBe(false);
+    expect(GLASS_WINDOW_OPTS.hasShadow).toBe(true);
+    expect(GLASS_WINDOW_OPTS.backgroundColor).toBeTruthy();
   });
 });
 

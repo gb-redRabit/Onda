@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -6,6 +6,8 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { getAllTracksIndexed } from '@renderer/utils/libraryIndex';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
+import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import LibraryToolbar from '@renderer/components/library/LibraryToolbar.vue';
 import LibraryHeader from '@renderer/components/library/LibraryHeader.vue';
 import LibraryTabBar from '@renderer/components/library/LibraryTabBar.vue';
@@ -22,11 +24,12 @@ import {
 } from '@renderer/utils/libraryView';
 import { isTabId, buildLibraryTabs, type TabId } from '@renderer/utils/libraryTabs';
 import { SMART_FOLDERS } from '@renderer/utils/smartFolders';
+import { useSmartPlaylists } from '@renderer/stores/smart-playlists';
 import { readString, writeString, readStringArray, writeJson } from '@renderer/utils/localStore';
 import { clonePlain } from '@renderer/utils/clone';
 import { shuffled } from '@renderer/utils/shuffle';
 
-// Modale montowane tylko na żądanie — leniwie, żeby chunk Biblioteki pozostał lekki (3.5).
+// Modale montowane tylko na ĹĽÄ…danie â€” leniwie, ĹĽeby chunk Biblioteki pozostaĹ‚ lekki (3.5).
 const TrackTagEditor = defineAsyncComponent(
   () => import('@renderer/components/library/TrackTagEditor.vue')
 );
@@ -83,6 +86,8 @@ const { t } = useI18n();
 const library = useLibraryStore();
 const settings = useSettingsStore();
 const player = usePlayerStore();
+const ui = useUIStore();
+const smartPlaylists = useSmartPlaylists();
 
 const {
   query,
@@ -101,7 +106,7 @@ const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEd
 );
 const mbInitialQuery = ref('');
 const mbBatchTracks = ref<typeof library.tracks | undefined>(undefined);
-// 8.9 — odbierz query z menu kontekstowego (track → MusicBrainz)
+// 8.9 â€” odbierz query z menu kontekstowego (track â†’ MusicBrainz)
 function onMbEvent(e: Event) {
   const ce = e as CustomEvent<{
     query?: string;
@@ -114,10 +119,34 @@ function onMbEvent(e: Event) {
   else if (ce.detail?.batchTracks?.[0]) editingTrack.value = ce.detail.batchTracks[0];
   showingMBLookup.value = true;
 }
-onMounted(() => window.addEventListener('onda:openMusicbrainz', onMbEvent));
+onMounted(() => {
+  window.addEventListener('onda:openMusicbrainz', onMbEvent);
+  void smartPlaylists.ensureLoaded();
+});
 onUnmounted(() => window.removeEventListener('onda:openMusicbrainz', onMbEvent));
 
-// Zakładki — domyślnie przegląd (Minimal Spotify)
+// Upuszczenie plikĂłw na BibliotekÄ™ dodaje je do biblioteki (a nie odtwarza).
+// Globalny drop z `App.vue` widzi `defaultPrevented` i nie otwiera playera.
+async function onLibraryDrop(e: DragEvent): Promise<void> {
+  e.preventDefault();
+  const paths = getDroppedFilePaths(e.dataTransfer);
+  if (paths.length === 0) return;
+  try {
+    const res = await window.api?.invoke('library:addFiles', paths);
+    if (!res) return;
+    if (res.error) {
+      ui.notify('error', t('library.dropError', { error: res.error }));
+    } else if (res.added === 0) {
+      ui.notify('info', t('library.dropNone'));
+    } else {
+      ui.notify('success', t('library.dropAdded', { added: res.added, skipped: res.skipped }));
+    }
+  } catch (err) {
+    ui.notify('error', t('library.dropError', { error: String(err) }));
+  }
+}
+
+// ZakĹ‚adki â€” domyĹ›lnie przeglÄ…d (Minimal Spotify)
 const route = useRoute();
 const savedTab = readString('onda.libraryTab');
 const storedTab: TabId = isTabId(route.query.tab)
@@ -127,7 +156,7 @@ const storedTab: TabId = isTabId(route.query.tab)
     : 'overview';
 const tab = ref<TabId>(storedTab);
 watch(tab, (v) => writeString('onda.libraryTab', v));
-// Nawigacja z innych widoków (np. Pobrane "w bibliotece") przekazuje ?tab=… .
+// Nawigacja z innych widokĂłw (np. Pobrane "w bibliotece") przekazuje ?tab=â€¦ .
 watch(
   () => route.query.tab,
   (q) => {
@@ -141,7 +170,7 @@ function setViewMode(mode: 'list' | 'grid') {
   settings.updateLibrary({ viewModes });
 }
 
-// Szybkie filtry + sortowanie w stylu Spotify (dla zakładki utworów)
+// Szybkie filtry + sortowanie w stylu Spotify (dla zakĹ‚adki utworĂłw)
 const chip = ref<ChipId>('all');
 const sortKey = ref<SortKey>('added');
 const sortDir = ref<'asc' | 'desc'>('desc');
@@ -156,11 +185,11 @@ const tabs = computed(() =>
     artists: library.artists.length,
     albums: library.albums.length,
     playlists: library.playlists.length,
-    smart: SMART_FOLDERS.length
+    smart: SMART_FOLDERS.length + smartPlaylists.smartPlaylists.length
   })
 );
 
-// Dynamiczne zwijanie zakładek znajduje się w LibraryTabBar (plan 6.3).
+// Dynamiczne zwijanie zakĹ‚adek znajduje siÄ™ w LibraryTabBar (plan 6.3).
 
 const chips = computed(() => [
   { id: 'all' as const, label: t('library.chipAll') },
@@ -193,7 +222,7 @@ function handleOverviewShowAll(section: string) {
     sortDir.value = 'desc';
   } else if (section === 'random') {
     chip.value = 'all';
-    // tasowanie obsługuje sam przegląd
+    // tasowanie obsĹ‚uguje sam przeglÄ…d
   }
   tab.value = 'tracks';
 }
@@ -250,7 +279,7 @@ function navigateToFolder(path: string) {
   query.value = path.split(/[\\/]/).pop() || '';
   const set = new Set<string>(readStringArray('onda.libraryExpanded'));
   set.add(path);
-  // dodaj też przodków żeby drzewo było rozwinięte do pliku
+  // dodaj teĹĽ przodkĂłw ĹĽeby drzewo byĹ‚o rozwiniÄ™te do pliku
   let cur = path;
   while (cur.includes('/') || cur.includes('\\')) {
     const idx = Math.max(cur.lastIndexOf('/'), cur.lastIndexOf('\\'));
@@ -267,8 +296,13 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
 </script>
 
 <template>
-  <div data-testid="library-view" class="flex flex-col h-full">
-    <!-- Przyklejony szklany nagłówek — Minimal Spotify -->
+  <div
+    data-testid="library-view"
+    class="flex flex-col h-full"
+    @dragover.prevent
+    @drop.prevent="onLibraryDrop"
+  >
+    <!-- Przyklejony szklany nagĹ‚Ăłwek â€” Minimal Spotify -->
     <div class="ui-page-header sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
       <div class="px-4 pt-4 pb-3">
         <LibraryHeader
@@ -279,7 +313,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
           @rescan="library.scanFolders()"
         />
 
-        <!-- Tab bar — jedna linia, reaguje na szerokość: flex-1 + napisy chowane -->
+        <!-- Tab bar â€” jedna linia, reaguje na szerokoĹ›Ä‡: flex-1 + napisy chowane -->
         <LibraryTabBar v-model="tab" :tabs="tabs" />
 
         <LibraryToolbar
@@ -295,7 +329,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
       </div>
     </div>
 
-    <!-- Zawartość -->
+    <!-- ZawartoĹ›Ä‡ -->
     <div v-if="library.isLoading && !library.isLoaded" class="flex-1 p-4 space-y-3">
       <div
         v-for="i in 6"

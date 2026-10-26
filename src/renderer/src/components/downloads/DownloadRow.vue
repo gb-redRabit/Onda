@@ -9,6 +9,7 @@ import {
   LogIn,
   Pause,
   RefreshCw,
+  RotateCcw,
   XCircle
 } from '@lucide/vue';
 import {
@@ -20,7 +21,7 @@ import type { DownloadTask } from '@renderer/types/online';
 import DownloadRowActions from './DownloadRowActions.vue';
 
 defineProps<{ task: DownloadTask }>();
-const emit = defineEmits<{ play: []; editMeta: []; openLibrary: [] }>();
+const emit = defineEmits<{ play: []; editMeta: []; openLibrary: []; retryCover: [] }>();
 
 const { t } = useI18n();
 const { openMenu } = useDownloadsContextMenu();
@@ -185,11 +186,27 @@ const colors = {
         {{ t('downloads.login') }}
       </button>
 
+      <button
+        v-if="task.coverStatus === 'error'"
+        type="button"
+        data-testid="download-retry-cover"
+        class="fx-noise text-[11px] shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-field hover:bg-base-content/10 transition-colors"
+        :class="coverStatusClass(task)"
+        :title="
+          task.coverError
+            ? `${task.coverError} — ${t('downloads.coverRetry')}`
+            : t('downloads.coverRetry')
+        "
+        :aria-label="t('downloads.coverRetry')"
+        @click="emit('retryCover')"
+      >
+        <RotateCcw :size="10" />
+        {{ t('downloads.coverStatusError') }}
+      </button>
       <span
-        v-if="coverStatusKey(task)"
+        v-else-if="coverStatusKey(task)"
         class="text-[11px] shrink-0 flex items-center gap-1"
         :class="coverStatusClass(task)"
-        :title="task.coverStatus === 'error' && task.coverError ? task.coverError : undefined"
       >
         <RefreshCw v-if="task.coverStatus === 'fetching'" :size="10" class="animate-spin" />
         {{ t(coverStatusKey(task)) }}

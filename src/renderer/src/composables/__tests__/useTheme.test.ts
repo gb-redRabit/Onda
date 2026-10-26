@@ -1,6 +1,7 @@
 import { nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useTheme } from '../useTheme';
+import { resolveThemeAppearance } from '@shared/builtin-themes';
 import { DEFAULT_APPEARANCE } from '@renderer/utils/constants';
 import type { AppearanceSettings } from '@renderer/types/settings';
 
@@ -27,18 +28,55 @@ describe('useTheme window material', () => {
     window.api.invoke = invoke as typeof window.api.invoke;
     const theme = useTheme(appearance);
 
+    const materialCalls = () =>
+      invoke.mock.calls.filter(([channel]) => channel === 'app:setBackgroundMaterial');
+
     theme.applyTheme();
-    expect(invoke).toHaveBeenLastCalledWith('app:setBackgroundMaterial', 'acrylic');
-    const initialCalls = invoke.mock.calls.length;
+    expect(materialCalls()).toEqual([['app:setBackgroundMaterial', 'acrylic']]);
+    // Natywne obramowanie okna idzie za kolorem ramki motywu.
+    expect(invoke.mock.calls).toContainEqual([
+      'window:setBorderColor',
+      resolveThemeAppearance({ ...DEFAULT_APPEARANCE, glassAlpha: 70 }).colors.base300
+    ]);
 
     appearance.value.glassAlpha = 35;
     await flushThemeFrame();
-    expect(invoke).toHaveBeenCalledTimes(initialCalls);
+    expect(materialCalls()).toHaveLength(1);
 
     appearance.value.glassAlpha = 100;
     await flushThemeFrame();
-    expect(invoke).toHaveBeenLastCalledWith('app:setBackgroundMaterial', 'auto');
-    expect(invoke).toHaveBeenCalledTimes(initialCalls + 1);
+    expect(materialCalls()).toEqual([
+      ['app:setBackgroundMaterial', 'acrylic'],
+      ['app:setBackgroundMaterial', 'auto']
+    ]);
+  });
+
+  it('asks for square window corners at radiusBox 0 and rounded above it', async () => {
+    const appearance = ref<AppearanceSettings>({
+      ...DEFAULT_APPEARANCE,
+      glassAlpha: 100,
+      geometry: { radiusBox: 0 }
+    });
+    const invoke = vi.fn().mockResolvedValue(true);
+    window.api.invoke = invoke as typeof window.api.invoke;
+    const theme = useTheme(appearance);
+    const cornerCalls = () =>
+      invoke.mock.calls.filter(([channel]) => channel === 'window:setRoundedCorners');
+
+    theme.applyTheme();
+    expect(cornerCalls()).toEqual([['window:setRoundedCorners', false]]);
+    // Nieprzezroczyste okno: natywna krawędź ma kolor tła (znika).
+    expect(invoke.mock.calls).toContainEqual([
+      'window:setBorderColor',
+      resolveThemeAppearance({ ...DEFAULT_APPEARANCE, glassAlpha: 100 }).colors.base200
+    ]);
+
+    appearance.value.geometry = { ...appearance.value.geometry, radiusBox: 10 };
+    await flushThemeFrame();
+    expect(cornerCalls()).toEqual([
+      ['window:setRoundedCorners', false],
+      ['window:setRoundedCorners', true]
+    ]);
   });
 
   it('repaints once when a theme import changes several fields at once', async () => {

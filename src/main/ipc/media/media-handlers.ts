@@ -18,6 +18,7 @@ import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
 import { resolveBin } from '../../binaries';
 import { getThumbnail, batchThumbnails } from './media-thumbnails';
+import { getWaveform } from './waveform';
 import {
   transcodeAudioChunk,
   transcodeAudio,
@@ -387,6 +388,21 @@ export function registerMediaHandlers(): void {
       return 0;
     }
   });
+
+  ipcMain.handle(
+    'media:getWaveform',
+    async (_event, filePath: unknown, durationSec?: unknown): Promise<number[]> => {
+      if (!isSafeAbsolutePath(filePath)) return [];
+      const duration =
+        typeof durationSec === 'number' && Number.isFinite(durationSec) ? durationSec : 0;
+      try {
+        return await getWaveform(filePath, duration);
+      } catch (err) {
+        logger.warn('media', `media:getWaveform failed for ${filePath}: ${err}`);
+        return [];
+      }
+    }
+  );
 
   // Wsadowe pobieranie długości (plan 1.7): masowe kolejkowanie kiedyś odpalało jedno wywołanie IPC
   // na utwór. Ograniczona współbieżność nie pozwala procesowi main uruchamiać setek

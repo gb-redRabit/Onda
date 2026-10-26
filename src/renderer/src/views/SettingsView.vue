@@ -20,6 +20,7 @@ import SettingsRail from '@renderer/components/settings/SettingsRail.vue';
 import { SETTINGS_TAB_COMPONENTS } from '@renderer/components/settings/lazySettingsTabs';
 import { SETTINGS_SECTIONS, SETTINGS_TABS } from '@renderer/utils/settingsNav';
 import { SETTINGS_CATALOG, type SettingsCatalogEntry } from '@renderer/utils/settingsCatalog';
+import { highlightSettingsElement, waitForSettingElement } from '@renderer/utils/settingsHighlight';
 import { bindSettingsStore } from '@renderer/utils/settingsDefaults';
 import { useSettingsNav } from '@renderer/composables/useSettingsNav';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
@@ -86,8 +87,6 @@ function onMenuKeydown(e: KeyboardEvent): void {
     menuOpen.value = false;
   }
 }
-const highlightedId = ref<string | null>(null);
-
 // ---- Wyszukiwanie -----------------------------------------------------------
 // Dopasowuje etykiety/opisy zakładek oraz katalog pól (etykieta + słowa kluczowe),
 // więc "proxy" lub "głośność" przeskakuje prosto do pola zamiast do karty.
@@ -127,17 +126,19 @@ const hits = computed<SearchHit[]>(() => {
   return [...fieldHits.slice(0, 24), ...tabHits.slice(0, 8)];
 });
 
+// Podświetlenie celu przeskoku realizuje `utils/settingsHighlight.ts` (klasa CSS
+// nadawana imperatywnie na element o `id` wpisu), bo zakładki mają wielu korzeni
+// i prop nie byłby dziedziczony przez `<component :is>`.
+
 async function openHit(hit: SearchHit): Promise<void> {
   search.value = '';
   await openTab(hit.tab);
   if (hit.kind === 'field') {
-    await nextTick();
-    const el = document.getElementById(hit.id);
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    highlightedId.value = hit.id;
-    window.setTimeout(() => {
-      if (highlightedId.value === hit.id) highlightedId.value = null;
-    }, 1600);
+    const el = await waitForSettingElement(hit.id);
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      highlightSettingsElement(el);
+    }
   }
 }
 
@@ -434,7 +435,7 @@ onBeforeUnmount(() => {
             </div>
           </header>
           <div class="space-y-6">
-            <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" :highlight="highlightedId" />
+            <component :is="SETTINGS_TAB_COMPONENTS[activeTab ?? '']" />
           </div>
         </div>
       </main>

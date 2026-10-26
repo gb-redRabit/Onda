@@ -19,6 +19,7 @@ import {
   persist
 } from './download-state';
 import { pump } from './download-runner';
+import { runCoverStep } from './download-post-process';
 import { killDownloadProcess } from './kill-download-process';
 import { trustedPrivateNetworkOrigins, restoreDownloadQueue } from './download-queue-restore';
 
@@ -247,6 +248,30 @@ export function resumeDownloadJob(id: string): boolean {
   queueOrder.push(id);
   void pump();
   return true;
+}
+
+// Ponownie uruchamia krok okładki dla już ukończonego zadania, bez ponownego
+// pobierania pliku. Obsługuje okładki custom/frame/clip (miniaturę osadza yt-dlp
+// w trakcie pobierania, więc nie da się jej ponowić osobno).
+export async function retryCoverProcessing(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  const job = jobs.get(id);
+  if (!job) return { success: false, error: 'task not found' };
+  if (job.status !== 'completed' || !job.outputPath) {
+    return { success: false, error: 'task not completed' };
+  }
+  const cover = job.cover;
+  if (!cover || cover.type === 'none' || cover.type === 'thumbnail') {
+    return { success: false, error: 'cover cannot be retried' };
+  }
+  // Stan `fetching` jest emitowany przez `runCoverStep` → `persist`, więc UI
+  // pokazuje spinner bez osobnego broadcastu.
+  job.coverError = undefined;
+  await runCoverStep(job);
+  return job.coverStatus === 'error'
+    ? { success: false, error: job.coverError }
+    : { success: true };
 }
 
 // Wstrzymuje całą kolejkę: zadania oczekujące opuszczają kolejkę, aktywne pobrania są

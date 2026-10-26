@@ -11,7 +11,9 @@ import {
   attachMediaElementListeners,
   cleanupAudioElement,
   computeTrackNormalization,
-  handleStreamSourceError
+  handleStreamSourceError,
+  resolveReplayGainRatio,
+  type ReplayGainMode
 } from './audioEngineHelpers';
 
 export interface AudioEngineStateProvider {
@@ -34,7 +36,7 @@ class AudioEngine {
   private currentVolume = 1;
   private isMuted = false;
   private desiredPlay = false;
-  private normalizationEnabled = false;
+  private replayGainMode: ReplayGainMode = 'off';
   private rememberPosition = true;
   private currentTrackPath: string | null = null;
   private currentTrackType: MediaFile['type'] | null = null;
@@ -55,8 +57,16 @@ class AudioEngine {
     this.stateProvider = provider;
   }
 
-  setNormalizationEnabled(enabled: boolean): void {
-    this.normalizationEnabled = enabled;
+  setReplayGainMode(mode: ReplayGainMode): void {
+    this.replayGainMode = mode;
+    // Zmiana trybu (np. track -> album) musi działać od razu na bieżącym utworze,
+    // a nie dopiero po następnym `loadTrack`.
+    const track = this.stateProvider?.getCurrentTrack?.() ?? null;
+    this.normalization = computeTrackNormalization(
+      mode !== 'off',
+      resolveReplayGainRatio(mode, track?.metadata)
+    );
+    this.applyVolume();
   }
 
   setRememberPosition(enabled: boolean): void {
@@ -276,8 +286,11 @@ class AudioEngine {
 
     // Normalizacja głośności / ReplayGain: zastosuj współczynnik ReplayGain utworu,
     // gdy którekolwiek ustawienie jest włączone, a metadane niosą wartość gain.
-    const enableNorm = options?.enableNormalization ?? this.normalizationEnabled;
-    this.normalization = computeTrackNormalization(enableNorm, track.metadata?.replayGainTrackGain);
+    const enableNorm = options?.enableNormalization ?? this.replayGainMode !== 'off';
+    this.normalization = computeTrackNormalization(
+      enableNorm,
+      resolveReplayGainRatio(this.replayGainMode, track.metadata)
+    );
 
     this.loadSource(toMediaServerUrl(track.path));
 

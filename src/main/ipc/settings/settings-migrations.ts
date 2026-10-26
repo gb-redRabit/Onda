@@ -31,10 +31,41 @@ export function pipElementArray(v: unknown): unknown | undefined {
   return out;
 }
 
+const LYRICS_LAYOUT_ELEMENT = {
+  id: 'lyrics',
+  x: 8,
+  y: 47,
+  width: 84,
+  height: 17,
+  opacity: 100,
+  layer: 4,
+  visible: true
+};
+
+// Starsze zapisane układy audio nie mają elementu tekstu. Dodajemy go raz przy
+// migracji, żeby nowa funkcja była widoczna bez ręcznego dodawania w edytorze.
+function ensureLyricsLayoutElement(out: Record<string, unknown>): Record<string, unknown> {
+  const layout = out['audioLayout'];
+  if (!isPlainObject(layout)) return out;
+  const elements = layout['elements'];
+  if (!Array.isArray(elements)) return out;
+  if (elements.some((el) => isPlainObject(el) && el['id'] === 'lyrics')) return out;
+  const preset = layout['preset'];
+  const visible = preset !== 'compact' && preset !== 'stacked' && preset !== 'split';
+  return {
+    ...out,
+    audioLayout: {
+      ...layout,
+      elements: [...elements, { ...LYRICS_LAYOUT_ELEMENT, visible }]
+    }
+  };
+}
+
 export function migrateAppearance(v: unknown): unknown {
   if (!isPlainObject(v)) return v;
   const src = v as Record<string, unknown>;
   let out: Record<string, unknown> = src;
+  out = ensureLyricsLayoutElement(out);
   const acc = src['accentColor'];
   const cc = src['customColors'];
   if (
@@ -95,6 +126,19 @@ export function migrateSettingsPayload(v: unknown): Record<string, unknown> {
 
   // Migracje dla wersji < SETTINGS_VERSION idą tutaj. Appearance jest już
   // aktualizowane per pole przez `migrateAppearance` w schemacie.
+
+  // Stare dwa przełączniki (`normalization`/`replayGain`) robiły to samo: gain per
+  // utwór. Nowy model ma jeden tryb, więc mapujemy każdą włączoną flagę na 'track'.
+  const playback = out['playback'];
+  if (
+    isPlainObject(playback) &&
+    !('replayGainMode' in playback) &&
+    ('replayGain' in playback || 'normalization' in playback)
+  ) {
+    const legacy = playback as Record<string, unknown>;
+    const enabled = legacy['replayGain'] === true || legacy['normalization'] === true;
+    out['playback'] = { ...legacy, replayGainMode: enabled ? 'track' : 'off' };
+  }
 
   out['version'] = SETTINGS_VERSION;
   return out;

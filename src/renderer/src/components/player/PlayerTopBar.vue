@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ArrowLeft, Maximize2, PictureInPicture } from '@lucide/vue';
+import { ArrowLeft, Maximize2, PictureInPicture, Pin, PinOff } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 
 defineProps<{
   showControls: boolean;
   track: MediaFile | null;
+  pinned: boolean;
 }>();
 
 const emit = defineEmits<{
   back: [];
   pip: [];
   fullscreen: [];
+  'toggle-pin': [];
 }>();
 </script>
 
@@ -32,6 +34,21 @@ const emit = defineEmits<{
       </p>
       <p class="text-neutral-content/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
     </div>
+    <button
+      data-testid="player-always-on-top"
+      class="fx-noise p-2 fx-depth rounded-field mr-2 transition-colors"
+      :class="
+        pinned
+          ? 'text-primary-text bg-primary/20'
+          : 'bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content'
+      "
+      :title="$t('common.alwaysOnTop')"
+      :aria-label="$t('common.alwaysOnTop')"
+      :aria-pressed="pinned"
+      @click="emit('toggle-pin')"
+    >
+      <Pin v-if="pinned" :size="18" /><PinOff v-else :size="18" />
+    </button>
     <button
       data-testid="player-pip"
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 mr-2 hover:bg-neutral-content/20 text-neutral-content transition-colors"

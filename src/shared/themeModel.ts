@@ -156,6 +156,10 @@ export function buildEngineVars(t: SemanticTheme, fontSize: number): Record<stri
   }
   const glassOn = t.glassAlpha < 100;
   vars['--radius-box'] = glassOn ? '0px' : `${t.geometry.radiusBox}px`;
+  // Zewnętrzne narożniki okna rysuje DWM (stały promień systemowy ~8 DIP), a nie
+  // `radiusBox` — inaczej obramowanie aplikacji nie pokrywa się z krawędzią okna.
+  // 0 nadal oznacza kwadrat (okno dostaje wtedy prostokątny region).
+  vars['--window-radius'] = glassOn || t.geometry.radiusBox === 0 ? '0px' : '8px';
   vars['--radius-field'] = `${t.geometry.radiusField}px`;
   vars['--radius-selector'] = `${t.geometry.radiusSelector}px`;
   vars['--size-field'] = FIELD_SIZE_PRESETS[t.geometry.sizeField - 1];

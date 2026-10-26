@@ -1,6 +1,9 @@
 import { audioEvents } from '@renderer/utils/audioEvents';
 import { logger } from '@shared/logger';
+import type { MediaMetadata } from '@shared/types/media';
 import { toMediaStreamUrl } from '@renderer/utils/mediaUrl';
+
+export type ReplayGainMode = 'off' | 'track' | 'album';
 
 export interface MediaListenerDeps {
   onEnded(): void;
@@ -70,6 +73,19 @@ export function computeTrackNormalization(enable: boolean, ratio: number | undef
   return enable && typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
     ? Math.min(4, Math.max(0.25, ratio))
     : 1;
+}
+
+// Wybór wartości wg trybu. Album spada do track, gdy brak album gainu (i odwrotnie
+// w trybie track) — plik z jednym z tagów nadal jest użyteczny.
+export function resolveReplayGainRatio(
+  mode: ReplayGainMode,
+  metadata: MediaMetadata | undefined
+): number | undefined {
+  if (mode === 'off' || !metadata) return undefined;
+  if (mode === 'album') {
+    return metadata.replayGainAlbumGain ?? metadata.replayGainTrackGain;
+  }
+  return metadata.replayGainTrackGain ?? metadata.replayGainAlbumGain;
 }
 
 export function cleanupAudioElement(el: HTMLAudioElement | null): void {

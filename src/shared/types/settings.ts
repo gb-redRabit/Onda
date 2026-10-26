@@ -130,6 +130,8 @@ export interface AppearanceSettings {
   animations: boolean;
   /** Blokowanie reklam w osadzonych playerach (tylko sesja podglądu Źródeł). */
   previewAdblock: boolean;
+  /** Przypięcie głównego okna ponad innymi aplikacjami (Widok odtwarzacza / mini-player). */
+  alwaysOnTop: boolean;
   audioPipDock: AudioPipDock;
   audioPipAutoShow: boolean;
   audioPipAutoHide: boolean;
@@ -147,7 +149,7 @@ export interface AppearanceSettings {
 }
 
 export type AudioLayoutElementId =
-  'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls';
+  'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls' | 'lyrics';
 
 export type AudioLayoutPreset = 'compact' | 'stacked' | 'split' | 'full' | 'immersive';
 
@@ -190,7 +192,7 @@ export interface AudioLayoutSettings {
 }
 
 export type VisualizationMode =
-  'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
+  'splash' | 'circle' | 'bars' | 'particles' | 'wave' | 'radial' | 'spectrum' | 'rings' | 'none';
 
 interface VisualizationSettings {
   mode: VisualizationMode;
@@ -202,8 +204,12 @@ interface VisualizationSettings {
 }
 
 export interface PlaybackSettings {
+  /** @deprecated Migracja: zastąpione przez `replayGainMode`. */
   normalization: boolean;
+  /** @deprecated Migracja: zastąpione przez `replayGainMode`. */
   replayGain: boolean;
+  /** ReplayGain: wyłączony, per utwór albo per album (z tagów lub analizy). */
+  replayGainMode: 'off' | 'track' | 'album';
   gaplessPlayback: boolean;
   autoPauseOnFocusLoss: boolean;
   defaultVolume: number;

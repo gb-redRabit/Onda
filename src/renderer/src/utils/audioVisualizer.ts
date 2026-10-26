@@ -4,6 +4,7 @@ import type { VisualizationMode } from '@renderer/types/settings';
 // `components/audio/AudioVisualizer.vue` (plan 2.8).
 
 export const VIZ_CYCLES: VisualizationMode[] = [
+  'splash',
   'bars',
   'spectrum',
   'wave',

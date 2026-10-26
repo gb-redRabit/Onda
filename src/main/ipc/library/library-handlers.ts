@@ -1,30 +1,58 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { stat, writeFile } from 'fs/promises';
-import { isAbsolute, basename, normalize, sep } from 'path';
+import { dirname, isAbsolute, basename, normalize, sep } from 'path';
 import { tmpdir } from 'os';
 import type { MediaFile, Playlist } from '../../../shared/types/media';
+import type { SmartPlaylist } from '../../../shared/types/smart-playlist';
 import { getStore } from '../cover/cover-cache';
 import { logger } from '../../../shared/logger';
-import { setAllowedRoots } from '../../media/media-server';
-import { isSensitivePath } from '../../path-policy';
+import { addAllowedRoot, setAllowedRoots } from '../../media/media-server';
+import { isProtectedPath, isSensitivePath } from '../../path-policy';
 import {
   scanDir,
+  scanFilePaths,
   classifyFolderType,
   filterFilesForFolderType,
   createScanBudget
 } from './library-scan';
 import { broadcastToAllWindows } from '../../utils/broadcast';
 import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
-import { loadLibraryScanned, setLibraryScanned, updateLibraryStats } from './library-store';
+import {
+  applyLoudnessUpdates,
+  flushLibraryScanned,
+  loadLibraryScanned,
+  setLibraryScanned,
+  updateLibraryStats
+} from './library-store';
+import { analyzeLibraryLoudness } from './loudness-analysis';
+import { mergeAddedFiles } from './library-add';
 
 const MAX_SCAN_FOLDERS = 100;
 const MAX_SCANNED_FILES = 50000;
 
 let activeScanController: AbortController | null = null;
+let activeLoudnessController: AbortController | null = null;
 let currentLibraryFolders: string[] = [];
 
 // Foldery/ścieżki przychodzące z renderera są niezaufane — zachowujemy tylko niepuste
 // ścieżki absolutne, deduplikujemy i ograniczamy liczbę.
+const MAX_ADDED_FILES = 2000;
+
+function sanitizeFilePaths(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of input) {
+    if (typeof item !== 'string') continue;
+    const p = item.trim();
+    if (!p || !isAbsolute(p) || seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+    if (out.length >= MAX_ADDED_FILES) break;
+  }
+  return out;
+}
+
 function sanitizeFolderPaths(input: unknown): string[] {
   if (!Array.isArray(input)) return [];
   const seen = new Set<string>();
@@ -177,6 +205,108 @@ export function registerLibraryHandlers(): void {
   ipcMain.handle('library:scanCancel', (): boolean => {
     activeScanController?.abort();
     return true;
+  });
+
+  ipcMain.handle('library:loudnessCancel', (): boolean => {
+    activeLoudnessController?.abort();
+    return true;
+  });
+
+  // Analiza głośności plików bez tagów ReplayGain. Długotrwała (dekoduje całe pliki),
+  // więc raportuje postęp i daje się anulować; nowe uruchomienie zastępuje poprzednie.
+  ipcMain.handle('library:analyzeLoudness', async (event) => {
+    const controller = new AbortController();
+    const previous = activeLoudnessController;
+    activeLoudnessController = controller;
+    previous?.abort();
+    try {
+      const data = await loadLibraryScanned();
+      if (!data) {
+        return {
+          analyzed: 0,
+          albums: 0,
+          failed: 0,
+          aborted: false,
+          truncated: false,
+          updated: 0
+        };
+      }
+      const { updates, summary } = await analyzeLibraryLoudness(
+        data.files,
+        controller.signal,
+        (progress) => {
+          if (!event.sender.isDestroyed()) {
+            event.sender.send('library:loudness:progress', progress);
+          }
+        }
+      );
+      const updated = applyLoudnessUpdates(updates);
+      if (updated > 0) {
+        await flushLibraryScanned();
+        broadcastToAllWindows('library:updated');
+      }
+      return { ...summary, updated };
+    } catch (err) {
+      logger.error('library', 'loudness analysis failed', err);
+      return {
+        analyzed: 0,
+        albums: 0,
+        failed: 0,
+        aborted: controller.signal.aborted,
+        truncated: false,
+        updated: 0,
+        error: err instanceof Error ? err.message : String(err)
+      };
+    } finally {
+      if (activeLoudnessController === controller) activeLoudnessController = null;
+    }
+  });
+
+  // Dodaje konkretne pliki (przeciągnięte z systemu) bez skanowania całych folderów.
+  // Duplikaty są pomijane, więc upuszczenie tego samego pliku nie tworzy drugiej pozycji.
+  ipcMain.handle('library:addFiles', async (_event, input: unknown) => {
+    const total = Array.isArray(input) ? input.length : 0;
+    const paths = sanitizeFilePaths(input);
+    if (paths.length === 0) return { added: 0, skipped: total, total };
+
+    try {
+      const data = (await loadLibraryScanned()) ?? { files: [], folderTypes: {} };
+      const existing = new Map(data.files.map((file) => [file.path, file]));
+
+      const usable: string[] = [];
+      for (const filePath of paths) {
+        try {
+          const s = await stat(filePath);
+          if (!s.isFile()) continue;
+          if (isProtectedPath(filePath) || isProtectedPath(dirname(filePath))) continue;
+          if (!isSystemTemp(filePath) && isSensitivePath(filePath)) continue;
+          usable.push(filePath);
+        } catch {
+          // plik zniknął między upuszczeniem a odczytem
+        }
+      }
+
+      const scanned = await scanFilePaths(usable, existing);
+      if (scanned.length === 0) return { added: 0, skipped: total, total };
+
+      const merged = mergeAddedFiles(data, scanned);
+      if (merged.added === 0) return { added: 0, skipped: total, total };
+
+      // Serwer mediów musi móc odczytać pliki spoza zapisanych folderów biblioteki.
+      await Promise.all(merged.dirs.map((dir) => addAllowedRoot(dir)));
+      setLibraryScanned({ files: merged.files, folderTypes: merged.folderTypes });
+      await flushLibraryScanned();
+      broadcastToAllWindows('library:updated');
+      return { added: merged.added, skipped: total - merged.added, total };
+    } catch (err) {
+      logger.error('library', 'addFiles failed', err);
+      return {
+        added: 0,
+        skipped: total,
+        total,
+        error: err instanceof Error ? err.message : String(err)
+      };
+    }
   });
 
   ipcMain.handle(
@@ -333,6 +463,45 @@ export function registerLibraryHandlers(): void {
       logger.error('library', 'savePlaylists failed', err);
     }
   });
+
+  function isValidSmartPlaylistArray(v: unknown): v is SmartPlaylist[] {
+    return (
+      Array.isArray(v) &&
+      v.every(
+        (item) =>
+          item &&
+          typeof item === 'object' &&
+          typeof (item as SmartPlaylist).id === 'string' &&
+          typeof (item as SmartPlaylist).name === 'string' &&
+          ((item as SmartPlaylist).match === 'all' || (item as SmartPlaylist).match === 'any') &&
+          Array.isArray((item as SmartPlaylist).rules)
+      )
+    );
+  }
+
+  ipcMain.handle('smartPlaylists:loadAll', async (): Promise<SmartPlaylist[]> => {
+    try {
+      const store = await getStore();
+      const raw = store.get('smartPlaylists', []);
+      return isValidSmartPlaylistArray(raw) ? raw : [];
+    } catch (err) {
+      logger.error('library', 'loadSmartPlaylists failed', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle(
+    'smartPlaylists:saveAll',
+    async (_event, playlists: SmartPlaylist[]): Promise<void> => {
+      if (!isValidSmartPlaylistArray(playlists)) return;
+      try {
+        const store = await getStore();
+        store.set('smartPlaylists', playlists);
+      } catch (err) {
+        logger.error('library', 'saveSmartPlaylists failed', err);
+      }
+    }
+  );
 
   // Eksportuje playlistę biblioteki jako plik M3U. Przez IPC nie przechodzą żadne sekrety —
   // wpisy utworów to zwykłe ścieżki plików rozwiązywane przez proces main.

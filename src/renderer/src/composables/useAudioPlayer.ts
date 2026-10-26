@@ -66,9 +66,7 @@ function ensureModule() {
     getVolume: () => player.volume,
     isPlaying: () => player.isPlaying
   });
-  audioEngine.setNormalizationEnabled(
-    settings.playback.replayGain || settings.playback.normalization
-  );
+  audioEngine.setReplayGainMode(settings.playback.replayGainMode ?? 'off');
   audioEngine.setRememberPosition(settings.playback.rememberPosition);
   // Zapisany korektor parametryczny: nałóż na store + silnik (graf zastosuje przy tworzeniu kontekstu).
   const savedEq = settings.playback.equalizerBands;
@@ -97,8 +95,8 @@ function ensureModule() {
 
   scope.run(() => {
     watch(
-      () => [settings.playback.replayGain, settings.playback.normalization],
-      ([rg, norm]) => audioEngine.setNormalizationEnabled(Boolean(rg || norm))
+      () => settings.playback.replayGainMode,
+      (mode) => audioEngine.setReplayGainMode(mode ?? 'off')
     );
     watch(
       () => settings.playback.rememberPosition,

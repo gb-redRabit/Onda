@@ -10,33 +10,11 @@ import { sha256File } from './hash-file';
 import { findSiblingSubtitleFiles, moveSubtitlesToFolder } from './subtitle-files';
 import { redactSecrets } from './error-classifier';
 
-// Pipeline po pobraniu (Faza 5/6): nadpisanie metadanych, przetwarzanie covera
-// i odświeżenie biblioteki. Wyodrębniony z `download-manager.ts` (plan 2.8).
-// Niepowodzenia są niekrytyczne — sam plik jest już gotowy.
-export async function postProcess(job: Job): Promise<void> {
+// Krok okładki potoku po pobraniu — wydzielony, aby „ponów okładkę" mógł uruchomić
+// dokładnie tę samą logikę bez ponownego pobierania pliku. Miniatury osadza yt-dlp
+// już podczas pobierania; custom/frame/clip są przetwarzane tutaj.
+export async function runCoverStep(job: Job): Promise<void> {
   const outputPath = job.outputPath || '';
-  // MP3 z SoundCloud to surowe strumienie progresywne — osadź tutaj
-  // title/artist/artwork zamiast pipeline'u metadanych/covera yt-dlp.
-  if (job.source?.mode === 'soundcloud' && outputPath && job.kind === 'audio') {
-    job.coverStatus = 'fetching';
-    persist(job);
-    const ok = await embedScMp3Tags(outputPath, {
-      title: job.title,
-      artist: job.metaOverride?.artist || job.channelTitle || '',
-      album: job.metaOverride?.album,
-      year: job.metaOverride?.year,
-      thumbnailUrl: job.thumbnail && /^https:\/\//i.test(job.thumbnail) ? job.thumbnail : undefined
-    });
-    job.coverStatus = ok ? 'embedded' : 'none';
-    persist(job);
-  }
-  if (outputPath && job.metaOverride && job.source?.mode !== 'soundcloud') {
-    try {
-      await applyMetadataOverride(outputPath, job.metaOverride);
-    } catch (e) {
-      logger.warn('downloads', `metadata override failed for ${job.id}`, e);
-    }
-  }
   if (
     outputPath &&
     job.kind === 'audio' &&
@@ -65,6 +43,36 @@ export async function postProcess(job: Job): Promise<void> {
     // yt-dlp zapisał obok pliku audio.
     if (outputPath) await removeThumbnailFiles(outputPath);
   }
+}
+
+// Pipeline po pobraniu (Faza 5/6): nadpisanie metadanych, przetwarzanie covera
+// i odświeżenie biblioteki. Wyodrębniony z `download-manager.ts` (plan 2.8).
+// Niepowodzenia są niekrytyczne — sam plik jest już gotowy.
+export async function postProcess(job: Job): Promise<void> {
+  const outputPath = job.outputPath || '';
+  // MP3 z SoundCloud to surowe strumienie progresywne — osadź tutaj
+  // title/artist/artwork zamiast pipeline'u metadanych/covera yt-dlp.
+  if (job.source?.mode === 'soundcloud' && outputPath && job.kind === 'audio') {
+    job.coverStatus = 'fetching';
+    persist(job);
+    const ok = await embedScMp3Tags(outputPath, {
+      title: job.title,
+      artist: job.metaOverride?.artist || job.channelTitle || '',
+      album: job.metaOverride?.album,
+      year: job.metaOverride?.year,
+      thumbnailUrl: job.thumbnail && /^https:\/\//i.test(job.thumbnail) ? job.thumbnail : undefined
+    });
+    job.coverStatus = ok ? 'embedded' : 'none';
+    persist(job);
+  }
+  if (outputPath && job.metaOverride && job.source?.mode !== 'soundcloud') {
+    try {
+      await applyMetadataOverride(outputPath, job.metaOverride);
+    } catch (e) {
+      logger.warn('downloads', `metadata override failed for ${job.id}`, e);
+    }
+  }
+  await runCoverStep(job);
   if (outputPath) {
     const sync = await syncDownloadToLibrary(outputPath, { forceAdd: !!job.addToLibrary });
     if (sync.inLibrary) {
