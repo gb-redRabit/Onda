@@ -83,6 +83,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'tools:batchImagesStart',
   'tools:batchImagesCancel',
   'tools:exportHistory',
+  'discord:configure',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',
@@ -288,7 +289,8 @@ export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
   'pip:ended',
   'pip:maximize',
   'pip:timeUpdate',
-  'pip:hidden'
+  'pip:hidden',
+  'discord:update'
 ]);
 
 export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([

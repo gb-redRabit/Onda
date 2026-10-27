@@ -98,6 +98,7 @@ export const INVOKE_CHANNELS = [
   'tools:batchImagesStart',
   'tools:batchImagesCancel',
   'tools:exportHistory',
+  'discord:configure',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',
@@ -307,7 +308,8 @@ export const SEND_CHANNELS = [
   'pip:ended',
   'pip:maximize',
   'pip:timeUpdate',
-  'pip:hidden'
+  'pip:hidden',
+  'discord:update'
 ] as const;
 
 export const RECEIVE_CHANNELS = [

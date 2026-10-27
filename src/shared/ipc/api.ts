@@ -6,6 +6,7 @@ import type {
   IpcResult,
   IpcSendChannel
 } from './contract';
+import type { PresenceState } from '../types/discord';
 
 // Współdzielona deklaracja API dla renderera (plan 1.4): preload je implementuje,
 // renderer konsumuje je przez `Window['api']`. Sygnatury wrapperów
@@ -106,6 +107,8 @@ export interface OndaAPI {
   batchConvertImages: BoundIpcMethod<'tools:batchImagesStart'>;
   cancelBatchImages: BoundIpcMethod<'tools:batchImagesCancel'>;
   exportHistory: BoundIpcMethod<'tools:exportHistory'>;
+  configureDiscord: (options: { enabled: boolean; clientId: string }) => Promise<void>;
+  updateDiscordPresence: (state: PresenceState | null) => void;
   loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
   saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;
   openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;

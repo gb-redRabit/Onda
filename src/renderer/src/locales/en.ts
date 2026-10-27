@@ -1009,6 +1009,15 @@ export default {
     restoreSessionDesc: 'Restore the last played track and queue after restart',
     showSetupWizard: 'Startup setup wizard',
     showSetupWizardDesc: 'Re-run the setup wizard (library, online, appearance, PiP).',
+    integrations: 'Integrations',
+    discordRichPresence: 'Discord Rich Presence',
+    discordRichPresenceDesc: 'Show what is playing in your Discord profile.',
+    discordClientId: 'Discord Application ID',
+    discordClientIdDesc:
+      'Create an application in the Discord Developer Portal and paste its Application ID.',
+    discordClientIdPlaceholder: 'e.g. 123456789012345678',
+    discordClientIdHint:
+      'A Discord application ID is required. Enable the toggle and resume playback to see the activity.',
     searchSettings: 'Search settings...',
     searchField: 'setting',
     resetSetting: 'Reset to default',

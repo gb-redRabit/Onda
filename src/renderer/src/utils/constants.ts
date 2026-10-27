@@ -35,7 +35,9 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   restoreSession: false,
   firstRunDone: false,
   logLevel: 'info' as const,
-  logMaxSizeMB: 10
+  logMaxSizeMB: 10,
+  discordRichPresence: false,
+  discordClientId: ''
 };
 
 export const DEFAULT_LIBRARY: LibrarySettings = {

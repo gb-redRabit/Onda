@@ -13,6 +13,7 @@ import { flushQueueNow } from '../downloads/download-manager';
 import { flushProviderCache } from '../ipc/providers/provider-cache';
 import { jobs, jobAbortControllers } from '../downloads/download-state';
 import { killDownloadProcess } from '../downloads/kill-download-process';
+import { shutdownDiscord } from '../discord/rich-presence';
 
 // Górny limit opróżniania persystencji przy wyjściu. Bez niego zawieszony flush
 // (np. niedostępny dysk sieciowy) blokowałby `app.quit()` na zawsze, zostawiając
@@ -47,6 +48,7 @@ export function installGracefulShutdown(deps: ShutdownDeps): void {
         deps.getMediaServer()?.close();
         closeLoginWindow();
         closeProviderLoginWindow();
+        shutdownDiscord();
         // Najpierw zatrzymaj pracę: procesy potomne yt-dlp/ffmpeg i strumienie HTTP
         // inaczej piszą do plików w trakcie opróżniania persystencji (i przeżywają
         // zamknięcie aplikacji).

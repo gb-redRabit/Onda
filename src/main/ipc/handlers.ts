@@ -34,6 +34,7 @@ import { registerCacheHandlers } from './cache-handlers';
 import { registerFactoryResetHandler } from './factory-reset';
 import { registerScrobblingHandlers } from './scrobbling/scrobbling-handlers';
 import { registerToolsHandlers } from '../tools/tools-handlers';
+import { registerDiscordHandlers } from '../discord/discord-handlers';
 
 export interface IpcHandlerContext {
   getMainWindow: () => BrowserWindow | null;
@@ -75,4 +76,5 @@ export function registerIPC(context: IpcHandlerContext): void {
   registerFactoryResetHandler();
   registerScrobblingHandlers();
   registerToolsHandlers(context);
+  registerDiscordHandlers();
 }

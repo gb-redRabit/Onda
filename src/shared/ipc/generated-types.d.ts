@@ -83,6 +83,7 @@ export type IpcInvokeChannel =
   | 'tools:batchImagesStart'
   | 'tools:batchImagesCancel'
   | 'tools:exportHistory'
+  | 'discord:configure'
   | 'subtitles:listEmbedded'
   | 'subtitles:extractEmbedded'
   | 'subtitles:findExternal'
@@ -287,7 +288,8 @@ export type IpcSendChannel =
   | 'pip:ended'
   | 'pip:maximize'
   | 'pip:timeUpdate'
-  | 'pip:hidden';
+  | 'pip:hidden'
+  | 'discord:update';
 
 export type IpcReceiveChannel =
   | 'window:maximized'

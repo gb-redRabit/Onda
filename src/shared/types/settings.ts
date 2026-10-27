@@ -64,6 +64,10 @@ export interface GeneralSettings {
   firstRunDone: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logMaxSizeMB: number;
+  /** Discord Rich Presence (integracja #21). */
+  discordRichPresence: boolean;
+  /** Discord Application ID z Developer Portal (wymagany, by presence działało). */
+  discordClientId: string;
 }
 
 export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';
