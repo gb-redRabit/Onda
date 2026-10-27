@@ -110,6 +110,8 @@ const coverStatus = ref('');
 const coverOk = ref(false);
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const cropCursor = ref('crosshair');
+const selectedId = ref<string | null>(null);
 
 const orientedW = computed(() =>
   rotation.value % 180 === 0 ? sourceWidth.value : sourceHeight.value
@@ -128,6 +130,9 @@ const outputHeight = computed(() => {
   return Math.max(1, Math.round((outputWidth.value * crop.h) / crop.w));
 });
 const hasImage = computed(() => !!image.value);
+const selectedWidth = computed(
+  () => annotations.value.find((annotation) => annotation.id === selectedId.value)?.width ?? null
+);
 
 const ASPECTS: Array<{ id: Aspect; key: string }> = [
   { id: 'free', key: 'imageStudioAspectFree' },
@@ -153,13 +158,19 @@ const ADJUST_FIELDS = [
   { id: 'sharpen', label: 'imageStudioSharpen', min: 0, max: 100 }
 ] as const;
 
+type CropHandle = 'move' | 'nw' | 'ne' | 'sw' | 'se' | 'draw';
+
 let estimateTimer: ReturnType<typeof setTimeout> | null = null;
-let drag: {
-  mode: 'crop' | 'annotation';
-  startX: number;
-  startY: number;
-  annotationId?: string;
-} | null = null;
+let drag:
+  | {
+      mode: 'crop';
+      handle: CropHandle;
+      startX: number;
+      startY: number;
+      origin: CropRect;
+    }
+  | { mode: 'annotation'; startX: number; startY: number; annotationId: string }
+  | null = null;
 
 function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null || bytes <= 0) return '—';
@@ -420,43 +431,64 @@ function drawAnnotations(
     const target = toTarget(annotation);
     if (annotation.kind === 'blur' || annotation.kind === 'pixelate') {
       drawEffectRegion(ctx, base, annotation, baseScale, target);
-      continue;
+    } else {
+      ctx.save();
+      ctx.strokeStyle = annotation.color;
+      ctx.fillStyle = annotation.color;
+      ctx.lineWidth = Math.max(1.5, annotation.width * scale);
+      ctx.lineCap = 'round';
+      if (annotation.kind === 'rect') {
+        ctx.strokeRect(target.x, target.y, target.w, target.h);
+      } else if (annotation.kind === 'arrow') {
+        const x2 = target.x + target.w;
+        const y2 = target.y + target.h;
+        ctx.beginPath();
+        ctx.moveTo(target.x, target.y);
+        ctx.lineTo(x2, y2);
+        const angle = Math.atan2(target.h, target.w);
+        const head = Math.max(8, annotation.width * scale * 2.5);
+        ctx.lineTo(
+          x2 - head * Math.cos(angle - Math.PI / 6),
+          y2 - head * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(
+          x2 - head * Math.cos(angle + Math.PI / 6),
+          y2 - head * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.stroke();
+      } else if (annotation.kind === 'text' && annotation.text) {
+        const fontSize = Math.max(10, annotation.width * scale * 2);
+        ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
+        ctx.textBaseline = 'top';
+        const lines = annotation.text.split('\n');
+        lines.forEach((line, index) => {
+          ctx.fillText(line, target.x, target.y + index * fontSize * 1.2);
+        });
+      }
+      ctx.restore();
     }
-    ctx.save();
-    ctx.strokeStyle = annotation.color;
-    ctx.fillStyle = annotation.color;
-    ctx.lineWidth = Math.max(1, annotation.width * scale);
-    ctx.lineCap = 'round';
-    if (annotation.kind === 'rect') {
-      ctx.strokeRect(target.x, target.y, target.w, target.h);
-    } else if (annotation.kind === 'arrow') {
-      const x2 = target.x + target.w;
-      const y2 = target.y + target.h;
-      ctx.beginPath();
-      ctx.moveTo(target.x, target.y);
-      ctx.lineTo(x2, y2);
-      const angle = Math.atan2(target.h, target.w);
-      const head = Math.max(8, annotation.width * scale * 2.5);
-      ctx.lineTo(
-        x2 - head * Math.cos(angle - Math.PI / 6),
-        y2 - head * Math.sin(angle - Math.PI / 6)
-      );
-      ctx.moveTo(x2, y2);
-      ctx.lineTo(
-        x2 - head * Math.cos(angle + Math.PI / 6),
-        y2 - head * Math.sin(angle + Math.PI / 6)
-      );
-      ctx.stroke();
-    } else if (annotation.kind === 'text' && annotation.text) {
-      const fontSize = Math.max(8, annotation.width * scale * 2);
-      ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
-      ctx.textBaseline = 'top';
-      const lines = annotation.text.split('\n');
-      lines.forEach((line, index) => {
-        ctx.fillText(line, target.x, target.y + index * fontSize * 1.2);
+    if (annotation.id === selectedId.value) {
+      const bounds = annotationBounds(annotation);
+      const outline = toTarget({
+        ...annotation,
+        x1: bounds.x,
+        y1: bounds.y,
+        x2: bounds.x + bounds.w,
+        y2: bounds.y + bounds.h
       });
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(
+        outline.x - 3,
+        outline.y - 3,
+        Math.max(4, outline.w) + 6,
+        Math.max(4, outline.h) + 6
+      );
+      ctx.restore();
     }
-    ctx.restore();
   }
 }
 
@@ -484,6 +516,22 @@ function drawCropOverlay(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElemen
     ctx.lineTo(x + w, y + (h * i) / 3);
   }
   ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = 1;
+  const corners: Array<[number, number]> = [
+    [x, y],
+    [x + w, y],
+    [x, y + h],
+    [x + w, y + h]
+  ];
+  for (const [cornerX, cornerY] of corners) {
+    ctx.beginPath();
+    ctx.rect(cornerX - 5, cornerY - 5, 10, 10);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -575,32 +623,193 @@ function updateCropFromDrag(sx: number, sy: number, ex: number, ey: number): voi
   renderPreview();
 }
 
+function aspectRatio(): number {
+  if (aspect.value === '1:1') return 1;
+  if (aspect.value === '16:9') return 16 / 9;
+  if (aspect.value === '4:3') return 4 / 3;
+  return 0;
+}
+
+/** Obrys adnotacji w układzie obrazu (tekst ma rozmiar oszacowany z fontu). */
+function annotationBounds(annotation: Annotation): TargetRect {
+  const x = Math.min(annotation.x1, annotation.x2);
+  const y = Math.min(annotation.y1, annotation.y2);
+  if (annotation.kind === 'text' && annotation.text) {
+    const fontSize = Math.max(8, annotation.width * 2);
+    const lines = annotation.text.split('\n');
+    const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
+    return {
+      x,
+      y,
+      w: Math.max(1, longest * fontSize * 0.6),
+      h: Math.max(1, lines.length * fontSize * 1.2)
+    };
+  }
+  return {
+    x,
+    y,
+    w: Math.max(1, Math.abs(annotation.x2 - annotation.x1)),
+    h: Math.max(1, Math.abs(annotation.y2 - annotation.y1))
+  };
+}
+
+function hitAnnotation(point: { x: number; y: number }): Annotation | null {
+  for (let index = annotations.value.length - 1; index >= 0; index -= 1) {
+    const annotation = annotations.value[index];
+    const bounds = annotationBounds(annotation);
+    const pad = Math.max(6, annotation.width);
+    if (
+      point.x >= bounds.x - pad &&
+      point.x <= bounds.x + bounds.w + pad &&
+      point.y >= bounds.y - pad &&
+      point.y <= bounds.y + bounds.h + pad
+    ) {
+      return annotation;
+    }
+  }
+  return null;
+}
+
+function hitCropHandle(event: PointerEvent): CropHandle {
+  const canvas = canvasRef.value;
+  if (!canvas) return 'draw';
+  const rect = canvas.getBoundingClientRect();
+  const px = ((event.clientX - rect.left) / rect.width) * canvas.width;
+  const py = ((event.clientY - rect.top) / rect.height) * canvas.height;
+  const scale = previewScale.value;
+  const x = crop.x * scale;
+  const y = crop.y * scale;
+  const w = crop.w * scale;
+  const h = crop.h * scale;
+  const radius = 14;
+  const near = (a: number, b: number): boolean => Math.abs(a - b) <= radius;
+  if (near(px, x) && near(py, y)) return 'nw';
+  if (near(px, x + w) && near(py, y)) return 'ne';
+  if (near(px, x) && near(py, y + h)) return 'sw';
+  if (near(px, x + w) && near(py, y + h)) return 'se';
+  if (px >= x && px <= x + w && py >= y && py <= y + h) return 'move';
+  return 'draw';
+}
+
+function resizeCrop(handle: CropHandle, origin: CropRect, dx: number, dy: number): void {
+  const width = orientedW.value;
+  const height = orientedH.value;
+  let left = origin.x;
+  let top = origin.y;
+  let right = origin.x + origin.w;
+  let bottom = origin.y + origin.h;
+  if (handle === 'nw') {
+    left = clampTag(left + dx, 0, right - 4);
+    top = clampTag(top + dy, 0, bottom - 4);
+  } else if (handle === 'ne') {
+    right = clampTag(right + dx, left + 4, width);
+    top = clampTag(top + dy, 0, bottom - 4);
+  } else if (handle === 'sw') {
+    left = clampTag(left + dx, 0, right - 4);
+    bottom = clampTag(bottom + dy, top + 4, height);
+  } else if (handle === 'se') {
+    right = clampTag(right + dx, left + 4, width);
+    bottom = clampTag(bottom + dy, top + 4, height);
+  }
+  let w = right - left;
+  let h = bottom - top;
+  const ratio = aspectRatio();
+  if (ratio > 0) {
+    if (w / h > ratio) w = h * ratio;
+    else h = w / ratio;
+    if (handle === 'nw' || handle === 'sw') left = right - w;
+    else right = left + w;
+    if (handle === 'nw' || handle === 'ne') top = bottom - h;
+    else bottom = top + h;
+    if (left < 0) {
+      left = 0;
+      right = w;
+    }
+    if (top < 0) {
+      top = 0;
+      bottom = h;
+    }
+    if (right > width) {
+      right = width;
+      left = width - w;
+    }
+    if (bottom > height) {
+      bottom = height;
+      top = height - h;
+    }
+  }
+  crop.x = clampTag(left, 0, width - 4);
+  crop.y = clampTag(top, 0, height - 4);
+  crop.w = Math.max(4, Math.min(width - crop.x, right - crop.x));
+  crop.h = Math.max(4, Math.min(height - crop.y, bottom - crop.y));
+  renderPreview();
+}
+
+function updateCursor(event: PointerEvent): void {
+  if (drag) return;
+  if (tool.value !== 'crop') {
+    cropCursor.value = 'crosshair';
+    return;
+  }
+  const handle = hitCropHandle(event);
+  cropCursor.value =
+    handle === 'move'
+      ? 'move'
+      : handle === 'nw' || handle === 'se'
+        ? 'nwse-resize'
+        : handle === 'ne' || handle === 'sw'
+          ? 'nesw-resize'
+          : 'crosshair';
+}
+
+function deleteSelected(): void {
+  if (!selectedId.value) return;
+  annotations.value = annotations.value.filter((item) => item.id !== selectedId.value);
+  selectedId.value = null;
+  renderPreview();
+  scheduleEstimate();
+}
+
 function onPointerDown(event: PointerEvent): void {
   if (!image.value) return;
   const point = pointerToImage(event);
   if (tool.value === 'crop') {
-    drag = { mode: 'crop', startX: point.x, startY: point.y };
-    crop.x = point.x;
-    crop.y = point.y;
-    crop.w = 1;
-    crop.h = 1;
-  } else if (tool.value === 'text') {
-    if (!textValue.value.trim()) return;
-    annotations.value.push({
-      id: crypto.randomUUID(),
-      kind: 'text',
-      x1: point.x,
-      y1: point.y,
-      x2: point.x,
-      y2: point.y,
-      color: color.value,
-      width: strokeWidth.value,
-      text: textValue.value
-    });
-    renderPreview();
-    scheduleEstimate();
-    return;
+    const handle = hitCropHandle(event);
+    drag = { mode: 'crop', handle, startX: point.x, startY: point.y, origin: { ...crop } };
+    if (handle === 'draw') {
+      crop.x = point.x;
+      crop.y = point.y;
+      crop.w = 1;
+      crop.h = 1;
+    }
   } else {
+    // Klik w istniejącą adnotację = zaznaczenie (kolor/rozmiar edytują ją na żywo),
+    // a nie rysowanie kolejnej.
+    const hit = hitAnnotation(point);
+    if (hit) {
+      selectedId.value = hit.id;
+      renderPreview();
+      return;
+    }
+    if (tool.value === 'text') {
+      if (!textValue.value.trim()) return;
+      const annotation: Annotation = {
+        id: crypto.randomUUID(),
+        kind: 'text',
+        x1: point.x,
+        y1: point.y,
+        x2: point.x,
+        y2: point.y,
+        color: color.value,
+        width: strokeWidth.value,
+        text: textValue.value
+      };
+      annotations.value.push(annotation);
+      selectedId.value = annotation.id;
+      renderPreview();
+      scheduleEstimate();
+      return;
+    }
     const annotation: Annotation = {
       id: crypto.randomUUID(),
       kind: tool.value,
@@ -612,6 +821,7 @@ function onPointerDown(event: PointerEvent): void {
       width: strokeWidth.value
     };
     annotations.value.push(annotation);
+    selectedId.value = annotation.id;
     drag = { mode: 'annotation', startX: point.x, startY: point.y, annotationId: annotation.id };
   }
   canvasRef.value?.setPointerCapture(event.pointerId);
@@ -619,13 +829,40 @@ function onPointerDown(event: PointerEvent): void {
 }
 
 function onPointerMove(event: PointerEvent): void {
-  if (!drag) return;
-  const point = pointerToImage(event);
-  if (drag.mode === 'crop') {
-    updateCropFromDrag(drag.startX, drag.startY, point.x, point.y);
+  const current = drag;
+  if (!current) {
+    updateCursor(event);
     return;
   }
-  const annotation = annotations.value.find((item) => item.id === drag?.annotationId);
+  const point = pointerToImage(event);
+  if (current.mode === 'crop') {
+    if (current.handle === 'move') {
+      crop.x = clampTag(
+        current.origin.x + (point.x - current.startX),
+        0,
+        orientedW.value - current.origin.w
+      );
+      crop.y = clampTag(
+        current.origin.y + (point.y - current.startY),
+        0,
+        orientedH.value - current.origin.h
+      );
+      crop.w = current.origin.w;
+      crop.h = current.origin.h;
+      renderPreview();
+    } else if (current.handle === 'draw') {
+      updateCropFromDrag(current.startX, current.startY, point.x, point.y);
+    } else {
+      resizeCrop(
+        current.handle,
+        current.origin,
+        point.x - current.startX,
+        point.y - current.startY
+      );
+    }
+    return;
+  }
+  const annotation = annotations.value.find((item) => item.id === current.annotationId);
   if (annotation) {
     annotation.x2 = point.x;
     annotation.y2 = point.y;
@@ -634,24 +871,34 @@ function onPointerMove(event: PointerEvent): void {
 }
 
 function onPointerUp(event: PointerEvent): void {
-  if (!drag) return;
+  const current = drag;
+  if (!current) return;
   const point = pointerToImage(event);
-  if (drag.mode === 'crop') {
-    updateCropFromDrag(drag.startX, drag.startY, point.x, point.y);
-    if (crop.w < 4 || crop.h < 4) resetCropToFull();
+  if (current.mode === 'crop') {
+    if (current.handle === 'draw') {
+      updateCropFromDrag(current.startX, current.startY, point.x, point.y);
+    }
+    if (crop.w < 4 || crop.h < 4) {
+      crop.x = current.origin.x;
+      crop.y = current.origin.y;
+      crop.w = current.origin.w;
+      crop.h = current.origin.h;
+    }
     outputWidth.value = clampTag(
       Math.round(Math.min(outputWidth.value || crop.w, crop.w)),
       1,
       MAX_OUTPUT_DIMENSION
     );
-  } else {
-    const annotation = annotations.value.find((item) => item.id === drag?.annotationId);
+  } else if (current.annotationId) {
+    const annotation = annotations.value.find((item) => item.id === current.annotationId);
     if (
       annotation &&
+      annotation.kind !== 'text' &&
       Math.abs(annotation.x2 - annotation.x1) < 4 &&
       Math.abs(annotation.y2 - annotation.y1) < 4
     ) {
       annotations.value = annotations.value.filter((item) => item.id !== annotation.id);
+      if (selectedId.value === annotation.id) selectedId.value = null;
     }
   }
   drag = null;
@@ -660,13 +907,16 @@ function onPointerUp(event: PointerEvent): void {
 }
 
 function undoAnnotation(): void {
+  const removed = annotations.value[annotations.value.length - 1];
   annotations.value = annotations.value.slice(0, -1);
+  if (removed && selectedId.value === removed.id) selectedId.value = null;
   renderPreview();
   scheduleEstimate();
 }
 
 function clearAnnotations(): void {
   annotations.value = [];
+  selectedId.value = null;
   renderPreview();
   scheduleEstimate();
 }
@@ -826,6 +1076,15 @@ watch(
   { deep: true }
 );
 
+watch([color, strokeWidth], () => {
+  const selected = annotations.value.find((item) => item.id === selectedId.value);
+  if (!selected) return;
+  selected.color = color.value;
+  selected.width = strokeWidth.value;
+  renderPreview();
+  scheduleEstimate();
+});
+
 watch([outputFormat, quality, outputWidth], () => {
   if (outputFormat.value) {
     outputPath.value = outputPath.value.replace(
@@ -874,7 +1133,12 @@ onBeforeUnmount(() => {
               <canvas
                 ref="canvasRef"
                 data-testid="image-studio-canvas"
-                class="max-h-full max-w-full cursor-crosshair rounded-box border border-base-300 shadow-lg"
+                :data-crop="`${Math.round(crop.x)},${Math.round(crop.y)},${Math.round(crop.w)},${Math.round(crop.h)}`"
+                :data-image="`${orientedW},${orientedH}`"
+                :data-annotation-count="annotations.length"
+                :data-selected-width="selectedWidth ?? ''"
+                class="max-h-full max-w-full rounded-box border border-base-300 shadow-lg"
+                :style="{ cursor: cropCursor }"
                 @pointerdown="onPointerDown"
                 @pointermove="onPointerMove"
                 @pointerup="onPointerUp"
@@ -917,6 +1181,9 @@ onBeforeUnmount(() => {
                   {{ t(`tools.${item.key}`) }}
                 </button>
               </div>
+              <p class="text-[10px] text-base-content/50">
+                {{ t('tools.imageStudioCropHint') }}
+              </p>
               <div class="flex gap-1">
                 <button
                   data-testid="image-studio-rotate-left"
@@ -1009,9 +1276,12 @@ onBeforeUnmount(() => {
                   class="h-7 w-9 rounded border border-base-300 bg-base-100"
                 />
                 <label class="flex flex-1 items-center gap-2 text-[11px] text-base-content/60">
-                  {{ t('tools.imageStudioStroke') }}
+                  <span class="shrink-0"
+                    >{{ t('tools.imageStudioStroke') }}: {{ strokeWidth }}</span
+                  >
                   <input
                     v-model.number="strokeWidth"
+                    data-testid="image-studio-stroke"
                     type="range"
                     min="2"
                     max="40"
@@ -1019,6 +1289,9 @@ onBeforeUnmount(() => {
                   />
                 </label>
               </div>
+              <p class="text-[10px] text-base-content/50">
+                {{ t('tools.imageStudioAnnotationHint') }}
+              </p>
               <div class="flex gap-1">
                 <button
                   class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-[11px] hover:bg-base-content/10 disabled:opacity-40"
@@ -1028,11 +1301,19 @@ onBeforeUnmount(() => {
                   <Undo2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioUndo') }}
                 </button>
                 <button
+                  data-testid="image-studio-delete"
+                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-[11px] hover:bg-base-content/10 disabled:opacity-40"
+                  :disabled="!selectedId"
+                  @click="deleteSelected"
+                >
+                  <Trash2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioDelete') }}
+                </button>
+                <button
                   class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-[11px] hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="clearAnnotations"
                 >
-                  <Trash2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioClear') }}
+                  {{ t('tools.imageStudioClear') }}
                 </button>
               </div>
             </section>
