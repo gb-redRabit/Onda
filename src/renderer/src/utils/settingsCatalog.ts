@@ -167,6 +167,12 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     keywords: ['discord', 'application id', 'client id', 'developer portal']
   },
   {
+    id: 'setting-discord-upload-covers',
+    labelKey: 'settings.discordUploadLocalCovers',
+    tab: 'discord',
+    keywords: ['discord', 'okladka', 'cover', 'catbox', 'upload']
+  },
+  {
     id: 'setting-discord-online-covers',
     labelKey: 'settings.discordOnlineCovers',
     tab: 'discord',

@@ -150,6 +150,18 @@ watch(
 
   <SettingsGroup :title="$t('settings.discordCoverSection')">
     <SettingsRow
+      :label="$t('settings.discordUploadLocalCovers')"
+      :description="$t('settings.discordUploadLocalCoversDesc')"
+      path="general.discordUploadLocalCovers"
+      anchor="setting-discord-upload-covers"
+    >
+      <SettingsToggle
+        :model-value="settings.general.discordUploadLocalCovers"
+        :disabled="!settings.general.discordRichPresence"
+        @update:model-value="settings.updateGeneral({ discordUploadLocalCovers: $event })"
+      />
+    </SettingsRow>
+    <SettingsRow
       :label="$t('settings.discordOnlineCovers')"
       :description="$t('settings.discordOnlineCoversDesc')"
       path="general.discordOnlineCovers"

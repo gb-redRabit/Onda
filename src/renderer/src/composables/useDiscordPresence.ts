@@ -18,6 +18,8 @@ export function useDiscordPresence(): void {
   let interval: ReturnType<typeof setInterval> | null = null;
   const coverCache = new Map<string, string | null>();
   const pendingLookups = new Map<string, Promise<string | null>>();
+  const localCoverCache = new Map<string, string | null>();
+  const pendingLocalCovers = new Map<string, Promise<string | null>>();
 
   function configure(): void {
     void window.api?.configureDiscord({
@@ -49,15 +51,44 @@ export function useDiscordPresence(): void {
     return request;
   }
 
+  function lookupLocalCover(key: string, filePath: string): Promise<string | null> {
+    const existing = pendingLocalCovers.get(key);
+    if (existing) return existing;
+    const request = (window.api?.resolveLocalDiscordCover(filePath) ?? Promise.resolve(null))
+      .catch(() => null)
+      .then((url) => {
+        localCoverCache.set(key, url);
+        return url;
+      })
+      .finally(() => pendingLocalCovers.delete(key));
+    pendingLocalCovers.set(key, request);
+    return request;
+  }
+
   /**
-   * Discord pobiera okładkę z zewnątrz, więc okładka osadzona w pliku lokalnym
-   * nie może być użyta bezpośrednio. Dla plików bez publicznego `thumbnail`
-   * szukamy okładki w katalogu iTunes (opt-out w ustawieniach).
+   * Discord pobiera okładkę z zewnątrz, więc obraz z pliku lokalnego musi zostać
+   * opublikowany. Najpierw (opcjonalnie) wysyłamy samą okładkę na publiczny
+   * hosting, potem szukamy publicznej okładki w katalogu iTunes.
    */
   async function applyCover(track: MediaFile, state: PresenceState): Promise<void> {
     if (!player.isPlaying) return;
-    if (state.coverUrl || !settings.general.discordOnlineCovers) return;
+    if (state.coverUrl || !settings.general.discordRichPresence) return;
     if (track.type === 'stream' || track.type === 'image') return;
+
+    if (settings.general.discordUploadLocalCovers) {
+      const key = `${track.path}|${track.mtime ?? ''}`;
+      const cachedLocal = localCoverCache.get(key);
+      const localUrl =
+        cachedLocal !== undefined ? cachedLocal : await lookupLocalCover(key, track.path);
+      // Brak okładki w pliku lub nieudany upload → próbujemy katalogu iTunes niżej.
+      if (localUrl) {
+        if (player.currentTrack?.path !== track.path || !player.isPlaying) return;
+        window.api?.updateDiscordPresence({ ...state, coverUrl: localUrl });
+        return;
+      }
+    }
+
+    if (!settings.general.discordOnlineCovers) return;
     if (!state.artist || !state.title) return;
 
     const key = [state.artist, state.album ?? '', state.title].join('|').toLowerCase();
@@ -130,6 +161,11 @@ export function useDiscordPresence(): void {
   watch(
     () => [settings.general.discordRichPresence, settings.general.discordClientId],
     () => sync()
+  );
+
+  watch(
+    () => [settings.general.discordUploadLocalCovers, settings.general.discordOnlineCovers],
+    () => push()
   );
 
   onBeforeUnmount(() => {

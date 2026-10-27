@@ -267,7 +267,8 @@ const GENERAL_FIELDS: Record<string, Sanitizer> = {
   logMaxSizeMB: numClamped(1, 100),
   discordRichPresence: bool,
   discordClientId: str,
-  discordOnlineCovers: bool
+  discordOnlineCovers: bool,
+  discordUploadLocalCovers: bool
 };
 
 function apiKeyEntry(v: unknown): unknown | undefined {

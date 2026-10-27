@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import type { PresenceKind, PresenceState } from '../../shared/types/discord';
 import { configureDiscord, getDiscordStatus, updatePresence } from './rich-presence';
 import { normalizeCoverQuery, resolveCoverUrl } from './cover-lookup';
+import { resolveLocalCover } from './cover-upload';
 
 const KINDS = new Set<PresenceKind>(['audio', 'video', 'stream']);
 
@@ -50,6 +51,10 @@ export function registerDiscordHandlers(): void {
     const normalized = normalizeCoverQuery(query);
     return normalized ? resolveCoverUrl(normalized) : null;
   });
+  ipcMain.handle(
+    'discord:resolveLocalCover',
+    async (_event, filePath: unknown): Promise<string | null> => resolveLocalCover(filePath)
+  );
   ipcMain.on('discord:update', (_event, state: unknown) => {
     updatePresence(sanitizePresence(state));
   });

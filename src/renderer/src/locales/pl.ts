@@ -1036,11 +1036,14 @@ export default {
     discordStatusHint:
       'Utrzymuj uruchomionego klienta Discord i zezwól na udostępnianie aktywności.',
     discordCoverSection: 'Okładki',
+    discordUploadLocalCovers: 'Udostępniaj okładki z plików lokalnych',
+    discordUploadLocalCoversDesc:
+      'Wysyła sam obraz okładki (bez audio i metadanych) na publiczny hosting catbox.moe, żeby Discord mógł go pobrać. Domyślnie wyłączone.',
     discordOnlineCovers: 'Szukaj okładek w internecie',
     discordOnlineCoversDesc:
-      'Dla plików lokalnych bez publicznej okładki szukaj albumu w katalogu iTunes po artyście i tytule.',
+      'Gdy plik lokalny nie ma okładki albo publikacja się nie powiedzie, szukaj albumu w katalogu iTunes po artyście i tytule.',
     discordCoverNote:
-      'Miniatury YouTube i SoundCloud są używane automatycznie. Discord pobiera obrazy z internetu, więc okładka osadzona w pliku lokalnym nie może być pokazana bezpośrednio. Do katalogu iTunes wysyłamy tylko artystę i tytuł.',
+      'Miniatury YouTube i SoundCloud są używane automatycznie. Discord pobiera obrazy z internetu, więc okładka osadzona w pliku lokalnym musi zostać najpierw opublikowana. Pierwsza opcja wysyła tylko obraz na catbox.moe; druga wysyła artystę i tytuł do katalogu iTunes.',
     discordSetup: 'Jak połączyć',
     discordSetupIntro: 'Rich Presence jest domyślnie wyłączone i wymaga własnej aplikacji Discord.',
     discordStepPortal: 'Otwórz Discord Developer Portal i zaloguj się.',

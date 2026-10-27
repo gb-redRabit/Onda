@@ -324,6 +324,8 @@ const api: OndaAPI = {
   getDiscordStatus: (): Promise<DiscordStatus> => tryInvoke('discord:getStatus'),
   resolveDiscordCover: (query: DiscordCoverQuery): Promise<string | null> =>
     tryInvoke('discord:resolveCover', query),
+  resolveLocalDiscordCover: (filePath: string): Promise<string | null> =>
+    tryInvoke('discord:resolveLocalCover', filePath),
   updateDiscordPresence: (state: PresenceState | null): void => trySend('discord:update', state),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),

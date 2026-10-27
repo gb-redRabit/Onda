@@ -38,7 +38,8 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   logMaxSizeMB: 10,
   discordRichPresence: false,
   discordClientId: '',
-  discordOnlineCovers: true
+  discordOnlineCovers: true,
+  discordUploadLocalCovers: false
 };
 
 export const DEFAULT_LIBRARY: LibrarySettings = {

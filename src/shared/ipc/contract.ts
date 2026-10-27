@@ -101,6 +101,7 @@ export const INVOKE_CHANNELS = [
   'discord:configure',
   'discord:getStatus',
   'discord:resolveCover',
+  'discord:resolveLocalCover',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',

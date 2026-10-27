@@ -86,6 +86,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'discord:configure',
   'discord:getStatus',
   'discord:resolveCover',
+  'discord:resolveLocalCover',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',

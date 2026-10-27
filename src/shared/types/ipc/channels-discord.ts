@@ -13,4 +13,8 @@ export interface DiscordChannels {
     args: [query: DiscordCoverQuery];
     result: string | null;
   };
+  'discord:resolveLocalCover': {
+    args: [filePath: string];
+    result: string | null;
+  };
 }

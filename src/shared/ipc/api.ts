@@ -110,6 +110,7 @@ export interface OndaAPI {
   configureDiscord: (options: { enabled: boolean; clientId: string }) => Promise<void>;
   getDiscordStatus: BoundIpcMethod<'discord:getStatus'>;
   resolveDiscordCover: BoundIpcMethod<'discord:resolveCover'>;
+  resolveLocalDiscordCover: BoundIpcMethod<'discord:resolveLocalCover'>;
   updateDiscordPresence: (state: PresenceState | null) => void;
   loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
   saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;

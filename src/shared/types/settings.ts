@@ -74,6 +74,11 @@ export interface GeneralSettings {
    * być użyta bezpośrednio.
    */
   discordOnlineCovers: boolean;
+  /**
+   * Wysyła obraz okładki z pliku lokalnego na publiczny hosting, żeby Discord
+   * mógł go pobrać. Domyślnie wyłączone — to zewnętrzna usługa.
+   */
+  discordUploadLocalCovers: boolean;
 }
 
 export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';

@@ -1029,11 +1029,14 @@ export default {
     discordStatusHint:
       'Keep the Discord desktop app running and allow activity sharing in Discord.',
     discordCoverSection: 'Cover art',
+    discordUploadLocalCovers: 'Publish covers from local files',
+    discordUploadLocalCoversDesc:
+      'Sends only the cover image (no audio or metadata) to the public catbox.moe host so Discord can download it. Off by default.',
     discordOnlineCovers: 'Look up covers online',
     discordOnlineCoversDesc:
-      'For local files without a public cover, search the iTunes catalogue by artist and title.',
+      'When a local file has no cover or publishing fails, search the iTunes catalogue by artist and title.',
     discordCoverNote:
-      'YouTube and SoundCloud thumbnails are used automatically. Discord downloads cover images from the internet, so artwork embedded in a local file cannot be shown directly. Only the artist and title are sent to the iTunes catalogue.',
+      'YouTube and SoundCloud thumbnails are used automatically. Discord downloads cover images from the internet, so a cover embedded in a local file must be published first. The first option uploads only the image to catbox.moe; the second sends artist and title to the iTunes catalogue.',
     discordSetup: 'How to connect',
     discordSetupIntro: 'Rich Presence is off by default and requires your own Discord application.',
     discordStepPortal: 'Open the Discord Developer Portal and sign in.',
