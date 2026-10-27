@@ -11,6 +11,7 @@ import type { ScrobblingChannels } from './channels-scrobbling';
 import type { LyricsChannels } from './channels-lyrics';
 import type { ToolsChannels } from './channels-tools';
 import type { DiscordChannels } from './channels-discord';
+import type { CoreChannels } from './channels-core';
 
 // Kontrakt IPC podzielony domenami (plan 3.4). `IpcChannels` agreguje je, żeby
 // `keyof IpcChannels` / `IpcChannel` pozostały jednym źródłem prawdy.
@@ -28,6 +29,7 @@ export interface IpcChannels
     ScrobblingChannels,
     LyricsChannels,
     ToolsChannels,
-    DiscordChannels {}
+    DiscordChannels,
+    CoreChannels {}
 
 export type IpcChannel = keyof IpcChannels;

@@ -102,6 +102,7 @@ export const INVOKE_CHANNELS = [
   'discord:getStatus',
   'discord:resolveCover',
   'discord:resolveLocalCover',
+  'core:getState',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',
@@ -312,7 +313,11 @@ export const SEND_CHANNELS = [
   'pip:maximize',
   'pip:timeUpdate',
   'pip:hidden',
-  'discord:update'
+  'discord:update',
+  'core:command',
+  'core:state',
+  'core:ready',
+  'core:error'
 ] as const;
 
 export const RECEIVE_CHANNELS = [
@@ -363,7 +368,11 @@ export const RECEIVE_CHANNELS = [
   'explorer:add-tab',
   'explorer:refresh',
   'explorer:remove-tab',
-  'imageViewer:files'
+  'imageViewer:files',
+  'core:command',
+  'core:state',
+  'core:ready',
+  'core:error'
 ] as const;
 
 // Strażnik czasu kompilacji: kanał dodany do typów kontraktu, ale nieobecny w

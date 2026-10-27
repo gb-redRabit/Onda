@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' file: http://127.0.0.1:*; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: https: http://127.0.0.1:*; media-src 'self' file: https: http://127.0.0.1:*; font-src 'self' data:; connect-src 'self' http://127.0.0.1:*"
+    />
+    <title>Onda — Core Spike</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101114;
+        --panel: #17191e;
+        --line: #2a2e36;
+        --text: #e8eaee;
+        --muted: #8b919d;
+        --accent: #6ea8fe;
+        --ok: #4ade80;
+        --bad: #f87171;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 18px;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          13px/1.45 'Segoe UI',
+          system-ui,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        display: grid;
+        gap: 12px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .badge {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--line);
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .badge.ok {
+        color: var(--ok);
+      }
+      .badge.bad {
+        color: var(--bad);
+      }
+      .hint,
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .now {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-width: 0;
+      }
+      .cover {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        background: var(--line);
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+        flex: none;
+      }
+      .title {
+        font-size: 15px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .artist {
+        color: var(--muted);
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .progress {
+        height: 5px;
+        border-radius: 999px;
+        background: var(--line);
+        overflow: hidden;
+      }
+      .progress > div {
+        height: 100%;
+        width: 0;
+        background: var(--accent);
+        transition: width 0.2s linear;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      button {
+        background: var(--line);
+        color: var(--text);
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 7px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        color: #08101f;
+        font-weight: 600;
+      }
+      select {
+        width: 100%;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 8px;
+        font: inherit;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      .row > .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .path {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 11px;
+        word-break: break-all;
+      }
+      #log {
+        margin: 0;
+        max-height: 120px;
+        overflow: auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        color: var(--muted);
+        font-size: 11px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Onda — Core Spike</h1>
+        <span id="core-status" class="badge">łączenie…</span>
+        <span class="hint">Faza 1: ukryty Core + testowy shell</span>
+      </header>
+
+      <p class="hint">
+        To nie jest docelowy tryb kompaktowy. Sprawdza tylko, czy ukryty Core gra i publikuje stan.
+        Jeśli główne okno Onda odtwarza muzykę, zatrzymaj je przed testem.
+      </p>
+
+      <section class="card">
+        <div class="now">
+          <div class="cover">♪</div>
+          <div class="grow" style="min-width: 0">
+            <div id="title" class="title">Nic nie gra</div>
+            <div id="artist" class="artist">—</div>
+          </div>
+        </div>
+        <div class="progress"><div id="bar"></div></div>
+        <div class="row">
+          <span id="time" class="muted">0:00</span>
+          <span class="muted">/</span>
+          <span id="duration" class="muted">0:00</span>
+          <span class="grow"></span>
+          <span id="revision" class="muted">rewizja —</span>
+        </div>
+        <div class="controls">
+          <button id="prev" title="Poprzedni">⏮</button>
+          <button id="play" class="primary" title="Play/Pauza">▶</button>
+          <button id="next" title="Następny">⏭</button>
+          <button id="back10">−10 s</button>
+          <button id="fwd10">+10 s</button>
+          <button id="volDown">🔉</button>
+          <button id="volUp">🔊</button>
+        </div>
+        <div class="row">
+          <span class="muted">player / engine:</span>
+          <span id="playing">—</span>
+          <span class="muted">loading:</span>
+          <span id="loading">—</span>
+          <span class="muted">error:</span>
+          <span id="error">—</span>
+        </div>
+        <div class="row">
+          <span class="muted">path:</span>
+          <span id="path" class="path grow">—</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row">
+          <label for="library" class="grow">Biblioteka (pierwsze 200 utworów audio)</label>
+          <button id="load-library">Wczytaj listę</button>
+        </div>
+        <select id="library"></select>
+        <div class="row">
+          <button id="play-selected" class="primary">Odtwórz zaznaczony</button>
+          <button id="open-file">Otwórz plik…</button>
+        </div>
+      </section>
+
+      <pre id="log"></pre>
+    </div>
+    <script type="module" src="/src/core-test/main.ts"></script>
+  </body>
+</html>

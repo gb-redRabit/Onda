@@ -87,6 +87,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'discord:getStatus',
   'discord:resolveCover',
   'discord:resolveLocalCover',
+  'core:getState',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',
@@ -293,7 +294,11 @@ export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
   'pip:maximize',
   'pip:timeUpdate',
   'pip:hidden',
-  'discord:update'
+  'discord:update',
+  'core:command',
+  'core:state',
+  'core:ready',
+  'core:error'
 ]);
 
 export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
@@ -344,5 +349,9 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'explorer:add-tab',
   'explorer:refresh',
   'explorer:remove-tab',
-  'imageViewer:files'
+  'imageViewer:files',
+  'core:command',
+  'core:state',
+  'core:ready',
+  'core:error'
 ]);
