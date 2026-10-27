@@ -61,6 +61,13 @@ test('compact starts from saved mode and switches to full window', async () => {
     await expect(page.getByTestId('compact-album-0')).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: join(tmpdir(), 'onda-compact-albums.png') });
 
+    // Szczegóły albumu: wirtualizowana lista utworów i powrót do siatki.
+    await page.getByTestId('compact-album-0').click();
+    await expect(page.getByTestId('compact-album-detail')).toBeVisible();
+    await expect(page.getByTestId('compact-album-track-0')).toBeVisible();
+    await page.getByTestId('compact-album-back').click();
+    await expect(page.getByTestId('compact-album-0')).toBeVisible();
+
     await page.getByTestId('compact-tab-tracks').click();
     await expect(page.getByTestId('compact-tracks')).toBeVisible();
 

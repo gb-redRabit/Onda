@@ -16,6 +16,8 @@ import {
 import { syncSubscriptionsScheduler } from '../subscriptions/subscriptions-handlers';
 import { syncLinkSubsScheduler } from '../providers/providers-handlers';
 import { setCloseToTray } from '../../windows/close-behavior';
+import { refreshTray } from '../../windows/tray';
+import { setMainLocale } from '../../i18n-main';
 import type { AppSettings, NetworkSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
 
@@ -133,6 +135,10 @@ export function registerSettingsHandlers(): void {
       if (sanitized.download) {
         void syncSubscriptionsScheduler();
         void syncLinkSubsScheduler();
+      }
+      if (sanitized.appearance?.locale) {
+        setMainLocale(sanitized.appearance.locale);
+        refreshTray();
       }
       // Motyw/język/geometria muszą trafić też do drugiego shella (compact),
       // który żyje w osobnym rendererze. Nie wysyłamy sekretów — tylko appearance.

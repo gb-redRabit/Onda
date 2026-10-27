@@ -43,6 +43,21 @@ function measureRow(node: Element | ComponentPublicInstance | null): void {
   if (node instanceof HTMLElement) virtualizer.value.measureElement(node);
 }
 
+// Lista utworów w szczegółach albumu też jest wirtualizowana — albumy
+// kompilacyjne potrafią mieć setki pozycji.
+const detailScrollEl = ref<HTMLElement | null>(null);
+const detailVirtualizer = useVirtualList({
+  count: () => selected.value?.[1].length ?? 0,
+  scrollEl: () => detailScrollEl.value,
+  estimateSize: () => 32,
+  overscan: 6,
+  measureElement: (element) => element.getBoundingClientRect().height
+});
+
+function measureDetailRow(node: Element | ComponentPublicInstance | null): void {
+  if (node instanceof HTMLElement) detailVirtualizer.value.measureElement(node);
+}
+
 function trackTitle(track: MediaFile | undefined): string {
   if (!track) return '';
   return track.metadata?.title || track.name;
@@ -131,20 +146,29 @@ function playFrom(album: AlbumEntry, index: number): void {
           </button>
         </span>
       </div>
-      <div class="flex-1 min-h-0 overflow-auto compact-scroll px-2 pb-2">
-        <button
-          v-for="(track, index) in selected[1]"
-          :key="`${track.path}-${index}`"
-          class="w-full flex items-center gap-2 px-2 py-1.5 rounded-field text-left hover:bg-base-content/5 transition-colors"
-          :data-testid="`compact-album-track-${index}`"
-          @click="playFrom(selected, index)"
-        >
-          <span class="w-5 text-[10px] text-base-content/35 tabular-nums">{{ index + 1 }}</span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-[12px] truncate">{{ trackTitle(track) }}</span>
-          </span>
-          <Play :size="11" class="text-base-content/30" />
-        </button>
+      <div ref="detailScrollEl" class="flex-1 min-h-0 overflow-auto compact-scroll px-2 pb-2">
+        <div class="relative" :style="{ height: `${detailVirtualizer.getTotalSize()}px` }">
+          <button
+            v-for="row in detailVirtualizer.getVirtualItems()"
+            :key="String(row.key)"
+            :ref="measureDetailRow"
+            :data-index="row.index"
+            class="absolute top-0 left-0 w-full flex items-center gap-2 px-2 py-1.5 rounded-field text-left hover:bg-base-content/5 transition-colors"
+            :style="{ transform: `translateY(${row.start}px)` }"
+            :data-testid="`compact-album-track-${row.index}`"
+            @click="playFrom(selected, row.index)"
+          >
+            <span class="w-5 text-[10px] text-base-content/35 tabular-nums">{{
+              row.index + 1
+            }}</span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-[12px] truncate">{{
+                trackTitle(selected[1][row.index])
+              }}</span>
+            </span>
+            <Play :size="11" class="text-base-content/30" />
+          </button>
+        </div>
       </div>
     </template>
   </div>

@@ -20,6 +20,13 @@ export interface MainMessages {
   depYtDlp: string;
   depFfmpeg: string;
   depRemove: string;
+  trayTooltip: string;
+  trayPlayPause: string;
+  trayNext: string;
+  trayPrevious: string;
+  trayToggleMode: string;
+  trayShow: string;
+  trayQuit: string;
 }
 
 const EN: MainMessages = {
@@ -41,7 +48,14 @@ const EN: MainMessages = {
   openExecOpen: 'Open',
   depYtDlp: 'Failed to download yt-dlp',
   depFfmpeg: 'Failed to install FFmpeg',
-  depRemove: 'Failed to remove the file'
+  depRemove: 'Failed to remove the file',
+  trayTooltip: 'Onda Player',
+  trayPlayPause: 'Play / Pause',
+  trayNext: 'Next',
+  trayPrevious: 'Previous',
+  trayToggleMode: 'Compact / Full window',
+  trayShow: 'Show Onda',
+  trayQuit: 'Quit'
 };
 
 const PL: MainMessages = {
@@ -63,7 +77,14 @@ const PL: MainMessages = {
   openExecOpen: 'Otwórz',
   depYtDlp: 'Nie udało się pobrać yt-dlp',
   depFfmpeg: 'Nie udało się zainstalować FFmpeg',
-  depRemove: 'Nie udało się usunąć pliku'
+  depRemove: 'Nie udało się usunąć pliku',
+  trayTooltip: 'Odtwarzacz Onda',
+  trayPlayPause: 'Odtwórz / Pauza',
+  trayNext: 'Następny',
+  trayPrevious: 'Poprzedni',
+  trayToggleMode: 'Kompakt / Pełne okno',
+  trayShow: 'Pokaż Ondę',
+  trayQuit: 'Zakończ'
 };
 
 const TABLES: Record<MainLocale, MainMessages> = { en: EN, pl: PL };

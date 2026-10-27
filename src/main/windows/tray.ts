@@ -1,10 +1,14 @@
 import { app, Menu, Tray, type BrowserWindow } from 'electron';
 import { trayIcon } from './window-icon';
+import { mainMessages } from '../i18n-main';
 
 // Ikona tray + menu kontekstowe wyodrębnione z `main/index.ts` (plan 2.8).
-// Instancja tray żyje tutaj; wywołujący używają `setupTray`/`destroyTray`.
+// Etykiety są lokalizowane przez mainMessages() i odświeżane, gdy zmieni się
+// język w ustawieniach (bez restartu).
 
 let tray: Tray | null = null;
+let getShellWindowRef: (() => BrowserWindow | null) | null = null;
+let modeOptions: TrayModeOptions | null = null;
 
 export function hasTray(): boolean {
   return tray !== null;
@@ -17,6 +21,8 @@ export function destroyTray(): void {
     /* już zniszczone */
   }
   tray = null;
+  getShellWindowRef = null;
+  modeOptions = null;
 }
 
 export interface TrayModeOptions {
@@ -25,51 +31,68 @@ export interface TrayModeOptions {
   toggleMode: () => void;
 }
 
-export function setupTray(
-  getShellWindow: () => BrowserWindow | null,
-  mode?: TrayModeOptions
-): void {
-  const trayImage = trayIcon();
-  if (!trayImage) return;
-  tray = new Tray(trayImage);
-  tray.setToolTip('Onda Player');
-
-  const withShell = (fn: (win: BrowserWindow) => void) => (): void => {
-    const shell = getShellWindow();
+function withShell(fn: (win: BrowserWindow) => void): () => void {
+  return () => {
+    const shell = getShellWindowRef?.();
     if (shell && !shell.isDestroyed()) fn(shell);
   };
-  const showShell = withShell((w) => {
-    if (w.isMinimized()) w.restore();
-    w.show();
-    w.focus();
-  });
+}
 
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Play / Pause', click: withShell((w) => w.webContents.send('media:playPause')) },
-    { label: 'Next', click: withShell((w) => w.webContents.send('media:next')) },
-    { label: 'Previous', click: withShell((w) => w.webContents.send('media:previous')) },
+function showShell(): void {
+  const shell = getShellWindowRef?.();
+  if (!shell || shell.isDestroyed()) return;
+  if (shell.isMinimized()) shell.restore();
+  shell.show();
+  shell.focus();
+}
+
+function buildMenu(): Menu {
+  const msg = mainMessages();
+  return Menu.buildFromTemplate([
+    { label: msg.trayPlayPause, click: withShell((w) => w.webContents.send('media:playPause')) },
+    { label: msg.trayNext, click: withShell((w) => w.webContents.send('media:next')) },
+    { label: msg.trayPrevious, click: withShell((w) => w.webContents.send('media:previous')) },
     { type: 'separator' },
-    ...(mode?.canToggleMode()
+    ...(modeOptions?.canToggleMode()
       ? [
           {
-            label: 'Compact / Full window',
-            click: () => mode.toggleMode()
+            label: msg.trayToggleMode,
+            click: () => modeOptions?.toggleMode()
           },
           { type: 'separator' as const }
         ]
       : []),
-    { label: 'Show Onda', click: showShell },
+    { label: msg.trayShow, click: showShell },
     { type: 'separator' },
     {
-      label: 'Quit',
+      label: msg.trayQuit,
       click: () => {
         destroyTray();
         app.quit();
       }
     }
   ]);
+}
 
-  tray.setContextMenu(contextMenu);
+/** Przebudowuje etykiety po zmianie locale (mainMessages jest już ustawione). */
+export function refreshTray(): void {
+  if (!tray || tray.isDestroyed()) return;
+  tray.setToolTip(mainMessages().trayTooltip);
+  tray.setContextMenu(buildMenu());
+}
 
-  tray.on('double-click', showShell);
+export function setupTray(
+  getShellWindow: () => BrowserWindow | null,
+  mode?: TrayModeOptions
+): void {
+  getShellWindowRef = getShellWindow;
+  modeOptions = mode ?? null;
+
+  if (!tray) {
+    const trayImage = trayIcon();
+    if (!trayImage) return;
+    tray = new Tray(trayImage);
+    tray.on('double-click', showShell);
+  }
+  refreshTray();
 }
