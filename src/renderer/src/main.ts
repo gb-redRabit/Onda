@@ -20,6 +20,7 @@ import { OnlineModule } from './modules/OnlineModule';
 import { HomeModule } from './modules/HomeModule';
 import { SettingsModule } from './modules/SettingsModule';
 import { SourcesModule } from './modules/SourcesModule';
+import { ToolsModule } from './modules/ToolsModule';
 
 moduleManager.register(new PlayerModule());
 moduleManager.register(new ExplorerModule());
@@ -28,6 +29,7 @@ moduleManager.register(new OnlineModule());
 moduleManager.register(new HomeModule());
 moduleManager.register(new SettingsModule());
 moduleManager.register(new SourcesModule());
+moduleManager.register(new ToolsModule());
 
 const app = createApp(App);
 const pinia = createPinia();

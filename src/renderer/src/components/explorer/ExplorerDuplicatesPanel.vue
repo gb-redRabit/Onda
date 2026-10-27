@@ -26,26 +26,43 @@ const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', asy
 const dupLoading = ref(false);
 const dupGroups = ref<DupGroup[]>([]);
 const dupSelected = ref<Set<string>>(new Set());
+// Każde kliknięcie ma pokazać wynik dla folderu otwartego w Eksploratorze, więc
+// skan startuje od nowa. Numer sekwencji odrzuca spóźnione odpowiedzi po szybkiej
+// zmianie folderu.
+let scanSeq = 0;
 
 watch(
   () => props.open,
   (open) => {
-    if (open && dupGroups.value.length === 0 && !dupLoading.value) runDuplicatesScan();
+    if (open) rescanDuplicates();
   }
 );
 
+watch(
+  () => explorer.currentPath,
+  () => {
+    if (props.open) rescanDuplicates();
+  }
+);
+
+function rescanDuplicates() {
+  dupGroups.value = [];
+  void runDuplicatesScan();
+}
+
 async function runDuplicatesScan() {
-  if (!explorer.currentPath) return;
+  const directory = explorer.currentPath;
+  if (!directory) return;
+  const seq = ++scanSeq;
   dupLoading.value = true;
   dupSelected.value = new Set();
   try {
-    const result =
-      ((await window.api?.invoke('fs:findDuplicates', explorer.currentPath)) as DupGroup[]) || [];
-    dupGroups.value = result;
+    const result = ((await window.api?.invoke('fs:findDuplicates', directory)) as DupGroup[]) || [];
+    if (seq === scanSeq) dupGroups.value = result;
   } catch {
-    dupGroups.value = [];
+    if (seq === scanSeq) dupGroups.value = [];
   } finally {
-    dupLoading.value = false;
+    if (seq === scanSeq) dupLoading.value = false;
   }
 }
 

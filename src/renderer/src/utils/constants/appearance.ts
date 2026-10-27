@@ -16,6 +16,8 @@ export const DEFAULT_APPEARANCE = {
   animations: true,
   // Blokowanie reklam w osadzonych playerach (tylko sesja podglądu Źródeł).
   previewAdblock: true,
+  // Pin okna ponad innymi aplikacjami — domyślnie wyłączony.
+  alwaysOnTop: false,
   audioPipDock: 'bottom-right' as AudioPipDock,
   audioPipAutoShow: true,
   audioPipAutoHide: true,
@@ -49,9 +51,9 @@ export const DEFAULT_APPEARANCE = {
       {
         id: 'cover' as const,
         x: 27,
-        y: 8,
+        y: 6,
         width: 46,
-        height: 50,
+        height: 39,
         opacity: 100,
         layer: 2,
         visible: true
@@ -59,9 +61,9 @@ export const DEFAULT_APPEARANCE = {
       {
         id: 'trackInfo' as const,
         x: 18,
-        y: 61,
+        y: 66,
         width: 64,
-        height: 12,
+        height: 8,
         opacity: 100,
         layer: 3,
         visible: true
@@ -69,9 +71,9 @@ export const DEFAULT_APPEARANCE = {
       {
         id: 'progress' as const,
         x: 15,
-        y: 75,
+        y: 76,
         width: 70,
-        height: 5,
+        height: 4,
         opacity: 100,
         layer: 3,
         visible: true
@@ -84,6 +86,16 @@ export const DEFAULT_APPEARANCE = {
         height: 14,
         opacity: 100,
         layer: 5,
+        visible: true
+      },
+      {
+        id: 'lyrics' as const,
+        x: 8,
+        y: 47,
+        width: 84,
+        height: 17,
+        opacity: 100,
+        layer: 4,
         visible: true
       }
     ],
@@ -122,7 +134,26 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         visible: true
       },
       { id: 'progress', x: 30, y: 44, width: 66, height: 5, opacity: 100, layer: 3, visible: true },
-      { id: 'controls', x: 30, y: 54, width: 66, height: 20, opacity: 100, layer: 5, visible: true }
+      {
+        id: 'controls',
+        x: 30,
+        y: 54,
+        width: 66,
+        height: 20,
+        opacity: 100,
+        layer: 5,
+        visible: true
+      },
+      {
+        id: 'lyrics',
+        x: 30,
+        y: 76,
+        width: 66,
+        height: 20,
+        opacity: 100,
+        layer: 4,
+        visible: false
+      }
     ]
   },
   stacked: {
@@ -150,7 +181,26 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         visible: true
       },
       { id: 'progress', x: 22, y: 60, width: 56, height: 6, opacity: 100, layer: 3, visible: true },
-      { id: 'controls', x: 22, y: 69, width: 56, height: 20, opacity: 100, layer: 5, visible: true }
+      {
+        id: 'controls',
+        x: 22,
+        y: 69,
+        width: 56,
+        height: 20,
+        opacity: 100,
+        layer: 5,
+        visible: true
+      },
+      {
+        id: 'lyrics',
+        x: 22,
+        y: 3,
+        width: 56,
+        height: 40,
+        opacity: 100,
+        layer: 4,
+        visible: false
+      }
     ]
   },
   split: {
@@ -178,7 +228,17 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         visible: true
       },
       { id: 'progress', x: 4, y: 73, width: 40, height: 5, opacity: 100, layer: 3, visible: true },
-      { id: 'controls', x: 4, y: 80, width: 40, height: 16, opacity: 100, layer: 5, visible: true }
+      { id: 'controls', x: 4, y: 80, width: 40, height: 16, opacity: 100, layer: 5, visible: true },
+      {
+        id: 'lyrics',
+        x: 54,
+        y: 12,
+        width: 42,
+        height: 24,
+        opacity: 100,
+        layer: 4,
+        visible: false
+      }
     ]
   },
   full: {
@@ -194,19 +254,38 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         layer: 1,
         visible: true
       },
-      { id: 'cover', x: 27, y: 8, width: 46, height: 50, opacity: 100, layer: 2, visible: true },
+      { id: 'cover', x: 27, y: 6, width: 46, height: 39, opacity: 100, layer: 2, visible: true },
       {
         id: 'trackInfo',
         x: 18,
-        y: 61,
+        y: 66,
         width: 64,
-        height: 12,
+        height: 8,
         opacity: 100,
         layer: 3,
         visible: true
       },
-      { id: 'progress', x: 15, y: 75, width: 70, height: 5, opacity: 100, layer: 3, visible: true },
-      { id: 'controls', x: 15, y: 82, width: 70, height: 14, opacity: 100, layer: 5, visible: true }
+      { id: 'progress', x: 15, y: 76, width: 70, height: 4, opacity: 100, layer: 3, visible: true },
+      {
+        id: 'controls',
+        x: 15,
+        y: 82,
+        width: 70,
+        height: 14,
+        opacity: 100,
+        layer: 5,
+        visible: true
+      },
+      {
+        id: 'lyrics',
+        x: 8,
+        y: 47,
+        width: 84,
+        height: 17,
+        opacity: 100,
+        layer: 4,
+        visible: true
+      }
     ]
   },
   immersive: {
@@ -222,10 +301,20 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         layer: 1,
         visible: true
       },
-      { id: 'cover', x: 35, y: 18, width: 30, height: 38, opacity: 95, layer: 2, visible: true },
-      { id: 'trackInfo', x: 12, y: 68, width: 76, height: 9, opacity: 75, layer: 3, visible: true },
-      { id: 'progress', x: 12, y: 78, width: 76, height: 4, opacity: 70, layer: 3, visible: true },
-      { id: 'controls', x: 22, y: 84, width: 56, height: 13, opacity: 85, layer: 5, visible: true }
+      { id: 'cover', x: 35, y: 10, width: 30, height: 25, opacity: 95, layer: 2, visible: true },
+      { id: 'trackInfo', x: 12, y: 58, width: 76, height: 8, opacity: 75, layer: 3, visible: true },
+      { id: 'progress', x: 12, y: 68, width: 76, height: 4, opacity: 70, layer: 3, visible: true },
+      { id: 'controls', x: 22, y: 76, width: 56, height: 13, opacity: 85, layer: 5, visible: true },
+      {
+        id: 'lyrics',
+        x: 12,
+        y: 38,
+        width: 76,
+        height: 18,
+        opacity: 90,
+        layer: 4,
+        visible: true
+      }
     ]
   }
 };

@@ -136,8 +136,10 @@ export async function runYtDlpAttempt(
         job.progress = 100;
         job.completedAt = Date.now();
         finishedOk = true;
-        reportCompleted(job);
+        // Najpierw ustal rzeczywistą ścieżkę (po konwersji/postprocessingu), dopiero
+        // potem zgłoś ukończenie — inaczej subskrypcja zapisuje nieistniejący plik.
         await resolveRealOutputPath(job, destinations);
+        reportCompleted(job);
       } else {
         job.status = 'error';
         const errorCode = classifyYtDlpError(stderrText);
@@ -171,7 +173,7 @@ async function resolveRealOutputPath(job: Job, destinations: string[]): Promise<
       }
     })
   );
-  let real = resolveFinalOutputPath(destinations, (p) => existing.has(p));
+  let real = await resolveFinalOutputPath(destinations, (p) => existing.has(p));
   if (!real) {
     try {
       const dir = resolveOutputDir(job);

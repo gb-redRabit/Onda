@@ -11,7 +11,8 @@ import {
   drawWave,
   drawRadial,
   drawCircle,
-  drawRings
+  drawRings,
+  drawSplash
 } from '@renderer/utils/visualizerDraw';
 import { resetGradients } from '@renderer/utils/visualizerGradients';
 import { getFreqData, smoothData } from '@renderer/utils/visualizerBuffers';
@@ -117,7 +118,9 @@ function draw(timestamp: number) {
 
   ctx.globalAlpha = alpha;
 
-  if (style.value === 'bars') {
+  if (style.value === 'splash') {
+    drawSplash(ctx, cw, ch, prim, sens, drawData, bufferLength, quality.value);
+  } else if (style.value === 'bars') {
     drawBars(analyserNode, ctx, cw, ch, prim, sec, sens, drawData, quality.value);
   } else if (style.value === 'spectrum') {
     drawSpectrum(analyserNode, ctx, cw, ch, prim, sec, sens, drawData, quality.value);

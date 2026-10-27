@@ -11,6 +11,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useUIStore } from '@renderer/stores/ui';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import { useAlwaysOnTop } from '@renderer/composables/useAlwaysOnTop';
 import { handleTabDrop } from '@renderer/utils/explorerTabDrop';
 import { IMAGE_EXTS } from '@shared/constants';
 import ExplorerNavPane from '@renderer/components/explorer/ExplorerNavPane.vue';
@@ -48,7 +49,7 @@ const {
 
 provide('showConfirm', showConfirm);
 
-const pinned = ref(false);
+const { pinned, togglePin } = useAlwaysOnTop();
 const searchQuery = ref('');
 useViewSearch(searchQuery);
 const dupPanelOpen = ref(false);
@@ -64,11 +65,6 @@ const filteredFiles = computed(() => {
     (f) => f.name.toLowerCase().includes(q) || (f.extension || '').toLowerCase().includes(q)
   );
 });
-
-function togglePin() {
-  pinned.value = !pinned.value;
-  window.api?.invoke('window:setAlwaysOnTop', pinned.value);
-}
 
 function toggleDuplicatesPanel() {
   dupPanelOpen.value = !dupPanelOpen.value;

@@ -1,5 +1,8 @@
 import { ref } from 'vue';
+import { i18n } from '@renderer/i18n';
+import { useUIStore } from '@renderer/stores/ui';
 import type { Subscription, SubscriptionDownloadPrefs } from '@renderer/types/online';
+import type { IpcSubscriptionCheckResult } from '@shared/types/ipc';
 
 export interface SubscriptionChannelRef {
   channelId: string;
@@ -28,6 +31,35 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
   const { addSubscription, removeSubscription, loadSubscriptions, queueChannelVideos } = deps;
   const checkingSubscriptions = ref(false);
   const checkingChannelId = ref<string | null>(null);
+
+  // Ręczne sprawdzanie musi dać widoczny wynik — wcześniej brakujące pliki były
+  // tylko po cichu odznaczane, więc kliknięcie wyglądało jak brak reakcji.
+  function notifyCheckResult(result: IpcSubscriptionCheckResult | undefined): void {
+    if (!result) return;
+    const ui = useUIStore();
+    const t = i18n.global.t;
+    if (result.busy) {
+      ui.notify('info', t('youtube.checkBusy'));
+      return;
+    }
+    if (result.missing?.length) {
+      const titles = result.missing
+        .map((item) => item.title)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(', ');
+      ui.notify('warning', t('youtube.checkMissing', { count: result.missing.length, titles }));
+      return;
+    }
+    if (result.errors > 0) {
+      ui.notify('error', t('youtube.checkErrors', { count: result.errors }));
+      return;
+    }
+    ui.notify(
+      'success',
+      t('youtube.checkDone', { checked: result.checked, newVideos: result.newVideos })
+    );
+  }
 
   async function followChannel(channel: SubscriptionChannelRef) {
     try {
@@ -95,8 +127,10 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
     if (checkingSubscriptions.value) return;
     checkingSubscriptions.value = true;
     try {
-      await window.api.invoke('yt:subs:checkNow');
+      const result = (await window.api.invoke('yt:subs:checkNow')) as
+        IpcSubscriptionCheckResult | undefined;
       await loadSubscriptions();
+      notifyCheckResult(result);
     } catch {
       /* sprawdzanie nie powiodło się */
     } finally {
@@ -108,8 +142,10 @@ export function createOnlineSubscriptionActions(deps: OnlineSubscriptionActionsD
     if (checkingChannelId.value) return;
     checkingChannelId.value = channelId;
     try {
-      await window.api.invoke('yt:subs:checkChannel', channelId);
+      const result = (await window.api.invoke('yt:subs:checkChannel', channelId)) as
+        IpcSubscriptionCheckResult | undefined;
       await loadSubscriptions();
+      notifyCheckResult(result);
     } catch {
       /* sprawdzanie nie powiodło się */
     } finally {

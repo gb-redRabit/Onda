@@ -20,7 +20,8 @@ export const CONSTRAINTS: Record<
   // ta gałąź nigdy nie mogła się wyrenderować. Przycisk odtwarzania ma 24px przy tym rozmiarze,
   // więc fallback mieści się dokładnie tam, gdzie rząd pięciu przycisków by się nie zmieścił.
   controls: { minW: 30, minH: 4, maxH: 25 },
-  trackInfo: { minW: 25, minH: 6 }
+  trackInfo: { minW: 25, minH: 6 },
+  lyrics: { minW: 20, minH: 8 }
 };
 
 // height% -> width% tak, aby na kontenerze PREVIEW_W×PREVIEW_H krawędzie były w proporcji 16:9.

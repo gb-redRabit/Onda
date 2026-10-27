@@ -171,6 +171,60 @@ describe('buildYtArgs', () => {
     ).toEqual([...base, '--cookies', '/tmp/c.txt', '--js-runtimes', 'node:/usr/bin/node']);
   });
 
+  it('adds the web_embedded client for YouTube subtitle downloads with cookies', () => {
+    const subBase = [
+      '--write-auto-subs',
+      '--sub-langs',
+      'pl,en',
+      '--',
+      'https://www.youtube.com/watch?v=1'
+    ];
+    expect(buildYtArgs(subBase, { method: 'manual', cookiesPath: '/tmp/c.txt' }, null)).toEqual([
+      '--write-auto-subs',
+      '--sub-langs',
+      'pl,en',
+      '--cookies',
+      '/tmp/c.txt',
+      '--extractor-args',
+      'youtube:player_client=web_creator,web_embedded',
+      '--',
+      'https://www.youtube.com/watch?v=1'
+    ]);
+  });
+
+  it('keeps the subtitle client override only for authenticated YouTube downloads', () => {
+    const subBase = ['--write-subs', '--', 'https://www.youtube.com/watch?v=1'];
+    expect(buildYtArgs(subBase, { method: 'none' }, null)).toEqual(subBase);
+    expect(buildYtArgs(subBase, null, null)).toEqual(subBase);
+    const nonYoutube = ['--write-subs', '--', 'https://soundcloud.com/a/b'];
+    expect(buildYtArgs(nonYoutube, { method: 'manual', cookiesPath: '/tmp/c.txt' }, null)).toEqual([
+      '--write-subs',
+      '--cookies',
+      '/tmp/c.txt',
+      '--',
+      'https://soundcloud.com/a/b'
+    ]);
+  });
+
+  it('does not duplicate a caller-provided youtube --extractor-args', () => {
+    const subBase = [
+      '--write-subs',
+      '--extractor-args',
+      'youtube:player_client=web',
+      '--',
+      'https://www.youtube.com/watch?v=1'
+    ];
+    expect(buildYtArgs(subBase, { method: 'manual', cookiesPath: '/tmp/c.txt' }, null)).toEqual([
+      '--write-subs',
+      '--extractor-args',
+      'youtube:player_client=web',
+      '--cookies',
+      '/tmp/c.txt',
+      '--',
+      'https://www.youtube.com/watch?v=1'
+    ]);
+  });
+
   it('does not duplicate a caller-provided --js-runtimes flag', () => {
     expect(buildYtArgs([...base, '--js-runtimes', 'node:x'], null, '/usr/bin/node')).toEqual([
       ...base,

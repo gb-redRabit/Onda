@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, stat } from 'fs/promises';
 import { dirname } from 'path';
 import { logger } from '../../../shared/logger';
 import type { Subscription } from '../../../shared/types/online';
@@ -26,6 +26,7 @@ export type SubscriptionPatch = Partial<
     | 'baselineVideoId'
     | 'downloadedVideoIds'
     | 'queuedVideoIds'
+    | 'downloadedFiles'
     | 'pendingCount'
     | 'newArrivals'
     | 'downloadPrefs'
@@ -61,10 +62,13 @@ export async function loadSubscriptions(filePath: string): Promise<Subscription[
 
 // Atomowo dopisuje videoIds do downloadedVideoIds kanału. Używane przez
 // menedżera pobierania, aby żadne ukończone pobranie nigdy nie przepadło przez wyścig.
+// `files` (opcjonalnie) mapuje videoId → ścieżka pliku, żeby późniejsze ręczne
+// „sprawdź teraz" mogło zweryfikować, czy plik nadal istnieje na dysku.
 export function appendDownloadedVideos(
   filePath: string,
   channelId: string,
-  videoIds: string[]
+  videoIds: string[],
+  files?: Record<string, string>
 ): Promise<Subscription | null> {
   return withWriteLock(async () => {
     const list = await readList(filePath);
@@ -82,14 +86,69 @@ export function appendDownloadedVideos(
     // odznakę "do pobrania" na bieżąco w UI, zamiast czekać na następne sprawdzenie.
     const prevPending = list[idx].pendingCount;
     const pendingCount = prevPending != null ? Math.max(0, prevPending - freshCount) : prevPending;
+    const nextFiles: Record<string, string> = { ...(list[idx].downloadedFiles || {}) };
+    if (files) {
+      for (const [id, p] of Object.entries(files)) {
+        if (id && typeof p === 'string' && p) nextFiles[id] = p;
+      }
+    }
     list[idx] = {
       ...list[idx],
       downloadedVideoIds: [...known],
       queuedVideoIds: queued,
+      downloadedFiles: nextFiles,
       pendingCount
     };
     await writeList(filePath, list);
     return list[idx];
+  });
+}
+
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    return (await stat(p)).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Weryfikuje zapisane ścieżki pobranych filmów kanału: wpisy, których plik zniknął
+ * z dysku, są usuwane z `downloadedVideoIds` i `downloadedFiles`. Zwraca usunięte id,
+ * żeby wywołujący mógł zdecydować o ponownym zakolejkowaniu (świadomie NIE robimy tego
+ * w tym samym przebiegu — film staje się „nowy" dopiero przy następnym sprawdzeniu).
+ */
+export function reconcileDownloadedFiles(
+  filePath: string,
+  channelId: string
+): Promise<{ updated: Subscription | null; removedIds: string[] }> {
+  return withWriteLock(async () => {
+    const list = await readList(filePath);
+    const idx = list.findIndex((s) => s.channelId === channelId);
+    if (idx === -1) return { updated: null, removedIds: [] };
+    const files = list[idx].downloadedFiles || {};
+    const entries = Object.entries(files);
+    if (entries.length === 0) return { updated: list[idx], removedIds: [] };
+    const missing: string[] = [];
+    await Promise.all(
+      entries.map(async ([id, p]) => {
+        if (!(await fileExists(p))) missing.push(id);
+      })
+    );
+    if (missing.length === 0) return { updated: list[idx], removedIds: [] };
+    const missingSet = new Set(missing);
+    const nextFiles: Record<string, string> = {};
+    for (const [id, p] of entries) {
+      if (!missingSet.has(id)) nextFiles[id] = p;
+    }
+    const nextDownloaded = (list[idx].downloadedVideoIds || []).filter((id) => !missingSet.has(id));
+    list[idx] = { ...list[idx], downloadedVideoIds: nextDownloaded, downloadedFiles: nextFiles };
+    await writeList(filePath, list);
+    logger.info(
+      'subscriptions',
+      `reconcile ${channelId}: unmarked ${missing.length} missing file(s)`
+    );
+    return { updated: list[idx], removedIds: missing };
   });
 }
 

@@ -57,3 +57,40 @@ describe('createOnlineDownloads.submitJobs', () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 });
+
+describe('createOnlineDownloads.retryCover', () => {
+  function coverTask(overrides: Record<string, unknown> = {}) {
+    return {
+      id: '1',
+      title: 't',
+      videoId: 'x',
+      status: 'completed',
+      coverStatus: 'error',
+      coverError: 'boom',
+      ...overrides
+    };
+  }
+
+  it('optimistically marks the cover as fetching and sends the IPC', async () => {
+    invoke.mockResolvedValueOnce({ success: true });
+    const dl = createOnlineDownloads(() => {});
+    dl.upsertTask(coverTask() as never);
+
+    await dl.retryCover(dl.downloads.value[0]);
+
+    expect(invoke).toHaveBeenCalledWith('yt:download:retryCover', '1');
+    expect(dl.downloads.value[0].coverStatus).toBe('fetching');
+    expect(dl.downloads.value[0].coverError).toBeUndefined();
+  });
+
+  it('reverts to the previous state when the retry fails', async () => {
+    invoke.mockResolvedValueOnce({ success: false, error: 'nope' });
+    const dl = createOnlineDownloads(() => {});
+    dl.upsertTask(coverTask() as never);
+
+    await dl.retryCover(dl.downloads.value[0]);
+
+    expect(dl.downloads.value[0].coverStatus).toBe('error');
+    expect(dl.downloads.value[0].coverError).toBe('boom');
+  });
+});

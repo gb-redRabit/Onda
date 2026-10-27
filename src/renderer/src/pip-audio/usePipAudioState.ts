@@ -1,5 +1,4 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { formatDuration } from '@renderer/utils/formatters';
 import { EQUALIZER_PRESETS, EQUALIZER_PRESET_LABELS } from '@renderer/utils/constants';
 import type { AudioPipDock, AudioPipElementId, AudioPipLayoutKind } from '@shared/types/pip';
@@ -82,9 +81,9 @@ export function usePipAudioState(handlers: PipAudioHandlers) {
   const volLabel = computed(() => (isMuted.value ? 'MUT' : 'VOL'));
 
   const isVideoCover = computed(() => coverType.value === 'video' && !!coverData.value);
-  const videoCoverSrc = computed(() =>
-    coverType.value === 'video' && coverData.value ? toMediaServerUrl(coverData.value) : ''
-  );
+  // `coverData` przychodzi z okna głównego już jako gotowy URL serwera mediów (dla wideo)
+  // albo data:/https (dla obrazu) — okno PiP nie ma bazy serwera, więc NIE konwertujemy tu.
+  const videoCoverSrc = computed(() => (isVideoCover.value ? (coverData.value ?? '') : ''));
 
   const has = (id: AudioPipElementId): boolean => elements.value.includes(id);
   const isVertical = computed(() => layoutKind.value === 'bar-v');

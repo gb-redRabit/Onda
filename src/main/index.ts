@@ -82,8 +82,10 @@ function createWindow(): BrowserWindow {
   const win = createBrowserWindow({
     width: 1200,
     height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    // Poniżej połowy typowych ekranów (1366×768 → 683, 1920×1080 → 540 wysokości),
+    // inaczej Windows nie pozwala przykleić okna do krawędzi.
+    minWidth: 640,
+    minHeight: 480,
     show: false,
     ...GLASS_WINDOW_OPTS,
     icon: windowIcon(),
@@ -163,7 +165,7 @@ app.whenReady().then(async () => {
 
   splash.send(mainMessages().bootMediaServer, 10);
 
-  registerIPC();
+  registerIPC({ getMainWindow: () => mainWindow });
   registerMediaUrlHandler();
 
   const mediaServer = await createMediaServer();

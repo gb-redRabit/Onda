@@ -158,6 +158,7 @@ function measureDownloadRow(node: Element | ComponentPublicInstance | null): voi
             @play="playDownload(visible[row.index])"
             @edit-meta="openMetaEditor(visible[row.index])"
             @open-library="openLibrary(visible[row.index])"
+            @retry-cover="yt.retryCover(visible[row.index])"
           />
         </div>
       </div>

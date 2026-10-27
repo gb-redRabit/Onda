@@ -3,8 +3,9 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { usePlayerStore } from '@renderer/stores/player';
 import { formatDuration } from '@renderer/utils/formatters';
+import WaveformLayer from './WaveformLayer.vue';
 
-const props = defineProps<{ variant?: string }>();
+const props = defineProps<{ variant?: string; waveform?: boolean }>();
 
 const audio = useAudioPlayer();
 const player = usePlayerStore();
@@ -40,15 +41,24 @@ const bufferedPct = computed(() => audio.buffered.value * 100);
 
 const isThin = computed(() => props.variant === 'thin');
 const isNeon = computed(() => props.variant === 'neon');
+const waveformOn = computed(() => props.waveform === true);
+const waveformPath = computed(() => {
+  const track = player.currentTrack;
+  if (!track || track.type !== 'audio' || track.id.startsWith('radio:')) return null;
+  return track.path;
+});
 
 const trackBase = 'flex-1 relative';
 const trackClass = computed(() => {
+  if (waveformOn.value)
+    return `${trackBase} h-9 bg-base-content/10 rounded-field overflow-hidden cursor-pointer group`;
   if (isNeon.value) return `${trackBase} h-1.5 bg-base-content/15 rounded-full`;
   if (isThin.value) return `${trackBase} h-0.5 bg-base-content/15 rounded-full`;
   return `${trackBase} h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height] group`;
 });
 
 const fillClass = computed(() => {
+  if (waveformOn.value) return 'absolute inset-y-0 left-0 bg-primary/70';
   if (isNeon.value)
     return 'absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_10px] shadow-primary/50';
   return 'absolute inset-y-0 left-0 bg-primary rounded-full';
@@ -130,18 +140,37 @@ function onTrackKey(e: KeyboardEvent) {
       @mousedown="onDragSeek"
       @keydown="onTrackKey"
     >
-      <div :class="bufferedClass" :style="{ width: bufferedPct + '%' }" />
       <div
-        v-if="isNeon"
-        class="absolute inset-y-0 left-0 rounded-full bg-primary/40 blur-sm"
-        :style="{ width: progressPct + '%' }"
+        v-if="waveformOn"
+        class="absolute inset-y-0 left-0 bg-base-content/5"
+        :style="{ width: bufferedPct + '%' }"
       />
-      <div :class="fillClass" :style="{ width: progressPct + '%' }">
+      <WaveformLayer
+        v-if="waveformOn && waveformPath"
+        :path="waveformPath"
+        :duration="audio.duration.value"
+        :progress="progressPct / 100"
+        class="absolute inset-0 pointer-events-none"
+      />
+      <div
+        v-if="waveformOn"
+        class="absolute inset-y-0 w-px bg-primary/80"
+        :style="{ left: progressPct + '%' }"
+      />
+      <template v-if="!waveformOn">
+        <div :class="bufferedClass" :style="{ width: bufferedPct + '%' }" />
         <div
-          v-if="!isThin"
-          class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+          v-if="isNeon"
+          class="absolute inset-y-0 left-0 rounded-full bg-primary/40 blur-sm"
+          :style="{ width: progressPct + '%' }"
         />
-      </div>
+        <div :class="fillClass" :style="{ width: progressPct + '%' }">
+          <div
+            v-if="!isThin"
+            class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+          />
+        </div>
+      </template>
     </div>
     <span
       v-if="!tooShort"

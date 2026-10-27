@@ -108,6 +108,70 @@ export function drawRadial(
   ctx.globalAlpha = 1;
 }
 
+/**
+ * Znak splash: pierścień krótkich, zaokrąglonych słupków + pulsujące koło.
+ * Proporcje jak w `resources/splash.html` (20% promienia, 18.5% maks. długości).
+ */
+export function drawSplash(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  prim: string,
+  sens: number,
+  data: Uint8Array,
+  bufferLength: number,
+  _quality: { radialCount: number }
+) {
+  const cx = cw / 2;
+  const cy = ch / 2;
+  const unit = Math.min(cw, ch);
+  const baseRadius = unit * 0.2;
+  const minBar = unit * 0.025;
+  const maxBar = unit * 0.185;
+  // Splash ma zawsze 64 słupki (znak z ekranu startowego). Grubość liczona od
+  // odstępu, żeby na dużym canvasie / przy 128 barwach linie nie zlewały się.
+  const count = 64;
+  const spacing = (Math.PI * 2 * baseRadius) / count;
+  const lineWidth = Math.max(1, Math.min(unit * 0.012, spacing * 0.45));
+  // Ten sam puls co na splashu: sin(time * 2), okres ~3,14 s.
+  const pulse = 0.85 + Math.sin(performance.now() / 500) * 0.15;
+  const slice = bufferLength / count;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = prim;
+  const baseAlpha = ctx.globalAlpha;
+
+  for (let i = 0; i < count; i++) {
+    const val = data[Math.min(bufferLength - 1, Math.floor(i * slice))] / 255;
+    const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+    const len = minBar + val * maxBar * (0.6 + sens);
+    const x1 = cx + Math.cos(angle) * baseRadius;
+    const y1 = cy + Math.sin(angle) * baseRadius;
+    const x2 = cx + Math.cos(angle) * (baseRadius + len);
+    const y2 = cy + Math.sin(angle) * (baseRadius + len);
+    ctx.globalAlpha = baseAlpha * (0.25 + val * 0.75);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = prim;
+  ctx.globalAlpha = baseAlpha * 0.08;
+  ctx.beginPath();
+  ctx.arc(cx, cy, baseRadius * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.globalAlpha = baseAlpha * 0.3;
+  ctx.lineWidth = Math.max(0.75, lineWidth * 0.75);
+  ctx.beginPath();
+  ctx.arc(cx, cy, baseRadius * pulse, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawCircle(
   ctx: CanvasRenderingContext2D,
   cw: number,

@@ -90,6 +90,16 @@ export interface OndaAPI {
   extractSubtitleFonts: BoundIpcMethod<'subtitles:extractAttachments'>;
   getFontCacheStats: BoundIpcMethod<'subtitles:fontCacheStats'>;
   clearFontCache: BoundIpcMethod<'subtitles:fontCacheClear'>;
+  getLyrics: BoundIpcMethod<'lyrics:get'>;
+  convertMedia: BoundIpcMethod<'tools:convert'>;
+  cancelMediaConvert: BoundIpcMethod<'tools:cancel'>;
+  clipVideo: BoundIpcMethod<'tools:clip'>;
+  cancelVideoClip: BoundIpcMethod<'tools:clipCancel'>;
+  concatVideos: BoundIpcMethod<'tools:concat'>;
+  cancelVideoConcat: BoundIpcMethod<'tools:concatCancel'>;
+  clipThumbnails: BoundIpcMethod<'tools:clipThumbnails'>;
+  loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
+  saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;
   openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;
   openSubtitlesDownload: BoundIpcMethod<'opensubtitles:download'>;
   napiProjektCheck: BoundIpcMethod<'napiprojekt:check'>;

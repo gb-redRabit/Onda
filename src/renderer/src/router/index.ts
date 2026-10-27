@@ -11,7 +11,8 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   webcast: 'online',
   downloads: 'online',
   sources: 'sources',
-  settings: 'settings'
+  settings: 'settings',
+  tools: 'tools'
 };
 
 let _isSwitching = false;
@@ -75,6 +76,30 @@ const router = createRouter({
       name: 'sources',
       component: () => import('@renderer/views/SourcesView.vue'),
       meta: { title: 'Sources', icon: 'globe' }
+    },
+    {
+      path: '/tools',
+      name: 'tools',
+      component: () => import('@renderer/views/ToolsView.vue'),
+      meta: { title: 'Tools', icon: 'wrench' }
+    },
+    {
+      path: '/tools/converter',
+      name: 'tool-converter',
+      component: () => import('@renderer/views/tools/ConverterToolView.vue'),
+      meta: { title: 'Converter' }
+    },
+    {
+      path: '/tools/video-clipper',
+      name: 'tool-video-clipper',
+      component: () => import('@renderer/views/tools/VideoClipperToolView.vue'),
+      meta: { title: 'Video Clipper' }
+    },
+    {
+      path: '/tools/video-concat',
+      name: 'tool-video-concat',
+      component: () => import('@renderer/views/tools/VideoConcatToolView.vue'),
+      meta: { title: 'Video Concat' }
     },
     {
       path: '/settings',

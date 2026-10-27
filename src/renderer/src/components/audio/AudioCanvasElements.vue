@@ -4,6 +4,7 @@ import AudioCover from './AudioCover.vue';
 import TrackInfo from '../TrackInfo.vue';
 import AudioProgressBar from './AudioProgressBar.vue';
 import AudioControls from './AudioControls.vue';
+import LyricsPanel from './LyricsPanel.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useI18n } from 'vue-i18n';
@@ -115,7 +116,14 @@ function styleFor(el: AudioLayoutElement) {
         }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
-        <AudioProgressBar :variant="el.variant ?? 'classic'" />
+        <AudioProgressBar :variant="el.variant ?? 'classic'" :waveform="true" />
+      </div>
+    </template>
+
+    <!-- Tekst piosenki -->
+    <template v-else-if="el.id === 'lyrics'">
+      <div class="w-full h-full">
+        <LyricsPanel :variant="el.variant ?? 'default'" />
       </div>
     </template>
 

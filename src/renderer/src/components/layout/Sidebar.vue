@@ -14,6 +14,7 @@ import {
   ChevronRight,
   RadioTower,
   Radio,
+  Wrench,
   ChevronDown,
   ChevronRight as ChevronRightSmall
 } from '@lucide/vue';
@@ -81,7 +82,8 @@ const navItems = computed<NavEntry[]>(() => [
   { label: t('nav.online'), icon: Radio, route: '/online' },
   { label: t('nav.webcast'), icon: RadioTower, route: '/webcast' },
   { label: t('nav.sources'), icon: Globe, route: '/sources' },
-  { label: t('nav.downloads'), icon: Download, route: '/downloads', blink: downloadBlink.value }
+  { label: t('nav.downloads'), icon: Download, route: '/downloads', blink: downloadBlink.value },
+  { label: t('nav.tools'), icon: Wrench, route: '/tools' }
 ]);
 
 function onResizeStart(e: MouseEvent) {

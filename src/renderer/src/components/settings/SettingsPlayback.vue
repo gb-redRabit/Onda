@@ -1,19 +1,48 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { useLoudnessAnalysis } from '@renderer/composables/useLoudnessAnalysis';
 import { readSelect } from '@renderer/utils/selectOptions';
 
 const settings = useSettingsStore();
+const {
+  running: loudnessRunning,
+  current: loudnessCurrent,
+  total: loudnessTotal,
+  error: loudnessError,
+  result: loudnessResult,
+  analyze: analyzeLoudness,
+  cancel: cancelLoudness
+} = useLoudnessAnalysis();
+
+const loudnessPct = computed(() =>
+  loudnessTotal.value > 0
+    ? Math.min(100, Math.round((loudnessCurrent.value / loudnessTotal.value) * 100))
+    : 0
+);
+const loudnessInterrupted = computed(
+  () => !!loudnessResult.value && (loudnessResult.value.aborted || loudnessResult.value.truncated)
+);
 
 /** Te same wartości, z których renderowane są opcje poniżej. */
-const VIZ_MODES = ['none', 'circle', 'bars', 'particles', 'wave', 'radial'] as const;
+const VIZ_MODES = [
+  'none',
+  'splash',
+  'circle',
+  'bars',
+  'spectrum',
+  'wave',
+  'radial',
+  'rings',
+  'particles'
+] as const;
+const REPLAY_GAIN_MODES = ['off', 'track', 'album'] as const;
 
 const toggles = [
   { key: 'gaplessPlayback' as const, labelKey: 'settings.gapless' },
-  { key: 'normalization' as const, labelKey: 'settings.volumeNorm' },
-  { key: 'replayGain' as const, labelKey: 'settings.replayGain' },
   { key: 'autoPauseOnFocusLoss' as const, labelKey: 'settings.autoPause' },
   { key: 'rememberPosition' as const, labelKey: 'settings.rememberPos' },
   { key: 'cursorHide' as const, labelKey: 'settings.hideCursor' }
@@ -43,6 +72,91 @@ const toggles = [
         "
       />
     </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup :title="$t('settings.replayGain')">
+    <SettingsRow
+      :label="$t('settings.replayGainMode')"
+      path="playback.replayGainMode"
+      anchor="setting-replay-gain-mode"
+    >
+      <select
+        :value="settings.playback.replayGainMode"
+        class="w-full px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+        @change="settings.updatePlayback({ replayGainMode: readSelect($event, REPLAY_GAIN_MODES) })"
+      >
+        <option value="off">{{ $t('settings.replayGainOff') }}</option>
+        <option value="track">{{ $t('settings.replayGainTrack') }}</option>
+        <option value="album">{{ $t('settings.replayGainAlbum') }}</option>
+      </select>
+    </SettingsRow>
+    <p class="text-[11px] text-base-content/50 mt-2 px-1">
+      {{ $t('settings.replayGainModeHint') }}
+    </p>
+
+    <div class="mt-3 flex flex-wrap items-center gap-2 px-1">
+      <button
+        v-if="!loudnessRunning"
+        data-testid="analyze-loudness"
+        class="px-3 py-1.5 fx-depth rounded-field text-xs bg-primary/15 text-primary-text hover:bg-primary/25 transition-colors"
+        @click="analyzeLoudness"
+      >
+        {{ $t('settings.analyzeLoudness') }}
+      </button>
+      <button
+        v-else
+        data-testid="cancel-loudness"
+        class="px-3 py-1.5 fx-depth rounded-field text-xs bg-error/15 text-error hover:bg-error/25 transition-colors"
+        @click="cancelLoudness"
+      >
+        {{ $t('common.cancel') }}
+      </button>
+      <span v-if="loudnessRunning" class="text-[11px] text-base-content/60 font-mono tabular-nums">
+        {{ loudnessCurrent }} / {{ loudnessTotal }}
+      </span>
+    </div>
+
+    <div v-if="loudnessRunning" class="mt-2 mx-1 h-1.5 rounded-full bg-base-300 overflow-hidden">
+      <div
+        class="h-full bg-primary transition-[width]"
+        :style="{ width: `${loudnessPct}%` }"
+        role="progressbar"
+        :aria-valuenow="loudnessPct"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      />
+    </div>
+
+    <p class="text-[11px] text-base-content/50 mt-2 px-1">
+      {{ $t('settings.analyzeLoudnessHint') }}
+    </p>
+    <p
+      v-if="loudnessError"
+      data-testid="loudness-error"
+      class="text-[11px] text-error mt-1 px-1 break-words"
+    >
+      {{ $t('settings.analyzeLoudnessError', { error: loudnessError }) }}
+    </p>
+    <p
+      v-else-if="loudnessResult && !loudnessRunning"
+      data-testid="loudness-done"
+      class="text-[11px] text-base-content/60 mt-1 px-1"
+    >
+      {{
+        $t('settings.analyzeLoudnessDone', {
+          analyzed: loudnessResult.analyzed,
+          albums: loudnessResult.albums,
+          updated: loudnessResult.updated
+        })
+      }}
+    </p>
+    <p
+      v-if="loudnessInterrupted && !loudnessRunning"
+      data-testid="loudness-limited"
+      class="text-[11px] text-warning mt-1 px-1"
+    >
+      {{ $t('settings.analyzeLoudnessLimited') }}
+    </p>
   </SettingsGroup>
 
   <SettingsGroup>
@@ -166,11 +280,14 @@ const toggles = [
           "
         >
           <option value="none">{{ $t('settings.vizModeNone') }}</option>
+          <option value="splash">{{ $t('settings.vizModeSplash') }}</option>
           <option value="circle">{{ $t('settings.vizModeCircle') }}</option>
           <option value="bars">{{ $t('settings.vizModeBars') }}</option>
+          <option value="spectrum">{{ $t('settings.vizModeSpectrum') }}</option>
           <option value="particles">{{ $t('settings.vizModeParticles') }}</option>
           <option value="wave">{{ $t('settings.vizModeWave') }}</option>
           <option value="radial">{{ $t('settings.vizModeRadial') }}</option>
+          <option value="rings">{{ $t('settings.vizModeRings') }}</option>
         </select>
       </label>
       <div class="grid grid-cols-2 gap-3">

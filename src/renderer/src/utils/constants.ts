@@ -140,6 +140,7 @@ export * from './constants/appearance';
 export const DEFAULT_PLAYBACK: PlaybackSettings = {
   normalization: false,
   replayGain: false,
+  replayGainMode: 'off',
   gaplessPlayback: true,
   autoPauseOnFocusLoss: false,
   defaultVolume: 0.8,
@@ -154,7 +155,8 @@ export const DEFAULT_PLAYBACK: PlaybackSettings = {
   playbackSpeed: 1,
   videoFilter: 'none',
   visualization: {
-    mode: 'circle' as const,
+    // Domyślnie znak splash (radialne słupki + pulsujące koło), jak na ekranie startowym.
+    mode: 'splash' as const,
     primaryColor: '#8b7cf0',
     secondaryColor: '#4f46e5',
     sensitivity: 0.5,

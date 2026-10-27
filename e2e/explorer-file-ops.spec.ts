@@ -54,8 +54,6 @@ test.describe('explorer file operations', () => {
     const { page } = onda;
     try {
       await dismissWizard(page);
-      await openExplorerAt(page, dir);
-      await expect(page.getByTestId('explorer-item-notes.txt')).toBeVisible();
 
       // Usuwanie domyślnie korzysta z kosza systemowego.
       const defaultDelete = await page.evaluate(async () => {
@@ -66,6 +64,36 @@ test.describe('explorer file operations', () => {
         return settings.explorer?.permanentDelete;
       });
       expect(defaultDelete ?? false).toBe(false);
+
+      // Headless Linux CI nie ma implementacji freedesktop Trash, więc
+      // shell.trashItem tam zawodzi (aplikacja celowo nie spada do
+      // nieodwracalnego usunięcia). Przełączamy się przez UI na trwałe
+      // usuwanie: bezpośredni `settings:set` jest nadpisywany przez store
+      // renderera, który przy zapisie wysyła całe ustawienia.
+      if (process.platform === 'linux') {
+        await page.evaluate(() => {
+          window.location.hash = '#/settings?tab=explorer';
+        });
+        const permanentToggle = page.getByRole('switch', { name: /permanent|trwał|kosz|trash/i });
+        await expect(permanentToggle).toHaveAttribute('aria-checked', 'false');
+        await permanentToggle.click();
+        await expect(permanentToggle).toHaveAttribute('aria-checked', 'true');
+        // Poczekaj, aż zdebounce'owany zapis dotrze do procesu głównego.
+        await expect
+          .poll(async () =>
+            page.evaluate(async () => {
+              const api = (window as unknown as { api: OndaTestApi }).api;
+              const settings = (await api.invoke('settings:get')) as {
+                explorer?: { permanentDelete?: boolean };
+              };
+              return settings.explorer?.permanentDelete;
+            })
+          )
+          .toBe(true);
+      }
+
+      await openExplorerAt(page, dir);
+      await expect(page.getByTestId('explorer-item-notes.txt')).toBeVisible();
 
       // Nowy folder przez prompt.
       await page.getByTestId('explorer-new-folder').click();

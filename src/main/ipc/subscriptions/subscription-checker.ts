@@ -1,16 +1,58 @@
+import { readdir } from 'fs/promises';
+import { extname, join } from 'path';
 import { logger } from '../../../shared/logger';
 import type { IpcNewVideosEvent, IpcSubscriptionCheckResult } from '../../../shared/types/ipc';
+import { AUDIO_EXTS, VIDEO_EXTS } from '../../../shared/constants';
 import {
+  appendDownloadedVideos,
   loadSubscriptions,
   updateSubscription,
+  reconcileDownloadedFiles,
   type SubscriptionPatch
 } from './subscriptions-store';
+import { matchDownloadedFiles, type OutputFileRef } from './subscription-file-match';
 import { fetchChannelItems, fetchChannelAll } from '../youtube/youtube-handlers';
 import { computeChannelDiff } from '../channel-diff';
 import { addDownloadJobs, listDownloadJobs } from '../../downloads/download-manager';
 import { getStore } from '../cover/cover-cache';
 import { broadcastToAllWindows } from '../../utils/broadcast';
 import { scProfileSnapshot, sanitizeFileName } from '../soundcloud/soundcloud-client';
+
+const AUDIO_EXT_SET = new Set(AUDIO_EXTS);
+const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
+const MAX_BACKFILL_FILES = 20000;
+const MAX_BACKFILL_DEPTH = 4;
+
+// Lista plików w katalogu pobrań subskrypcji — do uzupełnienia mapy videoId→ścieżka
+// dla pobrań sprzed wprowadzenia `downloadedFiles`.
+async function collectOutputFiles(root: string): Promise<OutputFileRef[]> {
+  const out: OutputFileRef[] = [];
+  const queue: Array<{ dir: string; depth: number }> = [{ dir: root, depth: 0 }];
+  while (queue.length > 0 && out.length < MAX_BACKFILL_FILES) {
+    const current = queue.shift();
+    if (!current) break;
+    let entries;
+    try {
+      entries = await readdir(current.dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (out.length >= MAX_BACKFILL_FILES) break;
+      if (entry.isDirectory()) {
+        if (current.depth < MAX_BACKFILL_DEPTH) {
+          queue.push({ dir: join(current.dir, entry.name), depth: current.depth + 1 });
+        }
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const ext = extname(entry.name).toLowerCase();
+      if (!AUDIO_EXT_SET.has(ext) && !VIDEO_EXT_SET.has(ext)) continue;
+      out.push({ name: entry.name, path: join(current.dir, entry.name) });
+    }
+  }
+  return out;
+}
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const CHECK_TIMEOUT_MS = 10 * 60 * 1000;
@@ -170,17 +212,21 @@ export async function seedSubscriptionBaseline(filePath: string, channelId: stri
   }
 }
 
+// `reconcile` (używane przez ręczne „sprawdź teraz") dodatkowo weryfikuje, czy pliki
+// już pobranych filmów nadal istnieją na dysku i odznacza te, których brakuje.
+// Harmonogram w tle wywołuje bez reconcile (mniej I/O, brak niespodzianek).
 export async function checkSubscriptions(
   filePath: string,
-  onlyChannelId?: string
+  onlyChannelId?: string,
+  reconcile = false
 ): Promise<IpcSubscriptionCheckResult> {
   if (checkRunning) {
     logger.warn('subscriptions', 'check already in progress — skipping concurrent run');
-    return { checked: 0, newVideos: 0, queued: 0, errors: 0 };
+    return { checked: 0, newVideos: 0, queued: 0, errors: 0, busy: true };
   }
   checkRunning = true;
   try {
-    return await runCheck(filePath, onlyChannelId);
+    return await runCheck(filePath, onlyChannelId, reconcile);
   } finally {
     checkRunning = false;
   }
@@ -188,7 +234,8 @@ export async function checkSubscriptions(
 
 async function runCheck(
   filePath: string,
-  onlyChannelId?: string
+  onlyChannelId?: string,
+  reconcile = false
 ): Promise<IpcSubscriptionCheckResult> {
   const subs = await loadSubscriptions(filePath);
   const target = onlyChannelId ? subs.filter((s) => s.channelId === onlyChannelId) : subs;
@@ -198,6 +245,7 @@ async function runCheck(
   let newVideos = 0;
   let queued = 0;
   let errors = 0;
+  const missing: Array<{ id: string; title: string }> = [];
   for (const sub of target) {
     if (Date.now() > deadline) {
       logger.warn('subscriptions', 'checker time limit reached — stopping early');
@@ -206,19 +254,12 @@ async function runCheck(
     try {
       const platform = platformOf(sub);
       const { items: all, thumbnail, title } = await fetchAllChannelVideos(sub.channelId, platform);
-      // Rozdziela "nowe" (przed baseline) od "niepobranych" i "pobranych"
-      // na podstawie zapisanego stanu subskrypcji.
-      const { newArrivals, remainingCount } = computeChannelDiff({
-        items: all,
-        downloadedVideoIds: sub.downloadedVideoIds || [],
-        queuedVideoIds: sub.queuedVideoIds || [],
-        baselineVideoId: sub.baselineVideoId
-      });
-      // Samonaprawianie: filmy zapisane w queuedVideoIds, których zadanie już nie
-      // istnieje (nieudane pobranie, wyczyszczona kolejka, restart aplikacji), są ponownie kolejkowane
-      // przy następnym sprawdzeniu, aby nieudana partia została ponowiona, zamiast pozostawać
-      // na zawsze "do pobrania". Menedżer pobierania zastępuje każde pozostałe
-      // zadanie błędu/anulowania dla tego samego filmu.
+      // Weryfikacja plików (tylko ręczne sprawdzenie): odznacza pobrane filmy, których
+      // plik zniknął. Używa ŚWIEŻEGO zbioru `downloadedVideoIds` do zapisu/pendingCount,
+      // ale diff poniżej liczy „nowe" na starym zbiorze — dzięki temu odznaczone filmy
+      // NIE są kolejkowane w tym samym przebiegu (zostaną wykryte przy następnym).
+      const downloadedIds = sub.downloadedVideoIds || [];
+      const queuedIds = new Set(sub.queuedVideoIds || []);
       const activeVideoIds = new Set(
         listDownloadJobs()
           .filter(
@@ -228,6 +269,75 @@ async function runCheck(
           )
           .map((j) => j.videoId)
       );
+      const missingById = new Map<string, { id: string; title: string }>();
+      let effectiveDownloaded: string[] = downloadedIds;
+
+      if (reconcile) {
+        const storedFiles = sub.downloadedFiles || {};
+        const outputDir = sub.downloadPrefs?.outputDir;
+        // Starsze subskrypcje nie mają `downloadedFiles` — dopasuj pliki po tytule,
+        // inaczej po usunięciu pliku nie ma czego zweryfikować.
+        if (outputDir && Object.keys(storedFiles).length < downloadedIds.length) {
+          const filesOnDisk = await collectOutputFiles(outputDir);
+          if (filesOnDisk.length > 0) {
+            const preferredExt = sub.downloadPrefs?.format
+              ? `.${sub.downloadPrefs.format.replace(/^\./, '')}`
+              : sub.downloadPrefs?.kind === 'video'
+                ? '.mp4'
+                : '.mp3';
+            const downloadedItems = all.filter((item) => downloadedIds.includes(item.id));
+            const matched = matchDownloadedFiles(
+              downloadedItems,
+              filesOnDisk,
+              title || sub.channelTitle,
+              preferredExt
+            );
+            const matchedCount = Object.keys(matched.files).length;
+            if (matchedCount > 0) {
+              await appendDownloadedVideos(filePath, sub.channelId, [], matched.files);
+              // Nie zgłaszaj masowych braków, gdy dopasowanie zawiodło (np. przeniesiony folder).
+              const suspects = matched.unmatchedIds.filter(
+                (id) => !queuedIds.has(id) && !activeVideoIds.has(id)
+              );
+              if (suspects.length <= Math.max(1, Math.floor(matchedCount * 0.1))) {
+                for (const id of suspects) {
+                  const item = all.find((i) => i.id === id);
+                  missingById.set(id, { id, title: item?.title || id });
+                }
+              }
+            }
+          }
+        }
+
+        if (missingById.size > 0) {
+          effectiveDownloaded = downloadedIds.filter((id) => !missingById.has(id));
+        }
+        const rec = await reconcileDownloadedFiles(filePath, sub.channelId);
+        if (rec.updated) {
+          effectiveDownloaded = (rec.updated.downloadedVideoIds || []).filter(
+            (id) => !missingById.has(id)
+          );
+        }
+        for (const id of rec.removedIds) {
+          const item = all.find((i) => i.id === id);
+          missingById.set(id, { id, title: item?.title || id });
+        }
+      }
+
+      // Rozdziela "nowe" (przed baseline) od "niepobranych" i "pobranych"
+      // na podstawie zapisanego stanu subskrypcji.
+      const { newArrivals, remainingCount } = computeChannelDiff({
+        items: all,
+        downloadedVideoIds: sub.downloadedVideoIds || [],
+        queuedVideoIds: sub.queuedVideoIds || [],
+        baselineVideoId: sub.baselineVideoId
+      });
+      // pendingCount ma odzwierciedlać stan po odznaczeniu (usunięte pliki znów „do pobrania").
+      let pendingAfterReconcile = remainingCount;
+      if (reconcile) {
+        const effectiveSet = new Set(effectiveDownloaded);
+        pendingAfterReconcile = all.filter((i) => !effectiveSet.has(i.id)).length;
+      }
       const knownIds = new Set(sub.downloadedVideoIds || []);
       const staleQueued = (sub.queuedVideoIds || []).filter(
         (id) => !knownIds.has(id) && !activeVideoIds.has(id)
@@ -244,10 +354,11 @@ async function runCheck(
       const basePatch: SubscriptionPatch = {
         lastChecked,
         lastVideoId: latest?.id || sub.lastVideoId,
-        pendingCount: remainingCount,
+        pendingCount: pendingAfterReconcile,
         newArrivals: newArrivals.length,
         channelThumbnail: thumbnail || sub.channelThumbnail,
-        channelTitle: title || sub.channelTitle
+        channelTitle: title || sub.channelTitle,
+        ...(reconcile ? { downloadedVideoIds: effectiveDownloaded } : {})
       };
 
       const wantsDownload = toQueue.length > 0 && sub.autoDownload && globalConfig.enabled;
@@ -318,7 +429,7 @@ async function runCheck(
           ...basePatch,
           downloadPrefs: sub.downloadPrefs,
           autoDownload: sub.autoDownload,
-          downloadedVideoIds: [...(sub.downloadedVideoIds || [])],
+          downloadedVideoIds: effectiveDownloaded,
           queuedVideoIds: Array.from(new Set([...(sub.queuedVideoIds || []), ...enqueueIds]))
         });
       } else {
@@ -334,6 +445,7 @@ async function runCheck(
         broadcastToAllWindows('yt:newVideos', event);
       }
       if (all.length > 0) newVideos += newArrivals.length;
+      if (missingById.size > 0) missing.push(...missingById.values());
       checked++;
     } catch {
       errors++;
@@ -343,15 +455,15 @@ async function runCheck(
     'subscriptions',
     `check done: checked=${checked} newVideos=${newVideos} queued=${queued} errors=${errors}`
   );
-  return { checked, newVideos, queued, errors };
+  return { checked, newVideos, queued, errors, ...(missing.length > 0 ? { missing } : {}) };
 }
 
-// Sprawdza pojedynczy kanał (przycisk "sprawdź teraz" per kanał).
+// Sprawdza pojedynczy kanał (przycisk "sprawdź teraz" per kanał) — z weryfikacją plików.
 export async function checkSingleChannel(
   filePath: string,
   channelId: string
 ): Promise<IpcSubscriptionCheckResult> {
-  return checkSubscriptions(filePath, channelId);
+  return checkSubscriptions(filePath, channelId, true);
 }
 
 export function startSubscriptionChecker(

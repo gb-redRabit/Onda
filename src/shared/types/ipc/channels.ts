@@ -7,6 +7,9 @@ import type { PluginChannels } from './channels-plugins';
 import type { LibraryChannels } from './channels-library';
 import type { OnlineChannels } from './channels-online';
 import type { PipChannels } from './channels-pip';
+import type { ScrobblingChannels } from './channels-scrobbling';
+import type { LyricsChannels } from './channels-lyrics';
+import type { ToolsChannels } from './channels-tools';
 
 // Kontrakt IPC podzielony domenami (plan 3.4). `IpcChannels` agreguje je, żeby
 // `keyof IpcChannels` / `IpcChannel` pozostały jednym źródłem prawdy.
@@ -20,6 +23,9 @@ export interface IpcChannels
     PluginChannels,
     LibraryChannels,
     OnlineChannels,
-    PipChannels {}
+    PipChannels,
+    ScrobblingChannels,
+    LyricsChannels,
+    ToolsChannels {}
 
 export type IpcChannel = keyof IpcChannels;

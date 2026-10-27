@@ -8,6 +8,7 @@ import {
   Music2,
   Orbit,
   Play,
+  ScrollText,
   SlidersHorizontal
 } from '@lucide/vue';
 import type { AudioLayoutElementId, AudioLayoutPreset } from '@renderer/types/settings';
@@ -41,7 +42,8 @@ export const ELEMENT_META: Record<
   cover: { icon: Disc3, labelKey: 'audioView.elementCover', defaultLayer: 2 },
   trackInfo: { icon: ListMusic, labelKey: 'audioView.elementTrackInfo', defaultLayer: 3 },
   progress: { icon: Play, labelKey: 'audioView.elementProgress', defaultLayer: 3 },
-  controls: { icon: SlidersHorizontal, labelKey: 'audioView.elementControls', defaultLayer: 5 }
+  controls: { icon: SlidersHorizontal, labelKey: 'audioView.elementControls', defaultLayer: 5 },
+  lyrics: { icon: ScrollText, labelKey: 'audioView.elementLyrics', defaultLayer: 4 }
 };
 
 // ─── Warianty (presety per typ) ───
@@ -66,6 +68,12 @@ export const VARIANT_KEYS: Record<AudioLayoutElementId, { value: string; key: st
   controls: [
     { value: 'standard', key: 'variant_controls_standard' },
     { value: 'compact', key: 'variant_controls_compact' }
+  ],
+  lyrics: [
+    { value: 'default', key: 'variant_lyrics_default' },
+    { value: 'minimal', key: 'variant_lyrics_minimal' },
+    { value: 'solid', key: 'variant_lyrics_solid' },
+    { value: 'gradient', key: 'variant_lyrics_gradient' }
   ]
 };
 
@@ -74,7 +82,8 @@ export const VARIANT_DEFAULT: Record<AudioLayoutElementId, string> = {
   cover: 'default',
   trackInfo: 'classic',
   progress: 'classic',
-  controls: 'standard'
+  controls: 'standard',
+  lyrics: 'default'
 };
 
 export const SUBTAB_KEYS: Record<RightTab, string> = {

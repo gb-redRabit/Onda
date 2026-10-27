@@ -6,6 +6,7 @@ import {
   cancelDownloadJob,
   pauseDownloadJob,
   resumeDownloadJob,
+  retryCoverProcessing,
   clearFinishedDownloads,
   listDownloadJobs,
   setDownloadEmit,
@@ -172,6 +173,15 @@ export function registerDownloadHandlers(): void {
       } catch (e) {
         return { success: false, error: e instanceof Error ? e.message : String(e) };
       }
+    }
+  );
+  // Ponownie przetwarza okładkę ukończonego zadania (custom/frame/clip) bez
+  // ponownego pobierania pliku — używane przez przycisk „ponów okładkę".
+  ipcMain.handle(
+    'yt:download:retryCover',
+    async (_event, id: string): Promise<{ success: boolean; error?: string }> => {
+      if (typeof id !== 'string' || !id) return { success: false, error: 'Invalid id' };
+      return retryCoverProcessing(id);
     }
   );
 }

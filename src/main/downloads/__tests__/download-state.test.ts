@@ -195,9 +195,9 @@ describe('reportCompleted routing', () => {
     state.setDownloadCompletedHandler(subs);
     state.setSourceItemDownloadedHandler(sources);
 
-    state.reportCompleted({ channelId: 'ch', videoId: 'vid' } as any);
+    state.reportCompleted({ channelId: 'ch', videoId: 'vid', outputPath: 'C:/x.mp3' } as any);
 
-    expect(subs).toHaveBeenCalledWith('ch', 'vid');
+    expect(subs).toHaveBeenCalledWith('ch', 'vid', 'C:/x.mp3');
     expect(sources).not.toHaveBeenCalled();
   });
 

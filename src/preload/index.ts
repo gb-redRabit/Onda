@@ -27,6 +27,15 @@ import type {
 import type { IpcArgs, IpcChannel, IpcResult } from '../shared/ipc/contract';
 import type { OndaAPI } from '../shared/ipc/api';
 import type { PipSubtitleData } from '../shared/types/pip';
+import type { LyricsResult } from '../shared/types/lyrics';
+import type { SmartPlaylist } from '../shared/types/smart-playlist';
+import type {
+  MediaConvertRequest,
+  MediaConvertResult,
+  VideoClipRequest,
+  VideoClipThumbnailsRequest,
+  VideoConcatRequest
+} from '../shared/types/tools';
 import type {
   OpenSubtitlesDownloadParams,
   OpenSubtitlesDownloadResult,
@@ -267,6 +276,21 @@ const api: OndaAPI = {
     tryInvoke('subtitles:fontCacheStats'),
   clearFontCache: (): Promise<{ removed: number; bytesFreed: number }> =>
     tryInvoke('subtitles:fontCacheClear'),
+  getLyrics: (filePath: string): Promise<LyricsResult> => tryInvoke('lyrics:get', filePath),
+  loadSmartPlaylists: (): Promise<SmartPlaylist[]> => tryInvoke('smartPlaylists:loadAll'),
+  saveSmartPlaylists: (playlists: SmartPlaylist[]): Promise<void> =>
+    tryInvoke('smartPlaylists:saveAll', playlists),
+  convertMedia: (request: MediaConvertRequest): Promise<MediaConvertResult> =>
+    tryInvoke('tools:convert', request),
+  cancelMediaConvert: (jobId: string): Promise<boolean> => tryInvoke('tools:cancel', jobId),
+  clipVideo: (request: VideoClipRequest): Promise<MediaConvertResult> =>
+    tryInvoke('tools:clip', request),
+  cancelVideoClip: (jobId: string): Promise<boolean> => tryInvoke('tools:clipCancel', jobId),
+  concatVideos: (request: VideoConcatRequest): Promise<MediaConvertResult> =>
+    tryInvoke('tools:concat', request),
+  cancelVideoConcat: (jobId: string): Promise<boolean> => tryInvoke('tools:concatCancel', jobId),
+  clipThumbnails: (request: VideoClipThumbnailsRequest) =>
+    tryInvoke('tools:clipThumbnails', request),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),
   openSubtitlesDownload: (

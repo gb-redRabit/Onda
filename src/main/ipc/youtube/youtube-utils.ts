@@ -79,6 +79,21 @@ function resolveJsRuntime(): string | null {
 }
 
 // Wstrzykuje flagi uwierzytelniania (cookies sesji) do komendy yt-dlp.
+function hasSubtitleRequest(args: string[]): boolean {
+  return args.includes('--write-subs') || args.includes('--write-auto-subs');
+}
+
+function isYoutubeUrl(args: string[]): boolean {
+  return args.some((a) => /(?:^|\.)youtube\.com\/|youtu\.be\//i.test(a));
+}
+
+function hasYoutubeExtractorArgs(args: string[]): boolean {
+  for (let i = 0; i < args.length - 1; i++) {
+    if (args[i] === '--extractor-args' && /^youtube:/i.test(args[i + 1] || '')) return true;
+  }
+  return false;
+}
+
 // Działa zarówno dla sesji Google w aplikacji ("electron"), importowanego pliku
 // cookies ("manual") i przeglądarki systemowej ("browser"). Przekazuje też jawny JS
 // runtime do yt-dlp, aby rozwiązywanie signature/n-challenge nigdy nie zawiodło po cichu.
@@ -89,15 +104,30 @@ export function buildYtArgs(
 ): string[] {
   const args = [...base];
   const extras: string[] = [];
+  let cookiesActive = false;
   if (auth && auth.method !== 'none') {
     if (auth.method === 'browser' && auth.cookiesBrowser) {
       extras.push('--cookies-from-browser', auth.cookiesBrowser);
+      cookiesActive = true;
     } else if ((auth.method === 'electron' || auth.method === 'manual') && auth.cookiesPath) {
       extras.push('--cookies', auth.cookiesPath);
+      cookiesActive = true;
     }
   }
   if (jsRuntime && !args.includes('--js-runtimes') && !extras.includes('--js-runtimes')) {
     extras.push('--js-runtimes', `node:${jsRuntime}`);
+  }
+  // YouTube nie wystawia napisów w domyślnym kliencie sesji z cookies
+  // (`web_creator` odpowiada wtedy "There are no subtitles for the requested
+  // languages"). Dołączenie `web_embedded` do łańcucha klientów przywraca
+  // automatyczne napisy, a `web_creator` pozostaje głównym źródłem formatów.
+  if (
+    cookiesActive &&
+    hasSubtitleRequest(args) &&
+    isYoutubeUrl(args) &&
+    !hasYoutubeExtractorArgs([...args, ...extras])
+  ) {
+    extras.push('--extractor-args', 'youtube:player_client=web_creator,web_embedded');
   }
   // Gdy wywołujący zakończył już listę opcji przez '--', wszystkie wstrzyknięte
   // flagi muszą trafić *przed* tym separatorem; inaczej yt-dlp potraktuje je jako

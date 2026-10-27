@@ -216,13 +216,18 @@ function openContextMenu(e: MouseEvent) {
     <template v-if="hasSection('downloads') && activeDownload">
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
-        :title="$t('status.openDownloads')"
+        class="flex items-center gap-1.5 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5 min-w-0"
+        :title="activeDownload.title"
         :aria-label="$t('status.openDownloads')"
         @click="goTo('/downloads')"
       >
-        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-        {{ activeDownload.title }} {{ activeDownload.progress }}%
+        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+        <!-- Nazwa pliku nie może rozszerzać paska przy wąskim oknie: przycina się
+             (wielokropek) i maleje wraz z szerokością okna, a procent zostaje stały. -->
+        <span class="truncate max-w-[32vw]">{{ activeDownload.title }}</span>
+        <span class="shrink-0 tabular-nums text-base-content/60"
+          >{{ activeDownload.progress }}%</span
+        >
       </button>
     </template>
     <template v-if="hasSection('youtube')">

@@ -6,6 +6,8 @@ import { buildEngineVars } from '@shared/themeModel';
 export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
   let previewRaf = 0;
   let lastWindowMaterial: 'auto' | 'acrylic' | null = null;
+  let lastWindowRounded: boolean | null = null;
+  let lastWindowBorderColor: string | null = null;
   const get = () => appearanceRef.value;
 
   function setVars(vars: Record<string, string>) {
@@ -39,6 +41,18 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     void window.api?.invoke('app:setBackgroundMaterial', material);
   }
 
+  // Narożniki okna idą za `geometry.radiusBox`: 0 = kwadrat, >0 = systemowe
+  // zaokrąglenie DWM. Przy włączonym szkle suwak jest zablokowany na 0, więc okno
+  // też jest kwadratowe (spójnie z wnętrzem).
+  function applyWindowCorners() {
+    const a = get();
+    const glassOn = (a.glassAlpha ?? 100) < 100;
+    const rounded = !glassOn && (a.geometry?.radiusBox ?? 8) > 0;
+    if (rounded === lastWindowRounded) return;
+    lastWindowRounded = rounded;
+    void window.api?.invoke('window:setRoundedCorners', rounded);
+  }
+
   // `appearance.animations: false` globalnie wyłącza przejścia/animacje interfejsu
   // (przejścia stron, zanikanie hover, …). Animacje canvas są sterowane przez JS
   // i celowo pozostają bez zmian.
@@ -59,6 +73,15 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
     // przy zmianie na konkretny motyw i przy rozłączeniu komponentu.
     syncSystemThemeListener();
     applyWindowMode();
+    applyWindowCorners();
+    // Natywne 1px obramowanie okna (DWM). Przy nieprzezroczystym oknie ma kolor tła,
+    // więc wtapia się w zawartość; przy szkle zostaje kolor ramki (jest widoczna krawędź).
+    const glassOn = (get().glassAlpha ?? 100) < 100;
+    const borderColor = glassOn ? resolved.colors.base300 : resolved.colors.base200;
+    if (borderColor !== lastWindowBorderColor) {
+      lastWindowBorderColor = borderColor;
+      void window.api?.invoke('window:setBorderColor', borderColor);
+    }
     applyMotion();
     applyLang();
     pushToPip(vars);

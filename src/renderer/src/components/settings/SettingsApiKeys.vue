@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import SettingsScrobbling from '@renderer/components/settings/SettingsScrobbling.vue';
 import type { SecretStorageStatus } from '@renderer/types/settings';
 
 const settings = useSettingsStore();
@@ -19,6 +20,11 @@ const newKey = ref('');
  * zaciemnioną, `unavailable` oznacza, że nie da się jej zapisać wcale.
  */
 const secretStorage = ref<SecretStorageStatus | null>(null);
+// Wpisy scrobblingu mają własny panel (sekcja poniżej), więc nie dublujemy ich w
+// ogólnej liście kluczy API.
+const visibleKeys = computed(() =>
+  settings.apiKeys.keys.filter((key) => !key.id.startsWith('scrobble:'))
+);
 onMounted(async () => {
   try {
     secretStorage.value = await window.api.invoke('settings:secretStorageStatus');
@@ -75,14 +81,11 @@ function toggleActive(id: string, active: boolean) {
           : $t('settings.secretStorageWeak')
       }}
     </p>
-    <div
-      v-if="settings.apiKeys.keys.length === 0"
-      class="py-4 text-center text-sm text-base-content/50"
-    >
+    <div v-if="visibleKeys.length === 0" class="py-4 text-center text-sm text-base-content/50">
       {{ $t('settings.noApiKeys') }}
     </div>
     <div v-else class="divide-y divide-base-300">
-      <div v-for="k in settings.apiKeys.keys" :key="k.id" class="flex items-center gap-3 py-3">
+      <div v-for="k in visibleKeys" :key="k.id" class="flex items-center gap-3 py-3">
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium truncate">{{ k.name }}</div>
           <div class="text-xs text-base-content/50 truncate">
@@ -161,4 +164,5 @@ function toggleActive(id: string, active: boolean) {
       :description="$t('settings.apiKeysEncryptedDesc')"
     />
   </SettingsGroup>
+  <SettingsScrobbling />
 </template>

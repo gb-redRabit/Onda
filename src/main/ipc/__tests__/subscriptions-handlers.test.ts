@@ -137,9 +137,9 @@ describe('yt:subs:remove and yt:subs:update', () => {
 });
 
 describe('yt:subs:checkNow and yt:subs:checkChannel', () => {
-  it('delegates to the full checker', async () => {
+  it('delegates to the full checker (with file reconcile)', async () => {
     const res = (await call('yt:subs:checkNow')) as { checked: number };
-    expect(checkSubscriptions).toHaveBeenCalledWith(file);
+    expect(checkSubscriptions).toHaveBeenCalledWith(file, undefined, true);
     expect(res.checked).toBe(1);
   });
 

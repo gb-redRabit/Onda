@@ -173,6 +173,33 @@ export function createOnlineDownloads(
     }
   }
 
+  // Ponawia przetwarzanie okładki ukończonego zadania (custom/frame/clip) bez
+  // ponownego pobierania pliku. Optymistycznie pokazuje stan „przygotowywanie",
+  // a przy niepowodzeniu przywraca poprzedni stan i pokazuje powiadomienie.
+  async function retryCover(task: DownloadTask): Promise<void> {
+    const idx = downloads.value.findIndex((d) => d.id === task.id);
+    const prev = idx >= 0 ? downloads.value[idx] : undefined;
+    if (idx >= 0 && prev) {
+      downloads.value[idx] = { ...prev, coverStatus: 'fetching', coverError: undefined };
+    }
+    try {
+      const res = (await window.api.invoke('yt:download:retryCover', task.id)) as {
+        success: boolean;
+        error?: string;
+      };
+      if (!res?.success) {
+        if (idx >= 0 && prev) downloads.value[idx] = prev;
+        try {
+          useUIStore().notify('error', t('downloads.coverStatusError'), res?.error);
+        } catch {
+          // store ui niedostępny
+        }
+      }
+    } catch {
+      if (idx >= 0 && prev) downloads.value[idx] = prev;
+    }
+  }
+
   async function retryDownload(task: DownloadTask) {
     const created = await submitJobs([buildTaskInput(task)]);
     if (!created.length) {
@@ -301,6 +328,7 @@ export function createOnlineDownloads(
     pauseDownload,
     resumeDownload,
     retryDownload,
+    retryCover,
     pauseAll,
     resumeAll,
     moveToFront,

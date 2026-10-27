@@ -71,6 +71,7 @@ import { downloadHttpFile } from '../http-downloader';
 import { resolveProviderFileUrl, settleProviderDownload } from '../../ipc/providers/registry';
 import { resolveScDownloadSource } from '../../ipc/soundcloud/soundcloud-client';
 import { reportCompleted } from '../download-state';
+import { resolveFinalOutputPath } from '../output-path';
 import { runJobAttempt } from '../download-attempt';
 
 const spawnMock = spawn as unknown as ReturnType<typeof vi.fn>;
@@ -79,6 +80,7 @@ const providerUrlMock = resolveProviderFileUrl as unknown as ReturnType<typeof v
 const settleMock = settleProviderDownload as unknown as ReturnType<typeof vi.fn>;
 const scMock = resolveScDownloadSource as unknown as ReturnType<typeof vi.fn>;
 const reportMock = reportCompleted as unknown as ReturnType<typeof vi.fn>;
+const resolveFinalOutputPathMock = resolveFinalOutputPath as unknown as ReturnType<typeof vi.fn>;
 
 function baseJob(over: Partial<Job> = {}): Job {
   return {
@@ -252,6 +254,23 @@ describe('runJobAttempt — soundcloud source', () => {
 });
 
 describe('runJobAttempt — yt-dlp process', () => {
+  it('reports completion only after resolving the real output path', async () => {
+    const child = fakeChild();
+    spawnMock.mockReturnValue(child);
+    resolveFinalOutputPathMock.mockResolvedValueOnce('/tmp/onda-out/final.mp3');
+    const job = baseJob();
+    let reportedPath: string | undefined;
+    reportMock.mockImplementationOnce((reported: { outputPath?: string }) => {
+      reportedPath = reported.outputPath;
+    });
+
+    const p = runJobAttempt(job, 'yt-dlp', null, ['-x']);
+    child.emit('close', 0, null);
+    await p;
+
+    expect(reportedPath).toBe('/tmp/onda-out/final.mp3');
+  });
+
   it('parses progress and completes on exit code 0', async () => {
     const child = fakeChild();
     spawnMock.mockReturnValue(child);

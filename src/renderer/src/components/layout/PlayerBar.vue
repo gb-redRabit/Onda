@@ -14,6 +14,7 @@ import {
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { useAlwaysOnTop } from '@renderer/composables/useAlwaysOnTop';
 import { formatDuration } from '@renderer/utils/formatters';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import TrackInfo from '@renderer/components/TrackInfo.vue';
@@ -28,6 +29,7 @@ const fx = useAudioFxStore();
 const audio = useAudioPlayer();
 const router = useRouter();
 const pluginsStore = usePluginsStore();
+const { pinned, togglePin } = useAlwaysOnTop();
 const isMini = ref(false);
 
 // Pętla A–B dla audio: egzekwowana na zegarze silnika (element audio nie jest w tym widoku).
@@ -144,11 +146,13 @@ function togglePlay() {
     :progress-pct="progressPct"
     :buffered-pct="bufferedPct"
     :is-live="isLive"
+    :pinned="pinned"
     @seek="onSeek"
     @seek-by="onSeekBy"
     @toggle-play="togglePlay"
     @audio-view="router.push('/audio')"
     @expand="isMini = false"
+    @toggle-pin="togglePin"
   />
 
   <!-- pełny odtwarzacz -->

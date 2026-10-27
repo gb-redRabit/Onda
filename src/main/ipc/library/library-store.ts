@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import type { MediaFile } from '../../../shared/types/media';
 import { logger } from '../../../shared/logger';
 import { getStore } from '../cover/cover-cache';
+import type { LoudnessUpdate } from './loudness-analysis';
 
 // Persistencja przeskanowanej biblioteki, trzymana POZA szyfrowanym electron-store:
 // każdy zapis tam ponownie serializował + szyfrował AES całą listę (do 50 tys.
@@ -174,6 +175,36 @@ export function updateLibraryStats(
   if (!changed) return false;
   scheduleStatsSave();
   return true;
+}
+
+/**
+ * Wpisuje wyniki analizy głośności do metadanych biblioteki. Tagi mają pierwszeństwo:
+ * istniejącego `replayGain*Gain` nie nadpisujemy. Zwraca liczbę zmienionych plików.
+ */
+export function applyLoudnessUpdates(updates: readonly LoudnessUpdate[]): number {
+  if (!cache || updates.length === 0) return 0;
+  const byPath = new Map(updates.map((u) => [u.path, u]));
+  let changed = 0;
+  for (const file of cache.files) {
+    const update = byPath.get(file.path);
+    if (!update) continue;
+    if (!file.metadata) file.metadata = {};
+    let touched = false;
+    if (typeof update.trackGain === 'number' && file.metadata.replayGainTrackGain === undefined) {
+      file.metadata.replayGainTrackGain = update.trackGain;
+      touched = true;
+    }
+    if (typeof update.albumGain === 'number' && file.metadata.replayGainAlbumGain === undefined) {
+      file.metadata.replayGainAlbumGain = update.albumGain;
+      touched = true;
+    }
+    if (touched) {
+      file.metadata.replayGainScanned = true;
+      changed++;
+    }
+  }
+  if (changed > 0) scheduleLibraryScannedSave();
+  return changed;
 }
 
 function scheduleStatsSave(delay = 400): void {

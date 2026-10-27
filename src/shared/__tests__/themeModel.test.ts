@@ -129,6 +129,22 @@ describe('buildEngineVars', () => {
     expect(vars['--color-primary-content']).toBe(t.colors.primaryContent);
     expect(vars['--glass-alpha']).toBe('60%');
     expect(vars['--font-size']).toBe('14px');
+    // Szkło wymusza kwadratowe narożniki okna (spójnie z applyWindowCorners).
+    expect(vars['--window-radius']).toBe('0px');
+  });
+
+  it('uses the system window radius for positive box radii and square at 0', () => {
+    expect(
+      buildEngineVars(resolveThemeAppearance({ theme: 'dark', glassAlpha: 100 }), 14)[
+        '--window-radius'
+      ]
+    ).toBe('8px');
+    expect(
+      buildEngineVars(
+        resolveThemeAppearance({ theme: 'dark', glassAlpha: 100, geometry: { radiusBox: 0 } }),
+        14
+      )['--window-radius']
+    ).toBe('0px');
   });
 
   it('emits all semantic vars plus engine vars and engine vars', () => {

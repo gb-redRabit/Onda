@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -7,6 +7,7 @@ import type { YoutubeAuthMethod } from '@renderer/types/settings';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import SettingsProviderCredentials from '@renderer/components/settings/SettingsProviderCredentials.vue';
 const settings = useSettingsStore();
 const { t } = useI18n();
 const { status, refresh, ensureLoaded } = useYoutubeAuth();
@@ -119,7 +120,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
       </button>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 mt-2">
       <div class="w-2 h-2 rounded-full" :class="status.loggedIn ? 'bg-success' : 'bg-base-300'" />
       <span class="text-sm" :class="status.loggedIn ? 'text-base-content' : 'text-base-content/70'">
         {{
@@ -131,7 +132,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
       </span>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2 py-2">
       <template v-if="settings.youtube.method === 'electron'">
         <button
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
@@ -305,4 +306,8 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
       </div>
     </template>
   </SettingsGroup>
+
+  <!-- Poświadczenia providerów (cookie) scalone z tą zakładką: jedno miejsce
+       „Sieć i usługi" dla logowania platform i providerów wymagających konta. -->
+  <SettingsProviderCredentials />
 </template>

@@ -7,6 +7,7 @@ import { setCloseToTray } from './close-behavior';
 import { createExplorerWindow, getExplorerWindows } from './explorer-windows';
 import { closeImageViewer, getImageViewerData, openImageViewer } from './image-viewer-window';
 import { registerPipHandlers } from './window-ipc-pip';
+import { setDwmBorderColor, setDwmRoundedCorners } from './dwm';
 
 // Bounds niosą dodatkową flagę przywracania, której Electron nie typuje.
 type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
@@ -15,6 +16,60 @@ type WindowBackgroundMaterial = 'auto' | 'none' | 'mica' | 'acrylic' | 'tabbed';
 const desiredWindowMaterials = new WeakMap<BrowserWindow, WindowBackgroundMaterial>();
 const materialListenersInstalled = new WeakSet<BrowserWindow>();
 const materialReapplyTimers = new WeakMap<BrowserWindow, ReturnType<typeof setTimeout>>();
+
+// Windows 11: kształt ramki ustawia natywne DWM (ROUND/DONOTROUND). `setShape`
+// zostaje wyłącznie jako fallback, gdy FFI/DWM jest niedostępne.
+const desiredWindowCorners = new WeakMap<BrowserWindow, boolean>();
+const cornerListenersInstalled = new WeakSet<BrowserWindow>();
+
+async function applyWindowCorners(win: BrowserWindow, rounded: boolean): Promise<boolean> {
+  if (process.platform !== 'win32' || win.isDestroyed()) return false;
+  // Najpierw natywny DWM — zmienia faktyczny kształt ramki, więc obramowanie
+  // aplikacji i krawędź okna pokrywają się (setShape zmieniał tylko zawartość).
+  if (await setDwmRoundedCorners(win, rounded)) return true;
+  try {
+    if (rounded) {
+      win.setShape([]);
+    } else {
+      const { width, height } = win.getBounds();
+      const margin = 16;
+      try {
+        win.setShape([
+          { x: -margin, y: -margin, width: width + margin * 2, height: height + margin * 2 }
+        ]);
+      } catch {
+        win.setShape([{ x: 0, y: 0, width: width + margin * 2, height: height + margin * 2 }]);
+      }
+    }
+    return true;
+  } catch (e) {
+    logger.warn('window', 'setShape failed (non-fatal)', e);
+    return false;
+  }
+}
+
+function rememberWindowCorners(win: BrowserWindow, rounded: boolean): void {
+  desiredWindowCorners.set(win, rounded);
+  if (cornerListenersInstalled.has(win)) return;
+  cornerListenersInstalled.add(win);
+
+  const reapply = (): void => {
+    if (win.isDestroyed()) return;
+    const desired = desiredWindowCorners.get(win);
+    // Fallback `setShape` trzeba odświeżyć po resize; DWM robi to sam.
+    if (desired === false) void applyWindowCorners(win, false);
+  };
+
+  win.on('resize', reapply);
+  win.on('maximize', reapply);
+  win.on('unmaximize', reapply);
+  win.on('restore', reapply);
+  win.on('enter-full-screen', reapply);
+  win.on('leave-full-screen', reapply);
+  win.on('closed', () => {
+    desiredWindowCorners.delete(win);
+  });
+}
 
 function applyWindowMaterial(win: BrowserWindow, material: WindowBackgroundMaterial): boolean {
   if (process.platform !== 'win32' || win.isDestroyed()) return false;
@@ -131,6 +186,33 @@ export function registerWindowHandlers(context: {
     const applied = applyWindowMaterial(win, mode);
     if (applied) logger.info('window', `background material=${mode}`);
     return applied;
+  });
+
+  // Windows 11 rysuje 1px obramowanie okna w kolorze akcentu (domyślnie jasnym).
+  // Ustawiamy je na kolor ramki aplikacji, żeby nie odcinało się od zawartości.
+  ipcMain.handle('window:setBorderColor', async (event, color: unknown) => {
+    if (process.platform !== 'win32') return false;
+    if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) return false;
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    if (await setDwmBorderColor(win, color)) return true;
+    try {
+      win.setAccentColor(color);
+      return true;
+    } catch (e) {
+      logger.warn('window', 'setAccentColor failed (non-fatal)', e);
+      return false;
+    }
+  });
+
+  // Kwadratowe narożniki przy `geometry.radiusBox = 0`; dodatnia wartość zostawia
+  // systemowe zaokrąglenie DWM (Windows 11 sam dobiera promień).
+  ipcMain.handle('window:setRoundedCorners', async (event, rounded: unknown) => {
+    if (typeof rounded !== 'boolean') return false;
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isDestroyed()) return false;
+    rememberWindowCorners(win, rounded);
+    return applyWindowCorners(win, rounded);
   });
 
   ipcMain.handle('window:minimize', (event) => {

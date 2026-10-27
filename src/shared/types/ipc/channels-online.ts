@@ -198,6 +198,10 @@ export interface OnlineChannels {
     args: [filePath: string, meta: IpcMetaOverride];
     result: { success: boolean; error?: string };
   };
+  'yt:download:retryCover': {
+    args: [id: string];
+    result: { success: boolean; error?: string };
+  };
   'profiles:list': { args: []; result: IpcDownloadProfile[] };
   'profiles:save': {
     args: [{ id?: string; name: string; config: IpcDownloadConfig }];

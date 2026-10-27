@@ -29,6 +29,10 @@ export interface MediaChannels {
     args: [url: string];
     result: string | null;
   };
+  'media:getWaveform': {
+    args: [filePath: string, durationSec?: number];
+    result: number[];
+  };
   'media:grantAccess': { args: [filePath: string]; result: boolean };
   'media:getServerUrl': { args: []; result: string };
 }

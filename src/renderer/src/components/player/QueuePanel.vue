@@ -114,36 +114,19 @@ function onFileDrop(e: DragEvent) {
   const files = e.dataTransfer?.files;
   if (!files) return;
   for (const file of Array.from(files)) {
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const isMedia = [
-      'mp3',
-      'flac',
-      'wav',
-      'ogg',
-      'aac',
-      'm4a',
-      'opus',
-      'aiff',
-      'mp4',
-      'mkv',
-      'avi',
-      'webm',
-      'mov'
-    ].includes(ext);
-    if (isMedia) {
-      const filePath = window.api.getFilePath(file);
-      const mediaFile = buildMediaFile({
-        path: filePath,
-        name: file.name,
-        extension: ext,
-        size: file.size,
-        mimeType: file.type || ''
-      });
-      player.addToQueue(mediaFile);
-      fetchDuration(filePath).then((dur) => {
-        mediaFile.duration = dur;
-      });
-    }
+    const filePath = window.api.getFilePath(file);
+    if (!filePath) continue;
+    const mediaFile = buildMediaFile({
+      path: filePath,
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || ''
+    });
+    if (mediaFile.type !== 'audio' && mediaFile.type !== 'video') continue;
+    player.addToQueue(mediaFile);
+    fetchDuration(filePath).then((dur) => {
+      mediaFile.duration = dur;
+    });
   }
 }
 </script>

@@ -1,3 +1,4 @@
+import type { BrowserWindow } from 'electron';
 import { installIpcGuards } from './guard';
 import { registerMusicBrainzHandlers } from './musicbrainz';
 import { registerFsHandlers } from './fs/fs-handlers';
@@ -7,6 +8,7 @@ import { registerMediaHandlers } from './media/media-handlers';
 import { registerMediaFrameHandlers } from './media/media-frames';
 import { registerCoverHandlers } from './cover/cover-handlers';
 import { registerSubtitleHandlers } from './subtitle-handlers';
+import { registerLyricsHandlers } from './lyrics/lyrics-handlers';
 import { registerOpenSubtitlesHandlers } from './opensubtitles';
 import { registerNapiProjektHandlers } from './napiprojekt';
 import { registerAnimeSubHandlers } from './animesub';
@@ -30,8 +32,14 @@ import { registerPluginsHandlers } from './plugins/plugins-handlers';
 import { registerRemoteImageHandler } from './remote-image';
 import { registerCacheHandlers } from './cache-handlers';
 import { registerFactoryResetHandler } from './factory-reset';
+import { registerScrobblingHandlers } from './scrobbling/scrobbling-handlers';
+import { registerToolsHandlers } from '../tools/tools-handlers';
 
-export function registerIPC(): void {
+export interface IpcHandlerContext {
+  getMainWindow: () => BrowserWindow | null;
+}
+
+export function registerIPC(context: IpcHandlerContext): void {
   installIpcGuards();
   registerFsHandlers();
   registerLibraryHandlers();
@@ -40,6 +48,7 @@ export function registerIPC(): void {
   registerMediaFrameHandlers();
   registerCoverHandlers();
   registerSubtitleHandlers();
+  registerLyricsHandlers();
   registerOpenSubtitlesHandlers();
   registerNapiProjektHandlers();
   registerAnimeSubHandlers();
@@ -64,4 +73,6 @@ export function registerIPC(): void {
   registerRemoteImageHandler();
   registerCacheHandlers();
   registerFactoryResetHandler();
+  registerScrobblingHandlers();
+  registerToolsHandlers(context);
 }

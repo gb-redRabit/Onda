@@ -41,6 +41,9 @@ export interface IpcSubscription {
   baselineVideoId?: string;
   downloadedVideoIds?: string[];
   queuedVideoIds?: string[];
+  // videoId → ścieżka pliku na dysku (ustawiana przy ukończeniu pobrania). Używane
+  // przez ręczne „sprawdź teraz" do wykrywania pobranych filmów, których plik zniknął.
+  downloadedFiles?: Record<string, string>;
   pendingCount?: number;
   newArrivals?: number;
   downloadPrefs?: IpcSubscriptionDownloadPrefs;
@@ -87,6 +90,10 @@ export interface IpcSubscriptionCheckResult {
   newVideos: number;
   queued?: number;
   errors: number;
+  /** Pliki brakujące na dysku (tylko ręczne „sprawdź teraz"). */
+  missing?: Array<{ id: string; title: string }>;
+  /** Sprawdzenie pominięte, bo inne już trwało. */
+  busy?: boolean;
 }
 
 // Zapisany przez użytkownika strumień online (YT, SoundCloud) dla widoku "Zapisane".
