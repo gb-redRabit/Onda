@@ -4,6 +4,7 @@ import {
   getFrequencyBins,
   resolveAudioPipLayoutOpts
 } from './audioPipState';
+import { useAudioPlayer } from './useAudioPlayer';
 
 interface AudioPipRuntimeOptions {
   isActive: () => boolean;
@@ -16,6 +17,8 @@ export function createAudioPipRuntime(opts: AudioPipRuntimeOptions) {
   let timeInterval: ReturnType<typeof setInterval> | null = null;
   let vizInterval: ReturnType<typeof setInterval> | null = null;
   let coverRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  // Subskrypcja `core:viz` jest liczona per konsument (PiP + główny wizualizator).
+  let vizSubscribed = false;
 
   function sendUpdate(state: AudioPipState) {
     lastState = { ...state };
@@ -40,14 +43,17 @@ export function createAudioPipRuntime(opts: AudioPipRuntimeOptions) {
   }
 
   function startVizTracking() {
-    stopVizTracking();
-    if (!vizEnabled()) return;
+    stopVizInterval();
+    if (!vizEnabled()) {
+      unsubscribeViz();
+      return;
+    }
+    if (!vizSubscribed) {
+      useAudioPlayer().setVizActive(true);
+      vizSubscribed = true;
+    }
     vizInterval = setInterval(() => {
-      if (!isActive()) {
-        stopVizTracking();
-        return;
-      }
-      if (!vizEnabled()) {
+      if (!isActive() || !vizEnabled()) {
         stopVizTracking();
         return;
       }
@@ -55,11 +61,22 @@ export function createAudioPipRuntime(opts: AudioPipRuntimeOptions) {
     }, 100);
   }
 
-  function stopVizTracking() {
+  function stopVizInterval() {
     if (vizInterval) {
       clearInterval(vizInterval);
       vizInterval = null;
     }
+  }
+
+  function unsubscribeViz(): void {
+    if (!vizSubscribed) return;
+    vizSubscribed = false;
+    useAudioPlayer().setVizActive(false);
+  }
+
+  function stopVizTracking() {
+    stopVizInterval();
+    unsubscribeViz();
   }
 
   function startTimeTracking() {

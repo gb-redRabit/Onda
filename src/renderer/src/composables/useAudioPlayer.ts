@@ -35,6 +35,10 @@ let moduleInitialized = false;
 let remoteInitialized = false;
 const remoteViz = createVizShim(256);
 let remoteVizActive = false;
+// Kilku konsumentów (główny wizualizator + PiP audio) może potrzebować strumienia
+// `core:viz` jednocześnie. Wysyłamy `active` dopiero przy przejściu 0→1 i 1→0.
+let remoteVizConsumers = 0;
+let sawCoreState = false;
 
 /**
  * Shell nie ma własnego AudioContext. Refy tego modułu są wspólne dla obu trybów,
@@ -51,7 +55,16 @@ function ensureRemoteModule(): void {
   watch(
     coreState,
     (state) => {
-      if (!state) return;
+      if (!state) {
+        sawCoreState = false;
+        return;
+      }
+      // Po restarcie Core licznik subskrypcji w shellu zostaje, ale timer w Core
+      // wystartował od zera — ponów `viz` przy pierwszym stanie nowej sesji.
+      if (!sawCoreState) {
+        sawCoreState = true;
+        if (remoteVizActive) sendCoreCommand({ type: 'viz', active: true });
+      }
       // Wideo gra lokalnie w main shellu — refy czasu/duration karmi
       // `videoElementHandlers`, nie ticki audio z Core.
       if (state.current?.type === 'video') return;
@@ -93,9 +106,12 @@ function useRemoteAudioPlayer() {
       isVideoMode() ? audioEngine.getAnalyserNode() : remoteViz.node,
     setVizActive: (active: boolean) => {
       if (isVideoMode()) return;
-      if (active === remoteVizActive) return;
-      remoteVizActive = active;
-      send({ type: 'viz', active });
+      const delta = active ? 1 : -1;
+      remoteVizConsumers = Math.max(0, remoteVizConsumers + delta);
+      const next = remoteVizConsumers > 0;
+      if (next === remoteVizActive) return;
+      remoteVizActive = next;
+      send({ type: 'viz', active: next });
     },
     play: () => {
       if (isVideoMode()) {
