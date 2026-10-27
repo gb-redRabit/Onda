@@ -360,6 +360,8 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'explorer:refresh',
   'explorer:remove-tab',
   'imageViewer:files',
+  'compact:hidden',
+  'compact:shown',
   'core:command',
   'core:state',
   'core:tick',

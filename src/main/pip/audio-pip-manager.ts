@@ -24,6 +24,7 @@ export class AudioPipManager {
   private window: BrowserWindow | null = null;
   private ready = false;
   private mainWindow: BrowserWindow | null = null;
+  private focusHandler: (() => void) | null = null;
   private dock: AudioPipDock = 'bottom-right';
   private cornerElements: AudioPipElementId[] = [...DEFAULT_CORNER_ELEMENTS];
   private edgeElements: AudioPipElementId[] = [...DEFAULT_EDGE_ELEMENTS];
@@ -81,11 +82,16 @@ export class AudioPipManager {
   };
 
   setMainWindow(win: BrowserWindow): void {
+    if (this.mainWindow === win) return;
+    if (this.mainWindow && this.focusHandler) {
+      this.mainWindow.removeListener('focus', this.focusHandler);
+    }
     this.mainWindow = win;
-    win.on('focus', () => {
+    this.focusHandler = () => {
       if (this.isPreview) return;
       this.autoHideNow();
-    });
+    };
+    win.on('focus', this.focusHandler);
   }
 
   init(): void {
@@ -442,6 +448,11 @@ export class AudioPipManager {
 
   destroy(): void {
     this.peek.cancelDelay();
+    if (this.mainWindow && this.focusHandler) {
+      this.mainWindow.removeListener('focus', this.focusHandler);
+    }
+    this.focusHandler = null;
+    this.mainWindow = null;
     if (this.previewTimer) {
       clearTimeout(this.previewTimer);
       this.previewTimer = null;

@@ -358,6 +358,8 @@ export type IpcReceiveChannel =
   | 'explorer:refresh'
   | 'explorer:remove-tab'
   | 'imageViewer:files'
+  | 'compact:hidden'
+  | 'compact:shown'
   | 'core:command'
   | 'core:state'
   | 'core:tick'

@@ -99,14 +99,19 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
     await expect.poll(getPinned).toBe(false);
     await expect.poll(() => readPinned(userDataDir)).toBe(false);
 
-    // Esc chowa okno do tray (odtwarzanie zostaje w Core).
+    // Esc chowa okno do tray (odtwarzanie zostaje w Core). PiP audio może się
+    // w tym momencie pokazać automatycznie — sprawdzamy samo okno compactu.
     await page.keyboard.press('Escape');
     await expect
       .poll(
         () =>
-          onda.app.evaluate(({ BrowserWindow }) =>
-            BrowserWindow.getAllWindows().some((win) => win.isVisible())
-          ),
+          onda.app.evaluate(({ BrowserWindow }) => {
+            const win = BrowserWindow.getAllWindows().find(
+              (candidate) =>
+                !candidate.isDestroyed() && candidate.webContents.getURL().includes('compact.html')
+            );
+            return win?.isVisible() ?? false;
+          }),
         { timeout: 10_000 }
       )
       .toBe(false);

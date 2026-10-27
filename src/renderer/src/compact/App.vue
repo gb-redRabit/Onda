@@ -2,11 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
+  AppWindow,
   Disc3,
   ListMusic,
-  Maximize2,
   Music2,
   Pause,
+  PictureInPicture,
   Pin,
   Play,
   Repeat,
@@ -20,8 +21,10 @@ import {
 import { useCoreSync } from '@renderer/composables/useCoreSync';
 import { useMediaSession } from '@renderer/composables/useMediaSession';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { useAudioPiP } from '@renderer/composables/useAudioPiP';
 import { registerMediaIpcEvents } from '@renderer/composables/appIpc/registerMediaIpcEvents';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useSettingsStore } from '@renderer/stores/settings';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import CompactTracks from './CompactTracks.vue';
 import CompactQueue from './CompactQueue.vue';
@@ -31,13 +34,20 @@ const { t } = useI18n();
 useCoreSync();
 useMediaSession();
 const player = usePlayerStore();
+const settings = useSettingsStore();
 registerMediaIpcEvents(player);
 const audio = useAudioPlayer();
+const audioPip = useAudioPiP();
+audioPip.dock.value = settings.appearance.audioPipDock;
+audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
+const pipActive = audioPip.isActive;
 
 type Tab = 'tracks' | 'queue' | 'albums';
 const tab = ref<Tab>('tracks');
 const pinned = ref(false);
 const tracksRef = ref<InstanceType<typeof CompactTracks> | null>(null);
+let stopCompactHidden: (() => void) | undefined;
+let stopCompactShown: (() => void) | undefined;
 
 function setTab(id: string): void {
   if (id === 'tracks' || id === 'queue' || id === 'albums') tab.value = id;
@@ -88,6 +98,11 @@ async function togglePin(): Promise<void> {
 
 function hideToTray(): void {
   void window.api?.invoke('app:hideCompact');
+}
+
+function toggleAudioPip(): void {
+  if (!current.value) return;
+  void audioPip.toggle();
 }
 
 function openMainWindow(): void {
@@ -152,10 +167,20 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown);
   const saved = await window.api?.invoke('app:getCompactPinned');
   if (saved === true) pinned.value = true;
+  stopCompactHidden = window.api?.on('compact:hidden', (...args: unknown[]) => {
+    const payload = args[0] as { autoPip?: boolean } | undefined;
+    if (payload?.autoPip === false) return;
+    if (settings.appearance.audioPipAutoShow && audio.isPlaying.value) void audioPip.show();
+  });
+  stopCompactShown = window.api?.on('compact:shown', () => {
+    if (pipActive.value) void audioPip.hide();
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
+  stopCompactHidden?.();
+  stopCompactShown?.();
 });
 
 const repeatLabel = computed(() =>
@@ -178,7 +203,9 @@ const repeatLabel = computed(() =>
         <span class="w-1.5 h-1.5 rounded-full bg-primary" />
         {{ $t('compact.appName') }}
       </span>
-      <span class="text-[10px] text-base-content/40 truncate">{{ $t('compact.focusMode') }}</span>
+      <span class="text-[10px] text-base-content/40 truncate hidden min-[400px]:inline">{{
+        $t('compact.focusMode')
+      }}</span>
       <span class="flex-1" />
       <button
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
@@ -191,13 +218,27 @@ const repeatLabel = computed(() =>
         <Pin :size="13" />
       </button>
       <button
-        class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
+        class="flex items-center gap-1 px-1.5 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10 disabled:opacity-40 disabled:cursor-not-allowed"
+        :class="pipActive ? 'text-primary-text bg-primary/10' : ''"
+        :disabled="!current"
+        :title="$t('compact.audioPip')"
+        :aria-label="$t('compact.audioPip')"
+        :aria-pressed="pipActive"
+        data-testid="compact-pip"
+        @click="toggleAudioPip"
+      >
+        <PictureInPicture :size="13" />
+        <span class="text-[11px]">{{ $t('compact.pipShort') }}</span>
+      </button>
+      <button
+        class="flex items-center gap-1 px-1.5 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
         :title="$t('compact.fullWindow')"
         :aria-label="$t('compact.fullWindow')"
         data-testid="compact-expand"
         @click="openMainWindow"
       >
-        <Maximize2 :size="13" />
+        <AppWindow :size="13" />
+        <span class="text-[11px]">{{ $t('compact.fullWindow') }}</span>
       </button>
       <button
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-error hover:bg-error/10"

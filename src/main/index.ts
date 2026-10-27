@@ -35,6 +35,7 @@ import { OpenFileForwarder } from './bootstrap/open-files';
 import { initMainLocale, mainMessages } from './i18n-main';
 import { installGracefulShutdown } from './bootstrap/shutdown';
 import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
+import { sendToWindow } from './utils/broadcast';
 
 let mainWindow: BrowserWindow | null = null;
 let compactWindow: BrowserWindow | null = null;
@@ -43,6 +44,7 @@ let startupMode: WindowMode = 'main';
 let coreShellEnabled = false;
 let quitting = false;
 let pipReady = false;
+let audioPipReady = false;
 
 function activeShell(): BrowserWindow | null {
   if (startupMode === 'compact') {
@@ -182,6 +184,19 @@ function wireCompactWindow(win: BrowserWindow): void {
   win.on('closed', () => {
     compactWindow = null;
   });
+  // `BrowserWindow.hide()` nie zmienia `document.visibilityState` w Electronie,
+  // więc renderer nie może sam wykryć schowania do tray. Jawny sygnał pozwala
+  // pokazać PiP audio przy ✕/Alt+F4, ale nie przy przełączeniu na pełne okno.
+  win.on('hide', () => {
+    if (win.isDestroyed()) return;
+    win.webContents.send('compact:hidden', {
+      autoPip: startupMode === 'compact' && !quitting
+    });
+  });
+  win.on('show', () => {
+    if (win.isDestroyed()) return;
+    win.webContents.send('compact:shown');
+  });
   win.webContents.on('console-message', (_event, level, message) => {
     if (message.includes('[core-shell]') || message.includes('[compact]')) {
       logger.info('compact', `console [${level}]: ${message}`);
@@ -190,16 +205,31 @@ function wireCompactWindow(win: BrowserWindow): void {
 }
 
 function initPipForMain(win: BrowserWindow): void {
+  audioPipManager.setMainWindow(win);
+  if (!audioPipReady) {
+    audioPipReady = true;
+    audioPipManager.init();
+  }
   if (pipReady) {
     pipManager.setMainWindow(win);
-    audioPipManager.setMainWindow(win);
     return;
   }
   pipReady = true;
   pipManager.setMainWindow(win);
   pipManager.init();
+}
+
+/**
+ * Compact to audio-only shell, więc potrzebuje wyłącznie Audio PiP (okno wideo PiP
+ * tworzyłoby zbędny, ukryty renderer). Gdy później otworzy się pełne okno,
+ * `initPipForMain` dokończy inicjalizację wideo PiP.
+ */
+function initPipForCompact(win: BrowserWindow): void {
   audioPipManager.setMainWindow(win);
-  audioPipManager.init();
+  if (!audioPipReady) {
+    audioPipReady = true;
+    audioPipManager.init();
+  }
 }
 
 async function switchWindowMode(mode: WindowMode): Promise<void> {
@@ -219,6 +249,13 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
   await saveCompactState({ mode });
   startupMode = mode;
 
+  // PiP audio należy do poprzedniego shella — chowamy je i resetujemy stan hooka,
+  // żeby nowy shell nie odziedziczył "aktywnego" PiP, którego nie kontroluje.
+  if (audioPipReady) {
+    sendToWindow(activeShell(), 'audio-pip:closed');
+    audioPipManager.hide();
+  }
+
   if (mode === 'compact') {
     if (!compactWindow || compactWindow.isDestroyed()) {
       compactWindow = createCompactWindow({
@@ -227,9 +264,11 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
         hideOnClose: () => !quitting
       });
       wireCompactWindow(compactWindow);
+      initPipForCompact(compactWindow);
     } else {
       compactWindow.show();
       compactWindow.focus();
+      initPipForCompact(compactWindow);
     }
     mainWindow?.hide();
     return;
@@ -367,6 +406,7 @@ app.whenReady().then(async () => {
       hideOnClose: () => !quitting
     });
     wireCompactWindow(compactWindow);
+    initPipForCompact(compactWindow);
     compactWindow.webContents.on('did-finish-load', () => {
       perf('compact did-finish-load');
       splash.onMainReady();
@@ -446,6 +486,7 @@ app.on('window-all-closed', () => {
   pipManager.destroy();
   audioPipManager.destroy();
   pipReady = false;
+  audioPipReady = false;
   if (process.platform !== 'darwin') {
     app.quit();
   }
