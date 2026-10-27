@@ -17,9 +17,14 @@ describe('buildActivity', () => {
     expect(activity).toMatchObject({
       type: 2,
       details: 'Song',
-      state: 'Artist · Album',
+      state: 'Artist',
       assets: { large_image: 'onda_logo', large_text: 'Album' }
     });
+  });
+
+  it('falls back to the album when there is no artist', () => {
+    const activity = buildActivity(state({ title: 'Song', album: 'Album' }));
+    expect(activity).toMatchObject({ state: 'Album', assets: { large_text: 'Album' } });
   });
 
   it('uses the watching type for video and a cover URL when provided', () => {

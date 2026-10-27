@@ -28,13 +28,11 @@ export function buildActivity(state: PresenceState | null): DiscordActivity | nu
     details: truncate(state.title || 'Unknown'),
     assets: {
       large_image: state.coverUrl || 'onda_logo',
-      large_text: truncate(state.album || 'Onda')
+      large_text: truncate(state.album || state.artist || 'Onda')
     }
   };
 
-  const stateText = [state.artist, state.album]
-    .filter((value): value is string => !!value)
-    .join(' · ');
+  const stateText = state.artist || state.album;
   if (stateText) activity.state = truncate(stateText);
 
   if (state.durationSec && state.durationSec > 0) {
