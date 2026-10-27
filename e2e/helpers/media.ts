@@ -34,10 +34,10 @@ function buildToneWav(seconds: number, frequency: number, sampleRate: number): B
   return buffer;
 }
 
-export function createMediaFixture(): MediaFixture {
+export function createMediaFixture(seconds = 1): MediaFixture {
   const dir = mkdtempSync(join(tmpdir(), 'onda-media-'));
   const wavPath = join(dir, 'tone.wav');
-  writeFileSync(wavPath, buildToneWav(1, 440, 8000));
+  writeFileSync(wavPath, buildToneWav(seconds, 440, 8000));
   return { dir, wavPath };
 }
 
