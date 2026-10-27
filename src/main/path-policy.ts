@@ -124,6 +124,21 @@ export function protectedPathReason(
   // ze sobą dane użytkownika całego dysku, więc jest odrzucane razem z korzeniem.
   if (segments.length <= 1) return 'system';
 
+  // macOS: `/var/folders` (oraz kanoniczne `/private/var/folders`) to katalog
+  // tymczasowy użytkownika, a `os.tmpdir()` zwraca formę BEZ `private`. Bez tego
+  // wyjątku wpis `var` z listy POSIX fałszywie blokował pliki tymczasowe.
+  if (platform === 'darwin') {
+    const joinedTempPath = segments.join(joiner);
+    if (
+      joinedTempPath === 'var/folders' ||
+      joinedTempPath.startsWith('var/folders/') ||
+      joinedTempPath === 'private/var/folders' ||
+      joinedTempPath.startsWith('private/var/folders/')
+    ) {
+      return null;
+    }
+  }
+
   // Wpis chroniony pasuje tylko jako PREFIKS: `C:\Program Files\Onda` jest
   // odrzucane, natomiast `C:\Users\u\Music` i własny `Windows.old` użytkownika nie.
   for (let end = 0; end < segments.length; end++) {
