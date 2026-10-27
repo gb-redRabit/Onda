@@ -134,9 +134,13 @@ describe('isSensitivePath', () => {
 });
 
 describe('isSystemTempPath', () => {
-  it('accepts files inside the OS temp dir (AppData/.local are sensitive)', () => {
+  it('accepts files inside the OS temp dir', () => {
     expect(isSystemTempPath(join(tmpdir(), 'onda', 'preview.webm'))).toBe(true);
-    expect(isSensitivePath(join(tmpdir(), 'onda', 'preview.webm'))).toBe(true);
+    // Na Windows temp leży pod AppData (segment wrażliwy), ale grant mediów
+    // ma dla niego wyjątek; na Linuksie/macOS nie ma tam wrażliwych segmentów.
+    if (process.platform === 'win32') {
+      expect(isSensitivePath(join(tmpdir(), 'onda', 'preview.webm'))).toBe(true);
+    }
   });
 
   it('rejects paths outside the temp dir', () => {
