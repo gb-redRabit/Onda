@@ -19,27 +19,31 @@ interface LibraryLoadCtx {
 // pojedynczy payload structured-clone, a każdy wycinek oddaje sterowanie event loopowi.
 const TRACK_CHUNK_SIZE = 2000;
 
-async function loadTracksInChunks(ctx: LibraryLoadCtx): Promise<void> {
+function keepTracks(files: MediaFile[], audioOnly: boolean): MediaFile[] {
+  return audioOnly ? files.filter((track) => track.type === 'audio') : files;
+}
+
+async function loadTracksInChunks(ctx: LibraryLoadCtx, audioOnly = false): Promise<void> {
   const first = await window.api?.invoke('library:loadScannedChunk', 0, TRACK_CHUNK_SIZE);
   if (!first) return;
   ctx.folderTypes.value = first.folderTypes || {};
   if (first.total <= first.files.length) {
-    ctx.tracks.value = first.files;
+    ctx.tracks.value = keepTracks(first.files, audioOnly);
     return;
   }
-  const all: MediaFile[] = first.files.slice();
-  let offset = all.length;
+  const all: MediaFile[] = keepTracks(first.files, audioOnly);
+  let offset = first.files.length;
   while (offset < first.total) {
     const chunk = await window.api?.invoke('library:loadScannedChunk', offset, TRACK_CHUNK_SIZE);
     if (!chunk || chunk.files.length === 0) break;
-    all.push(...chunk.files);
+    all.push(...keepTracks(chunk.files, audioOnly));
     offset += chunk.files.length;
   }
   ctx.tracks.value = all;
 }
 
 export function useLibraryLoad(ctx: LibraryLoadCtx) {
-  async function loadFromDisk() {
+  async function loadFromDisk(options?: { audioOnly?: boolean }) {
     ctx.isLoading.value = true;
     try {
       const [loadedPlaylists, loadedFolders] = await Promise.all([
@@ -57,19 +61,19 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     } catch {
       // pojedyncze catch obsługują błędy
     }
-    await scheduleLoadTracksAsync();
+    await scheduleLoadTracksAsync(options);
   }
 
   let loadTracksScheduled = false;
   let loadTracksResolve: Array<() => void> = [];
   const LOAD_TRACKS_TIMEOUT_MS = 5000;
 
-  function scheduleLoadTracks(): void {
+  function scheduleLoadTracks(audioOnly = false): void {
     if (loadTracksScheduled) return;
     loadTracksScheduled = true;
     const doLoad = (): void => {
       ctx.isLoading.value = false;
-      void loadTracksInChunks(ctx)
+      void loadTracksInChunks(ctx, audioOnly)
         .catch(() => {
           /* nic do załadowania */
         })
@@ -94,9 +98,9 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
    * każde wywołanie zostawiało 5-sekundowy timer, a wywołujący, który na niego czekał, trzymał
    * promise żywą przez pięć sekund po tym, jak biblioteka była już załadowana.
    */
-  function scheduleLoadTracksAsync(): Promise<void> {
+  function scheduleLoadTracksAsync(options?: { audioOnly?: boolean }): Promise<void> {
     return new Promise((resolve) => {
-      if (!loadTracksScheduled) scheduleLoadTracks();
+      if (!loadTracksScheduled) scheduleLoadTracks(options?.audioOnly === true);
       const timer = setTimeout(done, LOAD_TRACKS_TIMEOUT_MS);
       function done(): void {
         clearTimeout(timer);

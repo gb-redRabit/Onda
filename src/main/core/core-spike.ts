@@ -15,13 +15,13 @@ import type { MediaFile } from '../../shared/types/media';
 interface CoreServiceOptions {
   /** Otwórz `core-test.html` (spike) oprócz Core. */
   testShell: boolean;
-  /** Główne okno, do którego router wysyła stan w trybie shellu. */
-  getMainWindow?: () => BrowserWindow | null;
+  /** Aktywny shell (main lub compact), do którego router wysyła stan. */
+  getShellWindow?: () => BrowserWindow | null;
 }
 
 let core: BrowserWindow | null = null;
 let testShell: BrowserWindow | null = null;
-let getMainWindow: (() => BrowserWindow | null) | null = null;
+let getShellWindow: (() => BrowserWindow | null) | null = null;
 let lastFull: CoreStateDto | null = null;
 let lastTick: CoreTickDto | null = null;
 let started = false;
@@ -30,7 +30,7 @@ let stateCount = 0;
 
 function shellTarget(): BrowserWindow | null {
   if (testShell && !testShell.isDestroyed()) return testShell;
-  return getMainWindow?.() ?? null;
+  return getShellWindow?.() ?? null;
 }
 
 function sendToShell(channel: string, payload: unknown): void {
@@ -180,7 +180,7 @@ export function startCoreService(options: CoreServiceOptions): void {
   if (started) return;
   started = true;
   verbose = options.testShell || process.env.ONDA_CORE_SPIKE === '1';
-  getMainWindow = options.getMainWindow ?? null;
+  getShellWindow = options.getShellWindow ?? null;
   lastFull = null;
   lastTick = null;
   stateCount = 0;
@@ -234,7 +234,7 @@ export function startCoreService(options: CoreServiceOptions): void {
   app.once('before-quit', stopCoreService);
   logger.info(
     'core-service',
-    `started (testShell=${options.testShell}, mainShell=${!!options.getMainWindow})`
+    `started (testShell=${options.testShell}, shell=${!!options.getShellWindow})`
   );
 }
 
@@ -250,7 +250,7 @@ export function stopCoreService(): void {
   if (testShell && !testShell.isDestroyed()) testShell.destroy();
   core = null;
   testShell = null;
-  getMainWindow = null;
+  getShellWindow = null;
   lastFull = null;
   lastTick = null;
   started = false;

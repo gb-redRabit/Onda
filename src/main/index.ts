@@ -27,6 +27,7 @@ import { GLASS_WINDOW_OPTS } from './windows/window-presets';
 import { destroyTray, hasTray, setupTray } from './windows/tray';
 import { SplashController } from './windows/splash';
 import { startCoreService } from './core/core-spike';
+import { createCompactWindow } from './compact/compact-window';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
@@ -35,7 +36,11 @@ import { installGracefulShutdown } from './bootstrap/shutdown';
 import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
 
 let mainWindow: BrowserWindow | null = null;
+let compactWindow: BrowserWindow | null = null;
 let startHidden = false;
+
+const compactMode = process.env.ONDA_COMPACT === '1';
+const coreShellEnabled = process.env.ONDA_CORE_SHELL === '1' || compactMode;
 
 const splash = new SplashController({
   windowIcon,
@@ -182,12 +187,12 @@ app.whenReady().then(async () => {
 
   // Uruchomienie przy logowaniu z "start zminimalizowany" — trzymaj okno ukryte,
   // dopóki użytkownik nie otworzy go z tray.
-  startHidden = process.argv.includes('--hidden');
+  startHidden = compactMode || process.argv.includes('--hidden');
   perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);
 
   splash.send(mainMessages().bootStartingUi, 50);
 
-  ipcMain.handle('app:isCoreShell', () => process.env.ONDA_CORE_SHELL === '1');
+  ipcMain.handle('app:isCoreShell', () => coreShellEnabled);
 
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
@@ -218,12 +223,12 @@ app.whenReady().then(async () => {
   registerOndaProtocolHandler();
 
   splash.send(mainMessages().bootCreatingWindow, 60);
-  if (process.env.ONDA_CORE_SHELL === '1' || process.env.ONDA_CORE_SPIKE === '1') {
+  if (coreShellEnabled || process.env.ONDA_CORE_SPIKE === '1') {
     // Core startuje przed shellem, żeby pierwsze komendy (np. przywrócenie sesji)
     // nie przepadły. Stan jest cache'owany do momentu, gdy shell się podłączy.
     startCoreService({
       testShell: process.env.ONDA_CORE_SPIKE === '1',
-      getMainWindow: () => mainWindow
+      getShellWindow: () => compactWindow ?? mainWindow
     });
   }
   mainWindow = createWindow();
@@ -231,6 +236,19 @@ app.whenReady().then(async () => {
   mainWindow.webContents.on('did-finish-load', () => {
     perf('did-finish-load');
     splash.onMainReady();
+    if (compactMode && !compactWindow) {
+      compactWindow = createCompactWindow();
+      compactWindow.on('closed', () => {
+        compactWindow = null;
+      });
+      compactWindow.webContents.on('console-message', (_event, level, message) => {
+        if (message.includes('[core-shell]') || message.includes('[compact]')) {
+          logger.info('compact', `console [${level}]: ${message}`);
+        }
+      });
+      // W podglądzie Fazy 3 pełny shell zostaje ukryty; Faza 4 usunie jego tworzenie.
+      mainWindow?.hide();
+    }
   });
   // Renderer zaczyna się ładować/przeładowywać — wróć do buforowania plików z OS,
   // żeby zdarzenie nie trafiło do starego (lub jeszcze niezamontowanego) kontekstu.

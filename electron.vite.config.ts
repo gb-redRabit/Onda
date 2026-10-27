@@ -77,7 +77,8 @@ export default defineConfig({
           'audio-pip': resolve('src/renderer/audio-pip.html'),
           // Spike Fazy 1 (#23): ukryty Core + testowy shell. Do usunięcia po Fazie 1.
           core: resolve('src/renderer/core.html'),
-          'core-test': resolve('src/renderer/core-test.html')
+          'core-test': resolve('src/renderer/core-test.html'),
+          compact: resolve('src/renderer/compact.html')
         },
         output: {
           manualChunks: {

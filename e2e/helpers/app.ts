@@ -21,6 +21,8 @@ export interface LaunchOptions {
   userDataDir?: string;
   /** Dodatkowe środowisko dla procesu Electron (np. ONDA_E2E_FIXTURES=1). */
   env?: Record<string, string>;
+  /** Entry renderera do okna testowego (np. `compact.html`). Domyślnie pełny `index.html`. */
+  windowFile?: string;
 }
 
 const MAIN_WINDOW_TIMEOUT_MS = 30_000;
@@ -30,18 +32,21 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function isMainWindowUrl(url: string): boolean {
+function isMainWindowUrl(url: string, windowFile?: string): boolean {
   if (!url || url.includes('splash.html')) return false;
+  if (windowFile) {
+    return url.includes(`/${windowFile}`) || url.includes(`\\${windowFile}`);
+  }
   if (url.includes('/renderer/index.html') || url.includes('\\renderer\\index.html')) return true;
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
   return !!devUrl && url.startsWith(devUrl);
 }
 
-async function waitForMainWindow(app: ElectronApplication): Promise<Page> {
+async function waitForMainWindow(app: ElectronApplication, windowFile?: string): Promise<Page> {
   const deadline = Date.now() + MAIN_WINDOW_TIMEOUT_MS;
   while (Date.now() < deadline) {
     for (const page of app.windows()) {
-      if (isMainWindowUrl(page.url())) return page;
+      if (isMainWindowUrl(page.url(), windowFile)) return page;
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
@@ -66,7 +71,7 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
   const app = await electron.launch({ args, env });
   const proc = app.process();
   try {
-    const page = await waitForMainWindow(app);
+    const page = await waitForMainWindow(app, options.windowFile);
 
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));

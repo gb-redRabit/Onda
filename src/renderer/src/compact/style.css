@@ -1,0 +1,54 @@
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.compact-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-base-200) 92%, black),
+    var(--color-base-200)
+  );
+}
+
+.compact-titlebar {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.compact-titlebar button,
+.compact-titlebar input,
+.compact-titlebar select {
+  -webkit-app-region: no-drag;
+}
+
+.compact-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-base-content) 20%, transparent) transparent;
+}
+
+.compact-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.compact-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-base-content) 18%, transparent);
+  border-radius: 999px;
+}
+
+.compact-tab {
+  -webkit-app-region: no-drag;
+}
