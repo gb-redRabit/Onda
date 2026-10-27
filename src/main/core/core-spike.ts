@@ -27,6 +27,18 @@ let lastTick: CoreTickDto | null = null;
 let started = false;
 let verbose = false;
 let stateCount = 0;
+let shuttingDown = false;
+let restarting = false;
+let restartTimer: ReturnType<typeof setTimeout> | null = null;
+let restartWatchdog: ReturnType<typeof setTimeout> | null = null;
+let pendingRestore: CoreStateDto | null = null;
+let hasStartedOnce = false;
+let crashCount = 0;
+let crashWindowStartedAt = 0;
+
+const MAX_CORE_RESTARTS = 3;
+const CRASH_WINDOW_MS = 60_000;
+const RESTART_DELAY_MS = 400;
 
 function shellTarget(): BrowserWindow | null {
   if (testShell && !testShell.isDestroyed()) return testShell;
@@ -114,6 +126,121 @@ async function runAutoPlay(): Promise<void> {
   }
 }
 
+/**
+ * Po restarcie renderera Core odtwarza ostatni znany stan: utwór, kolejkę,
+ * pozycję, głośność, mute, shuffle i repeat. Historii nie da się odtworzyć
+ * komendami IPC (nie ma settera) — ta część zostaje pusta.
+ */
+function restoreCoreState(state: CoreStateDto): void {
+  const win = core;
+  if (!win || win.isDestroyed()) return;
+  const send = (command: Record<string, unknown>): void => {
+    win.webContents.send('core:command', command);
+  };
+
+  if (!state.current) {
+    send({ type: 'clear' });
+    return;
+  }
+
+  send({
+    type: 'load',
+    track: state.current,
+    autoplay: false,
+    resume: false,
+    queue: state.queue,
+    pendingQueue: state.pendingQueue
+  });
+  if (state.currentTime > 0) send({ type: 'seek', time: state.currentTime });
+  send({ type: 'setVolume', value: state.volume });
+  if (state.isMuted) send({ type: 'toggleMute' });
+  if (state.shuffle) send({ type: 'toggleShuffle' });
+  const repeatCycles = state.repeat === 'one' ? 1 : state.repeat === 'all' ? 2 : 0;
+  for (let i = 0; i < repeatCycles; i += 1) send({ type: 'cycleRepeat' });
+  if (state.pipActive) send({ type: 'setPip', active: true, time: state.pipTime });
+  if (state.isPlaying) send({ type: 'play' });
+}
+
+/** Recreate/reload Core po crashu, z limitem restartów w oknie czasowym. */
+function scheduleCoreRestart(reason: string): void {
+  if (shuttingDown || restarting) return;
+
+  const now = Date.now();
+  if (now - crashWindowStartedAt > CRASH_WINDOW_MS) {
+    crashWindowStartedAt = now;
+    crashCount = 0;
+  }
+  crashCount += 1;
+  if (crashCount > MAX_CORE_RESTARTS) {
+    logger.error(
+      'core-service',
+      `Core crashed ${crashCount} times within ${CRASH_WINDOW_MS}ms — giving up (${reason})`
+    );
+    sendToShell('core:error', `Core crashed repeatedly: ${reason}`);
+    return;
+  }
+
+  pendingRestore = mergedState();
+  // Nowy renderer Core zaczyna revision od 0 — stary cache w mainie i shellu
+  // muszą zostać wyczyszczone, żeby niższe numery nie zostały odrzucone.
+  lastFull = null;
+  lastTick = null;
+  stateCount = 0;
+  restarting = true;
+  const delay = RESTART_DELAY_MS * crashCount;
+  logger.warn('core-service', `restarting Core in ${delay}ms (${reason})`);
+  sendToShell('core:error', `Core restarting: ${reason}`);
+
+  restartTimer = setTimeout(() => {
+    restartTimer = null;
+    if (shuttingDown) return;
+    if (core && !core.isDestroyed()) {
+      core.webContents.reload();
+    } else {
+      core = createCoreWindow();
+    }
+    restartWatchdog = setTimeout(() => {
+      restartWatchdog = null;
+      if (!restarting || shuttingDown) return;
+      logger.warn('core-service', 'Core did not become ready after restart — retrying');
+      restarting = false;
+      scheduleCoreRestart('ready timeout');
+    }, 10_000);
+  }, delay);
+}
+
+function createCoreWindow(): BrowserWindow {
+  const win = createWindow({
+    width: 200,
+    height: 120,
+    show: false,
+    frame: false,
+    skipTaskbar: true,
+    resizable: false,
+    htmlFile: 'core.html',
+    autoShow: false,
+    webPreferences: {
+      backgroundThrottling: false,
+      autoplayPolicy: 'no-user-gesture-required'
+    }
+  });
+  win.webContents.on('did-finish-load', () => logger.info('core-service', 'core renderer loaded'));
+  win.webContents.on('console-message', (_event, level, message) => {
+    if (verbose) logger.info('core-service', `core console [${level}]: ${message}`);
+  });
+  win.webContents.on('render-process-gone', (_event, details) => {
+    logger.error('core-service', `core renderer gone: ${details.reason}`);
+    if (shuttingDown) return;
+    scheduleCoreRestart(`render process gone: ${details.reason}`);
+  });
+  win.on('closed', () => {
+    if (core === win) core = null;
+    logger.info('core-service', 'core window closed');
+    if (!shuttingDown && started) scheduleCoreRestart('window closed');
+  });
+  return win;
+}
+
 function registerIpc(): void {
   ipcMain.on('core:command', (event, command: unknown) => {
     if (!fromShell(event) || !core || core.isDestroyed()) return;
@@ -129,9 +256,23 @@ function registerIpc(): void {
 
   ipcMain.on('core:ready', (event) => {
     if (!fromCore(event)) return;
+    restarting = false;
+    if (restartWatchdog) {
+      clearTimeout(restartWatchdog);
+      restartWatchdog = null;
+    }
     logger.info('core-service', 'core ready');
     sendToShell('core:ready', true);
-    void runAutoPlay();
+    if (pendingRestore) {
+      const state = pendingRestore;
+      pendingRestore = null;
+      restoreCoreState(state);
+      return;
+    }
+    if (!hasStartedOnce) {
+      hasStartedOnce = true;
+      void runAutoPlay();
+    }
   });
 
   ipcMain.on('core:error', (event, message: unknown) => {
@@ -179,6 +320,12 @@ function registerIpc(): void {
 export function startCoreService(options: CoreServiceOptions): void {
   if (started) return;
   started = true;
+  shuttingDown = false;
+  restarting = false;
+  crashCount = 0;
+  crashWindowStartedAt = 0;
+  hasStartedOnce = false;
+  pendingRestore = null;
   verbose = options.testShell || process.env.ONDA_CORE_SPIKE === '1';
   getShellWindow = options.getShellWindow ?? null;
   lastFull = null;
@@ -186,33 +333,7 @@ export function startCoreService(options: CoreServiceOptions): void {
   stateCount = 0;
 
   registerIpc();
-
-  core = createWindow({
-    width: 200,
-    height: 120,
-    show: false,
-    frame: false,
-    skipTaskbar: true,
-    resizable: false,
-    htmlFile: 'core.html',
-    autoShow: false,
-    webPreferences: {
-      backgroundThrottling: false,
-      autoplayPolicy: 'no-user-gesture-required'
-    }
-  });
-  core.webContents.on('did-finish-load', () => logger.info('core-service', 'core renderer loaded'));
-  core.webContents.on('console-message', (_event, level, message) => {
-    if (verbose) logger.info('core-service', `core console [${level}]: ${message}`);
-  });
-  core.webContents.on('render-process-gone', (_event, details) => {
-    logger.error('core-service', `core renderer gone: ${details.reason}`);
-    sendToShell('core:error', `core renderer gone: ${details.reason}`);
-  });
-  core.on('closed', () => {
-    core = null;
-    logger.info('core-service', 'core window closed');
-  });
+  core = createCoreWindow();
 
   if (options.testShell) {
     testShell = createWindow({
@@ -239,6 +360,17 @@ export function startCoreService(options: CoreServiceOptions): void {
 }
 
 export function stopCoreService(): void {
+  shuttingDown = true;
+  if (restartTimer) {
+    clearTimeout(restartTimer);
+    restartTimer = null;
+  }
+  if (restartWatchdog) {
+    clearTimeout(restartWatchdog);
+    restartWatchdog = null;
+  }
+  restarting = false;
+  pendingRestore = null;
   ipcMain.removeHandler('core:getState');
   ipcMain.removeAllListeners('core:command');
   ipcMain.removeAllListeners('core:ready');

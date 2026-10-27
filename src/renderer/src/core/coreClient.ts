@@ -58,6 +58,9 @@ export function initCoreClient(): void {
   };
 
   window.api?.on('core:ready', () => {
+    // Restart Core resetuje numer revision; wyzerowanie snapshotu pozwala
+    // przyjąć nowy, niższy numer zamiast odrzucić go jako "stary".
+    coreState.value = null;
     markReady();
     hydrate();
   });

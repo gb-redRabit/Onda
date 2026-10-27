@@ -52,6 +52,12 @@ function ensureRemoteModule(): void {
   window.api?.on('core:viz', (raw) => {
     if (Array.isArray(raw)) remoteViz.setBins(raw as number[]);
   });
+  // Po restarcie Core timer wizualizatora startuje od zera — ponów subskrypcję,
+  // jeśli któryś konsument (główny viz/PiP) nadal jej potrzebuje.
+  window.api?.on('core:ready', () => {
+    sawCoreState = false;
+    if (remoteVizActive) sendCoreCommand({ type: 'viz', active: true });
+  });
   watch(
     coreState,
     (state) => {

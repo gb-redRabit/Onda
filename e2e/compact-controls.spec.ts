@@ -71,9 +71,36 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('Space');
     await expect(page.getByTestId('compact-play')).toHaveAttribute('data-playing', 'false');
+    // Poczekaj na faktyczną pauzę silnika Core — inaczej czas ucieka między
+    // seekami i test staje się zależny od tempa maszyny.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async () => {
+            const api = (
+              window as unknown as {
+                api: { invoke: (c: string) => Promise<Record<string, unknown> | null> };
+              }
+            ).api;
+            const state = await api.invoke('core:getState');
+            return state?.enginePlaying === true;
+          }),
+        { timeout: 10_000 }
+      )
+      .toBe(false);
 
     // Strzałki przewijają o 5 s (fixture ma 8 s), bez wychodzenia poza zakres.
-    const currentTime = () =>
+    const coreTime = () =>
+      page.evaluate(async () => {
+        const api = (
+          window as unknown as {
+            api: { invoke: (c: string) => Promise<Record<string, unknown> | null> };
+          }
+        ).api;
+        const state = await api.invoke('core:getState');
+        return Number(state?.currentTime ?? -1);
+      });
+    const uiTime = () =>
       page.evaluate(() =>
         Number(
           document
@@ -81,10 +108,20 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
             ?.getAttribute('aria-valuenow') ?? 0
         )
       );
+    // Najpierw kilka razy w lewo — pozycja po krótkim odtwarzaniu może być
+    // dowolna, a każde naciśnięcie przewija o 5 s (z dolnym ograniczeniem 0).
+    for (let i = 0; i < 3; i += 1) await page.keyboard.press('ArrowLeft');
+    await expect.poll(coreTime).toBeLessThan(1);
+    await expect.poll(uiTime).toBeLessThan(1);
+
     await page.keyboard.press('ArrowRight');
-    await expect.poll(currentTime).toBeGreaterThan(4);
+    // Czekamy na Core, nie tylko na optymistyczny ref UI — inaczej drugi seek
+    // może wyprzedzić pierwszy i wynik zależy od tempa maszyny.
+    await expect.poll(coreTime).toBeGreaterThan(4);
+    await expect.poll(uiTime).toBeGreaterThan(4);
     await page.keyboard.press('ArrowLeft');
-    await expect.poll(currentTime).toBeLessThan(1);
+    await expect.poll(coreTime).toBeLessThan(1);
+    await expect.poll(uiTime).toBeLessThan(1);
 
     // Pin zapisuje się w stanie okna i jest odczytywany przez IPC.
     const getPinned = () =>
