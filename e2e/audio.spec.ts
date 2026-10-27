@@ -13,20 +13,20 @@ interface OndaTestApi {
 }
 
 test.describe('audio playback and audio view', () => {
-  const media = createMediaFixture();
+  const media = createMediaFixture(9);
   writeFileSync(
     join(media.dir, 'tone.srt'),
     [
       '1',
-      '00:00:00,000 --> 00:00:00,400',
+      '00:00:00,000 --> 00:00:03,000',
       'First line',
       '',
       '2',
-      '00:00:00,400 --> 00:00:00,700',
+      '00:00:03,000 --> 00:00:06,000',
       'Second line',
       '',
       '3',
-      '00:00:00,700 --> 00:00:00,950',
+      '00:00:06,000 --> 00:00:09,000',
       'Third line'
     ].join('\n')
   );
@@ -90,18 +90,19 @@ test.describe('audio playback and audio view', () => {
       // Tekst piosenki jest elementem układu audio; sidecar .srt czyta IPC.
       await expect(page.getByTestId('lyrics-panel')).toBeVisible();
 
-      // Zatrzymaj odtwarzanie przed nawigacją po tekście: przy odtwarzaniu linie
-      // przewijają się automatycznie i przycisk „następna linia" odmontowuje się
-      // w trakcie kliknięcia (element nie jest stabilny). Krótki timeout, bo krótki
-      // utwór mógł się już skończyć, zanim tu dotarliśmy.
-      await page
-        .getByRole('button', { name: /^(pause|pauza|wstrzymaj)$/i })
-        .first()
-        .click({ timeout: 2_000 })
-        .catch(() => {});
-      await expect(page.getByRole('button', { name: /^(play|odtwórz)$/i }).first()).toBeVisible();
+      // Sama animacja podmiany linii (`Transition mode="out-in"`) odmontowuje
+      // przyciski przy każdej zmianie indeksu. W e2e ją wyłączamy, żeby kliknięcia
+      // były stabilne (produkt zostaje bez zmian).
+      await page.addStyleTag({
+        content:
+          '.lyrics-swap-enter-active, .lyrics-swap-leave-active { transition: none !important; }'
+      });
 
-      const progress = page.locator('[role="slider"]').first();
+      // Przewiń na początek. Linie są rozstawione co 3 s (9-sekundowy WAV), więc
+      // odtwarzanie nie przeskoczy do kolejnej w trakcie asercji ani przed kliknięciem.
+      const progress = page
+        .getByRole('slider', { name: /playback position|pozycja odtwarzania/i })
+        .first();
       await progress.focus();
       await page.keyboard.press('Home');
 
