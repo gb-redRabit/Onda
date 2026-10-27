@@ -134,8 +134,13 @@ async function setCloseToTray(value: boolean): Promise<void> {
     <SettingsRow
       :label="$t('settings.compactStartup')"
       :description="$t('settings.compactStartupDesc')"
+      anchor="setting-compact-startup"
     >
-      <SettingsToggle :model-value="compactStartup" @update:model-value="setCompactStartup" />
+      <SettingsToggle
+        :model-value="compactStartup"
+        data-testid="settings-compact-startup"
+        @update:model-value="setCompactStartup"
+      />
     </SettingsRow>
     <div class="flex items-center justify-between gap-4 pt-2 border-t border-base-300">
       <div class="min-w-0">

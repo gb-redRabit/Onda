@@ -64,4 +64,59 @@ test.describe('settings interactions', () => {
       await onda.dispose();
     }
   });
+
+  // Tryb kompaktowy musi być znajdowalny w wyszukiwaniu ustawień (wcześniej brak
+  // wpisu w katalogu powodował, że wpisanie "kompakt" nic nie pokazywało).
+  test('finds and toggles compact startup from settings search', async () => {
+    const onda = await launchOnda();
+    try {
+      const page = onda.page;
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/settings';
+      });
+
+      const search = page.getByTestId('settings-search');
+      await search.fill('compact');
+      const hit = page
+        .getByTestId('settings-search-hit')
+        .filter({ hasText: /kompakt|compact/i })
+        .first();
+      await expect(hit).toBeVisible();
+      await hit.click();
+
+      const toggle = page.getByTestId('settings-compact-startup');
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-checked', 'true');
+      await expect
+        .poll(() =>
+          page.evaluate(async () => {
+            const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } })
+              .api;
+            return api.invoke('app:getStartupMode');
+          })
+        )
+        .toBe('compact');
+
+      // Przywróć tryb main w profilu testowym — kolejne przebiegi mają startować normalnie.
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-checked', 'false');
+      await expect
+        .poll(() =>
+          page.evaluate(async () => {
+            const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } })
+              .api;
+            return api.invoke('app:getStartupMode');
+          })
+        )
+        .toBe('main');
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });

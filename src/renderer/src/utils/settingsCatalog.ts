@@ -149,6 +149,12 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     keywords: ['tray', 'zasobnik', 'zamkniecie']
   },
   {
+    id: 'setting-compact-startup',
+    labelKey: 'settings.compactStartup',
+    tab: 'general',
+    keywords: ['kompakt', 'compact', 'minimal', 'odtwarzacz', 'player', 'start']
+  },
+  {
     id: 'setting-general-section',
     labelKey: 'settings.generalSection',
     tab: 'general',
