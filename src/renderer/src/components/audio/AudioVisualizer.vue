@@ -264,6 +264,7 @@ watch(
 );
 
 onMounted(() => {
+  audio.setVizActive(true);
   if (analyserNode) {
     analyserNode.smoothingTimeConstant = settings.playback.visualization.smoothing ?? 0.8;
   }
@@ -287,6 +288,7 @@ watch(
 );
 
 onUnmounted(() => {
+  audio.setVizActive(false);
   document.removeEventListener('visibilitychange', onVisibilityChange);
   if (animFrame) cancelAnimationFrame(animFrame);
 });

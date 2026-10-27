@@ -152,8 +152,16 @@ export const usePlayerStore = defineStore('player', () => {
         queue: plainTracks(queue.value),
         pendingQueue: plainTracks(pendingQueue.value)
       });
+      // Stan (łącznie z currentTrack) przyjdzie z Core; nie duplikujemy go lokalnie,
+      // żeby nie policzyć odtworzenia dwa razy.
+      return;
     }
     setTrackBase(track, options);
+  }
+
+  /** Odtworzenie wykryte po stronie Core (auto-advance) — aktualizuje statystyki shellu. */
+  function recordExternalPlay(track: MediaFile): void {
+    recordPlay(track);
   }
   function clearTrack(): void {
     if (isCoreShell()) sendCoreCommand({ type: 'clear' });
@@ -264,6 +272,7 @@ export const usePlayerStore = defineStore('player', () => {
     displayQueue,
     setTrack,
     clearTrack,
+    recordExternalPlay,
     play,
     pause,
     togglePlay,

@@ -299,6 +299,7 @@ export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
   'core:command',
   'core:state',
   'core:tick',
+  'core:viz',
   'core:ready',
   'core:error'
 ]);
@@ -355,6 +356,7 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'core:command',
   'core:state',
   'core:tick',
+  'core:viz',
   'core:ready',
   'core:error'
 ]);

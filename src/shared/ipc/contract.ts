@@ -318,6 +318,7 @@ export const SEND_CHANNELS = [
   'core:command',
   'core:state',
   'core:tick',
+  'core:viz',
   'core:ready',
   'core:error'
 ] as const;
@@ -374,6 +375,7 @@ export const RECEIVE_CHANNELS = [
   'core:command',
   'core:state',
   'core:tick',
+  'core:viz',
   'core:ready',
   'core:error'
 ] as const;

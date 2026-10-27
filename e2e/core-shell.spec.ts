@@ -30,6 +30,13 @@ test('core shell mirrors hidden playback and accepts commands', async () => {
     });
     expect(before?.isPlaying).toBe(true);
 
+    // Wizualizator w shellu nie ma lokalnego analizatora — działa przez core:viz.
+    await page.evaluate(() => {
+      window.location.hash = '#/audio';
+    });
+    await expect(page.getByTestId('audio-view')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('audio-cycle-viz')).toBeVisible();
+
     await page.evaluate(() => {
       const api = (window as unknown as { api: CoreShellApi }).api;
       api.send('core:command', { type: 'pause' });
@@ -48,7 +55,12 @@ test('core shell mirrors hidden playback and accepts commands', async () => {
       )
       .toBe(false);
 
-    await expect(bar).toHaveAttribute('data-playing', 'false', { timeout: 5_000 });
+    // Widok Audio ukrywa globalny pasek (immersyjny), więc stan paska sprawdzamy
+    // po powrocie do biblioteki.
+    await page.evaluate(() => {
+      window.location.hash = '#/library';
+    });
+    await expect(bar).toHaveAttribute('data-playing', 'false', { timeout: 10_000 });
     expect(onda.pageErrors).toEqual([]);
   } finally {
     await onda.dispose();

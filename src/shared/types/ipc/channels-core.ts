@@ -55,6 +55,7 @@ export type CoreCommand =
   | { type: 'playFromHistory'; index: number }
   | { type: 'clear' }
   | { type: 'setPip'; active: boolean; time?: number }
+  | { type: 'viz'; active: boolean }
   | { type: 'eqBands'; bands: EqBand[] }
   | { type: 'eqEnabled'; enabled: boolean }
   | { type: 'eqPreamp'; db: number }

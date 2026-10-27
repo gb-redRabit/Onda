@@ -153,6 +153,11 @@ function registerIpc(): void {
     }
   });
 
+  ipcMain.on('core:viz', (event, bins: unknown) => {
+    if (!fromCore(event)) return;
+    sendToShell('core:viz', bins);
+  });
+
   ipcMain.on('core:tick', (event, tick: unknown) => {
     if (!fromCore(event) || !tick || typeof tick !== 'object') return;
     lastTick = tick as CoreTickDto;
@@ -240,6 +245,7 @@ export function stopCoreService(): void {
   ipcMain.removeAllListeners('core:error');
   ipcMain.removeAllListeners('core:state');
   ipcMain.removeAllListeners('core:tick');
+  ipcMain.removeAllListeners('core:viz');
   if (core && !core.isDestroyed()) core.destroy();
   if (testShell && !testShell.isDestroyed()) testShell.destroy();
   core = null;

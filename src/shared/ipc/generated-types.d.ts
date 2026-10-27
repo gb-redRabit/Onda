@@ -298,6 +298,7 @@ export type IpcSendChannel =
   | 'core:command'
   | 'core:state'
   | 'core:tick'
+  | 'core:viz'
   | 'core:ready'
   | 'core:error';
 
@@ -353,5 +354,6 @@ export type IpcReceiveChannel =
   | 'core:command'
   | 'core:state'
   | 'core:tick'
+  | 'core:viz'
   | 'core:ready'
   | 'core:error';

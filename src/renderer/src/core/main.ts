@@ -53,6 +53,33 @@ async function boot(): Promise<void> {
   let revision = 0;
   let lastError: string | null = null;
   let lastStructuralKey = '';
+  let vizTimer: ReturnType<typeof setInterval> | null = null;
+
+  function setVizActive(active: boolean): void {
+    if (active && !vizTimer) {
+      vizTimer = setInterval(() => {
+        if (!audio.isPlaying.value) return;
+        const analyser = audio.getAnalyserNode();
+        if (!analyser) return;
+        const raw = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(raw);
+        const count = 256;
+        const step = Math.max(1, Math.floor(raw.length / count));
+        const bins: number[] = new Array<number>(count).fill(0);
+        for (let i = 0; i < count; i += 1) {
+          let sum = 0;
+          const start = i * step;
+          const end = Math.min(start + step, raw.length);
+          for (let j = start; j < end; j += 1) sum += raw[j];
+          bins[i] = Math.round(sum / Math.max(1, end - start));
+        }
+        api.send('core:viz', bins);
+      }, 33);
+    } else if (!active && vizTimer) {
+      clearInterval(vizTimer);
+      vizTimer = null;
+    }
+  }
 
   function tick(): CoreTickDto {
     return {
@@ -177,6 +204,9 @@ async function boot(): Promise<void> {
       case 'setPip':
         player.pipActive = command.active === true;
         player.pipTime = Number(command.time) || player.currentTime;
+        break;
+      case 'viz':
+        setVizActive(command.active === true);
         break;
       case 'eqBands':
         audio.applyEqBands(command.bands);

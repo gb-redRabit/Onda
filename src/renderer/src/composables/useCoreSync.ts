@@ -12,11 +12,17 @@ export function useCoreSync(): void {
   const player = usePlayerStore();
   let lastLoggedPath = '';
   let lastLoggedAt = 0;
+  let lastRecordedPath = '';
 
   watch(
     coreState,
     (state) => {
       if (!state) return;
+      const track = state.current;
+      if ((track?.path ?? '') !== lastRecordedPath) {
+        lastRecordedPath = track?.path ?? '';
+        if (track) player.recordExternalPlay(track);
+      }
       const now = Date.now();
       if (state.current?.path !== lastLoggedPath || now - lastLoggedAt > 4000) {
         lastLoggedPath = state.current?.path ?? '';

@@ -9,6 +9,7 @@ import { logger } from '@shared/logger';
 import { wireAudioEvents } from './audioPlayerEvents';
 import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { coreState, initCoreClient, sendCoreCommand } from '@renderer/core/coreClient';
+import { createVizShim } from '@renderer/utils/vizShim';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
@@ -32,6 +33,8 @@ function resumeAndPlay() {
 
 let moduleInitialized = false;
 let remoteInitialized = false;
+const remoteViz = createVizShim(256);
+let remoteVizActive = false;
 
 /**
  * Shell nie ma własnego AudioContext. Refy tego modułu są wspólne dla obu trybów,
@@ -42,6 +45,9 @@ function ensureRemoteModule(): void {
   remoteInitialized = true;
   initCoreClient();
   console.info('[core-shell] remote audio player initialized');
+  window.api?.on('core:viz', (raw) => {
+    if (Array.isArray(raw)) remoteViz.setBins(raw as number[]);
+  });
   watch(
     coreState,
     (state) => {
@@ -76,7 +82,12 @@ function useRemoteAudioPlayer() {
     isReady,
     isLoading,
     error,
-    getAnalyserNode: (): AnalyserNode | null => null,
+    getAnalyserNode: (): AnalyserNode | null => remoteViz.node,
+    setVizActive: (active: boolean) => {
+      if (active === remoteVizActive) return;
+      remoteVizActive = active;
+      send({ type: 'viz', active });
+    },
     play: () => send({ type: 'play' }),
     pause: () => send({ type: 'pause' }),
     seek: (time: number) => {
@@ -312,6 +323,9 @@ export function useAudioPlayer() {
     // Getter, nie wartość: w chwili tworzenia komponentu kontekst audio może nie być
     // jeszcze rozgrzany, więc zamrożony `null` na zawsze psuł wizualizację.
     getAnalyserNode: () => audioEngine.getAnalyserNode(),
+    setVizActive: (_active: boolean) => {
+      /* lokalny analizator jest zawsze dostępny */
+    },
     play: () => resumeAndPlay(),
     pause: () => audioEngine.pause(),
     seek: (time: number) => audioEngine.seek(time),
