@@ -144,12 +144,10 @@ onUnmounted(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange);
   // `AbortController` usuwa listener niezależnie od tego, czy template ref jest już null.
   wheelAbort.abort();
-  // Wyjście z odtwarzacza podczas grania wideo nie może zabijać odtwarzania: przekaż je
-  // do okna Picture-in-Picture (dokładnie tak, jak zrobiłby to przycisk PiP)
-  // zamiast czyścić utwór. Wywoływane przed `vp.destroy()`, żeby bieżąca
-  // pozycja odtwarzania została pobrana z żywego <video>.
-  const autoPiP = player.currentTrack?.type === 'video' && !player.pipActive && player.isPlaying;
-  if (autoPiP) void vp.togglePiP();
+  // Wyjście z odtwarzacza NIE uruchamia PiP automatycznie. Wideo ma zostać
+  // zatrzymane i wyczyszczone; PiP otwiera wyłącznie użytkownik przyciskiem.
+  // Jeśli PiP był już włączony ręcznie, zostawiamy go bez zmian.
+  const staysInPiP = player.pipActive;
 
   if (
     vp.videoRef.value &&
@@ -165,9 +163,9 @@ onUnmounted(() => {
   ctl.cleanup();
   vp.destroy();
   document.body.style.cursor = 'default';
-  // wyczyść aktualnie odtwarzane wideo przy wyjściu, żeby ten sam plik można było
-  // otworzyć ponownie (ale nie gdy właśnie przekazano je do PiP lub gdy PiP był już aktywny)
-  if (!autoPiP && player.currentTrack?.type === 'video' && !player.pipActive) {
+  // Wyczyść aktualnie odtwarzane wideo przy wyjściu, żeby ten sam plik można było
+  // otworzyć ponownie — chyba że użytkownik świadomie zostawił je w PiP.
+  if (!staysInPiP && player.currentTrack?.type === 'video') {
     player.clearTrack();
   }
 });

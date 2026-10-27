@@ -78,6 +78,14 @@ test.describe('video PiP', () => {
       await expect.poll(() => isVideoPipVisible(app), { timeout: 15_000 }).toBe(false);
       await expect(page.getByTestId('player-view')).toBeVisible();
 
+      // Wyjście z widoku wideo nie może samo otwierać PiP — wideo ma zostać
+      // zatrzymane i wyczyszczone. PiP tylko po jawnym kliknięciu.
+      await page.evaluate(() => {
+        window.location.hash = '#/library';
+      });
+      await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', 'library');
+      await expect.poll(() => isVideoPipVisible(app), { timeout: 5_000 }).toBe(false);
+
       expect(onda.pageErrors).toEqual([]);
     } finally {
       await onda.dispose();
