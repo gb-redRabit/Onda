@@ -362,6 +362,7 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'imageViewer:files',
   'compact:hidden',
   'compact:shown',
+  'settings:appearance',
   'core:command',
   'core:state',
   'core:tick',

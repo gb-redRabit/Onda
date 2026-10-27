@@ -5,7 +5,8 @@ export default {
   window: {
     minimize: 'Minimalizuj',
     maximize: 'Maksymalizuj',
-    close: 'Zamknij'
+    close: 'Zamknij',
+    compactMode: 'Tryb kompaktowy'
   },
   providers: {
     tab: 'Linki',

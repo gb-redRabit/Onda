@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { storeToRefs } from 'pinia';
 import {
   AppWindow,
   Disc3,
@@ -24,6 +25,8 @@ import { useAudioPiP } from '@renderer/composables/useAudioPiP';
 import { registerMediaIpcEvents } from '@renderer/composables/appIpc/registerMediaIpcEvents';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { loadLocaleMessages } from '@renderer/i18n';
+import type { AppearanceSettings } from '@renderer/types/settings';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import CompactTracks from './CompactTracks.vue';
 import CompactQueue from './CompactQueue.vue';
@@ -34,6 +37,7 @@ useCoreSync();
 useMediaSession();
 const player = usePlayerStore();
 const settings = useSettingsStore();
+const { appearance } = storeToRefs(settings);
 registerMediaIpcEvents(player);
 const audio = useAudioPlayer();
 const audioPip = useAudioPiP();
@@ -46,6 +50,7 @@ const pinned = ref(false);
 const tracksRef = ref<InstanceType<typeof CompactTracks> | null>(null);
 let stopCompactHidden: (() => void) | undefined;
 let stopCompactShown: (() => void) | undefined;
+let stopAppearance: (() => void) | undefined;
 
 function setTab(id: string): void {
   if (id === 'tracks' || id === 'queue' || id === 'albums') tab.value = id;
@@ -168,12 +173,23 @@ onMounted(async () => {
   stopCompactShown = window.api?.on('compact:shown', () => {
     void audioPip.hide();
   });
+  // Motyw zmieniony w pełnym oknie ma natychmiast trafić do compactu — także
+  // wtedy, gdy to okno jest ukryte i wróci później (bez restartu/reloadu).
+  stopAppearance = window.api?.on('settings:appearance', (...args: unknown[]) => {
+    const next = args[0] as AppearanceSettings | undefined;
+    if (!next || typeof next !== 'object') return;
+    appearance.value = next;
+    void loadLocaleMessages(next.locale);
+    audioPip.dock.value = next.audioPipDock;
+    audioPip.setAutoShow(next.audioPipAutoShow);
+  });
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
   stopCompactHidden?.();
   stopCompactShown?.();
+  stopAppearance?.();
 });
 
 const repeatLabel = computed(() =>

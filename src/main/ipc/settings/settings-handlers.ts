@@ -100,7 +100,7 @@ export function registerSettingsHandlers(): void {
     }
   });
 
-  ipcMain.handle('settings:set', async (_event, data: Partial<AppSettings>): Promise<boolean> => {
+  ipcMain.handle('settings:set', async (event, data: Partial<AppSettings>): Promise<boolean> => {
     // Factory reset już wyczyścił store; późne debounce'owane zapisy z
     // renderera nie mogą wskrzesić starych ustawień przed restartem.
     if (isResetting()) return false;
@@ -133,6 +133,15 @@ export function registerSettingsHandlers(): void {
       if (sanitized.download) {
         void syncSubscriptionsScheduler();
         void syncLinkSubsScheduler();
+      }
+      // Motyw/język/geometria muszą trafić też do drugiego shella (compact),
+      // który żyje w osobnym rendererze. Nie wysyłamy sekretów — tylko appearance.
+      if (sanitized.appearance) {
+        const appearance = sanitized.appearance;
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (win.isDestroyed() || win.webContents.id === event.sender.id) continue;
+          win.webContents.send('settings:appearance', appearance);
+        }
       }
       return secretSaved;
     } catch (e) {

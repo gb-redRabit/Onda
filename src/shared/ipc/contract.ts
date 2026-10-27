@@ -381,6 +381,7 @@ export const RECEIVE_CHANNELS = [
   'imageViewer:files',
   'compact:hidden',
   'compact:shown',
+  'settings:appearance',
   'core:command',
   'core:state',
   'core:tick',

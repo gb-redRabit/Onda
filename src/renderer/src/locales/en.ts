@@ -5,7 +5,8 @@ export default {
   window: {
     minimize: 'Minimize',
     maximize: 'Maximize',
-    close: 'Close'
+    close: 'Close',
+    compactMode: 'Compact mode'
   },
   providers: {
     tab: 'Links',

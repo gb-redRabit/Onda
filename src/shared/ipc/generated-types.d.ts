@@ -360,6 +360,7 @@ export type IpcReceiveChannel =
   | 'imageViewer:files'
   | 'compact:hidden'
   | 'compact:shown'
+  | 'settings:appearance'
   | 'core:command'
   | 'core:state'
   | 'core:tick'

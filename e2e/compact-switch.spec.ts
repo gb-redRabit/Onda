@@ -19,15 +19,12 @@ test('switches core-shell main to compact and back without restart', async () =>
   try {
     const page = onda.page;
     await dismissWizard(page);
-    await page.evaluate(() => {
-      window.location.hash = '#/settings';
-    });
-    await page.getByTestId('settings-section-system').click();
-    await page.getByTestId('settings-tab-general').click();
 
-    const switchNow = page.getByTestId('settings-compact-switch-now');
-    await expect(switchNow).toBeVisible();
-    await switchNow.click();
+    // Przełącznik jest w górnym pasku, obok wyszukiwania.
+    const modeSwitch = page.getByTestId('window-switch-compact');
+    await expect(modeSwitch).toBeVisible();
+    await expect(modeSwitch).toHaveAttribute('title', /kompakt|compact/i);
+    await modeSwitch.click();
 
     await expect
       .poll(() => windowByUrl(onda.app, 'compact.html'), { timeout: 20_000 })
@@ -57,6 +54,41 @@ test('switches core-shell main to compact and back without restart', async () =>
             return win?.isVisible() ?? false;
           }),
         { timeout: 20_000 }
+      )
+      .toBe(true);
+
+    // Ten sam przełącznik jest też w Ustawienia → Ogólne.
+    await page.evaluate(() => {
+      window.location.hash = '#/settings';
+    });
+    await page.getByTestId('settings-section-system').click();
+    await page.getByTestId('settings-tab-general').click();
+    await expect(page.getByTestId('settings-compact-switch-now')).toBeVisible();
+
+    // Motyw wybrany w pełnym oknie musi trafić do compactu jeszcze przed
+    // przełączeniem (compact jest ukryty, ale żyje w osobnym rendererze).
+    await page.getByTestId('settings-tab-theme').click();
+    await page.getByTestId('theme-cyberpunk').click();
+    const mainPrimary = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim()
+    );
+    expect(mainPrimary.length).toBeGreaterThan(0);
+
+    await page.getByTestId('window-switch-compact').click();
+    await expect
+      .poll(() => windowByUrl(onda.app, 'compact.html'), { timeout: 20_000 })
+      .toMatchObject({ visible: true });
+    await expect
+      .poll(
+        () =>
+          compact!.evaluate(
+            (expected) =>
+              getComputedStyle(document.documentElement)
+                .getPropertyValue('--color-primary')
+                .trim() === expected,
+            mainPrimary
+          ),
+        { timeout: 10_000 }
       )
       .toBe(true);
 
