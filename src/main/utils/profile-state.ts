@@ -34,6 +34,7 @@ export const RESET_STATE_FILES = [
   'providers-downloaded.json',
   'plugins-state.json',
   'cover-cache-map.json',
+  'compact-window-state.json',
   'discord-cover-uploads.json',
   'stream-url-cache.json',
   'youtube-cookies.txt'

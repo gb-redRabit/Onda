@@ -19,28 +19,46 @@ export function destroyTray(): void {
   tray = null;
 }
 
-export function setupTray(getMainWindow: () => BrowserWindow | null): void {
+export interface TrayModeOptions {
+  /** Czy w tym trybie można przełączyć okno w trakcie działania. */
+  canToggleMode: () => boolean;
+  toggleMode: () => void;
+}
+
+export function setupTray(
+  getShellWindow: () => BrowserWindow | null,
+  mode?: TrayModeOptions
+): void {
   const trayImage = trayIcon();
   if (!trayImage) return;
   tray = new Tray(trayImage);
   tray.setToolTip('Onda Player');
 
-  const withMain = (fn: (win: BrowserWindow) => void) => (): void => {
-    const mainWindow = getMainWindow();
-    if (mainWindow && !mainWindow.isDestroyed()) fn(mainWindow);
+  const withShell = (fn: (win: BrowserWindow) => void) => (): void => {
+    const shell = getShellWindow();
+    if (shell && !shell.isDestroyed()) fn(shell);
   };
-  const showMain = withMain((w) => {
+  const showShell = withShell((w) => {
     if (w.isMinimized()) w.restore();
     w.show();
     w.focus();
   });
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Play / Pause', click: withMain((w) => w.webContents.send('media:playPause')) },
-    { label: 'Next', click: withMain((w) => w.webContents.send('media:next')) },
-    { label: 'Previous', click: withMain((w) => w.webContents.send('media:previous')) },
+    { label: 'Play / Pause', click: withShell((w) => w.webContents.send('media:playPause')) },
+    { label: 'Next', click: withShell((w) => w.webContents.send('media:next')) },
+    { label: 'Previous', click: withShell((w) => w.webContents.send('media:previous')) },
     { type: 'separator' },
-    { label: 'Show Onda', click: showMain },
+    ...(mode?.canToggleMode()
+      ? [
+          {
+            label: 'Compact / Full window',
+            click: () => mode.toggleMode()
+          },
+          { type: 'separator' as const }
+        ]
+      : []),
+    { label: 'Show Onda', click: showShell },
     { type: 'separator' },
     {
       label: 'Quit',
@@ -53,5 +71,5 @@ export function setupTray(getMainWindow: () => BrowserWindow | null): void {
 
   tray.setContextMenu(contextMenu);
 
-  tray.on('double-click', showMain);
+  tray.on('double-click', showShell);
 }

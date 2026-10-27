@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import {
   Disc3,
   ListMusic,
+  Maximize2,
   Music2,
   Pause,
   Pin,
@@ -19,6 +20,7 @@ import {
 import { useCoreSync } from '@renderer/composables/useCoreSync';
 import { useMediaSession } from '@renderer/composables/useMediaSession';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { registerMediaIpcEvents } from '@renderer/composables/appIpc/registerMediaIpcEvents';
 import { usePlayerStore } from '@renderer/stores/player';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import CompactTracks from './CompactTracks.vue';
@@ -29,6 +31,7 @@ const { t } = useI18n();
 useCoreSync();
 useMediaSession();
 const player = usePlayerStore();
+registerMediaIpcEvents(player);
 const audio = useAudioPlayer();
 
 type Tab = 'tracks' | 'queue' | 'albums';
@@ -81,8 +84,12 @@ async function togglePin(): Promise<void> {
   await window.api?.invoke('window:setAlwaysOnTop', pinned.value);
 }
 
-function closeWindow(): void {
-  void window.api?.invoke('window:close');
+function hideToTray(): void {
+  void window.api?.invoke('app:hideCompact');
+}
+
+function openMainWindow(): void {
+  void window.api?.invoke('app:setWindowMode', 'main');
 }
 
 const repeatLabel = computed(() =>
@@ -118,11 +125,20 @@ const repeatLabel = computed(() =>
         <Pin :size="13" />
       </button>
       <button
+        class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
+        :title="$t('compact.fullWindow')"
+        :aria-label="$t('compact.fullWindow')"
+        data-testid="compact-expand"
+        @click="openMainWindow"
+      >
+        <Maximize2 :size="13" />
+      </button>
+      <button
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-error hover:bg-error/10"
-        :title="$t('compact.close')"
-        :aria-label="$t('compact.close')"
+        :title="$t('compact.hideToTray')"
+        :aria-label="$t('compact.hideToTray')"
         data-testid="compact-close"
-        @click="closeWindow"
+        @click="hideToTray"
       >
         <X :size="14" />
       </button>

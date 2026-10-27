@@ -28,6 +28,7 @@ import { destroyTray, hasTray, setupTray } from './windows/tray';
 import { SplashController } from './windows/splash';
 import { startCoreService } from './core/core-spike';
 import { createCompactWindow } from './compact/compact-window';
+import { loadCompactState, saveCompactState, type WindowMode } from './compact/compact-state';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
@@ -38,14 +39,28 @@ import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
 let mainWindow: BrowserWindow | null = null;
 let compactWindow: BrowserWindow | null = null;
 let startHidden = false;
+let startupMode: WindowMode = 'main';
+let coreShellEnabled = false;
+let quitting = false;
+let pipReady = false;
 
-const compactMode = process.env.ONDA_COMPACT === '1';
-const coreShellEnabled = process.env.ONDA_CORE_SHELL === '1' || compactMode;
+function activeShell(): BrowserWindow | null {
+  if (startupMode === 'compact') {
+    if (compactWindow && !compactWindow.isDestroyed()) return compactWindow;
+    return mainWindow;
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+  return compactWindow;
+}
 
 const splash = new SplashController({
   windowIcon,
-  getMainWindow: () => mainWindow,
+  getMainWindow: () => activeShell(),
   isStartHidden: () => startHidden
+});
+
+app.on('before-quit', () => {
+  quitting = true;
 });
 
 // Zapisuje fazę na osi czasu startu (Diagnostyka → Wydajność) i loguje ją.
@@ -58,7 +73,7 @@ function perf(label: string): number {
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
 
 const openFiles = new OpenFileForwarder(
-  () => mainWindow,
+  () => activeShell(),
   (dir) => void addAllowedRoot(dir)
 );
 
@@ -84,7 +99,7 @@ if (!gotSingleInstanceLock) {
   });
 }
 
-function createWindow(): BrowserWindow {
+function createWindow(options: { showWhenReady?: boolean } = {}): BrowserWindow {
   const win = createBrowserWindow({
     width: 1200,
     height: 800,
@@ -100,6 +115,11 @@ function createWindow(): BrowserWindow {
     webPreferences: { webviewTag: true },
     // Splash decyduje, kiedy okno główne pojawi się po raz pierwszy.
     onReadyToShow: (w) => {
+      if (options.showWhenReady) {
+        w.show();
+        w.focus();
+        return;
+      }
       if (!splash.isActive() && !startHidden) w.show();
     }
   });
@@ -109,6 +129,9 @@ function createWindow(): BrowserWindow {
       e.preventDefault();
       win.hide();
     }
+  });
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
   });
 
   // Diagnostyka startu: renderer, który nigdy nie kończy ładowania, wygląda
@@ -144,6 +167,89 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
+function wireMainWindow(win: BrowserWindow): void {
+  win.webContents.on('did-start-loading', () => openFiles.resetListening());
+  if (coreShellEnabled) {
+    win.webContents.on('console-message', (_event, level, message) => {
+      if (message.includes('[core-shell]')) {
+        logger.info('core-shell', `shell console [${level}]: ${message}`);
+      }
+    });
+  }
+}
+
+function wireCompactWindow(win: BrowserWindow): void {
+  win.on('closed', () => {
+    compactWindow = null;
+  });
+  win.webContents.on('console-message', (_event, level, message) => {
+    if (message.includes('[core-shell]') || message.includes('[compact]')) {
+      logger.info('compact', `console [${level}]: ${message}`);
+    }
+  });
+}
+
+function initPipForMain(win: BrowserWindow): void {
+  if (pipReady) {
+    pipManager.setMainWindow(win);
+    audioPipManager.setMainWindow(win);
+    return;
+  }
+  pipReady = true;
+  pipManager.setMainWindow(win);
+  pipManager.init();
+  audioPipManager.setMainWindow(win);
+  audioPipManager.init();
+}
+
+async function switchWindowMode(mode: WindowMode): Promise<void> {
+  if (mode !== 'main' && mode !== 'compact') return;
+  if (mode === startupMode) return;
+
+  if (mode === 'compact' && !coreShellEnabled) {
+    // Start w trybie klasycznym nie ma Core — przełączamy przez restart, żeby
+    // nie mieć dwóch właścicieli audio.
+    await saveCompactState({ mode: 'compact' });
+    quitting = true;
+    app.relaunch();
+    app.quit();
+    return;
+  }
+
+  await saveCompactState({ mode });
+  startupMode = mode;
+
+  if (mode === 'compact') {
+    if (!compactWindow || compactWindow.isDestroyed()) {
+      compactWindow = createCompactWindow({
+        state: await loadCompactState(),
+        showOnReady: true,
+        hideOnClose: () => !quitting
+      });
+      wireCompactWindow(compactWindow);
+    } else {
+      compactWindow.show();
+      compactWindow.focus();
+    }
+    mainWindow?.hide();
+    return;
+  }
+
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    mainWindow = createWindow({ showWhenReady: true });
+    wireMainWindow(mainWindow);
+    mainWindow.webContents.once('did-finish-load', () => {
+      splash.onMainReady();
+      compactWindow?.hide();
+    });
+    initPipForMain(mainWindow);
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
+    compactWindow?.hide();
+  }
+}
+
 app.whenReady().then(async () => {
   markBootStart();
   perf('boot start');
@@ -171,7 +277,7 @@ app.whenReady().then(async () => {
 
   splash.send(mainMessages().bootMediaServer, 10);
 
-  registerIPC({ getMainWindow: () => mainWindow });
+  registerIPC({ getMainWindow: () => activeShell() });
   registerMediaUrlHandler();
 
   const mediaServer = await createMediaServer();
@@ -185,14 +291,30 @@ app.whenReady().then(async () => {
 
   const { folders: bootFolders, roots: bootRoots } = await seedMediaServerAndSettings();
 
+  // Tryb startu: plik `compact-window-state.json` (wybór użytkownika), a `ONDA_COMPACT`
+  // tylko nadpisuje go w dev/testach bez zapisu.
+  const savedState = await loadCompactState();
+  startupMode = process.env.ONDA_COMPACT === '1' ? 'compact' : savedState.mode;
+  coreShellEnabled = process.env.ONDA_CORE_SHELL === '1' || startupMode === 'compact';
   // Uruchomienie przy logowaniu z "start zminimalizowany" — trzymaj okno ukryte,
   // dopóki użytkownik nie otworzy go z tray.
-  startHidden = compactMode || process.argv.includes('--hidden');
-  perf(`settings ready (${bootFolders} folders, ${bootRoots} roots)`);
+  startHidden = process.argv.includes('--hidden');
+  perf(`settings ready (${bootFolders} folders, ${bootRoots} roots, mode=${startupMode})`);
 
   splash.send(mainMessages().bootStartingUi, 50);
 
   ipcMain.handle('app:isCoreShell', () => coreShellEnabled);
+  ipcMain.handle('app:getWindowMode', () => startupMode);
+  ipcMain.handle('app:setWindowMode', async (_event, mode: unknown) => {
+    if (mode === 'main' || mode === 'compact') await switchWindowMode(mode);
+  });
+  ipcMain.handle('app:hideCompact', () => {
+    compactWindow?.hide();
+  });
+  ipcMain.handle('app:getStartupMode', async () => (await loadCompactState()).mode);
+  ipcMain.handle('app:setStartupMode', async (_event, mode: unknown) => {
+    if (mode === 'main' || mode === 'compact') await saveCompactState({ mode });
+  });
 
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
@@ -228,50 +350,45 @@ app.whenReady().then(async () => {
     // nie przepadły. Stan jest cache'owany do momentu, gdy shell się podłączy.
     startCoreService({
       testShell: process.env.ONDA_CORE_SPIKE === '1',
-      getShellWindow: () => compactWindow ?? mainWindow
+      getShellWindow: () => activeShell()
     });
   }
-  mainWindow = createWindow();
-  perf('window created');
-  mainWindow.webContents.on('did-finish-load', () => {
-    perf('did-finish-load');
-    splash.onMainReady();
-    if (compactMode && !compactWindow) {
-      compactWindow = createCompactWindow();
-      compactWindow.on('closed', () => {
-        compactWindow = null;
-      });
-      compactWindow.webContents.on('console-message', (_event, level, message) => {
-        if (message.includes('[core-shell]') || message.includes('[compact]')) {
-          logger.info('compact', `console [${level}]: ${message}`);
-        }
-      });
-      // W podglądzie Fazy 3 pełny shell zostaje ukryty; Faza 4 usunie jego tworzenie.
-      mainWindow?.hide();
-    }
-  });
-  // Renderer zaczyna się ładować/przeładowywać — wróć do buforowania plików z OS,
-  // żeby zdarzenie nie trafiło do starego (lub jeszcze niezamontowanego) kontekstu.
-  mainWindow.webContents.on('did-start-loading', () => openFiles.resetListening());
-  if (process.env.ONDA_CORE_SHELL === '1') {
-    mainWindow.webContents.on('console-message', (_event, level, message) => {
-      if (message.includes('[core-shell]')) {
-        logger.info('core-shell', `shell console [${level}]: ${message}`);
-      }
+
+  if (startupMode === 'compact') {
+    compactWindow = createCompactWindow({
+      state: savedState,
+      showOnReady: false,
+      hideOnClose: () => !quitting
+    });
+    wireCompactWindow(compactWindow);
+    compactWindow.webContents.on('did-finish-load', () => {
+      perf('compact did-finish-load');
+      splash.onMainReady();
+    });
+    perf('compact window created');
+  } else {
+    mainWindow = createWindow();
+    perf('window created');
+    wireMainWindow(mainWindow);
+    mainWindow.webContents.on('did-finish-load', () => {
+      perf('did-finish-load');
+      splash.onMainReady();
     });
   }
 
   splash.send(mainMessages().bootPipTray, 75);
-  initAutoUpdater(() => mainWindow?.webContents ?? null);
+  initAutoUpdater(() => activeShell()?.webContents ?? null);
   configureAutoCheck();
   syncSubscriptionsScheduler();
   void syncLinkSubsScheduler();
-  pipManager.setMainWindow(mainWindow);
-  pipManager.init();
-  audioPipManager.setMainWindow(mainWindow);
-  audioPipManager.init();
-  setupTray(() => mainWindow);
-  registerGlobalShortcuts(() => mainWindow);
+  if (mainWindow) initPipForMain(mainWindow);
+  setupTray(() => activeShell(), {
+    canToggleMode: () => coreShellEnabled,
+    toggleMode: () => {
+      void switchWindowMode(startupMode === 'compact' ? 'main' : 'compact');
+    }
+  });
+  registerGlobalShortcuts(() => activeShell());
   perf('PiP/tray/shortcuts ready');
 
   // Przekaż pliki mediów podane w wierszu poleceń (Windows/Linux), gdy
@@ -301,7 +418,7 @@ app.whenReady().then(async () => {
   });
 
   registerWindowHandlers({
-    getMainWindow: () => mainWindow,
+    getMainWindow: () => activeShell(),
     preFullscreenBounds,
     pipManager,
     audioPipManager
@@ -310,15 +427,9 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
+      wireMainWindow(mainWindow);
       mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
-
-      // 'window-all-closed' niszczy menedżery PiP, co usuwa ich listenery
-      // ipcMain. Na macOS aplikacja nadal żyje, więc zainicjalizuj je tutaj na
-      // nowo, inaczej PiP pozostanie zepsuty do pełnego restartu.
-      pipManager.setMainWindow(mainWindow);
-      pipManager.init();
-      audioPipManager.setMainWindow(mainWindow);
-      audioPipManager.init();
+      initPipForMain(mainWindow);
     }
   });
 });
@@ -328,6 +439,7 @@ app.on('window-all-closed', () => {
   destroyTray();
   pipManager.destroy();
   audioPipManager.destroy();
+  pipReady = false;
   if (process.platform !== 'darwin') {
     app.quit();
   }

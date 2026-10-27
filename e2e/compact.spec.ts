@@ -1,22 +1,24 @@
-import { test, expect } from '@playwright/test';
-import { rmSync } from 'fs';
+import { test, expect, type Page } from '@playwright/test';
+import { rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { launchOnda } from './helpers/app';
+import { dismissWizard, launchOnda } from './helpers/app';
 import { createLibraryFixture } from './helpers/media';
 
 interface CompactApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
 }
 
-// Faza 3: compact startuje na Utworach, pokazuje bibliotekę, przełącza zakładki
-// i steruje tym samym Core co pełny shell.
-test('compact shell starts on tracks, lists the library and switches tabs', async () => {
+// Faza 4: tryb compact jest zapisany w profilu (bez env), startuje bez pełnego
+// maina, pokazuje bibliotekę i przełącza się do pełnego okna z tym samym Core.
+test('compact starts from saved mode and switches to full window', async () => {
   const media = createLibraryFixture(6);
   const onda = await launchOnda({
     windowFile: 'compact.html',
+    profileSetup: (dir) => {
+      writeFileSync(join(dir, 'compact-window-state.json'), JSON.stringify({ mode: 'compact' }));
+    },
     env: {
-      ONDA_COMPACT: '1',
       ONDA_CORE_SHELL_AUTOPLAY: '1'
     }
   });
@@ -26,6 +28,14 @@ test('compact shell starts on tracks, lists the library and switches tabs', asyn
     await expect(page.getByTestId('compact-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('compact-tab-tracks')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('compact-search')).toBeVisible();
+
+    // Faza 4: w trybie compact pełny main nie powstaje wcale.
+    const startupUrls = onda.app.windows().map((candidate) => candidate.url());
+    expect(
+      startupUrls.some(
+        (url) => url.includes('/renderer/index.html') || url.includes('\\renderer\\index.html')
+      )
+    ).toBe(false);
 
     const scanned = await page.evaluate(async (dir) => {
       const api = (window as unknown as { api: CompactApi }).api;
@@ -53,6 +63,32 @@ test('compact shell starts on tracks, lists the library and switches tabs', asyn
 
     await page.getByTestId('compact-tab-tracks').click();
     await expect(page.getByTestId('compact-tracks')).toBeVisible();
+
+    // Przełączenie w trakcie działania: pełne okno dostaje ten sam stan Core.
+    await page.getByTestId('compact-expand').click();
+    let mainPage: Page | undefined;
+    await expect
+      .poll(
+        () => {
+          mainPage = onda.app.windows().find((candidate) => {
+            const url = candidate.url();
+            return (
+              url.includes('/renderer/index.html') ||
+              url.includes('\\renderer\\index.html') ||
+              url.endsWith('/index.html')
+            );
+          });
+          return !!mainPage;
+        },
+        { timeout: 20_000 }
+      )
+      .toBe(true);
+
+    await dismissWizard(mainPage!);
+    await expect(mainPage!.getByTestId('player-bar')).toContainText('core-spike-tone', {
+      timeout: 20_000
+    });
+
     expect(onda.pageErrors).toEqual([]);
   } finally {
     await onda.dispose();

@@ -1,4 +1,4 @@
-import { createApp } from 'vue';
+import { createApp, nextTick } from 'vue';
 import { createPinia, setActivePinia, storeToRefs } from 'pinia';
 import App from './App.vue';
 import '../assets/main.css';
@@ -38,6 +38,15 @@ async function boot(): Promise<void> {
   }
 
   app.mount('#app');
+
+  // Splash czeka na pierwsze malowanie (jak pełny shell).
+  await nextTick();
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  );
+  void window.api?.invoke('app:rendererReady').catch(() => {
+    /* splash ma watchdog */
+  });
 
   // Audio-only: compact nie potrzebuje wideo ani obrazów w pamięci.
   const library = useLibraryStore();

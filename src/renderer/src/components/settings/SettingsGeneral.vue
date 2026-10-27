@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { loadLocaleMessages } from '@renderer/i18n';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
@@ -10,6 +10,7 @@ import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 const ui = useUIStore();
+const compactStartup = ref(false);
 
 const languages = [
   { id: 'pl', label: 'Polski', native: 'Polski', flag: '🇵🇱' },
@@ -34,7 +35,21 @@ onMounted(async () => {
   } catch {
     /* status autostartu niedostępny */
   }
+  try {
+    compactStartup.value = (await window.api?.invoke('app:getStartupMode')) === 'compact';
+  } catch {
+    /* tryb startu niedostępny */
+  }
 });
+
+async function setCompactStartup(value: boolean): Promise<void> {
+  compactStartup.value = value;
+  try {
+    await window.api?.invoke('app:setStartupMode', value ? 'compact' : 'main');
+  } catch {
+    /* zapisze się przy następnej próbie */
+  }
+}
 
 async function setAutoLaunch(enabled: boolean): Promise<void> {
   settings.updateGeneral({ autoLaunch: enabled });
@@ -115,6 +130,12 @@ async function setCloseToTray(value: boolean): Promise<void> {
         :model-value="settings.general.restoreSession"
         @update:model-value="settings.updateGeneral({ restoreSession: $event })"
       />
+    </SettingsRow>
+    <SettingsRow
+      :label="$t('settings.compactStartup')"
+      :description="$t('settings.compactStartupDesc')"
+    >
+      <SettingsToggle :model-value="compactStartup" @update:model-value="setCompactStartup" />
     </SettingsRow>
     <div class="flex items-center justify-between gap-4 pt-2 border-t border-base-300">
       <div class="min-w-0">
