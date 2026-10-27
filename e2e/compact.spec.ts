@@ -65,7 +65,10 @@ test('compact starts from saved mode and switches to full window', async () => {
     await expect(page.getByTestId('compact-tracks')).toBeVisible();
 
     // Przełączenie w trakcie działania: pełne okno dostaje ten sam stan Core.
-    await expect(page.getByTestId('compact-expand')).toContainText(/Pełna wersja|Full app/);
+    await expect(page.getByTestId('compact-expand')).toHaveAttribute(
+      'title',
+      /Otwórz pełną|open full app/i
+    );
     await page.getByTestId('compact-expand').click();
     let mainPage: Page | undefined;
     await expect

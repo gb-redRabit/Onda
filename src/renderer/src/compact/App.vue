@@ -7,7 +7,6 @@ import {
   ListMusic,
   Music2,
   Pause,
-  PictureInPicture,
   Pin,
   Play,
   Repeat,
@@ -40,7 +39,6 @@ const audio = useAudioPlayer();
 const audioPip = useAudioPiP();
 audioPip.dock.value = settings.appearance.audioPipDock;
 audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
-const pipActive = audioPip.isActive;
 
 type Tab = 'tracks' | 'queue' | 'albums';
 const tab = ref<Tab>('tracks');
@@ -98,11 +96,6 @@ async function togglePin(): Promise<void> {
 
 function hideToTray(): void {
   void window.api?.invoke('app:hideCompact');
-}
-
-function toggleAudioPip(): void {
-  if (!current.value) return;
-  void audioPip.toggle();
 }
 
 function openMainWindow(): void {
@@ -173,7 +166,7 @@ onMounted(async () => {
     if (settings.appearance.audioPipAutoShow && audio.isPlaying.value) void audioPip.show();
   });
   stopCompactShown = window.api?.on('compact:shown', () => {
-    if (pipActive.value) void audioPip.hide();
+    void audioPip.hide();
   });
 });
 
@@ -218,27 +211,13 @@ const repeatLabel = computed(() =>
         <Pin :size="13" />
       </button>
       <button
-        class="flex items-center gap-1 px-1.5 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10 disabled:opacity-40 disabled:cursor-not-allowed"
-        :class="pipActive ? 'text-primary-text bg-primary/10' : ''"
-        :disabled="!current"
-        :title="$t('compact.audioPip')"
-        :aria-label="$t('compact.audioPip')"
-        :aria-pressed="pipActive"
-        data-testid="compact-pip"
-        @click="toggleAudioPip"
-      >
-        <PictureInPicture :size="13" />
-        <span class="text-[11px]">{{ $t('compact.pipShort') }}</span>
-      </button>
-      <button
-        class="flex items-center gap-1 px-1.5 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
+        class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
         :title="$t('compact.fullWindow')"
         :aria-label="$t('compact.fullWindow')"
         data-testid="compact-expand"
         @click="openMainWindow"
       >
         <AppWindow :size="13" />
-        <span class="text-[11px]">{{ $t('compact.fullWindow') }}</span>
       </button>
       <button
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-error hover:bg-error/10"

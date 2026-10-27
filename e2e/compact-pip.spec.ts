@@ -20,9 +20,9 @@ function pipWindow(app: ElectronApplication) {
   });
 }
 
-// Compact jest shellem audio-only, ale PiP audio musi działać w obu trybach:
-// ręcznie z przycisku oraz automatycznie po schowaniu okna do tray.
-test('compact opens audio PiP manually and when hidden to tray', async () => {
+// Compact jest shellem audio-only, ale PiP audio ma działać jak w pełnej aplikacji:
+// bez przycisku w UI, automatycznie po schowaniu okna do tray.
+test('compact auto-shows audio PiP when hidden to tray', async () => {
   const media = createMediaFixture(8);
   const userDataDir = mkdtempSync(join(tmpdir(), 'onda-compact-pip-'));
   const onda = await launchOnda({
@@ -53,8 +53,13 @@ test('compact opens audio PiP manually and when hidden to tray', async () => {
     await page.reload();
     await expect(page.getByTestId('compact-track-0')).toBeVisible({ timeout: 20_000 });
 
-    // Powrót do pełnej aplikacji jest opisany słownie, nie samą ikoną powiększenia.
-    await expect(page.getByTestId('compact-expand')).toHaveText(/Pełna wersja|Full app/);
+    // Powrót do pełnej aplikacji jest tylko ikoną z opisem w tooltipie; PiP audio
+    // nie ma osobnego przycisku (zachowuje się jak w pełnej aplikacji).
+    await expect(page.getByTestId('compact-expand')).toHaveAttribute(
+      'title',
+      /Otwórz pełną|open full app/i
+    );
+    await expect(page.getByTestId('compact-pip')).toHaveCount(0);
 
     await page.getByTestId('compact-track-0').click();
     await expect(page.getByTestId('compact-play')).toHaveAttribute('data-playing', 'true', {
@@ -72,24 +77,6 @@ test('compact opens audio PiP manually and when hidden to tray', async () => {
     await expect
       .poll(async () => (await coreState())?.enginePlaying, { timeout: 20_000 })
       .toBe(true);
-
-    // Ręczne otwarcie PiP audio z compactu.
-    await page.getByTestId('compact-pip').click();
-    await expect
-      .poll(() => pipWindow(onda.app), { timeout: 10_000 })
-      .toMatchObject({
-        visible: true
-      });
-    await expect(page.getByTestId('compact-pip')).toHaveAttribute('aria-pressed', 'true');
-
-    // Ponowne kliknięcie chowa PiP.
-    await page.getByTestId('compact-pip').click();
-    await expect
-      .poll(() => pipWindow(onda.app), { timeout: 10_000 })
-      .toMatchObject({
-        visible: false
-      });
-    await expect(page.getByTestId('compact-pip')).toHaveAttribute('aria-pressed', 'false');
 
     // Schowanie compactu do tray automatycznie pokazuje PiP (domyślne ustawienie).
     await page.keyboard.press('Escape');

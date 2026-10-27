@@ -35,6 +35,7 @@ import { OpenFileForwarder } from './bootstrap/open-files';
 import { initMainLocale, mainMessages } from './i18n-main';
 import { installGracefulShutdown } from './bootstrap/shutdown';
 import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
+import { relaunchApp } from './bootstrap/relaunch';
 import { sendToWindow } from './utils/broadcast';
 
 let mainWindow: BrowserWindow | null = null;
@@ -237,14 +238,16 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
   if (mode === startupMode) return;
 
   if (mode === 'compact' && !coreShellEnabled) {
-    // Start w trybie klasycznym nie ma Core — przełączamy przez restart, żeby
-    // nie mieć dwóch właścicieli audio.
+    // Start w trybie klasycznym nie ma Core - proces musi wstać ponownie w trybie
+    // Core, żeby nie mieć dwóch właścicieli audio. Restart jest automatyczny.
     await saveCompactState({ mode: 'compact' });
     quitting = true;
-    app.relaunch();
-    app.quit();
+    logger.info('compact', 'legacy main -> compact: relaunching with Core shell');
+    relaunchApp(300);
     return;
   }
+
+  const previousShell = activeShell();
 
   await saveCompactState({ mode });
   startupMode = mode;
@@ -252,7 +255,7 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
   // PiP audio należy do poprzedniego shella — chowamy je i resetujemy stan hooka,
   // żeby nowy shell nie odziedziczył "aktywnego" PiP, którego nie kontroluje.
   if (audioPipReady) {
-    sendToWindow(activeShell(), 'audio-pip:closed');
+    sendToWindow(previousShell, 'audio-pip:closed');
     audioPipManager.hide();
   }
 
@@ -429,7 +432,7 @@ app.whenReady().then(async () => {
   void syncLinkSubsScheduler();
   if (mainWindow) initPipForMain(mainWindow);
   setupTray(() => activeShell(), {
-    canToggleMode: () => coreShellEnabled,
+    canToggleMode: () => true,
     toggleMode: () => {
       void switchWindowMode(startupMode === 'compact' ? 'main' : 'compact');
     }
