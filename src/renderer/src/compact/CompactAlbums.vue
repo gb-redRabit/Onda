@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue';
-import { ChevronLeft, Disc3, Play } from '@lucide/vue';
+import { ChevronLeft, Disc3, ListPlus, Play } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
+import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { playTrackList } from '@renderer/utils/playTracks';
 import MediaCover from '@renderer/components/MediaCover.vue';
@@ -10,6 +11,7 @@ import type { MediaFile } from '@renderer/types/media';
 type AlbumEntry = [label: string, tracks: MediaFile[]];
 
 const library = useLibraryStore();
+const player = usePlayerStore();
 const selected = ref<AlbumEntry | null>(null);
 const albums = computed(() => library.albums as AlbumEntry[]);
 
@@ -69,6 +71,15 @@ function playAlbum(album: AlbumEntry): void {
 
 function playFrom(album: AlbumEntry, index: number): void {
   playTrackList(album[1].slice(index));
+}
+
+function addAlbumToQueue(album: AlbumEntry): void {
+  for (const track of album[1]) player.addToQueue(track);
+}
+
+function addFrom(album: AlbumEntry, index: number): void {
+  const track = album[1][index];
+  if (track) player.addToQueue(track);
 }
 </script>
 
@@ -144,30 +155,52 @@ function playFrom(album: AlbumEntry, index: number): void {
             <Play :size="12" />
             {{ $t('compact.playAlbum') }}
           </button>
+          <button
+            class="mt-2 ml-1.5 inline-grid place-items-center w-7 h-7 rounded-field border border-base-300 text-base-content/60 hover:text-primary-text hover:bg-primary/10"
+            :title="$t('compact.addAlbumToQueue')"
+            :aria-label="$t('compact.addAlbumToQueue')"
+            data-testid="compact-add-album-queue"
+            @click="addAlbumToQueue(selected)"
+          >
+            <ListPlus :size="14" />
+          </button>
         </span>
       </div>
       <div ref="detailScrollEl" class="flex-1 min-h-0 overflow-auto compact-scroll px-2 pb-2">
         <div class="relative" :style="{ height: `${detailVirtualizer.getTotalSize()}px` }">
-          <button
+          <div
             v-for="row in detailVirtualizer.getVirtualItems()"
             :key="String(row.key)"
             :ref="measureDetailRow"
             :data-index="row.index"
-            class="absolute top-0 left-0 w-full flex items-center gap-2 px-2 py-1.5 rounded-field text-left hover:bg-base-content/5 transition-colors"
+            class="absolute top-0 left-0 w-full flex items-center gap-1 px-2 py-1.5 rounded-field text-left hover:bg-base-content/5 transition-colors group"
             :style="{ transform: `translateY(${row.start}px)` }"
-            :data-testid="`compact-album-track-${row.index}`"
-            @click="playFrom(selected, row.index)"
           >
-            <span class="w-5 text-[10px] text-base-content/35 tabular-nums">{{
-              row.index + 1
-            }}</span>
-            <span class="min-w-0 flex-1">
-              <span class="block text-[12px] truncate">{{
-                trackTitle(selected[1][row.index])
+            <button
+              class="flex min-w-0 flex-1 items-center gap-2 text-left"
+              :data-testid="`compact-album-track-${row.index}`"
+              @click="playFrom(selected, row.index)"
+            >
+              <span class="w-5 text-[10px] text-base-content/35 tabular-nums">{{
+                row.index + 1
               }}</span>
-            </span>
-            <Play :size="11" class="text-base-content/30" />
-          </button>
+              <span class="min-w-0 flex-1">
+                <span class="block text-[12px] truncate">{{
+                  trackTitle(selected[1][row.index])
+                }}</span>
+              </span>
+              <Play :size="11" class="text-base-content/30" />
+            </button>
+            <button
+              class="grid place-items-center w-7 h-7 shrink-0 rounded-field text-base-content/35 hover:text-primary-text hover:bg-primary/10 transition-colors"
+              :title="$t('compact.addToQueue')"
+              :aria-label="$t('compact.addToQueue')"
+              :data-testid="`compact-album-track-add-${row.index}`"
+              @click.stop="addFrom(selected, row.index)"
+            >
+              <ListPlus :size="14" />
+            </button>
+          </div>
         </div>
       </div>
     </template>

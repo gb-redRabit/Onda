@@ -26,7 +26,7 @@ import {
   cleanupOldTranscodes
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
-import { isProtectedPath, isSensitivePath } from '../../path-policy';
+import { isProtectedPath, isSensitivePath, isSystemTempPath } from '../../path-policy';
 import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-server';
 import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
 
@@ -346,9 +346,8 @@ export function registerMediaHandlers(): void {
   ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
     if (
-      isProtectedPath(filePath) ||
-      isProtectedPath(dirname(filePath)) ||
-      isSensitivePath(filePath)
+      !isSystemTempPath(filePath) &&
+      (isProtectedPath(filePath) || isProtectedPath(dirname(filePath)) || isSensitivePath(filePath))
     ) {
       logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
       return false;

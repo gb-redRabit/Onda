@@ -801,6 +801,8 @@ export default {
     emptyAlbums: 'Brak albumów w bibliotece',
     clearQueue: 'Wyczyść kolejkę',
     playNow: 'Zagraj teraz',
+    addToQueue: 'Dodaj do kolejki',
+    addAlbumToQueue: 'Dodaj album do kolejki',
     remove: 'Usuń',
     back: 'Wstecz',
     playAlbum: 'Zagraj album',

@@ -1,4 +1,5 @@
 import { posix, win32 } from 'path';
+import { tmpdir } from 'os';
 
 // Destrukcyjne handlery fs IPC (delete / move / copy / mkdir) działają z pełnymi
 // uprawnieniami użytkownika, a renderer jest jedyną rzeczą między przejętą
@@ -192,6 +193,24 @@ export function isSensitivePath(
   if (typeof target !== 'string' || !target) return false;
   const segments = segmentsOf(normalizeFor(target, platform), platform);
   return segments.some((seg) => SENSITIVE_SEGMENTS.has(seg.toLowerCase()));
+}
+
+/**
+ * True dla ścieżek w systemowym katalogu tymczasowym. `tmpdir()` na Windows
+ * leży pod `AppData`, a na części systemów pod `.local` — bez tego wyjątku
+ * legalne pliki tymczasowe (podglądy, narzędzia, testy) dostawały 403 z serwera
+ * mediów mimo jawnego `media:grantAccess`.
+ */
+export function isSystemTempPath(
+  target: unknown,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (typeof target !== 'string' || !target) return false;
+  const temp = normalizeFor(tmpdir(), platform).replace(/[\\/]+$/, '');
+  if (!temp) return false;
+  const normalized = normalizeFor(target, platform);
+  const separator = platform === 'win32' ? '\\' : '/';
+  return normalized === temp || normalized.startsWith(temp + separator);
 }
 
 /** Katalog nadrzędny ścieżki lub null, gdy ścieżka nie ma użytecznego rodzica. */

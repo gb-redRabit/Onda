@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { execFileSync } from 'child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 
@@ -44,9 +45,10 @@ async function dropFile(page: Page, input: string): Promise<void> {
 }
 
 test.describe('video clipper', () => {
-  const resultsDir = join(process.cwd(), 'test-results');
-  mkdirSync(resultsDir, { recursive: true });
-  const mediaDir = mkdtempSync(join(resultsDir, 'video-clipper-'));
+  // Media muszą leżeć poza katalogiem repo: profil użytkownika bywa pod
+  // `.local`/`.config`, a `media:grantAccess` celowo nie przyznaje korzeni
+  // oznaczonych jako wrażliwe. `test-results` w worktree pod `.local` dawał 403.
+  const mediaDir = mkdtempSync(join(tmpdir(), 'onda-video-clipper-'));
 
   test.afterAll(() => {
     rmSync(mediaDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });

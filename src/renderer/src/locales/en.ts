@@ -797,6 +797,8 @@ export default {
     emptyAlbums: 'No albums in the library',
     clearQueue: 'Clear queue',
     playNow: 'Play now',
+    addToQueue: 'Add to queue',
+    addAlbumToQueue: 'Add album to queue',
     remove: 'Remove',
     back: 'Back',
     playAlbum: 'Play album',

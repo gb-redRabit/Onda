@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import {
   isFilesystemRoot,
   isProtectedPath,
   isSensitivePath,
+  isSystemTempPath,
   parentOf,
   protectedPathReason
 } from '../path-policy';
@@ -127,6 +130,19 @@ describe('isSensitivePath', () => {
   it('rejects non-strings', () => {
     expect(isSensitivePath(null)).toBe(false);
     expect(isSensitivePath(123)).toBe(false);
+  });
+});
+
+describe('isSystemTempPath', () => {
+  it('accepts files inside the OS temp dir (AppData/.local are sensitive)', () => {
+    expect(isSystemTempPath(join(tmpdir(), 'onda', 'preview.webm'))).toBe(true);
+    expect(isSensitivePath(join(tmpdir(), 'onda', 'preview.webm'))).toBe(true);
+  });
+
+  it('rejects paths outside the temp dir', () => {
+    expect(isSystemTempPath(join(tmpdir(), '..', 'elsewhere', 'preview.webm'))).toBe(false);
+    expect(isSystemTempPath('C:\\Users\\u\\Music\\song.mp3')).toBe(false);
+    expect(isSystemTempPath(null)).toBe(false);
   });
 });
 

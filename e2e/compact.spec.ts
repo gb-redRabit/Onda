@@ -53,8 +53,11 @@ test('compact starts from saved mode and switches to full window', async () => {
     });
     await page.screenshot({ path: join(tmpdir(), 'onda-compact-tracks.png') });
 
+    // Dodawanie do kolejki z listy utworów (przycisk +).
+    await page.getByTestId('compact-track-add-1').click();
     await page.getByTestId('compact-tab-queue').click();
     await expect(page.getByTestId('compact-queue')).toBeVisible();
+    await expect(page.getByTestId('compact-queue-item-0')).toContainText('tone-02');
 
     await page.getByTestId('compact-tab-albums').click();
     await expect(page.getByTestId('compact-albums')).toBeVisible();

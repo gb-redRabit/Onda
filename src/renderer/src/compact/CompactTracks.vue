@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Music2, Play, Search } from '@lucide/vue';
+import { ListPlus, Music2, Play, Search } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
@@ -54,6 +54,11 @@ function playAt(index: number): void {
   if (track) playTrackList([track]);
 }
 
+function addToQueue(index: number): void {
+  const track = results.value[index];
+  if (track) player.addToQueue(track);
+}
+
 /** Skrót Ctrl/⌘+F w shellu kompaktowym — fokus i zaznaczenie pola szukania. */
 function focusSearch(): void {
   searchEl.value?.focus();
@@ -96,37 +101,50 @@ defineExpose({ focusSearch });
 
     <div v-else ref="scrollEl" class="flex-1 min-h-0 overflow-auto compact-scroll">
       <div class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
-        <button
+        <div
           v-for="row in virtualizer.getVirtualItems()"
           :key="String(row.key)"
-          class="absolute top-0 left-0 w-full px-2 flex items-center gap-2.5 text-left rounded-field hover:bg-base-content/5 transition-colors group"
+          class="absolute top-0 left-0 w-full px-2 flex items-center gap-1 rounded-field hover:bg-base-content/5 transition-colors group"
           :style="{ transform: `translateY(${row.start}px)`, height: `${row.size}px` }"
-          :data-testid="`compact-track-${row.index}`"
-          @click="playAt(row.index)"
         >
-          <span class="w-8 h-8 rounded overflow-hidden bg-base-300 shrink-0 relative">
-            <MediaCover :path="results[row.index]?.path" :size="32" />
+          <button
+            class="flex min-w-0 flex-1 items-center gap-2.5 h-full text-left"
+            :data-testid="`compact-track-${row.index}`"
+            @click="playAt(row.index)"
+          >
+            <span class="w-8 h-8 rounded overflow-hidden bg-base-300 shrink-0 relative">
+              <MediaCover :path="results[row.index]?.path" :size="32" />
+              <span
+                class="absolute inset-0 hidden group-hover:grid place-items-center bg-black/45 text-white"
+              >
+                <Play :size="13" />
+              </span>
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-[12px] truncate">{{ trackTitle(results[row.index]) }}</span>
+              <span class="block text-[10px] text-base-content/50 truncate">
+                {{ trackArtist(results[row.index]) }}
+              </span>
+            </span>
+            <span class="text-[10px] tabular-nums text-base-content/40 shrink-0">
+              {{ formatDuration(results[row.index]?.duration) }}
+            </span>
             <span
-              class="absolute inset-0 hidden group-hover:grid place-items-center bg-black/45 text-white"
-            >
-              <Play :size="13" />
-            </span>
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-[12px] truncate">{{ trackTitle(results[row.index]) }}</span>
-            <span class="block text-[10px] text-base-content/50 truncate">
-              {{ trackArtist(results[row.index]) }}
-            </span>
-          </span>
-          <span class="text-[10px] tabular-nums text-base-content/40 shrink-0">
-            {{ formatDuration(results[row.index]?.duration) }}
-          </span>
-          <span
-            v-if="player.currentTrack?.path === results[row.index]?.path"
-            class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"
-            :aria-label="$t('compact.nowPlaying')"
-          />
-        </button>
+              v-if="player.currentTrack?.path === results[row.index]?.path"
+              class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"
+              :aria-label="$t('compact.nowPlaying')"
+            />
+          </button>
+          <button
+            class="grid place-items-center w-7 h-7 shrink-0 rounded-field text-base-content/35 hover:text-primary-text hover:bg-primary/10 transition-colors"
+            :title="$t('compact.addToQueue')"
+            :aria-label="$t('compact.addToQueue')"
+            :data-testid="`compact-track-add-${row.index}`"
+            @click.stop="addToQueue(row.index)"
+          >
+            <ListPlus :size="14" />
+          </button>
+        </div>
       </div>
     </div>
   </div>
