@@ -798,6 +798,8 @@ export default {
     playbackError: 'Błąd odtwarzania',
     dismiss: 'Zamknij',
     emptyLibrary: 'Brak muzyki w bibliotece',
+    addLibraryHint: 'Dodaj folder biblioteki w pełnej wersji aplikacji.',
+    openFullVersion: 'Otwórz pełną wersję',
     noResults: 'Brak wyników',
     nothingPlaying: 'Nic nie gra',
     nowPlaying: 'Teraz gra',

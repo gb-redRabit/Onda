@@ -42,7 +42,18 @@ test('compact restores the last session when enabled', async () => {
     // Zasiej sesję tak, jak zapisałaby ją poprzednia sesja aplikacji.
     await page.addInitScript(
       ({ path }) => {
-        localStorage.setItem('onda-session', JSON.stringify({ currentPath: path, queue: [path] }));
+        localStorage.setItem(
+          'onda-session',
+          JSON.stringify({
+            currentPath: path,
+            queue: [],
+            isPlaying: false,
+            shuffle: true,
+            repeat: 'all',
+            volume: 0.2,
+            isMuted: false
+          })
+        );
       },
       { path: media.wavPath }
     );
@@ -50,11 +61,14 @@ test('compact restores the last session when enabled', async () => {
     await page.reload();
     await expect(page.getByTestId('compact-root')).toBeVisible({ timeout: 20_000 });
 
-    // Po starcie compactu utwór wraca z sesji, a Core go odtwarza.
+    // Utwór wraca z sesji, ale w stanie pauzy i z zapisanymi ustawieniami.
     await expect(page.getByTestId('compact-title')).toContainText('tone', { timeout: 20_000 });
-    await expect(page.getByTestId('compact-play')).toHaveAttribute('data-playing', 'true', {
+    await expect(page.getByTestId('compact-play')).toHaveAttribute('data-playing', 'false', {
       timeout: 20_000
     });
+    await expect(page.getByTestId('compact-shuffle')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('compact-repeat')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('compact-volume')).toHaveValue('0.2');
 
     expect(onda.pageErrors).toEqual([]);
   } finally {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { AlertTriangle, ListPlus, Music2, Play, RotateCw, Search } from '@lucide/vue';
+import { AlertTriangle, AppWindow, ListPlus, Music2, Play, RotateCw, Search } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
@@ -63,6 +63,10 @@ function retryLoad(): void {
   void library.loadFromDisk({ audioOnly: true });
 }
 
+function openFullWindow(): void {
+  void window.api?.invoke('app:setWindowMode', 'main');
+}
+
 /** Skrót Ctrl/⌘+F w shellu kompaktowym — fokus i zaznaczenie pola szukania. */
 function focusSearch(): void {
   searchEl.value?.focus();
@@ -121,6 +125,19 @@ defineExpose({ focusSearch });
     >
       <Music2 :size="20" />
       {{ query ? $t('compact.noResults') : $t('compact.emptyLibrary') }}
+      <template v-if="!query">
+        <p class="mt-1 text-[11px] text-base-content/45">
+          {{ $t('compact.addLibraryHint') }}
+        </p>
+        <button
+          class="mt-1 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field border border-base-300 text-[11px] text-base-content/70 hover:text-base-content hover:bg-base-content/10"
+          data-testid="compact-empty-open-full"
+          @click="openFullWindow"
+        >
+          <AppWindow :size="12" />
+          {{ $t('compact.openFullVersion') }}
+        </button>
+      </template>
     </div>
 
     <div v-else ref="scrollEl" class="flex-1 min-h-0 overflow-auto compact-scroll">

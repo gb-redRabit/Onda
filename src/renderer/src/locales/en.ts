@@ -794,6 +794,8 @@ export default {
     playbackError: 'Playback error',
     dismiss: 'Dismiss',
     emptyLibrary: 'No audio in the library',
+    addLibraryHint: 'Add a library folder in the full app.',
+    openFullVersion: 'Open full app',
     noResults: 'No results',
     nothingPlaying: 'Nothing playing',
     nowPlaying: 'Now playing',

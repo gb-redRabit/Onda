@@ -66,7 +66,7 @@ const router = useRouter();
 const audioPip = useAudioPiP();
 useNewVideoNotifications();
 useUpdater();
-useMediaSession();
+const mediaSession = useMediaSession();
 if (isCoreShell()) useCoreSync();
 useScrobbling();
 useToolMessages();
@@ -294,6 +294,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   moduleManager.deactivateAll();
+  mediaSession.dispose();
   theme.dispose();
   document.removeEventListener('keydown', onGlobalKeydown);
   document.removeEventListener('mousedown', onGlobalMouseDown);

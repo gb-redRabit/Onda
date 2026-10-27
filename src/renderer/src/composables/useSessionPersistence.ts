@@ -9,9 +9,16 @@ const SESSION_KEY = 'onda-session';
 // ścieżki biblioteki 50k serializuje kilka MB synchronicznie przy każdej zmianie.
 const MAX_PERSISTED_QUEUE = 500;
 
+export type PersistedRepeat = 'none' | 'all' | 'one';
+
 export interface PersistedSession {
   currentPath: string;
   queue: string[];
+  isPlaying?: boolean;
+  shuffle?: boolean;
+  repeat?: PersistedRepeat;
+  volume?: number;
+  isMuted?: boolean;
 }
 
 /** Odczyt sesji z localStorage (ten sam profil dla main i compactu). */
@@ -20,12 +27,31 @@ export function readPersistedSession(): PersistedSession | null {
     const data = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') as {
       currentPath?: unknown;
       queue?: unknown;
+      isPlaying?: unknown;
+      shuffle?: unknown;
+      repeat?: unknown;
+      volume?: unknown;
+      isMuted?: unknown;
     } | null;
     if (!data || typeof data.currentPath !== 'string' || !data.currentPath) return null;
     const queue = Array.isArray(data.queue)
       ? data.queue.filter((path): path is string => typeof path === 'string')
       : [];
-    return { currentPath: data.currentPath, queue };
+    const repeat =
+      data.repeat === 'none' || data.repeat === 'all' || data.repeat === 'one'
+        ? data.repeat
+        : undefined;
+    return {
+      currentPath: data.currentPath,
+      queue,
+      ...(typeof data.isPlaying === 'boolean' ? { isPlaying: data.isPlaying } : {}),
+      ...(typeof data.shuffle === 'boolean' ? { shuffle: data.shuffle } : {}),
+      ...(repeat ? { repeat } : {}),
+      ...(typeof data.volume === 'number' && Number.isFinite(data.volume)
+        ? { volume: Math.max(0, Math.min(1, data.volume)) }
+        : {}),
+      ...(typeof data.isMuted === 'boolean' ? { isMuted: data.isMuted } : {})
+    };
   } catch {
     return null;
   }
@@ -49,7 +75,12 @@ function writeSession(player: ReturnType<typeof usePlayerStore>): void {
       SESSION_KEY,
       JSON.stringify({
         currentPath: player.currentTrack.path,
-        queue: player.queue.slice(0, MAX_PERSISTED_QUEUE).map((track) => track.path)
+        queue: player.queue.slice(0, MAX_PERSISTED_QUEUE).map((track) => track.path),
+        isPlaying: player.isPlaying,
+        shuffle: player.shuffle,
+        repeat: player.repeat,
+        volume: player.volume,
+        isMuted: player.isMuted
       })
     );
   } catch {
@@ -69,6 +100,30 @@ export function persistSessionNow(): void {
  */
 export function prepareSessionForRestart(): void {
   persistSessionNow();
+}
+
+/**
+ * Nakłada na player stan zapisany w sesji. W Core-shell mutatory wysyłają
+ * komendy do Core, więc nie ustawiamy pól bezpośrednio.
+ */
+function applySessionPlaybackState(
+  player: ReturnType<typeof usePlayerStore>,
+  session: PersistedSession
+): void {
+  if (session.volume !== undefined) player.setVolume(session.volume);
+  if (session.shuffle !== undefined && player.shuffle !== session.shuffle) {
+    player.toggleShuffle();
+  }
+  if (session.repeat && player.repeat !== session.repeat) {
+    for (let i = 0; i < 3 && player.repeat !== session.repeat; i += 1) {
+      player.cycleRepeat();
+    }
+  }
+  if (session.isMuted !== undefined && player.isMuted !== session.isMuted) {
+    player.toggleMute();
+  }
+  if (session.isPlaying === false) player.pause();
+  else if (session.isPlaying === true) player.play();
 }
 
 /**
@@ -103,6 +158,7 @@ export async function restoreSessionToPlayer(): Promise<boolean> {
   player.clearQueue();
   if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
   player.setTrack(tracks[0], { resume: true });
+  applySessionPlaybackState(player, data);
   return true;
 }
 
@@ -158,6 +214,7 @@ export function useSessionPersistence() {
     }
     try {
       await openMediaFiles(existing, router);
+      applySessionPlaybackState(player, data);
     } catch {
       return false;
     }

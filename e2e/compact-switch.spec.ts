@@ -36,6 +36,26 @@ test('switches core-shell main to compact and back without restart', async () =>
     expect(compact).toBeTruthy();
     await expect(compact!.getByTestId('compact-root')).toBeVisible({ timeout: 20_000 });
 
+    // Media Session tylko w aktywnym shellu.
+    await expect
+      .poll(() =>
+        compact!.evaluate(async () => {
+          const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } })
+            .api;
+          return api.invoke('app:getShellActive');
+        })
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } })
+            .api;
+          return api.invoke('app:getShellActive');
+        })
+      )
+      .toBe(false);
+
     // Powrót do pełnego okna jest teraz samą ikoną z opisem w tooltipie.
     await expect(compact!.getByTestId('compact-expand')).toHaveAttribute(
       'title',
@@ -56,6 +76,25 @@ test('switches core-shell main to compact and back without restart', async () =>
         { timeout: 20_000 }
       )
       .toBe(true);
+
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } })
+            .api;
+          return api.invoke('app:getShellActive');
+        })
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        compact!.evaluate(async () => {
+          const api = (window as unknown as { api: { invoke: (c: string) => Promise<unknown> } })
+            .api;
+          return api.invoke('app:getShellActive');
+        })
+      )
+      .toBe(false);
 
     // Ten sam przełącznik jest też w Ustawienia → Ogólne.
     await page.evaluate(() => {

@@ -29,6 +29,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'app:getCompactPinned',
   'app:setCompactPinned',
   'app:consumeRestoreOnce',
+  'app:getShellActive',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',
@@ -316,6 +317,7 @@ export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
 export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'window:maximized',
   'window:fullscreenChanged',
+  'app:shellActive',
   'app:prepare-session-handoff',
   'dep:progress',
   'updater:event',

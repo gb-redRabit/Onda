@@ -56,6 +56,16 @@ function activeShell(): BrowserWindow | null {
   return compactWindow;
 }
 
+/** Informuje oba shelle, który z nich jest aktywny (Media Session). */
+function sendShellActivity(): void {
+  const send = (win: BrowserWindow | null, active: boolean): void => {
+    if (!win || win.isDestroyed() || win.webContents.isDestroyed()) return;
+    win.webContents.send('app:shellActive', active);
+  };
+  send(mainWindow, startupMode === 'main');
+  send(compactWindow, startupMode === 'compact');
+}
+
 const splash = new SplashController({
   windowIcon,
   getMainWindow: () => activeShell(),
@@ -172,6 +182,7 @@ function createWindow(options: { showWhenReady?: boolean } = {}): BrowserWindow 
 
 function wireMainWindow(win: BrowserWindow): void {
   win.webContents.on('did-start-loading', () => openFiles.resetListening());
+  win.webContents.on('did-finish-load', sendShellActivity);
   if (coreShellEnabled) {
     win.webContents.on('console-message', (_event, level, message) => {
       if (message.includes('[core-shell]')) {
@@ -185,6 +196,7 @@ function wireCompactWindow(win: BrowserWindow): void {
   win.on('closed', () => {
     compactWindow = null;
   });
+  win.webContents.on('did-finish-load', sendShellActivity);
   // `BrowserWindow.hide()` nie zmienia `document.visibilityState` w Electronie,
   // więc renderer nie może sam wykryć schowania do tray. Jawny sygnał pozwala
   // pokazać PiP audio przy ✕/Alt+F4, ale nie przy przełączeniu na pełne okno.
@@ -197,6 +209,7 @@ function wireCompactWindow(win: BrowserWindow): void {
   win.on('show', () => {
     if (win.isDestroyed()) return;
     win.webContents.send('compact:shown');
+    sendShellActivity();
   });
   win.webContents.on('console-message', (_event, level, message) => {
     if (message.includes('[core-shell]') || message.includes('[compact]')) {
@@ -298,6 +311,7 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
       initPipForCompact(compactWindow);
     }
     mainWindow?.hide();
+    sendShellActivity();
     return;
   }
 
@@ -314,6 +328,7 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
     mainWindow.focus();
     compactWindow?.hide();
   }
+  sendShellActivity();
 }
 
 app.whenReady().then(async () => {
@@ -393,6 +408,10 @@ app.whenReady().then(async () => {
     await saveCompactState({ restoreSessionOnce: false });
     return true;
   });
+  ipcMain.handle('app:getShellActive', (event) => {
+    const shell = activeShell();
+    return !!shell && !shell.isDestroyed() && shell.webContents.id === event.sender.id;
+  });
 
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
@@ -461,6 +480,7 @@ app.whenReady().then(async () => {
   syncSubscriptionsScheduler();
   void syncLinkSubsScheduler();
   if (mainWindow) initPipForMain(mainWindow);
+  sendShellActivity();
   setupTray(() => activeShell(), {
     canToggleMode: () => true,
     toggleMode: () => {

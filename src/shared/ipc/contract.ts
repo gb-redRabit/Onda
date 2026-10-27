@@ -44,6 +44,7 @@ export const INVOKE_CHANNELS = [
   'app:getCompactPinned',
   'app:setCompactPinned',
   'app:consumeRestoreOnce',
+  'app:getShellActive',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',
@@ -335,6 +336,7 @@ export const SEND_CHANNELS = [
 export const RECEIVE_CHANNELS = [
   'window:maximized',
   'window:fullscreenChanged',
+  'app:shellActive',
   'app:prepare-session-handoff',
   'dep:progress',
   'updater:event',

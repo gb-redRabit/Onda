@@ -36,7 +36,7 @@ import CompactAlbums from './CompactAlbums.vue';
 
 const { t } = useI18n();
 useCoreSync();
-useMediaSession();
+const mediaSession = useMediaSession();
 useSessionPersistence();
 const player = usePlayerStore();
 const settings = useSettingsStore();
@@ -205,6 +205,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
+  mediaSession.dispose();
   stopCompactHidden?.();
   stopCompactShown?.();
   stopAppearance?.();
@@ -352,6 +353,7 @@ function dismissError(): void {
           :title="$t('compact.shuffle')"
           :aria-label="$t('compact.shuffle')"
           :aria-pressed="player.shuffle"
+          data-testid="compact-shuffle"
           @click="player.toggleShuffle()"
         >
           <Shuffle :size="14" />
@@ -391,6 +393,7 @@ function dismissError(): void {
           :title="repeatLabel"
           :aria-label="repeatLabel"
           :aria-pressed="player.repeat !== 'none'"
+          data-testid="compact-repeat"
           @click="player.cycleRepeat()"
         >
           <Repeat1 v-if="player.repeat === 'one'" :size="14" />
@@ -406,6 +409,7 @@ function dismissError(): void {
           :value="player.volume"
           :aria-label="$t('compact.volume')"
           class="w-20 accent-primary"
+          data-testid="compact-volume"
           @input="setVolume"
         />
       </div>

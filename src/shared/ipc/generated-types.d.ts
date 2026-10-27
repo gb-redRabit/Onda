@@ -29,6 +29,7 @@ export type IpcInvokeChannel =
   | 'app:getCompactPinned'
   | 'app:setCompactPinned'
   | 'app:consumeRestoreOnce'
+  | 'app:getShellActive'
   | 'app:setBackgroundMaterial'
   | 'app:setCloseToTray'
   | 'app:getInfo'
@@ -314,6 +315,7 @@ export type IpcSendChannel =
 export type IpcReceiveChannel =
   | 'window:maximized'
   | 'window:fullscreenChanged'
+  | 'app:shellActive'
   | 'app:prepare-session-handoff'
   | 'dep:progress'
   | 'updater:event'
