@@ -147,9 +147,11 @@ async function boot(): Promise<void> {
       case 'load': {
         if (!command.track || typeof command.track.path !== 'string') return;
         const track = command.track as MediaFile;
-        if (track.type === 'video' || track.type === 'image') {
-          throw new Error(`Core supports audio only (got ${track.type})`);
+        if (track.type === 'image') {
+          throw new Error(`Core supports audio/video only (got ${track.type})`);
         }
+        // Wideo: Core zatrzymuje audio i tylko parkuje bieżący utwór/kolejkę.
+        // Obraz odtwarza main shell; Core dostaje `next`, gdy wideo się skończy.
         if (command.queue) player.queue = command.queue;
         if (command.pendingQueue) player.pendingQueue = command.pendingQueue;
         player.setTrack(track, { resume: command.resume === true });

@@ -39,14 +39,19 @@ export function useCoreSync(): void {
       player.pendingQueue = state.pendingQueue;
       player.history = state.history;
       player.isPlaying = state.isPlaying;
-      player.currentTime = state.currentTime;
-      player.duration = state.duration;
-      player.volume = state.volume;
-      player.isMuted = state.isMuted;
       player.shuffle = state.shuffle;
       player.repeat = state.repeat;
       player.pipActive = state.pipActive;
       player.pipTime = state.pipTime;
+
+      // Wideo gra w main shellu — czas/duration/volume pochodzą z lokalnego
+      // <video> (mostek w videoElementHandlers), nie z Core.
+      if (state.current?.type === 'video') return;
+
+      player.currentTime = state.currentTime;
+      player.duration = state.duration;
+      player.volume = state.volume;
+      player.isMuted = state.isMuted;
     },
     { immediate: true }
   );

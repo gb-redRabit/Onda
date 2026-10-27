@@ -1,6 +1,7 @@
 import { watch } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { ensureLocalVideoAudio } from '@renderer/composables/useAudioPlayer';
 import { logger } from '@shared/logger';
 import { useVideoSource, type VideoPlayerContext } from './useVideoSource';
 import { useVideoSubtitles } from './useVideoSubtitles';
@@ -25,6 +26,7 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
 
   function init(track: MediaFile | null) {
     if (track?.type === 'video') {
+      ensureLocalVideoAudio();
       source.setupVideo(track);
 
       if (player.pipActive) {
@@ -52,6 +54,7 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
       source.onTrackChanged(track, oldTrack);
       if (!track || track.type !== 'video') return;
 
+      ensureLocalVideoAudio();
       source.setupVideo(track);
 
       if (player.pipActive) {

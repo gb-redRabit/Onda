@@ -138,9 +138,8 @@ export const usePlayerStore = defineStore('player', () => {
 
   function setTrack(track: MediaFile, options?: { resume?: boolean }): void {
     if (isCoreShell()) {
-      if (track.type === 'video' || track.type === 'image') {
-        // Faza 2a świadomie obsługuje tylko audio; wideo zostaje w legacy main.
-        console.warn('[core-shell] video/image playback is not supported yet');
+      if (track.type === 'image') {
+        console.warn('[core-shell] image playback is not supported');
         return;
       }
       const plain = toPlainTrack(track);
@@ -180,7 +179,14 @@ export const usePlayerStore = defineStore('player', () => {
     togglePlayBase();
   }
   function seek(time: number): void {
-    if (isCoreShell()) sendCoreCommand({ type: 'seek', time });
+    if (isCoreShell()) {
+      // Wideo nie ma elementu w Core — przewijamy lokalny <video> w main shellu.
+      if (currentTrack.value?.type === 'video') {
+        const video = document.querySelector('video');
+        if (video) video.currentTime = time;
+      }
+      sendCoreCommand({ type: 'seek', time });
+    }
     seekBase(time);
   }
   function toggleShuffle(): void {

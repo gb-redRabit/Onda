@@ -13,7 +13,7 @@ import { createVizShim } from '@renderer/utils/vizShim';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
-const buffered = ref(0);
+export const buffered = ref(0);
 // Rzeczywisty stan elementu audio (aktualizowany dla WSZYSTKICH typów, w tym `stream`).
 // Używane m.in. przez PiP audio, żeby nie pokazywać go dla wyciszonego/zakończonego strumienia,
 // gdy `player.isPlaying` jest nieaktualne (dla `stream` nie jest synchronizowane).
@@ -52,6 +52,9 @@ function ensureRemoteModule(): void {
     coreState,
     (state) => {
       if (!state) return;
+      // Wideo gra lokalnie w main shellu — refy czasu/duration karmi
+      // `videoElementHandlers`, nie ticki audio z Core.
+      if (state.current?.type === 'video') return;
       currentTime.value = state.currentTime;
       duration.value = state.duration;
       buffered.value = state.buffered;
@@ -63,6 +66,10 @@ function ensureRemoteModule(): void {
     },
     { immediate: true }
   );
+}
+
+function isVideoMode(): boolean {
+  return isCoreShell() && usePlayerStore().currentTrack?.type === 'video';
 }
 
 function useRemoteAudioPlayer() {
@@ -82,38 +89,66 @@ function useRemoteAudioPlayer() {
     isReady,
     isLoading,
     error,
-    getAnalyserNode: (): AnalyserNode | null => remoteViz.node,
+    getAnalyserNode: (): AnalyserNode | null =>
+      isVideoMode() ? audioEngine.getAnalyserNode() : remoteViz.node,
     setVizActive: (active: boolean) => {
+      if (isVideoMode()) return;
       if (active === remoteVizActive) return;
       remoteVizActive = active;
       send({ type: 'viz', active });
     },
-    play: () => send({ type: 'play' }),
-    pause: () => send({ type: 'pause' }),
+    play: () => {
+      if (isVideoMode()) {
+        usePlayerStore().play();
+        return;
+      }
+      send({ type: 'play' });
+    },
+    pause: () => {
+      if (isVideoMode()) {
+        usePlayerStore().pause();
+        return;
+      }
+      send({ type: 'pause' });
+    },
     seek: (time: number) => {
-      currentTime.value = Math.max(0, time);
-      send({ type: 'seek', time });
+      const value = Math.max(0, time);
+      currentTime.value = value;
+      if (isVideoMode()) {
+        const video = document.querySelector('video');
+        if (video) video.currentTime = value;
+        usePlayerStore().currentTime = value;
+        return;
+      }
+      send({ type: 'seek', time: value });
     },
     setVolume: (v: number) => {
       const value = Math.max(0, Math.min(1, v));
       volume.value = value;
+      if (isVideoMode()) {
+        usePlayerStore().setVolume(value);
+        return;
+      }
       send({ type: 'setVolume', value });
     },
     applyEqBands: (bands: EqBand[]) => {
       const copy = cloneEqBands(bands);
       fx.equalizerBands = copy;
       settings.updatePlayback({ equalizerBands: copy });
-      send({ type: 'eqBands', bands: copy });
+      if (isVideoMode()) audioEngine.setEqBands(copy);
+      else send({ type: 'eqBands', bands: copy });
     },
     setEqEnabled: (enabled: boolean) => {
       fx.equalizerEnabled = enabled;
       settings.updatePlayback({ equalizerEnabled: enabled });
-      send({ type: 'eqEnabled', enabled });
+      if (isVideoMode()) audioEngine.setEqEnabled(enabled);
+      else send({ type: 'eqEnabled', enabled });
     },
     setEqPreamp: (db: number) => {
       fx.equalizerPreamp = db;
       settings.updatePlayback({ equalizerPreamp: db });
-      send({ type: 'eqPreamp', db });
+      if (isVideoMode()) audioEngine.setEqPreamp(db);
+      else send({ type: 'eqPreamp', db });
     },
     setEqUserPresets: (presets: Record<string, EqBand[]>) => {
       fx.equalizerUserPresets = presets;
@@ -127,26 +162,33 @@ function useRemoteAudioPlayer() {
       fx.equalizerSnap = on;
       settings.updatePlayback({ equalizerSnap: on });
     },
-    applyEqGraph: (bands: EqBand[]) => send({ type: 'applyEqGraph', bands }),
+    applyEqGraph: (bands: EqBand[]) => {
+      if (isVideoMode()) audioEngine.setEqBands(bands);
+      else send({ type: 'applyEqGraph', bands });
+    },
     setEqMono: (on: boolean) => {
       fx.equalizerMono = on;
-      send({ type: 'eqMono', on });
+      if (isVideoMode()) audioEngine.setEqMono(on);
+      else send({ type: 'eqMono', on });
     },
     setNightMode: (on: boolean) => {
       fx.nightMode = on;
       settings.updatePlayback({ nightMode: on });
-      send({ type: 'nightMode', on });
+      if (isVideoMode()) audioEngine.setNightMode(on);
+      else send({ type: 'nightMode', on });
     },
     setAudioDelay: (ms: number) => {
       const clamped = Math.max(0, Math.min(500, Math.round(ms) || 0));
       fx.audioDelayMs = clamped;
       settings.updatePlayback({ audioDelayMs: clamped });
-      send({ type: 'audioDelay', ms: clamped });
+      if (isVideoMode()) audioEngine.setAudioDelayMs(clamped);
+      else send({ type: 'audioDelay', ms: clamped });
     },
     savePosition: () => {
-      /* pozycję zapisuje Core */
+      /* pozycję zapisuje Core (audio) lub videoElementHandlers (wideo) */
     },
-    getAudioContext: (): AudioContext | null => null
+    getAudioContext: (): AudioContext | null =>
+      isVideoMode() ? audioEngine.getAudioContext() : null
   };
 }
 
@@ -230,12 +272,14 @@ function ensureModule() {
       () => player.currentTrack?.path ?? null,
       (path, _oldPath) => {
         const track = player.currentTrack;
+        // W trybie shellu lokalny silnik obsługuje wyłącznie wideo; audio gra w Core.
+        if (isCoreShell() && track?.type !== 'video') return;
         logger.info(
           'audioPlayer',
           `currentTrack watch type=${track?.type ?? 'none'} path=${(path ?? '').slice(0, 60)}`
         );
         if (!track || !path) {
-          audioEngine.pause();
+          if (!isCoreShell()) audioEngine.pause();
           return;
         }
         if (track.type === 'video') {
@@ -260,6 +304,7 @@ function ensureModule() {
       () => player.isPlaying,
       (playing, _wasPlaying) => {
         const trackType = player.currentTrack?.type;
+        if (isCoreShell() && trackType !== 'video') return;
         if (trackType === 'video') return;
         if (playing) {
           resumeAndPlay();
@@ -272,6 +317,7 @@ function ensureModule() {
     watch(
       () => player.isMuted,
       (muted) => {
+        if (isCoreShell()) return;
         audioEngine.setMuted(muted);
       }
     );
@@ -279,28 +325,38 @@ function ensureModule() {
     watch(
       () => player.volume,
       (v) => {
+        if (isCoreShell()) return;
         audioEngine.setVolume(v);
       }
     );
   });
 
   const existingTrack = player.currentTrack;
-  if (existingTrack?.type === 'audio') {
-    audioEngine.loadTrack(existingTrack, {
-      resume: player.consumeResumeIntent(existingTrack.path)
-    });
-    if (player.isPlaying) {
-      resumeAndPlay();
+  // Shell nie ładuje audio do lokalnego silnika — tylko wideo ma tu swój graf.
+  if (!isCoreShell()) {
+    if (existingTrack?.type === 'audio') {
+      audioEngine.loadTrack(existingTrack, {
+        resume: player.consumeResumeIntent(existingTrack.path)
+      });
+      if (player.isPlaying) {
+        resumeAndPlay();
+      }
+    } else if (existingTrack?.type === 'stream') {
+      audioEngine.loadRemote(existingTrack.path);
+      if (player.isPlaying) {
+        resumeAndPlay();
+      }
+      player.enrichPendingQueue();
     }
-  } else if (existingTrack?.type === 'stream') {
-    audioEngine.loadRemote(existingTrack.path);
-    if (player.isPlaying) {
-      resumeAndPlay();
-    }
-    player.enrichPendingQueue();
   }
 
   volume.value = player.volume;
+}
+
+/** Wideo w shellu potrzebuje lokalnego grafu (EQ/volume), ale nie lokalnego audio. */
+export function ensureLocalVideoAudio(): void {
+  if (!isCoreShell()) return;
+  ensureModule();
 }
 
 export function useAudioPlayer() {
