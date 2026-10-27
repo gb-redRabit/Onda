@@ -52,3 +52,9 @@ body {
 .compact-tab {
   -webkit-app-region: no-drag;
 }
+
+/* Widoczny fokus dla całego compactu (przyciski, zakładki, slider, pola). */
+.compact-root :is(button, [role='tab'], [role='slider'], input):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

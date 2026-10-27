@@ -16,6 +16,7 @@ export const useLibraryStore = defineStore('library', () => {
   const scanProgress = ref({ current: 0, total: 0 });
   const isLoaded = ref(false);
   const isLoading = ref(false);
+  const loadError = ref<string | null>(null);
   // Zwiększane przez `updateTrackStats`, więc widoki statystyk odtwarzania przeliczają się bez
   // unieważniania kosztownych derywacji artystów/albumów/trackStats.
   const statsRevision = ref(0);
@@ -63,7 +64,8 @@ export const useLibraryStore = defineStore('library', () => {
     isLoaded,
     isLoading,
     isScanning,
-    scanProgress
+    scanProgress,
+    loadError
   });
 
   const totalCount = computed(() => tracks.value.length);
@@ -180,6 +182,7 @@ export const useLibraryStore = defineStore('library', () => {
     scanProgress,
     isLoaded,
     isLoading,
+    loadError,
     totalCount,
     normalizedFolders,
     audioCount,

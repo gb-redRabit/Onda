@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { ListPlus, Music2, Play, Search } from '@lucide/vue';
+import { AlertTriangle, ListPlus, Music2, Play, RotateCw, Search } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
@@ -59,6 +59,10 @@ function addToQueue(index: number): void {
   if (track) player.addToQueue(track);
 }
 
+function retryLoad(): void {
+  void library.loadFromDisk({ audioOnly: true });
+}
+
 /** Skrót Ctrl/⌘+F w shellu kompaktowym — fokus i zaznaczenie pola szukania. */
 function focusSearch(): void {
   searchEl.value?.focus();
@@ -86,6 +90,26 @@ defineExpose({ focusSearch });
           data-testid="compact-search"
         />
       </label>
+    </div>
+
+    <div
+      v-if="library.loadError"
+      class="mx-3 mb-2 flex items-center gap-2 px-2.5 py-2 rounded-field border border-error/40 bg-error/10 text-[11px] text-error"
+      role="alert"
+      data-testid="compact-library-error"
+    >
+      <AlertTriangle :size="14" class="shrink-0" />
+      <span class="min-w-0 flex-1">{{ $t('compact.libraryError') }}</span>
+      <button
+        class="inline-flex items-center gap-1 px-2 h-6 rounded-field border border-error/40 hover:bg-error/10 shrink-0"
+        :title="$t('compact.retry')"
+        :aria-label="$t('compact.retry')"
+        data-testid="compact-library-retry"
+        @click="retryLoad"
+      >
+        <RotateCw :size="12" />
+        {{ $t('compact.retry') }}
+      </button>
     </div>
 
     <div v-if="!library.isLoaded" class="px-4 py-6 text-[12px] text-base-content/50">

@@ -13,6 +13,7 @@ interface LibraryLoadCtx {
   isLoading: Ref<boolean>;
   isScanning: Ref<boolean>;
   scanProgress: Ref<{ current: number; total: number }>;
+  loadError: Ref<string | null>;
 }
 
 // Pliki są pobierane w ograniczonych wycinkach: biblioteka 50k plików nigdy nie przechodzi IPC jako
@@ -48,6 +49,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
   async function loadFromDisk(options?: { audioOnly?: boolean }) {
     if (options?.audioOnly !== undefined) audioOnlyPreference = options.audioOnly;
     ctx.isLoading.value = true;
+    ctx.loadError.value = null;
     try {
       const [loadedPlaylists, loadedFolders] = await Promise.all([
         (window.api?.invoke('playlist:loadAll') as Promise<Playlist[] | undefined>).catch(
@@ -76,9 +78,10 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
     loadTracksScheduled = true;
     const doLoad = (): void => {
       ctx.isLoading.value = false;
+      ctx.loadError.value = null;
       void loadTracksInChunks(ctx, audioOnly)
-        .catch(() => {
-          /* nic do załadowania */
+        .catch((error) => {
+          ctx.loadError.value = errMsg(error) || 'library-load-failed';
         })
         .finally(() => {
           ctx.isLoaded.value = true;

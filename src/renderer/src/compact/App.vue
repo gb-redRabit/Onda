@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import {
+  AlertCircle,
   AppWindow,
   Disc3,
   ListMusic,
@@ -56,6 +57,21 @@ let stopAppearance: (() => void) | undefined;
 
 function setTab(id: string): void {
   if (id === 'tracks' || id === 'queue' || id === 'albums') tab.value = id;
+}
+
+const TAB_ORDER: Tab[] = ['tracks', 'queue', 'albums'];
+
+/** Standardowa nawigacja tablist: strzałki, Home/End, roving tabindex. */
+function onTabKeydown(event: KeyboardEvent, index: number): void {
+  let next = index;
+  if (event.key === 'ArrowRight') next = (index + 1) % TAB_ORDER.length;
+  else if (event.key === 'ArrowLeft') next = (index - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+  else if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = TAB_ORDER.length - 1;
+  else return;
+  event.preventDefault();
+  tab.value = TAB_ORDER[next];
+  void nextTick(() => document.getElementById(`compact-tab-${TAB_ORDER[next]}`)?.focus());
 }
 
 const current = computed(() => player.currentTrack);
@@ -201,6 +217,26 @@ const repeatLabel = computed(() =>
       ? t('compact.repeatAll')
       : t('compact.repeat')
 );
+
+const dismissedError = ref<string | null>(null);
+const playbackError = computed(() => {
+  const error = audio.error.value;
+  if (!error || dismissedError.value === error) return null;
+  if (error === 'track-failed') return t('compact.trackError');
+  if (error === 'stream-failed') return t('compact.streamError');
+  return t('compact.playbackError');
+});
+
+watch(
+  () => audio.error.value,
+  (error) => {
+    if (!error) dismissedError.value = null;
+  }
+);
+
+function dismissError(): void {
+  dismissedError.value = audio.error.value;
+}
 </script>
 
 <template>
@@ -248,6 +284,24 @@ const repeatLabel = computed(() =>
       </button>
     </header>
 
+    <div
+      v-if="playbackError"
+      class="mx-3 mt-2 flex items-center gap-2 px-2.5 py-2 rounded-field border border-error/40 bg-error/10 text-[11px] text-error"
+      role="alert"
+      data-testid="compact-playback-error"
+    >
+      <AlertCircle :size="14" class="shrink-0" />
+      <span class="min-w-0 flex-1">{{ playbackError }}</span>
+      <button
+        class="grid place-items-center w-5 h-5 rounded-field hover:bg-error/10 shrink-0"
+        :title="$t('compact.dismiss')"
+        :aria-label="$t('compact.dismiss')"
+        @click="dismissError"
+      >
+        <X :size="12" />
+      </button>
+    </div>
+
     <section class="px-3 pt-3 pb-2 shrink-0">
       <div class="flex items-center gap-3">
         <div
@@ -257,7 +311,9 @@ const repeatLabel = computed(() =>
           <MediaCover :path="current?.path" :size="64" autoplay />
         </div>
         <div class="min-w-0 flex-1">
-          <h1 class="text-sm font-semibold truncate" data-testid="compact-title">{{ title }}</h1>
+          <h1 class="text-sm font-semibold truncate" data-testid="compact-title" aria-live="polite">
+            {{ title }}
+          </h1>
           <p class="text-[11px] text-base-content/55 truncate mt-0.5">{{ artist || '—' }}</p>
           <div class="flex items-center gap-1.5 mt-1.5 text-[10px] text-base-content/45">
             <span>{{ formatTime(audio.currentTime.value) }}</span>
@@ -361,11 +417,12 @@ const repeatLabel = computed(() =>
       :aria-label="$t('compact.tabs')"
     >
       <button
-        v-for="item in [
+        v-for="(item, index) in [
           { id: 'tracks', label: $t('compact.tracks'), icon: Music2 },
           { id: 'queue', label: $t('compact.queue'), icon: ListMusic },
           { id: 'albums', label: $t('compact.albums'), icon: Disc3 }
         ]"
+        :id="`compact-tab-${item.id}`"
         :key="item.id"
         class="compact-tab flex items-center gap-1.5 px-2.5 h-8 rounded-field text-[12px] transition-colors"
         :class="
@@ -375,15 +432,24 @@ const repeatLabel = computed(() =>
         "
         role="tab"
         :aria-selected="tab === item.id"
+        aria-controls="compact-panel"
+        :tabindex="tab === item.id ? 0 : -1"
         :data-testid="`compact-tab-${item.id}`"
         @click="setTab(item.id)"
+        @keydown="onTabKeydown($event, index)"
       >
         <component :is="item.icon" :size="13" />
         {{ item.label }}
       </button>
     </nav>
 
-    <main class="flex-1 min-h-0">
+    <main
+      id="compact-panel"
+      class="flex-1 min-h-0"
+      role="tabpanel"
+      :aria-labelledby="`compact-tab-${tab}`"
+      tabindex="0"
+    >
       <CompactTracks v-if="tab === 'tracks'" ref="tracksRef" />
       <CompactQueue v-else-if="tab === 'queue'" />
       <CompactAlbums v-else />

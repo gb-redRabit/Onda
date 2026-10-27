@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type ComponentPublicInstance } from 'vue';
+import { computed, nextTick, ref, type ComponentPublicInstance } from 'vue';
 import { GripVertical, ListMusic, Play, Trash2 } from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
@@ -52,6 +52,15 @@ function onDrop(index: number): void {
   if (dragIndex.value === null) return;
   player.reorderQueue(dragIndex.value, index);
   dragIndex.value = null;
+}
+
+function moveItem(index: number, delta: number): void {
+  const target = index + delta;
+  if (target < 0 || target >= items.value.length) return;
+  player.reorderQueue(index, target);
+  void nextTick(() =>
+    document.querySelector<HTMLElement>(`[data-testid="compact-queue-grip-${target}"]`)?.focus()
+  );
 }
 </script>
 
@@ -110,7 +119,16 @@ function onDrop(index: number): void {
           @dragover.prevent
           @drop="onDrop(row.index)"
         >
-          <GripVertical :size="13" class="text-base-content/25 shrink-0 cursor-grab" />
+          <button
+            class="grid place-items-center w-5 h-7 rounded-field text-base-content/25 hover:text-base-content/70 cursor-grab shrink-0"
+            :title="$t('compact.reorderHint')"
+            :aria-label="$t('compact.reorderHint')"
+            :data-testid="`compact-queue-grip-${row.index}`"
+            @keydown.alt.up.prevent="moveItem(row.index, -1)"
+            @keydown.alt.down.prevent="moveItem(row.index, 1)"
+          >
+            <GripVertical :size="13" />
+          </button>
           <button
             class="w-7 h-7 rounded overflow-hidden bg-base-300 shrink-0 group relative"
             :title="$t('compact.playNow')"

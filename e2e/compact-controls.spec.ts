@@ -53,6 +53,15 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
     await page.reload();
     await expect(page.getByTestId('compact-track-0')).toBeVisible({ timeout: 20_000 });
 
+    // Tablist: strzałki przełączają zakładki i przenoszą fokus (roving tabindex).
+    await page.getByTestId('compact-tab-tracks').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('compact-tab-queue')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('compact-tab-queue')).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('compact-tab-tracks')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('compact-tab-tracks')).toBeFocused();
+
     // Ctrl+F z innej zakładki wraca na Utwory i ustawia fokus w wyszukiwaniu.
     await page.getByTestId('compact-tab-albums').click();
     await expect(page.getByTestId('compact-tab-albums')).toHaveAttribute('aria-selected', 'true');
