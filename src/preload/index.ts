@@ -32,6 +32,9 @@ import type { SmartPlaylist } from '../shared/types/smart-playlist';
 import type {
   MediaConvertRequest,
   MediaConvertResult,
+  TagEditorFile,
+  TagEditorWriteEntry,
+  TagEditorWriteResult,
   VideoClipRequest,
   VideoClipThumbnailsRequest,
   VideoConcatRequest
@@ -291,6 +294,10 @@ const api: OndaAPI = {
   cancelVideoConcat: (jobId: string): Promise<boolean> => tryInvoke('tools:concatCancel', jobId),
   clipThumbnails: (request: VideoClipThumbnailsRequest) =>
     tryInvoke('tools:clipThumbnails', request),
+  tagEditorRead: (paths: string[]): Promise<TagEditorFile[]> =>
+    tryInvoke('tools:tagEditorRead', paths),
+  tagEditorWrite: (entries: TagEditorWriteEntry[]): Promise<TagEditorWriteResult[]> =>
+    tryInvoke('tools:tagEditorWrite', entries),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),
   openSubtitlesDownload: (

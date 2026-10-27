@@ -98,6 +98,8 @@ export interface OndaAPI {
   concatVideos: BoundIpcMethod<'tools:concat'>;
   cancelVideoConcat: BoundIpcMethod<'tools:concatCancel'>;
   clipThumbnails: BoundIpcMethod<'tools:clipThumbnails'>;
+  tagEditorRead: BoundIpcMethod<'tools:tagEditorRead'>;
+  tagEditorWrite: BoundIpcMethod<'tools:tagEditorWrite'>;
   loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
   saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;
   openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;

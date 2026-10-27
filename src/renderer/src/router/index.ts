@@ -102,6 +102,12 @@ const router = createRouter({
       meta: { title: 'Video Concat' }
     },
     {
+      path: '/tools/tag-editor',
+      name: 'tool-tag-editor',
+      component: () => import('@renderer/views/tools/TagEditorToolView.vue'),
+      meta: { title: 'Tag Editor' }
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@renderer/views/SettingsView.vue'),

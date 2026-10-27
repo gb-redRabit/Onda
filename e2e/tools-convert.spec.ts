@@ -3,6 +3,7 @@ import { execFileSync } from 'child_process';
 import { copyFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
+import { dropFileOn } from './helpers/dragDrop';
 import { createMediaFixture } from './helpers/media';
 
 const sourceBin = join(process.env.APPDATA ?? '', 'onda', 'bin');
@@ -11,22 +12,11 @@ const ffprobe = join(sourceBin, 'ffprobe.exe');
 const canConvert = existsSync(ffmpeg) && existsSync(ffprobe);
 
 async function dropFile(page: Page, input: string): Promise<void> {
-  const dataTransfer = await page.evaluateHandle((path) => {
-    const dt = new DataTransfer();
-    const uri =
-      'file:///' +
-      path
-        .replace(/\\/g, '/')
-        .split('/')
-        .map((part, index) => (index === 0 ? part : encodeURIComponent(part)))
-        .join('/');
-    dt.setData('text/uri-list', uri);
-    return dt;
-  }, input);
-  await page
-    .locator('[data-testid="tools-converter-view"] section')
-    .first()
-    .dispatchEvent('drop', { dataTransfer });
+  await dropFileOn(
+    page,
+    page.locator('[data-testid="tools-converter-view"] section').first(),
+    input
+  );
 }
 
 test.describe('tools conversion', () => {

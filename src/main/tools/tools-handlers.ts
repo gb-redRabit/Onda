@@ -7,6 +7,7 @@ import type {
   VideoConcatRequest
 } from '../../shared/types/tools';
 import { cancelMediaConvert, convertMedia } from './media-convert';
+import { readAudioTags, writeAudioTags } from './tag-editor';
 import {
   cancelVideoClip,
   cancelVideoConcat,
@@ -59,5 +60,9 @@ export function registerToolsHandlers(context: ToolsHandlerContext): void {
   );
   ipcMain.handle('tools:clipThumbnails', async (_event, request: VideoClipThumbnailsRequest) =>
     clipThumbnails(request)
+  );
+  ipcMain.handle('tools:tagEditorRead', async (_event, paths: unknown) => readAudioTags(paths));
+  ipcMain.handle('tools:tagEditorWrite', async (_event, entries: unknown) =>
+    writeAudioTags(entries)
   );
 }

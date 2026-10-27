@@ -22,6 +22,14 @@ export const TOOL_DEFINITIONS = {
     height: 720,
     minWidth: 720,
     minHeight: 520
+  },
+  'tag-editor': {
+    route: '/tools/tag-editor',
+    title: 'Tag Editor',
+    width: 1100,
+    height: 780,
+    minWidth: 860,
+    minHeight: 560
   }
 } as const;
 
@@ -120,4 +128,52 @@ export interface MediaConvertResult {
   outputPath?: string;
   error?: string;
   canceled?: boolean;
+}
+
+/** Maksymalna liczba plików w jednej operacji edytora tagów. */
+export const TAG_EDITOR_MAX_FILES = 500;
+
+/** Pola edytowalne w edytorze tagów (kolejność = kolejność w UI). */
+export const AUDIO_TAG_FIELDS = [
+  'title',
+  'artist',
+  'album',
+  'albumArtist',
+  'genre',
+  'year',
+  'track',
+  'disc'
+] as const;
+export type AudioTagField = (typeof AUDIO_TAG_FIELDS)[number];
+
+/** Pola tagów obsługiwane przez edytor (wspólne dla odczytu i zapisu). */
+export interface AudioTagFields {
+  title?: string;
+  artist?: string;
+  album?: string;
+  albumArtist?: string;
+  genre?: string;
+  year?: string;
+  track?: string;
+  disc?: string;
+}
+
+export interface TagEditorFile {
+  path: string;
+  /** Czy format pozwala bezpiecznie zapisać tagi (MP3/FLAC/M4A/OGG/OPUS/WAV). */
+  writable: boolean;
+  tags: AudioTagFields;
+  error?: string;
+}
+
+export interface TagEditorWriteEntry {
+  path: string;
+  /** Puste pole (`''`) czyści tag; brak klucza = nie zmieniaj. */
+  tags: AudioTagFields;
+}
+
+export interface TagEditorWriteResult {
+  path: string;
+  success: boolean;
+  error?: string;
 }

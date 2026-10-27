@@ -75,6 +75,8 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'tools:concat',
   'tools:concatCancel',
   'tools:clipThumbnails',
+  'tools:tagEditorRead',
+  'tools:tagEditorWrite',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',

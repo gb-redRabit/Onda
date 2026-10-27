@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ExternalLink, Layers, Plus, Scissors, Wrench } from '@lucide/vue';
+import { ExternalLink, Layers, Plus, Scissors, Tags, Wrench } from '@lucide/vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import { useUIStore } from '@renderer/stores/ui';
 import type { ToolId } from '@shared/types/tools';
@@ -28,6 +28,12 @@ const cards = computed(() => [
     icon: Layers,
     title: t('tools.videoConcatTitle'),
     description: t('tools.videoConcatDescription')
+  },
+  {
+    id: 'tag-editor' as ToolId,
+    icon: Tags,
+    title: t('tools.tagEditorTitle'),
+    description: t('tools.tagEditorDescription')
   }
 ]);
 

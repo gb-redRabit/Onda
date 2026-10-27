@@ -1,6 +1,9 @@
 import type {
   MediaConvertRequest,
   MediaConvertResult,
+  TagEditorFile,
+  TagEditorWriteEntry,
+  TagEditorWriteResult,
   ToolId,
   ToolMessageInput,
   ToolWindowContext,
@@ -26,5 +29,10 @@ export interface ToolsChannels {
   'tools:clipThumbnails': {
     args: [request: VideoClipThumbnailsRequest];
     result: VideoClipThumbnailsResult;
+  };
+  'tools:tagEditorRead': { args: [paths: string[]]; result: TagEditorFile[] };
+  'tools:tagEditorWrite': {
+    args: [entries: TagEditorWriteEntry[]];
+    result: TagEditorWriteResult[];
   };
 }

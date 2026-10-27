@@ -90,6 +90,8 @@ export const INVOKE_CHANNELS = [
   'tools:concat',
   'tools:concatCancel',
   'tools:clipThumbnails',
+  'tools:tagEditorRead',
+  'tools:tagEditorWrite',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',
