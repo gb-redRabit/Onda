@@ -65,6 +65,12 @@ const {
 // obsługuje `useImageViewerKeyboard`; tutaj fokus krąży wewnątrz nakładki.
 const rootRef = ref<HTMLElement | null>(null);
 useDialogFocus(rootRef);
+
+async function openImageStudio(): Promise<void> {
+  const path = currentFile.value?.path;
+  if (!path) return;
+  await window.api.invoke('tools:openWindow', 'image-studio', { path });
+}
 </script>
 
 <template>
@@ -178,6 +184,7 @@ useDialogFocus(rootRef);
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @rotate="rotate"
+        @edit="openImageStudio"
         @toggle-fullscreen="toggleFullscreen"
         @update:interval="changeInterval"
         @update:transition-type="transitionType = $event"

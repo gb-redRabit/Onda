@@ -30,6 +30,14 @@ export const TOOL_DEFINITIONS = {
     height: 780,
     minWidth: 860,
     minHeight: 560
+  },
+  'image-studio': {
+    route: '/tools/image-studio',
+    title: 'Image Studio',
+    width: 1240,
+    height: 840,
+    minWidth: 960,
+    minHeight: 640
   }
 } as const;
 
@@ -175,5 +183,50 @@ export interface TagEditorWriteEntry {
 export interface TagEditorWriteResult {
   path: string;
   success: boolean;
+  error?: string;
+}
+
+export type ImageOutputFormat = 'png' | 'jpeg' | 'webp' | 'avif';
+export const IMAGE_OUTPUT_FORMATS = ['png', 'jpeg', 'webp', 'avif'] as const;
+
+export interface ImageStudioLoadResult {
+  success: boolean;
+  /** PNG data URL of the working copy (auto-oriented, capped). */
+  dataUrl?: string;
+  /** Working copy dimensions (used by the editor canvas). */
+  width?: number;
+  height?: number;
+  /** Original file dimensions (informational). */
+  sourceWidth?: number;
+  sourceHeight?: number;
+  bytes?: number;
+  format?: string;
+  error?: string;
+}
+
+export interface ImageStudioSaveRequest {
+  /** PNG bytes rendered by the editor canvas. */
+  png: number[];
+  outputPath: string;
+  format: ImageOutputFormat;
+  quality?: number;
+}
+
+export interface ImageStudioSaveResult {
+  success: boolean;
+  outputPath?: string;
+  bytes?: number;
+  error?: string;
+}
+
+export interface ImageStudioEstimateRequest {
+  png: number[];
+  format: ImageOutputFormat;
+  quality?: number;
+}
+
+export interface ImageStudioEstimateResult {
+  success: boolean;
+  bytes?: number;
   error?: string;
 }

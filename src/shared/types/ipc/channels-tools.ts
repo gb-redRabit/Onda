@@ -1,4 +1,9 @@
 import type {
+  ImageStudioEstimateRequest,
+  ImageStudioEstimateResult,
+  ImageStudioLoadResult,
+  ImageStudioSaveRequest,
+  ImageStudioSaveResult,
   MediaConvertRequest,
   MediaConvertResult,
   TagEditorFile,
@@ -34,5 +39,11 @@ export interface ToolsChannels {
   'tools:tagEditorWrite': {
     args: [entries: TagEditorWriteEntry[]];
     result: TagEditorWriteResult[];
+  };
+  'tools:imageRead': { args: [path: string]; result: ImageStudioLoadResult };
+  'tools:imageSave': { args: [request: ImageStudioSaveRequest]; result: ImageStudioSaveResult };
+  'tools:imageEstimate': {
+    args: [request: ImageStudioEstimateRequest];
+    result: ImageStudioEstimateResult;
   };
 }

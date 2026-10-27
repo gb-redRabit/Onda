@@ -8,6 +8,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCw,
+  Pencil,
   Fullscreen
 } from '@lucide/vue';
 import ImageViewerSettings from './ImageViewerSettings.vue';
@@ -33,6 +34,7 @@ const emit = defineEmits<{
   zoomIn: [];
   zoomOut: [];
   rotate: [];
+  edit: [];
   toggleFullscreen: [];
   'update:interval': [value: number];
   'update:transition-type': [value: string];
@@ -150,6 +152,15 @@ const emit = defineEmits<{
         @click="emit('rotate')"
       >
         <RotateCw :size="16" class="pointer-events-none" />
+      </button>
+      <button
+        data-testid="image-viewer-edit"
+        class="ui-icon-button fx-noise fx-depth"
+        :title="$t('imageViewer.editInStudio')"
+        :aria-label="$t('imageViewer.editInStudio')"
+        @click="emit('edit')"
+      >
+        <Pencil :size="16" class="pointer-events-none" />
       </button>
       <button
         data-testid="image-viewer-fullscreen"

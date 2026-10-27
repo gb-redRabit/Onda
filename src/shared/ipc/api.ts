@@ -100,6 +100,9 @@ export interface OndaAPI {
   clipThumbnails: BoundIpcMethod<'tools:clipThumbnails'>;
   tagEditorRead: BoundIpcMethod<'tools:tagEditorRead'>;
   tagEditorWrite: BoundIpcMethod<'tools:tagEditorWrite'>;
+  imageRead: BoundIpcMethod<'tools:imageRead'>;
+  imageSave: BoundIpcMethod<'tools:imageSave'>;
+  imageEstimate: BoundIpcMethod<'tools:imageEstimate'>;
   loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
   saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;
   openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;

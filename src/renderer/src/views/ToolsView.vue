@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ExternalLink, Layers, Plus, Scissors, Tags, Wrench } from '@lucide/vue';
+import {
+  ExternalLink,
+  Image as ImageIcon,
+  Layers,
+  Plus,
+  Scissors,
+  Tags,
+  Wrench
+} from '@lucide/vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import { useUIStore } from '@renderer/stores/ui';
 import type { ToolId } from '@shared/types/tools';
@@ -34,6 +42,12 @@ const cards = computed(() => [
     icon: Tags,
     title: t('tools.tagEditorTitle'),
     description: t('tools.tagEditorDescription')
+  },
+  {
+    id: 'image-studio' as ToolId,
+    icon: ImageIcon,
+    title: t('tools.imageStudioTitle'),
+    description: t('tools.imageStudioDescription')
   }
 ]);
 

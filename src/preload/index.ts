@@ -30,6 +30,11 @@ import type { PipSubtitleData } from '../shared/types/pip';
 import type { LyricsResult } from '../shared/types/lyrics';
 import type { SmartPlaylist } from '../shared/types/smart-playlist';
 import type {
+  ImageStudioEstimateRequest,
+  ImageStudioEstimateResult,
+  ImageStudioLoadResult,
+  ImageStudioSaveRequest,
+  ImageStudioSaveResult,
   MediaConvertRequest,
   MediaConvertResult,
   TagEditorFile,
@@ -298,6 +303,11 @@ const api: OndaAPI = {
     tryInvoke('tools:tagEditorRead', paths),
   tagEditorWrite: (entries: TagEditorWriteEntry[]): Promise<TagEditorWriteResult[]> =>
     tryInvoke('tools:tagEditorWrite', entries),
+  imageRead: (path: string): Promise<ImageStudioLoadResult> => tryInvoke('tools:imageRead', path),
+  imageSave: (request: ImageStudioSaveRequest): Promise<ImageStudioSaveResult> =>
+    tryInvoke('tools:imageSave', request),
+  imageEstimate: (request: ImageStudioEstimateRequest): Promise<ImageStudioEstimateResult> =>
+    tryInvoke('tools:imageEstimate', request),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),
   openSubtitlesDownload: (

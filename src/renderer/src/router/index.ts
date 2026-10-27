@@ -108,6 +108,12 @@ const router = createRouter({
       meta: { title: 'Tag Editor' }
     },
     {
+      path: '/tools/image-studio',
+      name: 'tool-image-studio',
+      component: () => import('@renderer/views/tools/ImageStudioToolView.vue'),
+      meta: { title: 'Image Studio' }
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@renderer/views/SettingsView.vue'),

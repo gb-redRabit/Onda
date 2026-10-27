@@ -7,6 +7,7 @@ import type {
   VideoConcatRequest
 } from '../../shared/types/tools';
 import { cancelMediaConvert, convertMedia } from './media-convert';
+import { estimateEditedImage, readImageForEditing, saveEditedImage } from './image-studio';
 import { readAudioTags, writeAudioTags } from './tag-editor';
 import {
   cancelVideoClip,
@@ -64,5 +65,10 @@ export function registerToolsHandlers(context: ToolsHandlerContext): void {
   ipcMain.handle('tools:tagEditorRead', async (_event, paths: unknown) => readAudioTags(paths));
   ipcMain.handle('tools:tagEditorWrite', async (_event, entries: unknown) =>
     writeAudioTags(entries)
+  );
+  ipcMain.handle('tools:imageRead', async (_event, path: unknown) => readImageForEditing(path));
+  ipcMain.handle('tools:imageSave', async (_event, request: unknown) => saveEditedImage(request));
+  ipcMain.handle('tools:imageEstimate', async (_event, request: unknown) =>
+    estimateEditedImage(request)
   );
 }
