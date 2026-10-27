@@ -146,8 +146,11 @@ const repeatLabel = computed(() =>
 
     <section class="px-3 pt-3 pb-2 shrink-0">
       <div class="flex items-center gap-3">
-        <div class="w-16 h-16 rounded-lg overflow-hidden bg-base-300 shrink-0">
-          <MediaCover :path="current?.path" :size="64" />
+        <div
+          class="w-16 h-16 rounded-lg overflow-hidden bg-base-300 shrink-0"
+          data-testid="compact-cover"
+        >
+          <MediaCover :path="current?.path" :size="64" autoplay />
         </div>
         <div class="min-w-0 flex-1">
           <h1 class="text-sm font-semibold truncate" data-testid="compact-title">{{ title }}</h1>
