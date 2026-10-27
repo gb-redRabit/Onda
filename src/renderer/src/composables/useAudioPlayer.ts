@@ -7,6 +7,8 @@ import { cloneEqBands, type EqBand } from '@renderer/utils/constants/audio';
 import { subtitleDelayMs } from './subtitleDelay';
 import { logger } from '@shared/logger';
 import { wireAudioEvents } from './audioPlayerEvents';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
+import { coreState, initCoreClient, sendCoreCommand } from '@renderer/core/coreClient';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
@@ -29,6 +31,113 @@ function resumeAndPlay() {
 }
 
 let moduleInitialized = false;
+let remoteInitialized = false;
+
+/**
+ * Shell nie ma własnego AudioContext. Refy tego modułu są wspólne dla obu trybów,
+ * więc wystarczy je karmić tickami z Core — reszta UI działa bez zmian.
+ */
+function ensureRemoteModule(): void {
+  if (remoteInitialized) return;
+  remoteInitialized = true;
+  initCoreClient();
+  console.info('[core-shell] remote audio player initialized');
+  watch(
+    coreState,
+    (state) => {
+      if (!state) return;
+      currentTime.value = state.currentTime;
+      duration.value = state.duration;
+      buffered.value = state.buffered;
+      isPlaying.value = state.enginePlaying;
+      volume.value = state.volume;
+      isLoading.value = state.isLoading;
+      error.value = state.error;
+      isReady.value = !!state.current;
+    },
+    { immediate: true }
+  );
+}
+
+function useRemoteAudioPlayer() {
+  ensureRemoteModule();
+  const settings = useSettingsStore();
+  const fx = useAudioFxStore();
+  const send = sendCoreCommand;
+
+  return {
+    currentTime,
+    duration,
+    buffered,
+    isPlaying,
+    volume,
+    progress: computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0)),
+    mediaEl,
+    isReady,
+    isLoading,
+    error,
+    getAnalyserNode: (): AnalyserNode | null => null,
+    play: () => send({ type: 'play' }),
+    pause: () => send({ type: 'pause' }),
+    seek: (time: number) => {
+      currentTime.value = Math.max(0, time);
+      send({ type: 'seek', time });
+    },
+    setVolume: (v: number) => {
+      const value = Math.max(0, Math.min(1, v));
+      volume.value = value;
+      send({ type: 'setVolume', value });
+    },
+    applyEqBands: (bands: EqBand[]) => {
+      const copy = cloneEqBands(bands);
+      fx.equalizerBands = copy;
+      settings.updatePlayback({ equalizerBands: copy });
+      send({ type: 'eqBands', bands: copy });
+    },
+    setEqEnabled: (enabled: boolean) => {
+      fx.equalizerEnabled = enabled;
+      settings.updatePlayback({ equalizerEnabled: enabled });
+      send({ type: 'eqEnabled', enabled });
+    },
+    setEqPreamp: (db: number) => {
+      fx.equalizerPreamp = db;
+      settings.updatePlayback({ equalizerPreamp: db });
+      send({ type: 'eqPreamp', db });
+    },
+    setEqUserPresets: (presets: Record<string, EqBand[]>) => {
+      fx.equalizerUserPresets = presets;
+      settings.updatePlayback({ equalizerUserPresets: presets });
+    },
+    setEqMulticolor: (on: boolean) => {
+      fx.equalizerMulticolor = on;
+      settings.updatePlayback({ equalizerMulticolor: on });
+    },
+    setEqSnap: (on: boolean) => {
+      fx.equalizerSnap = on;
+      settings.updatePlayback({ equalizerSnap: on });
+    },
+    applyEqGraph: (bands: EqBand[]) => send({ type: 'applyEqGraph', bands }),
+    setEqMono: (on: boolean) => {
+      fx.equalizerMono = on;
+      send({ type: 'eqMono', on });
+    },
+    setNightMode: (on: boolean) => {
+      fx.nightMode = on;
+      settings.updatePlayback({ nightMode: on });
+      send({ type: 'nightMode', on });
+    },
+    setAudioDelay: (ms: number) => {
+      const clamped = Math.max(0, Math.min(500, Math.round(ms) || 0));
+      fx.audioDelayMs = clamped;
+      settings.updatePlayback({ audioDelayMs: clamped });
+      send({ type: 'audioDelay', ms: clamped });
+    },
+    savePosition: () => {
+      /* pozycję zapisuje Core */
+    },
+    getAudioContext: (): AudioContext | null => null
+  };
+}
 
 // Debounce przebudowy łańcucha EQ (IIR ma stałe współczynniki — zmiana = rozłączenie).
 let eqGraphTimer: ReturnType<typeof setTimeout> | null = null;
@@ -184,6 +293,7 @@ function ensureModule() {
 }
 
 export function useAudioPlayer() {
+  if (isCoreShell()) return useRemoteAudioPlayer();
   ensureModule();
 
   const progress = computed(() => (duration.value > 0 ? currentTime.value / duration.value : 0));

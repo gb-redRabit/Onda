@@ -2,6 +2,7 @@ import { watch } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { logger } from '@shared/logger';
 import type { ScrobbleTrack } from '@shared/types/ipc/channels-scrobbling';
 import { currentTime, duration, isPlaying } from './useAudioPlayer';
@@ -32,6 +33,7 @@ function send(
  * w `App.vue`; cała logika progów żyje w `utils/scrobbler.ts` i jest testowana osobno.
  */
 export function useScrobbling(): void {
+  if (isCoreShell()) return;
   const player = usePlayerStore();
   const settings = useSettingsStore();
 

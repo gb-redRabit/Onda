@@ -12,6 +12,8 @@ export interface AppChannels {
   'app:getAutoLaunch': { args: []; result: { enabled: boolean; hidden: boolean } };
   'app:setAutoLaunch': { args: [opts: { enabled: boolean; hidden?: boolean }]; result: boolean };
   'app:rendererReady': { args: []; result: void };
+  /** True, gdy ten renderer jest shellem podłączonym do ukrytego Core. */
+  'app:isCoreShell': { args: []; result: boolean };
   'app:setCloseToTray': { args: [value: boolean]; result: boolean };
   'app:setBackgroundMaterial': { args: [material: string]; result: boolean };
   'app:getPath': { args: [name: string]; result: string };

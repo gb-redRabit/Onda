@@ -1,6 +1,7 @@
 import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { splitTitle } from '@shared/discord-title';
 import type { MediaFile } from '@shared/types/media';
 import type { DiscordCoverQuery, PresenceState } from '@shared/types/discord';
@@ -8,11 +9,17 @@ import type { DiscordCoverQuery, PresenceState } from '@shared/types/discord';
 const PUSH_INTERVAL_MS = 10_000;
 const MAX_COVER_CACHE = 300;
 
+export interface DiscordPresenceOptions {
+  /** Core nie jest komponentem Vue — pomijamy lifecycle i startujemy od razu. */
+  headless?: boolean;
+}
+
 /**
  * Wysyła stan odtwarzacza do procesu głównego (Discord Rich Presence). Renderer jest
  * źródłem prawdy — main tylko mapuje i wysyła do lokalnego klienta Discorda.
  */
-export function useDiscordPresence(): void {
+export function useDiscordPresence(options: DiscordPresenceOptions = {}): void {
+  if (isCoreShell()) return;
   const settings = useSettingsStore();
   const player = usePlayerStore();
   let interval: ReturnType<typeof setInterval> | null = null;
@@ -151,7 +158,8 @@ export function useDiscordPresence(): void {
     syncInterval();
   }
 
-  onMounted(sync);
+  if (options.headless) sync();
+  else onMounted(sync);
 
   watch(
     () => [player.currentTrack?.path, player.isPlaying],
@@ -168,8 +176,10 @@ export function useDiscordPresence(): void {
     () => push()
   );
 
-  onBeforeUnmount(() => {
-    if (interval) clearInterval(interval);
-    window.api?.updateDiscordPresence(null);
-  });
+  if (!options.headless) {
+    onBeforeUnmount(() => {
+      if (interval) clearInterval(interval);
+      window.api?.updateDiscordPresence(null);
+    });
+  }
 }

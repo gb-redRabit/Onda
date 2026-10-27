@@ -20,6 +20,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'app:setAutoLaunch',
   'app:getPendingFiles',
   'app:rendererReady',
+  'app:isCoreShell',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',
@@ -297,6 +298,7 @@ export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
   'discord:update',
   'core:command',
   'core:state',
+  'core:tick',
   'core:ready',
   'core:error'
 ]);
@@ -352,6 +354,7 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'imageViewer:files',
   'core:command',
   'core:state',
+  'core:tick',
   'core:ready',
   'core:error'
 ]);

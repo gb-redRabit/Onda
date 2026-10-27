@@ -1,6 +1,7 @@
 import type { AppModule } from './ModuleManager';
 import { audioEngine } from './audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 
 export class PlayerModule implements AppModule {
   id = 'player';
@@ -9,6 +10,8 @@ export class PlayerModule implements AppModule {
 
   activate(context?: unknown): void {
     this._active = true;
+    // W trybie shellu audio należy do Core — shell nie może tworzyć drugiego kontekstu.
+    if (isCoreShell()) return;
     audioEngine.resumeContext();
 
     const player = usePlayerStore();
@@ -26,6 +29,7 @@ export class PlayerModule implements AppModule {
 
   async deactivate(): Promise<void> {
     this._active = false;
+    if (isCoreShell()) return;
     const player = usePlayerStore();
     if (player.currentTrack?.type === 'video') {
       await audioEngine.deactivate();
@@ -37,6 +41,7 @@ export class PlayerModule implements AppModule {
 
   async destroy(): Promise<void> {
     this._active = false;
+    if (isCoreShell()) return;
     await audioEngine.destroy();
   }
 

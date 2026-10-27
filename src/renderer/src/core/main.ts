@@ -2,16 +2,18 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { useScrobbling } from '@renderer/composables/useScrobbling';
+import { useDiscordPresence } from '@renderer/composables/useDiscordPresence';
 import { ensureMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { toPlainTrack } from '@shared/core-state';
-import type { CoreCommand, CoreStateDto } from '@shared/types/ipc/channels-core';
+import type { CoreCommand, CoreStateDto, CoreTickDto } from '@shared/types/ipc/channels-core';
 import type { MediaFile } from '@shared/types/media';
 
-// Spike Fazy 1: ukryty renderer bez UI. Ma tylko jedno zadanie — być jedynym
-// właścicielem audio. Shell dostaje stan przez `core:state`, a komendy przez
-// `core:command`. Docelowo (Faza 2) dojdą tu kolejka, historia, EQ i sesja.
+// Faza 2 (#23): ukryty Core jest właścicielem audio, kolejki, historii,
+// scrobbling i Discorda. Shell dostaje pełny snapshot tylko przy zmianie
+// struktury i mały tick pozycji 4×/s.
 
-const STATE_INTERVAL_MS = 250;
+const TICK_INTERVAL_MS = 250;
 
 const pinia = createPinia();
 setActivePinia(pinia);
@@ -28,12 +30,14 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function plainTracks(tracks: readonly MediaFile[]): MediaFile[] {
+  return tracks.map((track) => toPlainTrack(track)).filter((track): track is MediaFile => !!track);
+}
+
 async function boot(): Promise<void> {
   const api = window.api;
   if (!api) throw new Error('preload API unavailable in Core');
 
-  // Bez tego `toMediaServerUrl` buduje `/?path=...` (bez tokenu), a <audio> cicho
-  // nie ładuje pliku. Główne okno robi to w bootstrapie przed montowaniem.
   await ensureMediaServerUrl();
 
   const settings = useSettingsStore();
@@ -42,40 +46,93 @@ async function boot(): Promise<void> {
   player.setVolume(settings.playback.defaultVolume);
   const audio = useAudioPlayer();
 
+  // Scrobbling i Discord muszą działać także wtedy, gdy żaden shell nie jest otwarty.
+  useScrobbling();
+  useDiscordPresence({ headless: true });
+
   let revision = 0;
   let lastError: string | null = null;
+  let lastStructuralKey = '';
 
-  function sendState(): void {
-    const state: CoreStateDto = {
+  function tick(): CoreTickDto {
+    return {
       revision: ++revision,
-      current: toPlainTrack(player.currentTrack),
-      isPlaying: player.isPlaying,
-      enginePlaying: audio.isPlaying.value,
       currentTime: audio.currentTime.value,
       duration: audio.duration.value,
-      volume: player.volume,
-      isMuted: player.isMuted,
+      buffered: audio.buffered.value,
+      isPlaying: player.isPlaying,
+      enginePlaying: audio.isPlaying.value,
       isLoading: audio.isLoading.value,
       error: lastError ?? audio.error.value
     };
+  }
+
+  function structuralKey(): string {
+    return [
+      player.currentTrack?.path ?? '',
+      player.queue.map((track) => track.path).join('|'),
+      player.pendingQueue.map((track) => track.path).join('|'),
+      player.history.map((track) => track.path).join('|'),
+      player.volume,
+      player.isMuted,
+      player.shuffle,
+      player.repeat,
+      player.pipActive,
+      player.pipTime
+    ].join('::');
+  }
+
+  function sendFull(): void {
+    const state: CoreStateDto = {
+      ...tick(),
+      current: toPlainTrack(player.currentTrack),
+      queue: plainTracks(player.queue),
+      pendingQueue: plainTracks(player.pendingQueue),
+      history: plainTracks(player.history),
+      volume: player.volume,
+      isMuted: player.isMuted,
+      shuffle: player.shuffle,
+      repeat: player.repeat,
+      pipActive: player.pipActive,
+      pipTime: player.pipTime
+    };
     api.send('core:state', state);
+  }
+
+  function sendTick(): void {
+    api.send('core:tick', tick());
+  }
+
+  function pushState(): void {
+    const key = structuralKey();
+    if (key !== lastStructuralKey) {
+      lastStructuralKey = key;
+      sendFull();
+    } else {
+      sendTick();
+    }
   }
 
   function handleCommand(raw: unknown): void {
     if (!raw || typeof raw !== 'object') return;
     const command = raw as CoreCommand;
-    console.info('core-spike', `command received: ${command.type}`);
     switch (command.type) {
       case 'load': {
         if (!command.track || typeof command.track.path !== 'string') return;
         const track = command.track as MediaFile;
         if (track.type === 'video' || track.type === 'image') {
-          throw new Error(`Core spike supports audio only (got ${track.type})`);
+          throw new Error(`Core supports audio only (got ${track.type})`);
         }
-        player.setTrack(track);
+        if (command.queue) player.queue = command.queue;
+        if (command.pendingQueue) player.pendingQueue = command.pendingQueue;
+        player.setTrack(track, { resume: command.resume === true });
         if (command.autoplay !== false) player.play();
         break;
       }
+      case 'setQueue':
+        player.queue = command.queue;
+        player.pendingQueue = command.pendingQueue ?? [];
+        break;
       case 'play':
         player.play();
         break;
@@ -96,22 +153,63 @@ async function boot(): Promise<void> {
         audio.setVolume(value);
         break;
       }
+      case 'toggleMute':
+        player.toggleMute();
+        break;
+      case 'toggleShuffle':
+        player.toggleShuffle();
+        break;
+      case 'cycleRepeat':
+        player.cycleRepeat();
+        break;
       case 'next':
         player.nextTrack();
         break;
       case 'prev':
         player.prevTrack();
         break;
+      case 'playFromHistory':
+        player.playFromHistory(Number(command.index) || 0);
+        break;
+      case 'clear':
+        player.clearTrack();
+        break;
+      case 'setPip':
+        player.pipActive = command.active === true;
+        player.pipTime = Number(command.time) || player.currentTime;
+        break;
+      case 'eqBands':
+        audio.applyEqBands(command.bands);
+        break;
+      case 'eqEnabled':
+        audio.setEqEnabled(command.enabled === true);
+        break;
+      case 'eqPreamp':
+        audio.setEqPreamp(Number(command.db) || 0);
+        break;
+      case 'eqMono':
+        audio.setEqMono(command.on === true);
+        break;
+      case 'nightMode':
+        audio.setNightMode(command.on === true);
+        break;
+      case 'audioDelay':
+        audio.setAudioDelay(Number(command.ms) || 0);
+        break;
+      case 'applyEqGraph':
+        audio.applyEqGraph(command.bands);
+        break;
       default:
         break;
     }
+    // Natychmiast po komendzie wyślij stan — nie czekaj do ticku.
+    lastStructuralKey = structuralKey();
+    sendFull();
   }
 
-  setInterval(() => {
-    if (revision % 8 === 0) console.info('core-spike', `tick rev=${revision}`);
-    sendState();
-  }, STATE_INTERVAL_MS);
-  sendState();
+  setInterval(pushState, TICK_INTERVAL_MS);
+  lastStructuralKey = structuralKey();
+  sendFull();
 
   api.on('core:command', (raw) => {
     try {
@@ -120,7 +218,7 @@ async function boot(): Promise<void> {
     } catch (error) {
       lastError = errorMessage(error);
       api.send('core:error', lastError);
-      sendState();
+      sendTick();
     }
   });
 

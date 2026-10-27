@@ -1,9 +1,12 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { audioEvents } from '@renderer/utils/audioEvents';
-import { audioEngine } from '@renderer/modules/audioEngine';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
-import { duration, isPlaying as mediaPlaying } from '@renderer/composables/useAudioPlayer';
+import {
+  duration,
+  isPlaying as mediaPlaying,
+  useAudioPlayer
+} from '@renderer/composables/useAudioPlayer';
 import { buildAudioPipState, resolveAudioPipLayoutOpts, type AudioPipDock } from './audioPipState';
 import { createAudioPipRuntime } from './audioPipRuntime';
 import { dispatchAudioPipAction } from './audioPipActions';
@@ -68,7 +71,7 @@ function handleAction(action: string): void {
 }
 
 function handleProgressClick(percent: number): void {
-  audioEngine.seek(percent * duration.value);
+  useAudioPlayer().seek(percent * duration.value);
 }
 
 let registered = false;

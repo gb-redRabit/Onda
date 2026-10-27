@@ -1,4 +1,4 @@
-import type { CoreCommand, CoreStateDto } from '@shared/types/ipc/channels-core';
+import type { CoreCommand, CoreStateDto, CoreTickDto } from '@shared/types/ipc/channels-core';
 import type { MediaFile } from '@shared/types/media';
 
 // Testowy shell spike'u. Nie jest częścią docelowego compactu — służy tylko do
@@ -152,6 +152,10 @@ byId<HTMLButtonElement>('open-file').addEventListener('click', () => void openFi
 
 window.api.on('core:state', (raw) => {
   render(raw as CoreStateDto);
+});
+window.api.on('core:tick', (raw) => {
+  if (!current) return;
+  render({ ...current, ...(raw as CoreTickDto) });
 });
 window.api.on('core:ready', () => {
   setCoreStatus('Core gotowy', 'ok');

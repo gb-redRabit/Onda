@@ -13,6 +13,8 @@ import {
 import { useVideoPlayer } from '@renderer/composables/useVideoPlayer';
 import { useResumePrompt } from '@renderer/composables/useResumePrompt';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 
 interface PlayerControlsCtx {
   player: ReturnType<typeof usePlayerStore>;
@@ -151,15 +153,16 @@ export function usePlayerControls(ctx: PlayerControlsCtx) {
           /* best-effort */
         });
       } else {
-        audioEngine.seek(prompt.position);
+        const audio = useAudioPlayer();
+        audio.seek(prompt.position);
         player.currentTime = prompt.position;
-        audioEngine.play();
+        audio.play();
       }
       window.api?.setPlaybackPosition(prompt.path, prompt.position);
     },
     onStart: (prompt) => {
       window.api?.clearPlaybackPosition(prompt.path);
-      audioEngine.clearSavedPosition(prompt.path);
+      if (!isCoreShell()) audioEngine.clearSavedPosition(prompt.path);
     }
   });
 

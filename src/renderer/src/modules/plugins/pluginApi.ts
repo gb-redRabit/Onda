@@ -6,7 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useUIStore } from '@renderer/stores/ui';
-import { audioEngine } from '@renderer/modules/audioEngine';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import {
   LAYOUT_ELEMENT_IDS,
   PLUGIN_HOST_VARIANTS,
@@ -73,7 +73,7 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
    * bo to ta sama powierzchnia co dekorowanie elementu `visualization`.
    */
   function playerSpectrum(bins: number): unknown {
-    const analyser = audioEngine.getAnalyserNode();
+    const analyser = useAudioPlayer().getAnalyserNode();
     const count = Math.max(4, Math.min(64, Math.floor(bins) || 32));
     if (!analyser) return { bins: new Array<number>(count).fill(0), available: false };
     const spectrum = new Uint8Array(analyser.frequencyBinCount);

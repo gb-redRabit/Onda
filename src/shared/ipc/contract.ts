@@ -35,6 +35,7 @@ export const INVOKE_CHANNELS = [
   'app:setAutoLaunch',
   'app:getPendingFiles',
   'app:rendererReady',
+  'app:isCoreShell',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',
@@ -316,6 +317,7 @@ export const SEND_CHANNELS = [
   'discord:update',
   'core:command',
   'core:state',
+  'core:tick',
   'core:ready',
   'core:error'
 ] as const;
@@ -371,6 +373,7 @@ export const RECEIVE_CHANNELS = [
   'imageViewer:files',
   'core:command',
   'core:state',
+  'core:tick',
   'core:ready',
   'core:error'
 ] as const;

@@ -17,6 +17,7 @@ import {
 import { resetGradients } from '@renderer/utils/visualizerGradients';
 import { getFreqData, smoothData } from '@renderer/utils/visualizerBuffers';
 import { useVizConfig } from '@renderer/composables/useVizConfig';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 
 const audio = useAudioPlayer();
 const settings = useSettingsStore();
@@ -52,6 +53,11 @@ function draw(timestamp: number) {
   analyserNode = audio.getAnalyserNode();
   if (!canvasRef.value) return;
   if (!analyserNode) {
+    // W trybie Core shell nie ma lokalnego grafu audio — nie kręć pętlą na pusto.
+    if (isCoreShell()) {
+      animFrame = null;
+      return;
+    }
     animFrame = requestAnimationFrame(draw);
     return;
   }

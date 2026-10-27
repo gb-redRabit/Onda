@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 import { useHomeContextMenu } from '@renderer/composables/useHomeContextMenu';
 import { orderedHomeSections } from '@renderer/utils/homeSections';
@@ -193,7 +194,7 @@ export function useHomeView() {
       if (player.currentTrack?.path === track.path) {
         if (continuePosition.value > 5) {
           player.seek(continuePosition.value);
-          audioEngine.seek(continuePosition.value);
+          if (!isCoreShell()) audioEngine.seek(continuePosition.value);
         }
       } else {
         player.setTrack(track, { resume: true });
@@ -207,12 +208,12 @@ export function useHomeView() {
     const track = continueTrack.value;
     if (!track) return;
     void window.api?.clearPlaybackPosition(track.path);
-    if (track.type === 'audio') audioEngine.clearSavedPosition(track.path);
+    if (track.type === 'audio' && !isCoreShell()) audioEngine.clearSavedPosition(track.path);
     continuePosition.value = 0;
     player.seek(0);
     if (player.currentTrack?.path !== track.path) {
       player.setTrack(track);
-    } else {
+    } else if (!isCoreShell()) {
       audioEngine.seek(0);
     }
     player.play();

@@ -9,6 +9,7 @@ import { useSettingsStore } from './stores/settings';
 import { usePluginsStore } from './stores/plugins';
 import { usePluginsHooks } from './composables/usePluginsHooks';
 import { ensureMediaServerUrl } from './utils/mediaUrl';
+import { setCoreShellMode } from './utils/runtimeMode';
 import { vActivate } from './utils/activateDirective';
 import { logger } from '@shared/logger';
 
@@ -95,6 +96,13 @@ function prefetchLikelyRoutes(): void {
 let mounted = false;
 
 async function bootstrap(): Promise<void> {
+  // Tryb shellu musi być znany przed utworzeniem store'ów: decyduje, czy player
+  // jest właścicielem audio, czy tylko odbiciem ukrytego Core.
+  try {
+    setCoreShellMode(!!(await window.api.invoke('app:isCoreShell')));
+  } catch {
+    setCoreShellMode(false);
+  }
   // Inicjalizacja locale + modułów biegnie równolegle z rundą IPC ustawień (store
   // też odczytuje je z App.vue tylko jeśli jeszcze nie jest wczytany), więc
   // żadne z nich nie jest na ścieżce krytycznej pierwszego malowania.

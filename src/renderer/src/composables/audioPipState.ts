@@ -1,5 +1,4 @@
-import { currentTime, duration } from '@renderer/composables/useAudioPlayer';
-import { audioEngine } from '@renderer/modules/audioEngine';
+import { currentTime, duration, useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioFxStore } from '@renderer/stores/audioFx';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -28,7 +27,7 @@ export function resolveAudioPipLayoutOpts(): AudioPipLayoutOpts {
 }
 
 export function getFrequencyBins(): number[] {
-  return collectBins(audioEngine.getAnalyserNode(), 48);
+  return collectBins(useAudioPlayer().getAnalyserNode(), 48);
 }
 
 export function createEmptyAudioPipState(): AudioPipState {

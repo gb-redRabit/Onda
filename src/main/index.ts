@@ -26,7 +26,7 @@ import { createWindow as createBrowserWindow } from './windows/window-factory';
 import { GLASS_WINDOW_OPTS } from './windows/window-presets';
 import { destroyTray, hasTray, setupTray } from './windows/tray';
 import { SplashController } from './windows/splash';
-import { startCoreSpike } from './core/core-spike';
+import { startCoreService } from './core/core-spike';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
@@ -187,6 +187,8 @@ app.whenReady().then(async () => {
 
   splash.send(mainMessages().bootStartingUi, 50);
 
+  ipcMain.handle('app:isCoreShell', () => process.env.ONDA_CORE_SHELL === '1');
+
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
     splash.onRendererReady();
@@ -216,17 +218,30 @@ app.whenReady().then(async () => {
   registerOndaProtocolHandler();
 
   splash.send(mainMessages().bootCreatingWindow, 60);
+  if (process.env.ONDA_CORE_SHELL === '1' || process.env.ONDA_CORE_SPIKE === '1') {
+    // Core startuje przed shellem, żeby pierwsze komendy (np. przywrócenie sesji)
+    // nie przepadły. Stan jest cache'owany do momentu, gdy shell się podłączy.
+    startCoreService({
+      testShell: process.env.ONDA_CORE_SPIKE === '1',
+      getMainWindow: () => mainWindow
+    });
+  }
   mainWindow = createWindow();
   perf('window created');
   mainWindow.webContents.on('did-finish-load', () => {
     perf('did-finish-load');
     splash.onMainReady();
-    // Spike #23: uruchamiany tylko jawnie, po wczytaniu normalnego UI.
-    if (process.env.ONDA_CORE_SPIKE === '1') startCoreSpike();
   });
   // Renderer zaczyna się ładować/przeładowywać — wróć do buforowania plików z OS,
   // żeby zdarzenie nie trafiło do starego (lub jeszcze niezamontowanego) kontekstu.
   mainWindow.webContents.on('did-start-loading', () => openFiles.resetListening());
+  if (process.env.ONDA_CORE_SHELL === '1') {
+    mainWindow.webContents.on('console-message', (_event, level, message) => {
+      if (message.includes('[core-shell]')) {
+        logger.info('core-shell', `shell console [${level}]: ${message}`);
+      }
+    });
+  }
 
   splash.send(mainMessages().bootPipTray, 75);
   initAutoUpdater(() => mainWindow?.webContents ?? null);

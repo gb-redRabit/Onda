@@ -20,6 +20,7 @@ export type IpcInvokeChannel =
   | 'app:setAutoLaunch'
   | 'app:getPendingFiles'
   | 'app:rendererReady'
+  | 'app:isCoreShell'
   | 'app:setBackgroundMaterial'
   | 'app:setCloseToTray'
   | 'app:getInfo'
@@ -296,6 +297,7 @@ export type IpcSendChannel =
   | 'discord:update'
   | 'core:command'
   | 'core:state'
+  | 'core:tick'
   | 'core:ready'
   | 'core:error';
 
@@ -350,5 +352,6 @@ export type IpcReceiveChannel =
   | 'imageViewer:files'
   | 'core:command'
   | 'core:state'
+  | 'core:tick'
   | 'core:ready'
   | 'core:error';

@@ -1,6 +1,7 @@
 import { watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 
 // Podstawowa integracja Media Session: udostępnia metadane i kontrolki
 // play/pause/seek systemowi (ekran blokady, klawisze mediów, kontrolki Bluetooth).
@@ -66,8 +67,10 @@ export function useMediaSession(): void {
       // `player.seek` aktualizuje tylko wartość store — rzeczywisty element trzeba
       // przewinąć jawnie (audio i wideo), jak w pozostałych ścieżkach seek.
       player.seek(t);
-      const media = audioEngine.getMediaElement();
-      if (media) media.currentTime = t;
+      if (!isCoreShell()) {
+        const media = audioEngine.getMediaElement();
+        if (media) media.currentTime = t;
+      }
       const video = document.querySelector('video');
       if (video) video.currentTime = t;
     });

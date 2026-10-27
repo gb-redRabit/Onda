@@ -5,6 +5,8 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 import ResumePrompt from '@renderer/components/player/ResumePrompt.vue';
 import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.vue';
 import PluginUiSlot from '@renderer/components/explorer/plugins/PluginUiSlot.vue';
@@ -71,14 +73,14 @@ const {
   onStart: onResumeStart
 } = useResumePrompt({
   onContinue: (prompt) => {
-    audioEngine.seek(prompt.position);
+    useAudioPlayer().seek(prompt.position);
     player.currentTime = prompt.position;
-    audioEngine.play();
+    useAudioPlayer().play();
     window.api?.setPlaybackPosition(prompt.path, prompt.position);
   },
   onStart: (prompt) => {
     window.api?.clearPlaybackPosition(prompt.path);
-    audioEngine.clearSavedPosition(prompt.path);
+    if (!isCoreShell()) audioEngine.clearSavedPosition(prompt.path);
   }
 });
 

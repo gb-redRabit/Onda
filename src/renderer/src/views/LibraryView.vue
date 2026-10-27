@@ -13,6 +13,7 @@ import LibraryHeader from '@renderer/components/library/LibraryHeader.vue';
 import LibraryTabBar from '@renderer/components/library/LibraryTabBar.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import { audioEngine } from '@renderer/modules/audioEngine';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { useLibraryFilters } from '@renderer/composables/useLibraryFilters';
 import { useLibraryTagEditor } from '@renderer/composables/useLibraryTagEditor';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
@@ -245,7 +246,7 @@ function openImageViewer(index: number) {
 
 function playTracks(tracks: typeof library.tracks) {
   if (tracks.length === 0) return;
-  if (tracks[0].type === 'video') audioEngine.resume();
+  if (!isCoreShell() && tracks[0].type === 'video') audioEngine.resume();
   player.clearQueue();
   if (tracks.length > 1) player.addToQueueMultiple(tracks.slice(1));
   player.setTrack(tracks[0]);

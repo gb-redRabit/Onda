@@ -18,6 +18,8 @@ import { useLibraryStore } from './stores/library';
 import { matchesShortcut, matchesPluginShortcut, navShortcutBindings } from './utils/shortcuts';
 import { registerAppIpc } from './composables/useAppIpcEvents';
 import { useDiscordPresence } from './composables/useDiscordPresence';
+import { useCoreSync } from './composables/useCoreSync';
+import { isCoreShell } from './utils/runtimeMode';
 import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
@@ -65,6 +67,7 @@ const audioPip = useAudioPiP();
 useNewVideoNotifications();
 useUpdater();
 useMediaSession();
+if (isCoreShell()) useCoreSync();
 useScrobbling();
 useToolMessages();
 useDiscordPresence();
@@ -255,10 +258,12 @@ onMounted(async () => {
 
   // Utwórz AudioContext z wyprzedzeniem w czasie bezczynności, żeby pierwszego kliknięcia play nie
   // blokował jednorazowy koszt tworzenia kontekstu.
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(() => audioEngine.warmUp(), { timeout: 2000 });
-  } else {
-    setTimeout(() => audioEngine.warmUp(), 1000);
+  if (!isCoreShell()) {
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => audioEngine.warmUp(), { timeout: 2000 });
+    } else {
+      setTimeout(() => audioEngine.warmUp(), 1000);
+    }
   }
 
   // Przywróć ostatnio odtwarzany utwór + kolejkę (opcjonalnie przez ustawienia).
