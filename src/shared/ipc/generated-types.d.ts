@@ -82,6 +82,7 @@ export type IpcInvokeChannel =
   | 'tools:imageEstimate'
   | 'tools:batchImagesStart'
   | 'tools:batchImagesCancel'
+  | 'tools:exportHistory'
   | 'subtitles:listEmbedded'
   | 'subtitles:extractEmbedded'
   | 'subtitles:findExternal'

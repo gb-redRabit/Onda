@@ -1,6 +1,8 @@
 import type {
   BatchImageRequest,
   BatchImageResult,
+  HistoryExportRequest,
+  HistoryExportResult,
   ImageStudioEstimateRequest,
   ImageStudioEstimateResult,
   ImageStudioLoadResult,
@@ -50,4 +52,5 @@ export interface ToolsChannels {
   };
   'tools:batchImagesStart': { args: [request: BatchImageRequest]; result: BatchImageResult };
   'tools:batchImagesCancel': { args: [jobId: string]; result: boolean };
+  'tools:exportHistory': { args: [request: HistoryExportRequest]; result: HistoryExportResult };
 }

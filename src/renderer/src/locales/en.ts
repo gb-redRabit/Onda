@@ -534,7 +534,27 @@ export default {
     batchImagesResizeHint: '0 keeps the original dimension. Images are never enlarged.',
     batchImagesEmpty: 'No images added',
     batchImagesDropHint: 'Drop images here or use “Add files”.',
-    batchImagesSummary: 'done {done}, failed {failed}'
+    batchImagesSummary: 'done {done}, failed {failed}',
+    historyExportTitle: 'History Export',
+    historyExportDescription: 'Export play counts and last-played dates to CSV or JSON.',
+    historyExportHint:
+      'Exports library play statistics (play count, last played) — not a per-event log.',
+    historyExportFormat: 'Format',
+    historyExportType: 'Media type',
+    historyExportTypeAll: 'All',
+    historyExportTypeAudio: 'Audio',
+    historyExportTypeVideo: 'Video',
+    historyExportSort: 'Sort by',
+    historyExportSortLastPlayed: 'Last played',
+    historyExportSortPlayCount: 'Play count',
+    historyExportSortTitle: 'Title',
+    historyExportOnlyPlayed: 'Only played tracks',
+    historyExportOutput: 'Output file',
+    historyExportOutputHint: 'Leave empty to ask where to save.',
+    historyExportRun: 'Export history',
+    historyExportRunning: 'Exporting…',
+    historyExportResult: 'Exported {rows} rows ({size})',
+    historyExportError: 'Could not export the history.'
   },
   sources: {
     title: 'Sources',

@@ -538,7 +538,27 @@ export default {
     batchImagesResizeHint: '0 = zachowaj oryginalny wymiar. Obrazy nie są powiększane.',
     batchImagesEmpty: 'Brak dodanych obrazów',
     batchImagesDropHint: 'Przeciągnij obrazy tutaj lub użyj „Dodaj pliki”.',
-    batchImagesSummary: 'gotowe {done}, błędy {failed}'
+    batchImagesSummary: 'gotowe {done}, błędy {failed}',
+    historyExportTitle: 'Eksport historii',
+    historyExportDescription: 'Eksport liczby odtworzeń i dat ostatniego odtworzenia do CSV/JSON.',
+    historyExportHint:
+      'Eksportuje statystyki odtwarzania z biblioteki (liczba odtworzeń, ostatnie odtworzenie) — to nie jest log zdarzeń.',
+    historyExportFormat: 'Format',
+    historyExportType: 'Typ mediów',
+    historyExportTypeAll: 'Wszystkie',
+    historyExportTypeAudio: 'Audio',
+    historyExportTypeVideo: 'Wideo',
+    historyExportSort: 'Sortuj według',
+    historyExportSortLastPlayed: 'Ostatnie odtworzenie',
+    historyExportSortPlayCount: 'Liczba odtworzeń',
+    historyExportSortTitle: 'Tytuł',
+    historyExportOnlyPlayed: 'Tylko odtworzone utwory',
+    historyExportOutput: 'Plik wyjściowy',
+    historyExportOutputHint: 'Puste = zapytaj, gdzie zapisać.',
+    historyExportRun: 'Eksportuj historię',
+    historyExportRunning: 'Eksportowanie…',
+    historyExportResult: 'Wyeksportowano {rows} wierszy ({size})',
+    historyExportError: 'Nie udało się wyeksportować historii.'
   },
   sources: {
     title: 'Źródła',

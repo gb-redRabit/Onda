@@ -8,6 +8,7 @@ import type {
 } from '../../shared/types/tools';
 import { cancelMediaConvert, convertMedia } from './media-convert';
 import { batchConvertImages, cancelBatchImages } from './batch-images';
+import { exportHistory } from './history-export';
 import { estimateEditedImage, readImageForEditing, saveEditedImage } from './image-studio';
 import { readAudioTags, writeAudioTags } from './tag-editor';
 import {
@@ -77,5 +78,8 @@ export function registerToolsHandlers(context: ToolsHandlerContext): void {
   );
   ipcMain.handle('tools:batchImagesCancel', async (_event, jobId: string) =>
     cancelBatchImages(jobId)
+  );
+  ipcMain.handle('tools:exportHistory', async (event, request: unknown) =>
+    exportHistory(event, request)
   );
 }

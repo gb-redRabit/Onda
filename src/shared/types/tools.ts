@@ -46,6 +46,14 @@ export const TOOL_DEFINITIONS = {
     height: 760,
     minWidth: 760,
     minHeight: 560
+  },
+  'history-export': {
+    route: '/tools/history-export',
+    title: 'History Export',
+    width: 760,
+    height: 640,
+    minWidth: 620,
+    minHeight: 520
   }
 } as const;
 
@@ -277,5 +285,28 @@ export interface BatchImageResult {
   success: boolean;
   canceled?: boolean;
   results: BatchImageFileResult[];
+  error?: string;
+}
+
+export type HistoryExportFormat = 'csv' | 'json';
+export type HistoryExportMediaType = 'all' | 'audio' | 'video';
+export type HistoryExportSort = 'lastPlayed' | 'playCount' | 'title';
+
+export interface HistoryExportRequest {
+  format: HistoryExportFormat;
+  /** Domyślnie true: tylko utwory z playCount > 0. */
+  onlyPlayed?: boolean;
+  type?: HistoryExportMediaType;
+  sort?: HistoryExportSort;
+  /** Testy/power-user: pomiń natywny dialog „zapisz jako”. */
+  outputPath?: string;
+}
+
+export interface HistoryExportResult {
+  success: boolean;
+  canceled?: boolean;
+  path?: string;
+  rows?: number;
+  bytes?: number;
   error?: string;
 }

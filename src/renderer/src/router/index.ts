@@ -120,6 +120,12 @@ const router = createRouter({
       meta: { title: 'Batch Images' }
     },
     {
+      path: '/tools/history-export',
+      name: 'tool-history-export',
+      component: () => import('@renderer/views/tools/HistoryExportToolView.vue'),
+      meta: { title: 'History Export' }
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@renderer/views/SettingsView.vue'),

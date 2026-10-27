@@ -32,6 +32,8 @@ import type { SmartPlaylist } from '../shared/types/smart-playlist';
 import type {
   BatchImageRequest,
   BatchImageResult,
+  HistoryExportRequest,
+  HistoryExportResult,
   ImageStudioEstimateRequest,
   ImageStudioEstimateResult,
   ImageStudioLoadResult,
@@ -314,6 +316,8 @@ const api: OndaAPI = {
     tryInvoke('tools:batchImagesStart', request),
   cancelBatchImages: (jobId: string): Promise<boolean> =>
     tryInvoke('tools:batchImagesCancel', jobId),
+  exportHistory: (request: HistoryExportRequest): Promise<HistoryExportResult> =>
+    tryInvoke('tools:exportHistory', request),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),
   openSubtitlesDownload: (

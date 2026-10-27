@@ -82,6 +82,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'tools:imageEstimate',
   'tools:batchImagesStart',
   'tools:batchImagesCancel',
+  'tools:exportHistory',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',

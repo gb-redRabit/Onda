@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   ExternalLink,
+  History,
   Image as ImageIcon,
   Layers,
   Plus,
@@ -54,6 +55,12 @@ const cards = computed(() => [
     icon: ImageIcon,
     title: t('tools.batchImagesTitle'),
     description: t('tools.batchImagesDescription')
+  },
+  {
+    id: 'history-export' as ToolId,
+    icon: History,
+    title: t('tools.historyExportTitle'),
+    description: t('tools.historyExportDescription')
   }
 ]);
 
