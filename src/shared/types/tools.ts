@@ -38,6 +38,14 @@ export const TOOL_DEFINITIONS = {
     height: 840,
     minWidth: 960,
     minHeight: 640
+  },
+  'batch-images': {
+    route: '/tools/batch-images',
+    title: 'Batch Images',
+    width: 1000,
+    height: 760,
+    minWidth: 760,
+    minHeight: 560
   }
 } as const;
 
@@ -228,5 +236,46 @@ export interface ImageStudioEstimateRequest {
 export interface ImageStudioEstimateResult {
   success: boolean;
   bytes?: number;
+  error?: string;
+}
+
+/** Maksymalna liczba obrazów w jednej operacji wsadowej. */
+export const BATCH_IMAGES_MAX_FILES = 500;
+
+export interface BatchImageRequest {
+  jobId: string;
+  inputPaths: string[];
+  /** Brak = folder pliku źródłowego. */
+  outputDir?: string;
+  format: ImageOutputFormat;
+  quality?: number;
+  /** 0/brak = bez zmiany rozmiaru. */
+  maxWidth?: number;
+  maxHeight?: number;
+}
+
+export interface BatchImageProgress {
+  jobId: string;
+  index: number;
+  total: number;
+  path: string;
+  status: 'processing' | 'done' | 'error';
+  outputPath?: string;
+  bytes?: number;
+  error?: string;
+}
+
+export interface BatchImageFileResult {
+  path: string;
+  success: boolean;
+  outputPath?: string;
+  bytes?: number;
+  error?: string;
+}
+
+export interface BatchImageResult {
+  success: boolean;
+  canceled?: boolean;
+  results: BatchImageFileResult[];
   error?: string;
 }

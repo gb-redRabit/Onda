@@ -103,6 +103,8 @@ export interface OndaAPI {
   imageRead: BoundIpcMethod<'tools:imageRead'>;
   imageSave: BoundIpcMethod<'tools:imageSave'>;
   imageEstimate: BoundIpcMethod<'tools:imageEstimate'>;
+  batchConvertImages: BoundIpcMethod<'tools:batchImagesStart'>;
+  cancelBatchImages: BoundIpcMethod<'tools:batchImagesCancel'>;
   loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
   saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;
   openSubtitlesSearch: BoundIpcMethod<'opensubtitles:search'>;

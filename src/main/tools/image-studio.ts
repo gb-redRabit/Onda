@@ -21,7 +21,7 @@ const MAX_WORKING_DIMENSION = 4096;
 const MAX_PNG_BYTES = 200 * 1024 * 1024;
 const MAX_OUTPUT_DIMENSION = 4096;
 
-const IMAGE_EXTENSIONS = new Set([
+export const IMAGE_EXTENSIONS = new Set([
   '.png',
   '.jpg',
   '.jpeg',
@@ -54,8 +54,26 @@ function pngBufferFrom(value: unknown): Buffer {
   return Buffer.from(value as number[]);
 }
 
-function encodePipeline(buffer: Buffer, format: ImageOutputFormat, quality: number) {
-  const pipeline = sharp(buffer);
+/**
+ * Koduje obraz do wybranego formatu. `maxWidth`/`maxHeight` opcjonalnie zmniejszają
+ * obraz (fit: inside, bez powiększania), a `.rotate()` zawsze normalizuje orientację EXIF.
+ */
+export function encodeImageBuffer(
+  buffer: Buffer,
+  format: ImageOutputFormat,
+  quality: number,
+  maxWidth?: number,
+  maxHeight?: number
+) {
+  let pipeline = sharp(buffer).rotate();
+  if (maxWidth || maxHeight) {
+    pipeline = pipeline.resize({
+      width: maxWidth || undefined,
+      height: maxHeight || undefined,
+      fit: 'inside',
+      withoutEnlargement: true
+    });
+  }
   switch (format) {
     case 'jpeg':
       // JPEG nie ma kanału alfa — bez spłaszczenia tło wyszłoby czarne.
@@ -122,7 +140,7 @@ export async function saveEditedImage(request: unknown): Promise<ImageStudioSave
   }
   let output: Buffer;
   try {
-    output = await encodePipeline(buffer, req.format, clampQuality(req.quality)).toBuffer();
+    output = await encodeImageBuffer(buffer, req.format, clampQuality(req.quality)).toBuffer();
   } catch (error) {
     return { success: false, error: `Image encoding failed: ${errMsg(error)}` };
   }
@@ -156,7 +174,11 @@ export async function estimateEditedImage(request: unknown): Promise<ImageStudio
     return { success: false, error: errMsg(error) };
   }
   try {
-    const output = await encodePipeline(buffer, req.format, clampQuality(req.quality)).toBuffer();
+    const output = await encodeImageBuffer(
+      buffer,
+      req.format,
+      clampQuality(req.quality)
+    ).toBuffer();
     return { success: true, bytes: output.length };
   } catch (error) {
     return { success: false, error: `Image encoding failed: ${errMsg(error)}` };

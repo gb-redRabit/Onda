@@ -30,6 +30,8 @@ import type { PipSubtitleData } from '../shared/types/pip';
 import type { LyricsResult } from '../shared/types/lyrics';
 import type { SmartPlaylist } from '../shared/types/smart-playlist';
 import type {
+  BatchImageRequest,
+  BatchImageResult,
   ImageStudioEstimateRequest,
   ImageStudioEstimateResult,
   ImageStudioLoadResult,
@@ -308,6 +310,10 @@ const api: OndaAPI = {
     tryInvoke('tools:imageSave', request),
   imageEstimate: (request: ImageStudioEstimateRequest): Promise<ImageStudioEstimateResult> =>
     tryInvoke('tools:imageEstimate', request),
+  batchConvertImages: (request: BatchImageRequest): Promise<BatchImageResult> =>
+    tryInvoke('tools:batchImagesStart', request),
+  cancelBatchImages: (jobId: string): Promise<boolean> =>
+    tryInvoke('tools:batchImagesCancel', jobId),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),
   openSubtitlesDownload: (

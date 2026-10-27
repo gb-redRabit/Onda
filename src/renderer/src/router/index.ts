@@ -114,6 +114,12 @@ const router = createRouter({
       meta: { title: 'Image Studio' }
     },
     {
+      path: '/tools/batch-images',
+      name: 'tool-batch-images',
+      component: () => import('@renderer/views/tools/BatchImagesToolView.vue'),
+      meta: { title: 'Batch Images' }
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('@renderer/views/SettingsView.vue'),

@@ -7,6 +7,7 @@ import type {
   VideoConcatRequest
 } from '../../shared/types/tools';
 import { cancelMediaConvert, convertMedia } from './media-convert';
+import { batchConvertImages, cancelBatchImages } from './batch-images';
 import { estimateEditedImage, readImageForEditing, saveEditedImage } from './image-studio';
 import { readAudioTags, writeAudioTags } from './tag-editor';
 import {
@@ -70,5 +71,11 @@ export function registerToolsHandlers(context: ToolsHandlerContext): void {
   ipcMain.handle('tools:imageSave', async (_event, request: unknown) => saveEditedImage(request));
   ipcMain.handle('tools:imageEstimate', async (_event, request: unknown) =>
     estimateEditedImage(request)
+  );
+  ipcMain.handle('tools:batchImagesStart', async (event, request: unknown) =>
+    batchConvertImages(event.sender, request)
+  );
+  ipcMain.handle('tools:batchImagesCancel', async (_event, jobId: string) =>
+    cancelBatchImages(jobId)
   );
 }

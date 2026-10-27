@@ -48,6 +48,12 @@ const cards = computed(() => [
     icon: ImageIcon,
     title: t('tools.imageStudioTitle'),
     description: t('tools.imageStudioDescription')
+  },
+  {
+    id: 'batch-images' as ToolId,
+    icon: ImageIcon,
+    title: t('tools.batchImagesTitle'),
+    description: t('tools.batchImagesDescription')
   }
 ]);
 

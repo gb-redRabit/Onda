@@ -1,4 +1,6 @@
 import type {
+  BatchImageRequest,
+  BatchImageResult,
   ImageStudioEstimateRequest,
   ImageStudioEstimateResult,
   ImageStudioLoadResult,
@@ -46,4 +48,6 @@ export interface ToolsChannels {
     args: [request: ImageStudioEstimateRequest];
     result: ImageStudioEstimateResult;
   };
+  'tools:batchImagesStart': { args: [request: BatchImageRequest]; result: BatchImageResult };
+  'tools:batchImagesCancel': { args: [jobId: string]; result: boolean };
 }

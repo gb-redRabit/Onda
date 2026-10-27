@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { AlertCircle, CheckCircle2, Plus, Save, Tags, Trash2 } from '@lucide/vue';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Image as ImageIcon,
+  Plus,
+  Save,
+  Tags,
+  Trash2
+} from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
+import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import {
   AUDIO_TAG_FIELDS,
@@ -20,6 +29,7 @@ interface TagRow {
   writable: boolean;
   error?: string;
   writeError?: string;
+  coverError?: string;
   selected: boolean;
   dirty: boolean;
   tags: RowTags;
@@ -54,6 +64,7 @@ const FIELD_LABEL_KEYS: Record<AudioTagField, string> = {
 };
 
 const { t } = useI18n();
+const { context } = useToolBridge();
 const files = ref<TagRow[]>([]);
 const loading = ref(false);
 const saving = ref(false);
@@ -61,6 +72,10 @@ const loadError = ref('');
 const batchField = ref<AudioTagField>('album');
 const batchValue = ref('');
 const lastSave = ref<{ ok: number; failed: number } | null>(null);
+const coverImagePath = ref('');
+const coverBusy = ref(false);
+const coverSummary = ref<{ ok: number; failed: number } | null>(null);
+const coverError = ref('');
 
 const selectedRows = computed(() =>
   files.value.filter((row) => row.selected && row.writable && !row.error)
@@ -216,6 +231,62 @@ async function save(): Promise<void> {
   }
 }
 
+async function pickCoverImage(): Promise<void> {
+  const result = (await window.api.invoke('dialog:openImage')) as {
+    canceled: boolean;
+    filePaths: string[];
+  };
+  const path = result.filePaths?.[0];
+  if (!result.canceled && path) {
+    coverImagePath.value = path;
+    coverSummary.value = null;
+    coverError.value = '';
+  }
+}
+
+async function applyCover(): Promise<void> {
+  const rows = selectedRows.value.filter((row) => /\.(mp3|flac|m4a|m4b)$/i.test(row.path));
+  if (rows.length === 0 || !coverImagePath.value.trim()) return;
+  coverBusy.value = true;
+  coverSummary.value = null;
+  coverError.value = '';
+  let ok = 0;
+  let failed = 0;
+  try {
+    for (const row of rows) {
+      const result = await window.api.writeCover(row.path, coverImagePath.value.trim());
+      if (result.success) {
+        row.coverError = undefined;
+        ok += 1;
+      } else {
+        row.coverError = result.error || t('tools.tagEditorCoverFailed');
+        failed += 1;
+      }
+    }
+    coverSummary.value = { ok, failed };
+  } catch (error) {
+    coverError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    coverBusy.value = false;
+  }
+}
+
+watch(
+  () => context.value,
+  (ctx) => {
+    const paths =
+      ctx && ctx.params && Array.isArray(ctx.params.paths)
+        ? ctx.params.paths.filter((path): path is string => typeof path === 'string')
+        : [];
+    if (paths.length > 0) {
+      const existing = new Set(files.value.map((row) => row.path));
+      const fresh = paths.filter((path) => !existing.has(path));
+      if (fresh.length > 0) void loadTags(fresh);
+    }
+  },
+  { immediate: true }
+);
+
 function fieldLabel(field: AudioTagField): string {
   return t(FIELD_LABEL_KEYS[field]);
 }
@@ -279,6 +350,54 @@ function fieldLabel(field: AudioTagField): string {
             {{ t('tools.tagEditorApply') }}
           </button>
         </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 border-b border-base-300 px-3 py-2">
+        <span class="text-[11px] font-medium text-base-content/60">
+          {{ t('tools.tagEditorCover') }}
+        </span>
+        <input
+          v-model="coverImagePath"
+          data-testid="tools-tag-cover-path"
+          type="text"
+          :disabled="coverBusy"
+          :placeholder="t('tools.tagEditorCoverPick')"
+          class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+        />
+        <button
+          class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+          :disabled="coverBusy"
+          @click="pickCoverImage"
+        >
+          <ImageIcon :size="12" />
+          {{ t('tools.tagEditorCoverPick') }}
+        </button>
+        <button
+          data-testid="tools-tag-cover-apply"
+          class="fx-noise rounded-field bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
+          :disabled="coverBusy || !coverImagePath.trim() || selectedCount === 0"
+          @click="applyCover"
+        >
+          {{ coverBusy ? t('tools.tagEditorCoverApplying') : t('tools.tagEditorCoverApply') }}
+        </button>
+        <span
+          v-if="coverSummary"
+          class="text-[11px]"
+          :class="coverSummary.failed === 0 ? 'text-success' : 'text-error'"
+        >
+          {{
+            coverSummary.failed === 0
+              ? t('tools.tagEditorCoverApplied', { count: coverSummary.ok })
+              : t('tools.tagEditorCoverFailedCount', {
+                  ok: coverSummary.ok,
+                  failed: coverSummary.failed
+                })
+          }}
+        </span>
+        <span v-if="coverError" class="text-[11px] text-error">{{ coverError }}</span>
+        <span class="w-full text-[10px] text-base-content/45">
+          {{ t('tools.tagEditorCoverHint') }}
+        </span>
       </div>
 
       <p
@@ -361,6 +480,9 @@ function fieldLabel(field: AudioTagField): string {
                 </p>
                 <p v-else-if="row.writeError" class="mt-0.5 text-[10px] text-error line-clamp-1">
                   {{ row.writeError }}
+                </p>
+                <p v-else-if="row.coverError" class="mt-0.5 text-[10px] text-error line-clamp-1">
+                  {{ row.coverError }}
                 </p>
               </td>
               <td
