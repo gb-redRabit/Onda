@@ -67,6 +67,23 @@ test.describe('explorer file operations', () => {
       });
       expect(defaultDelete ?? false).toBe(false);
 
+      // Headless Linux CI nie ma implementacji freedesktop Trash, więc
+      // shell.trashItem tam zawodzi (aplikacja celowo nie spada do
+      // nieodwracalnego usunięcia). Sam domyślny stan sprawdziliśmy wyżej;
+      // poniżej przełączamy się na trwałe usuwanie, żeby operacja była
+      // deterministyczna na każdym runnerze.
+      if (process.platform === 'linux') {
+        await page.evaluate(async () => {
+          const api = (window as unknown as { api: OndaTestApi }).api;
+          const settings = (await api.invoke('settings:get')) as {
+            explorer?: Record<string, unknown>;
+          };
+          await api.invoke('settings:set', {
+            explorer: { ...settings.explorer, permanentDelete: true }
+          });
+        });
+      }
+
       // Nowy folder przez prompt.
       await page.getByTestId('explorer-new-folder').click();
       const prompt = page.getByTestId('explorer-prompt-dialog');

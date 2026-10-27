@@ -89,6 +89,18 @@ test.describe('audio playback and audio view', () => {
 
       // Tekst piosenki jest elementem układu audio; sidecar .srt czyta IPC.
       await expect(page.getByTestId('lyrics-panel')).toBeVisible();
+
+      // Zatrzymaj odtwarzanie przed nawigacją po tekście: przy odtwarzaniu linie
+      // przewijają się automatycznie i przycisk „następna linia" odmontowuje się
+      // w trakcie kliknięcia (element nie jest stabilny). Krótki timeout, bo krótki
+      // utwór mógł się już skończyć, zanim tu dotarliśmy.
+      await page
+        .getByRole('button', { name: /^(pause|pauza|wstrzymaj)$/i })
+        .first()
+        .click({ timeout: 2_000 })
+        .catch(() => {});
+      await expect(page.getByRole('button', { name: /^(play|odtwórz)$/i }).first()).toBeVisible();
+
       const progress = page.locator('[role="slider"]').first();
       await progress.focus();
       await page.keyboard.press('Home');
