@@ -16,7 +16,9 @@
   Key,
   Puzzle,
   Activity,
-  Captions
+  Captions,
+  MessageCircle,
+  Plug
 } from '@lucide/vue';
 
 // Dane nawigacji ustawień wydzielone z `views/SettingsView.vue` (plan 2.8).
@@ -28,6 +30,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'library', labelKey: 'settings.sectionLibrary', icon: Folder },
   { id: 'network', labelKey: 'settings.sectionNetwork', icon: Globe },
   { id: 'system', labelKey: 'settings.sectionSystem', icon: Power },
+  { id: 'integrations', labelKey: 'settings.sectionIntegrations', icon: Plug },
   { id: 'advanced', labelKey: 'settings.sectionAdvanced', icon: Key }
 ] as const;
 
@@ -180,6 +183,13 @@ export const SETTINGS_TABS = [
     descKey: 'settings.tabDesc.about',
     icon: Info,
     section: 'system'
+  },
+  {
+    id: 'discord',
+    labelKey: 'settings.discord',
+    descKey: 'settings.tabDesc.discord',
+    icon: MessageCircle,
+    section: 'integrations'
   },
   {
     id: 'apiKeys',

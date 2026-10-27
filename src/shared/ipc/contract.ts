@@ -99,6 +99,8 @@ export const INVOKE_CHANNELS = [
   'tools:batchImagesCancel',
   'tools:exportHistory',
   'discord:configure',
+  'discord:getStatus',
+  'discord:resolveCover',
   'subtitles:listEmbedded',
   'subtitles:extractEmbedded',
   'subtitles:findExternal',

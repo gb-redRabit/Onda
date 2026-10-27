@@ -68,6 +68,12 @@ export interface GeneralSettings {
   discordRichPresence: boolean;
   /** Discord Application ID z Developer Portal (wymagany, by presence działało). */
   discordClientId: string;
+  /**
+   * Uzupełnia okładki utworów lokalnych publicznym adresem z katalogu iTunes.
+   * Discord pobiera obraz z zewnątrz, więc okładka osadzona w pliku nie może
+   * być użyta bezpośrednio.
+   */
+  discordOnlineCovers: boolean;
 }
 
 export type YoutubeAuthMethod = 'none' | 'electron' | 'browser' | 'manual';

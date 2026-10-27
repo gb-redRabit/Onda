@@ -1,5 +1,5 @@
 import { logger } from '../../shared/logger';
-import type { PresenceState } from '../../shared/types/discord';
+import type { DiscordStatus, PresenceState } from '../../shared/types/discord';
 import { connectDiscord, type DiscordConnection } from './discord-ipc';
 import { buildActivity, type DiscordActivity } from './presence-activity';
 
@@ -17,6 +17,7 @@ let sendTimer: ReturnType<typeof setTimeout> | null = null;
 let lastState: PresenceState | null = null;
 let lastSentAt = 0;
 let lastFingerprint = '';
+let lastError: string | null = null;
 let shuttingDown = false;
 
 function errMsg(error: unknown): string {
@@ -64,9 +65,11 @@ function ensureConnected(): Promise<DiscordConnection | null> {
         scheduleReconnect();
       };
       connection = conn;
+      lastError = null;
       return conn;
     } catch (error) {
-      logger.info('discord', `rich presence connect failed: ${errMsg(error)}`);
+      lastError = errMsg(error);
+      logger.info('discord', `rich presence connect failed: ${lastError}`);
       scheduleReconnect();
       return null;
     } finally {
@@ -108,6 +111,7 @@ export function configureDiscord(options: unknown): void {
   if (!enabled) {
     // Zamknięcie połączenia czyści presence po stronie Discorda.
     disconnect();
+    lastError = null;
     return;
   }
   void ensureConnected().then(() => {
@@ -132,12 +136,19 @@ export function updatePresence(state: PresenceState | null): void {
     state?.title ?? '',
     state?.artist ?? '',
     state?.album ?? '',
+    // Okładka dochodzi asynchronicznie (lookup publicznego URL), więc musi
+    // unieważnić dedupe — inaczej drugi update z okładką zostałby pominięty.
+    state?.coverUrl ?? '',
     state?.kind ?? '',
     Math.floor((state?.positionSec ?? 0) / 10)
   ].join('|');
   if (fingerprint === lastFingerprint) return;
   lastFingerprint = fingerprint;
   scheduleSend(activity);
+}
+
+export function getDiscordStatus(): DiscordStatus {
+  return { enabled, connected: connection !== null, error: lastError };
 }
 
 export function shutdownDiscord(): void {

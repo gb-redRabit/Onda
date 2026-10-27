@@ -29,7 +29,7 @@ import type { OndaAPI } from '../shared/ipc/api';
 import type { PipSubtitleData } from '../shared/types/pip';
 import type { LyricsResult } from '../shared/types/lyrics';
 import type { SmartPlaylist } from '../shared/types/smart-playlist';
-import type { PresenceState } from '../shared/types/discord';
+import type { DiscordCoverQuery, DiscordStatus, PresenceState } from '../shared/types/discord';
 import type {
   BatchImageRequest,
   BatchImageResult,
@@ -321,6 +321,9 @@ const api: OndaAPI = {
     tryInvoke('tools:exportHistory', request),
   configureDiscord: (options: { enabled: boolean; clientId: string }): Promise<void> =>
     tryInvoke('discord:configure', options),
+  getDiscordStatus: (): Promise<DiscordStatus> => tryInvoke('discord:getStatus'),
+  resolveDiscordCover: (query: DiscordCoverQuery): Promise<string | null> =>
+    tryInvoke('discord:resolveCover', query),
   updateDiscordPresence: (state: PresenceState | null): void => trySend('discord:update', state),
   openSubtitlesSearch: (params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> =>
     tryInvoke('opensubtitles:search', params),

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import type { PresenceKind, PresenceState } from '../../shared/types/discord';
-import { configureDiscord, updatePresence } from './rich-presence';
+import { configureDiscord, getDiscordStatus, updatePresence } from './rich-presence';
+import { normalizeCoverQuery, resolveCoverUrl } from './cover-lookup';
 
 const KINDS = new Set<PresenceKind>(['audio', 'video', 'stream']);
 
@@ -43,6 +44,11 @@ export function sanitizePresence(value: unknown): PresenceState | null {
 export function registerDiscordHandlers(): void {
   ipcMain.handle('discord:configure', async (_event, options: unknown): Promise<void> => {
     configureDiscord(options);
+  });
+  ipcMain.handle('discord:getStatus', () => getDiscordStatus());
+  ipcMain.handle('discord:resolveCover', async (_event, query: unknown): Promise<string | null> => {
+    const normalized = normalizeCoverQuery(query);
+    return normalized ? resolveCoverUrl(normalized) : null;
   });
   ipcMain.on('discord:update', (_event, state: unknown) => {
     updatePresence(sanitizePresence(state));

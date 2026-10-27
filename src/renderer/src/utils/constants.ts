@@ -37,7 +37,8 @@ export const DEFAULT_GENERAL: GeneralSettings = {
   logLevel: 'info' as const,
   logMaxSizeMB: 10,
   discordRichPresence: false,
-  discordClientId: ''
+  discordClientId: '',
+  discordOnlineCovers: true
 };
 
 export const DEFAULT_LIBRARY: LibrarySettings = {

@@ -14,17 +14,17 @@ describe('buildActivity', () => {
 
   it('maps audio to a listening activity with details/state', () => {
     const activity = buildActivity(state({ title: 'Song', artist: 'Artist', album: 'Album' }));
-    expect(activity).toMatchObject({
-      type: 2,
-      details: 'Song',
-      state: 'Artist',
-      assets: { large_image: 'onda_logo', large_text: 'Album' }
-    });
+    expect(activity).toMatchObject({ type: 2, details: 'Song', state: 'Artist' });
   });
 
   it('falls back to the album when there is no artist', () => {
     const activity = buildActivity(state({ title: 'Song', album: 'Album' }));
-    expect(activity).toMatchObject({ state: 'Album', assets: { large_text: 'Album' } });
+    expect(activity).toMatchObject({ state: 'Album' });
+  });
+
+  it('omits assets when there is no cover so Discord shows the app icon', () => {
+    const activity = buildActivity(state({ title: 'Song', artist: 'Artist' }));
+    expect(activity?.assets).toBeUndefined();
   });
 
   it('uses the watching type for video and a cover URL when provided', () => {
@@ -32,7 +32,10 @@ describe('buildActivity', () => {
       state({ kind: 'video', coverUrl: 'https://example.com/cover.png' })
     );
     expect(activity?.type).toBe(3);
-    expect(activity?.assets?.large_image).toBe('https://example.com/cover.png');
+    expect(activity?.assets).toEqual({
+      large_image: 'https://example.com/cover.png',
+      large_text: 'Onda'
+    });
   });
 
   it('adds a progress bar for a finite duration and clamps the position', () => {

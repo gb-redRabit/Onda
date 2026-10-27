@@ -25,12 +25,17 @@ export function buildActivity(state: PresenceState | null): DiscordActivity | nu
   const activity: DiscordActivity = {
     // 2 = Listening, 3 = Watching.
     type: state.kind === 'video' ? 3 : 2,
-    details: truncate(state.title || 'Unknown'),
-    assets: {
-      large_image: state.coverUrl || 'onda_logo',
-      large_text: truncate(state.album || state.artist || 'Onda')
-    }
+    details: truncate(state.title || 'Unknown')
   };
+
+  // Bez okładki nie wysyłamy martwego klucza assetu (Discord pokazywał wtedy
+  // znak zapytania). Brak `assets` sprawia, że Discord używa ikony aplikacji.
+  if (state.coverUrl) {
+    activity.assets = {
+      large_image: state.coverUrl,
+      large_text: truncate(state.album || state.artist || 'Onda')
+    };
+  }
 
   const stateText = state.artist || state.album;
   if (stateText) activity.state = truncate(stateText);

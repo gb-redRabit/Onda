@@ -808,6 +808,7 @@ export default {
       library: 'Folders, scanning and library tidying.',
       explorer: 'File view and file operations.',
       general: 'Core app behaviour and launch at startup.',
+      discord: 'Rich Presence, cover art and connection instructions.',
       systemLogs: 'Application logs for diagnostics.',
       shortcuts: 'Keyboard shortcuts and what they do.',
       toast: 'Notifications and how long they stay.',
@@ -1009,15 +1010,43 @@ export default {
     restoreSessionDesc: 'Restore the last played track and queue after restart',
     showSetupWizard: 'Startup setup wizard',
     showSetupWizardDesc: 'Re-run the setup wizard (library, online, appearance, PiP).',
-    integrations: 'Integrations',
+    discord: 'Discord',
+    discordConnection: 'Connection',
     discordRichPresence: 'Discord Rich Presence',
-    discordRichPresenceDesc: 'Show what is playing in your Discord profile.',
-    discordClientId: 'Discord Application ID',
-    discordClientIdDesc:
-      'Create an application in the Discord Developer Portal and paste its Application ID.',
+    discordRichPresenceDesc: 'Show what you are playing in your Discord profile.',
+    discordClientId: 'Application ID',
+    discordClientIdDesc: 'Discord application ID: General Information → Application ID.',
     discordClientIdPlaceholder: 'e.g. 123456789012345678',
     discordClientIdHint:
-      'A Discord application ID is required. Enable the toggle and resume playback to see the activity.',
+      'Create your own application in the Discord Developer Portal and paste its Application ID.',
+    discordClientIdInvalid: 'The Application ID must be 10–25 digits.',
+    discordStatus: {
+      off: 'Rich Presence is off',
+      invalid: 'Application ID required',
+      connected: 'Connected to Discord',
+      waiting: 'Waiting for Discord'
+    },
+    discordStatusHint:
+      'Keep the Discord desktop app running and allow activity sharing in Discord.',
+    discordCoverSection: 'Cover art',
+    discordOnlineCovers: 'Look up covers online',
+    discordOnlineCoversDesc:
+      'For local files without a public cover, search the iTunes catalogue by artist and title.',
+    discordCoverNote:
+      'YouTube and SoundCloud thumbnails are used automatically. Discord downloads cover images from the internet, so artwork embedded in a local file cannot be shown directly. Only the artist and title are sent to the iTunes catalogue.',
+    discordSetup: 'How to connect',
+    discordSetupIntro: 'Rich Presence is off by default and requires your own Discord application.',
+    discordStepPortal: 'Open the Discord Developer Portal and sign in.',
+    discordOpenPortal: 'Open Developer Portal',
+    discordStepApp:
+      'Click New Application, name it Onda and accept the terms. That name is shown in Discord as “Listening to Onda”.',
+    discordStepId: 'Open General Information, copy the Application ID and paste it above.',
+    discordStepIcon:
+      'Upload an App Icon in General Information. It is shown when a track has no cover art.',
+    discordStepPrivacy:
+      'In Discord, enable activity sharing: User Settings → Activity Privacy → Share your activity.',
+    discordStepPlay:
+      'Enable the switch and start playback. The status above should change to Connected.',
     searchSettings: 'Search settings...',
     searchField: 'setting',
     resetSetting: 'Reset to default',
@@ -1031,6 +1060,7 @@ export default {
     sectionNetwork: 'Network & services',
     sectionLibrary: 'Library',
     sectionSystem: 'System',
+    sectionIntegrations: 'Integrations',
     diagnostics: 'Diagnostics & logs',
     about: 'About',
     diagnosticsTitle: 'Diagnostics & logs',

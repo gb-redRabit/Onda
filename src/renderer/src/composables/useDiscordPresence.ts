@@ -2,9 +2,11 @@ import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { splitTitle } from '@shared/discord-title';
-import type { PresenceState } from '@shared/types/discord';
+import type { MediaFile } from '@shared/types/media';
+import type { DiscordCoverQuery, PresenceState } from '@shared/types/discord';
 
 const PUSH_INTERVAL_MS = 10_000;
+const MAX_COVER_CACHE = 300;
 
 /**
  * Wysyła stan odtwarzacza do procesu głównego (Discord Rich Presence). Renderer jest
@@ -14,12 +16,66 @@ export function useDiscordPresence(): void {
   const settings = useSettingsStore();
   const player = usePlayerStore();
   let interval: ReturnType<typeof setInterval> | null = null;
+  const coverCache = new Map<string, string | null>();
+  const pendingLookups = new Map<string, Promise<string | null>>();
 
   function configure(): void {
     void window.api?.configureDiscord({
       enabled: settings.general.discordRichPresence,
       clientId: settings.general.discordClientId
     });
+  }
+
+  function rememberCover(key: string, url: string | null): void {
+    coverCache.set(key, url);
+    while (coverCache.size > MAX_COVER_CACHE) {
+      const oldest = coverCache.keys().next();
+      if (oldest.done) break;
+      coverCache.delete(oldest.value);
+    }
+  }
+
+  function lookupCover(key: string, query: DiscordCoverQuery): Promise<string | null> {
+    const existing = pendingLookups.get(key);
+    if (existing) return existing;
+    const request = (window.api?.resolveDiscordCover(query) ?? Promise.resolve(null))
+      .catch(() => null)
+      .then((url) => {
+        rememberCover(key, url);
+        return url;
+      })
+      .finally(() => pendingLookups.delete(key));
+    pendingLookups.set(key, request);
+    return request;
+  }
+
+  /**
+   * Discord pobiera okładkę z zewnątrz, więc okładka osadzona w pliku lokalnym
+   * nie może być użyta bezpośrednio. Dla plików bez publicznego `thumbnail`
+   * szukamy okładki w katalogu iTunes (opt-out w ustawieniach).
+   */
+  async function applyCover(track: MediaFile, state: PresenceState): Promise<void> {
+    if (!player.isPlaying) return;
+    if (state.coverUrl || !settings.general.discordOnlineCovers) return;
+    if (track.type === 'stream' || track.type === 'image') return;
+    if (!state.artist || !state.title) return;
+
+    const key = [state.artist, state.album ?? '', state.title].join('|').toLowerCase();
+    const cached = coverCache.get(key);
+    if (cached !== undefined) {
+      if (cached) window.api?.updateDiscordPresence({ ...state, coverUrl: cached });
+      return;
+    }
+
+    const url = await lookupCover(key, {
+      artist: state.artist,
+      title: state.title,
+      ...(state.album ? { album: state.album } : {})
+    });
+    if (!url) return;
+    if (player.currentTrack?.path !== track.path) return;
+    if (!settings.general.discordRichPresence || !player.isPlaying) return;
+    window.api?.updateDiscordPresence({ ...state, coverUrl: url });
   }
 
   function push(): void {
@@ -47,6 +103,7 @@ export function useDiscordPresence(): void {
       if (duration > 0) state.durationSec = duration;
     }
     window.api?.updateDiscordPresence(state);
+    void applyCover(track, state);
   }
 
   function syncInterval(): void {

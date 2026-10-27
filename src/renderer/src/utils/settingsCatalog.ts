@@ -155,6 +155,24 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     keywords: []
   },
   {
+    id: 'setting-discord-presence',
+    labelKey: 'settings.discordRichPresence',
+    tab: 'discord',
+    keywords: ['discord', 'rich presence', 'status', 'activity']
+  },
+  {
+    id: 'setting-discord-client-id',
+    labelKey: 'settings.discordClientId',
+    tab: 'discord',
+    keywords: ['discord', 'application id', 'client id', 'developer portal']
+  },
+  {
+    id: 'setting-discord-online-covers',
+    labelKey: 'settings.discordOnlineCovers',
+    tab: 'discord',
+    keywords: ['discord', 'okladka', 'cover', 'itunes']
+  },
+  {
     id: 'setting-restore-session',
     labelKey: 'settings.restoreSession',
     tab: 'general',

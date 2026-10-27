@@ -108,6 +108,8 @@ export interface OndaAPI {
   cancelBatchImages: BoundIpcMethod<'tools:batchImagesCancel'>;
   exportHistory: BoundIpcMethod<'tools:exportHistory'>;
   configureDiscord: (options: { enabled: boolean; clientId: string }) => Promise<void>;
+  getDiscordStatus: BoundIpcMethod<'discord:getStatus'>;
+  resolveDiscordCover: BoundIpcMethod<'discord:resolveCover'>;
   updateDiscordPresence: (state: PresenceState | null) => void;
   loadSmartPlaylists: BoundIpcMethod<'smartPlaylists:loadAll'>;
   saveSmartPlaylists: BoundIpcMethod<'smartPlaylists:saveAll'>;

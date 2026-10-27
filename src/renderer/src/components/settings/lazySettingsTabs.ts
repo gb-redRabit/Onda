@@ -18,6 +18,7 @@ export const SETTINGS_TAB_COMPONENTS: Record<string, ReturnType<typeof defineAsy
   'network-platform': defineAsyncComponent(() => import('./SettingsNetworkPlatform.vue')),
   updates: defineAsyncComponent(() => import('./SettingsUpdates.vue')),
   general: defineAsyncComponent(() => import('./SettingsGeneral.vue')),
+  discord: defineAsyncComponent(() => import('./SettingsDiscord.vue')),
   'system-logs': defineAsyncComponent(() => import('./SettingsSystemLogs.vue')),
   toast: defineAsyncComponent(() => import('./SettingsToast.vue')),
   library: defineAsyncComponent(() => import('./SettingsLibraryFolders.vue')),

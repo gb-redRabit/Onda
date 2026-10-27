@@ -266,7 +266,8 @@ const GENERAL_FIELDS: Record<string, Sanitizer> = {
   logLevel: enumOf(['debug', 'info', 'warn', 'error']),
   logMaxSizeMB: numClamped(1, 100),
   discordRichPresence: bool,
-  discordClientId: str
+  discordClientId: str,
+  discordOnlineCovers: bool
 };
 
 function apiKeyEntry(v: unknown): unknown | undefined {

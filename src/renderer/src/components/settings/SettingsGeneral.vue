@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { loadLocaleMessages } from '@renderer/i18n';
 import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
@@ -10,18 +10,6 @@ import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 
 const settings = useSettingsStore();
 const ui = useUIStore();
-const discordClientId = ref(settings.general.discordClientId);
-
-watch(
-  () => settings.general.discordClientId,
-  (value) => {
-    discordClientId.value = value;
-  }
-);
-
-function saveDiscordClientId(): void {
-  settings.updateGeneral({ discordClientId: discordClientId.value.trim() });
-}
 
 const languages = [
   { id: 'pl', label: 'Polski', native: 'Polski', flag: '🇵🇱' },
@@ -144,33 +132,5 @@ async function setCloseToTray(value: boolean): Promise<void> {
         {{ $t('settings.showSetupWizard') }}
       </button>
     </div>
-  </SettingsGroup>
-
-  <SettingsGroup :title="$t('settings.integrations')">
-    <SettingsRow
-      :label="$t('settings.discordRichPresence')"
-      :description="$t('settings.discordRichPresenceDesc')"
-    >
-      <SettingsToggle
-        :model-value="settings.general.discordRichPresence"
-        @update:model-value="settings.updateGeneral({ discordRichPresence: $event })"
-      />
-    </SettingsRow>
-    <SettingsRow
-      :label="$t('settings.discordClientId')"
-      :description="$t('settings.discordClientIdDesc')"
-    >
-      <input
-        v-model="discordClientId"
-        data-testid="settings-discord-client-id"
-        type="text"
-        inputmode="numeric"
-        :placeholder="$t('settings.discordClientIdPlaceholder')"
-        class="w-56 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-        @change="saveDiscordClientId"
-        @blur="saveDiscordClientId"
-      />
-    </SettingsRow>
-    <p class="text-xs text-base-content/50">{{ $t('settings.discordClientIdHint') }}</p>
   </SettingsGroup>
 </template>

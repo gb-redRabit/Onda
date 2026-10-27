@@ -812,6 +812,7 @@ export default {
       library: 'Foldery, skanowanie i porządkowanie biblioteki.',
       explorer: 'Widok plików i operacje na plikach.',
       general: 'Podstawowe zachowanie aplikacji i autostart.',
+      discord: 'Rich Presence, okładki i instrukcja połączenia.',
       systemLogs: 'Logi aplikacji pomocne w diagnostyce.',
       shortcuts: 'Skróty klawiaturowe i ich działanie.',
       toast: 'Powiadomienia i czas ich wyświetlania.',
@@ -1016,14 +1017,43 @@ export default {
     restoreSessionDesc: 'Po restarcie przywróć ostatnio odtwarzany utwór i kolejkę',
     showSetupWizard: 'Konfiguracja startowa',
     showSetupWizardDesc: 'Uruchom ponownie kreator konfiguracji (biblioteka, sieć, wygląd, PiP).',
-    integrations: 'Integracje',
+    discord: 'Discord',
+    discordConnection: 'Połączenie',
     discordRichPresence: 'Discord Rich Presence',
-    discordRichPresenceDesc: 'Pokazuj, co gra, w profilu Discorda.',
-    discordClientId: 'Discord Application ID',
-    discordClientIdDesc: 'Utwórz aplikację w Discord Developer Portal i wklej jej Application ID.',
+    discordRichPresenceDesc: 'Pokazuj w profilu Discorda, czego aktualnie słuchasz.',
+    discordClientId: 'Application ID',
+    discordClientIdDesc: 'Identyfikator aplikacji Discord: General Information → Application ID.',
     discordClientIdPlaceholder: 'np. 123456789012345678',
     discordClientIdHint:
-      'Wymagane jest Application ID aplikacji Discord. Włącz przełącznik i wznów odtwarzanie, aby zobaczyć activity.',
+      'Utwórz własną aplikację w Discord Developer Portal i wklej jej Application ID.',
+    discordClientIdInvalid: 'Application ID musi mieć od 10 do 25 cyfr.',
+    discordStatus: {
+      off: 'Rich Presence jest wyłączone',
+      invalid: 'Wymagane Application ID',
+      connected: 'Połączono z Discordem',
+      waiting: 'Czekam na Discorda'
+    },
+    discordStatusHint:
+      'Utrzymuj uruchomionego klienta Discord i zezwól na udostępnianie aktywności.',
+    discordCoverSection: 'Okładki',
+    discordOnlineCovers: 'Szukaj okładek w internecie',
+    discordOnlineCoversDesc:
+      'Dla plików lokalnych bez publicznej okładki szukaj albumu w katalogu iTunes po artyście i tytule.',
+    discordCoverNote:
+      'Miniatury YouTube i SoundCloud są używane automatycznie. Discord pobiera obrazy z internetu, więc okładka osadzona w pliku lokalnym nie może być pokazana bezpośrednio. Do katalogu iTunes wysyłamy tylko artystę i tytuł.',
+    discordSetup: 'Jak połączyć',
+    discordSetupIntro: 'Rich Presence jest domyślnie wyłączone i wymaga własnej aplikacji Discord.',
+    discordStepPortal: 'Otwórz Discord Developer Portal i zaloguj się.',
+    discordOpenPortal: 'Otwórz Developer Portal',
+    discordStepApp:
+      'Kliknij New Application, nazwij ją Onda i zaakceptuj regulamin. Ta nazwa pojawi się w Discordzie jako „Słucha Onda”.',
+    discordStepId: 'Wejdź w General Information, skopiuj Application ID i wklej je powyżej.',
+    discordStepIcon:
+      'Wgraj App Icon w General Information. Ikona pojawi się, gdy utwór nie ma okładki.',
+    discordStepPrivacy:
+      'W Discordzie włącz udostępnianie aktywności: User Settings → Activity Privacy → Share your activity.',
+    discordStepPlay:
+      'Włącz przełącznik i zacznij odtwarzać. Status powyżej powinien zmienić się na „Połączono”.',
     searchSettings: 'Szukaj ustawień...',
     searchField: 'ustawienie',
     resetSetting: 'Przywróć domyślną',
@@ -1037,6 +1067,7 @@ export default {
     sectionNetwork: 'Sieć i usługi',
     sectionLibrary: 'Biblioteka',
     sectionSystem: 'System',
+    sectionIntegrations: 'Integracje',
     diagnostics: 'Diagnostyka i logi',
     about: 'O aplikacji',
     diagnosticsTitle: 'Diagnostyka i logi',
