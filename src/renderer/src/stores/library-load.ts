@@ -42,8 +42,11 @@ async function loadTracksInChunks(ctx: LibraryLoadCtx, audioOnly = false): Promi
   ctx.tracks.value = all;
 }
 
+let audioOnlyPreference = false;
+
 export function useLibraryLoad(ctx: LibraryLoadCtx) {
   async function loadFromDisk(options?: { audioOnly?: boolean }) {
+    if (options?.audioOnly !== undefined) audioOnlyPreference = options.audioOnly;
     ctx.isLoading.value = true;
     try {
       const [loadedPlaylists, loadedFolders] = await Promise.all([
@@ -68,7 +71,7 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
   let loadTracksResolve: Array<() => void> = [];
   const LOAD_TRACKS_TIMEOUT_MS = 5000;
 
-  function scheduleLoadTracks(audioOnly = false): void {
+  function scheduleLoadTracks(audioOnly = audioOnlyPreference): void {
     if (loadTracksScheduled) return;
     loadTracksScheduled = true;
     const doLoad = (): void => {
@@ -100,7 +103,9 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
    */
   function scheduleLoadTracksAsync(options?: { audioOnly?: boolean }): Promise<void> {
     return new Promise((resolve) => {
-      if (!loadTracksScheduled) scheduleLoadTracks(options?.audioOnly === true);
+      if (!loadTracksScheduled) {
+        scheduleLoadTracks(options?.audioOnly ?? audioOnlyPreference);
+      }
       const timer = setTimeout(done, LOAD_TRACKS_TIMEOUT_MS);
       function done(): void {
         clearTimeout(timer);

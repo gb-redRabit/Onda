@@ -13,6 +13,7 @@ const player = usePlayerStore();
 
 const query = ref('');
 const scrollEl = ref<HTMLElement | null>(null);
+const searchEl = ref<HTMLInputElement | null>(null);
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 const audioTracks = computed(() => library.audioTracks.filter((track) => track.type === 'audio'));
@@ -52,6 +53,14 @@ function playAt(index: number): void {
   const track = results.value[index];
   if (track) playTrackList([track]);
 }
+
+/** Skrót Ctrl/⌘+F w shellu kompaktowym — fokus i zaznaczenie pola szukania. */
+function focusSearch(): void {
+  searchEl.value?.focus();
+  searchEl.value?.select();
+}
+
+defineExpose({ focusSearch });
 </script>
 
 <template>
@@ -63,6 +72,7 @@ function playAt(index: number): void {
           class="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40"
         />
         <input
+          ref="searchEl"
           v-model="query"
           type="search"
           :placeholder="$t('compact.searchPlaceholder')"

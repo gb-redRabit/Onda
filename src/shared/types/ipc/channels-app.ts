@@ -19,6 +19,8 @@ export interface AppChannels {
   'app:hideCompact': { args: []; result: void };
   'app:getStartupMode': { args: []; result: 'main' | 'compact' };
   'app:setStartupMode': { args: [mode: 'main' | 'compact']; result: void };
+  'app:getCompactPinned': { args: []; result: boolean };
+  'app:setCompactPinned': { args: [pinned: boolean]; result: void };
   'app:setCloseToTray': { args: [value: boolean]; result: boolean };
   'app:setBackgroundMaterial': { args: [material: string]; result: boolean };
   'app:getPath': { args: [name: string]; result: string };

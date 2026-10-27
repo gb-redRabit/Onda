@@ -49,6 +49,8 @@ export function createCompactWindow(options: CompactWindowOptions = {}): Browser
     }
   });
 
+  if (options.state?.alwaysOnTop === true) win.setAlwaysOnTop(true);
+
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const scheduleBoundsSave = (): void => {
     if (saveTimer) clearTimeout(saveTimer);

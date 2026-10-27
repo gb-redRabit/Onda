@@ -26,6 +26,8 @@ export type IpcInvokeChannel =
   | 'app:hideCompact'
   | 'app:getStartupMode'
   | 'app:setStartupMode'
+  | 'app:getCompactPinned'
+  | 'app:setCompactPinned'
   | 'app:setBackgroundMaterial'
   | 'app:setCloseToTray'
   | 'app:getInfo'

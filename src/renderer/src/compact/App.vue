@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   Disc3,
@@ -37,6 +37,7 @@ const audio = useAudioPlayer();
 type Tab = 'tracks' | 'queue' | 'albums';
 const tab = ref<Tab>('tracks');
 const pinned = ref(false);
+const tracksRef = ref<InstanceType<typeof CompactTracks> | null>(null);
 
 function setTab(id: string): void {
   if (id === 'tracks' || id === 'queue' || id === 'albums') tab.value = id;
@@ -80,8 +81,9 @@ function setVolume(event: Event): void {
 }
 
 async function togglePin(): Promise<void> {
-  pinned.value = !pinned.value;
-  await window.api?.invoke('window:setAlwaysOnTop', pinned.value);
+  const value = !pinned.value;
+  pinned.value = value;
+  await window.api?.invoke('app:setCompactPinned', value);
 }
 
 function hideToTray(): void {
@@ -91,6 +93,70 @@ function hideToTray(): void {
 function openMainWindow(): void {
   void window.api?.invoke('app:setWindowMode', 'main');
 }
+
+/**
+ * Skróty klawiszowe compactu. Pola formularzy, przyciski i slidery zachowują
+ * swoje natywne zachowanie (spacja/strzałki), żeby nie dublować akcji.
+ */
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return true;
+  return el.closest('[role="slider"], [role="tab"], a') !== null;
+}
+
+async function focusSearch(): Promise<void> {
+  if (tab.value !== 'tracks') {
+    tab.value = 'tracks';
+    await nextTick();
+  }
+  tracksRef.value?.focusSearch();
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  const mod = event.ctrlKey || event.metaKey;
+  if (mod && event.key.toLowerCase() === 'f') {
+    event.preventDefault();
+    void focusSearch();
+    return;
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    hideToTray();
+    return;
+  }
+  if (isInteractiveTarget(event.target)) return;
+  if (mod && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+    event.preventDefault();
+    if (event.key === 'ArrowLeft') player.prevTrack();
+    else player.nextTrack();
+    return;
+  }
+  if (event.code === 'Space') {
+    event.preventDefault();
+    player.togglePlay();
+    return;
+  }
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    seekBy(-5);
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    seekBy(5);
+  }
+}
+
+onMounted(async () => {
+  window.addEventListener('keydown', onKeydown);
+  const saved = await window.api?.invoke('app:getCompactPinned');
+  if (saved === true) pinned.value = true;
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
+});
 
 const repeatLabel = computed(() =>
   player.repeat === 'one'
@@ -209,6 +275,7 @@ const repeatLabel = computed(() =>
           class="grid place-items-center w-10 h-10 rounded-full bg-primary text-primary-content hover:brightness-110 transition"
           :title="player.isPlaying ? $t('compact.pause') : $t('compact.play')"
           :aria-label="player.isPlaying ? $t('compact.pause') : $t('compact.play')"
+          :data-playing="player.isPlaying ? 'true' : 'false'"
           data-testid="compact-play"
           @click="player.togglePlay()"
         >
@@ -279,7 +346,7 @@ const repeatLabel = computed(() =>
     </nav>
 
     <main class="flex-1 min-h-0">
-      <CompactTracks v-if="tab === 'tracks'" />
+      <CompactTracks v-if="tab === 'tracks'" ref="tracksRef" />
       <CompactQueue v-else-if="tab === 'queue'" />
       <CompactAlbums v-else />
     </main>

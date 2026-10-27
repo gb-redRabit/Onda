@@ -41,6 +41,8 @@ export const INVOKE_CHANNELS = [
   'app:hideCompact',
   'app:getStartupMode',
   'app:setStartupMode',
+  'app:getCompactPinned',
+  'app:setCompactPinned',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',

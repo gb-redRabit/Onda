@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, type ComponentPublicInstance } from 'vue';
 import { ChevronLeft, Disc3, Play } from '@lucide/vue';
 import { useLibraryStore } from '@renderer/stores/library';
+import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { playTrackList } from '@renderer/utils/playTracks';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import type { MediaFile } from '@renderer/types/media';
@@ -11,6 +12,36 @@ type AlbumEntry = [label: string, tracks: MediaFile[]];
 const library = useLibraryStore();
 const selected = ref<AlbumEntry | null>(null);
 const albums = computed(() => library.albums as AlbumEntry[]);
+
+// Siatka 2-kolumnowa jest wirtualizowana wierszami — duże biblioteki nie
+// montują setek okładek naraz. Wysokość wiersza mierzymy, bo zależy od
+// szerokości okna (okładka jest kwadratowa).
+const COLUMNS = 2;
+const scrollEl = ref<HTMLElement | null>(null);
+const rowCount = computed(() => Math.ceil(albums.value.length / COLUMNS));
+const virtualizer = useVirtualList({
+  count: () => rowCount.value,
+  scrollEl: () => scrollEl.value,
+  estimateSize: () => 236,
+  overscan: 3,
+  measureElement: (element) => element.getBoundingClientRect().height
+});
+
+interface AlbumCell {
+  album: AlbumEntry;
+  index: number;
+}
+
+function rowCells(rowIndex: number): AlbumCell[] {
+  const start = rowIndex * COLUMNS;
+  return albums.value
+    .slice(start, start + COLUMNS)
+    .map((album, offset) => ({ album, index: start + offset }));
+}
+
+function measureRow(node: Element | ComponentPublicInstance | null): void {
+  if (node instanceof HTMLElement) virtualizer.value.measureElement(node);
+}
 
 function trackTitle(track: MediaFile | undefined): string {
   if (!track) return '';
@@ -36,23 +67,36 @@ function playFrom(album: AlbumEntry, index: number): void {
         <Disc3 :size="22" />
         {{ $t('compact.emptyAlbums') }}
       </div>
-      <div v-else class="flex-1 min-h-0 overflow-auto compact-scroll px-2 py-2">
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            v-for="(album, index) in albums"
-            :key="`${album[0]}-${index}`"
-            class="text-left p-1.5 rounded-field hover:bg-base-content/5 transition-colors"
-            :data-testid="`compact-album-${index}`"
-            @click="selected = album"
+      <div v-else ref="scrollEl" class="flex-1 min-h-0 overflow-auto compact-scroll px-2 py-2">
+        <div class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
+          <div
+            v-for="row in virtualizer.getVirtualItems()"
+            :key="String(row.key)"
+            :ref="measureRow"
+            :data-index="row.index"
+            class="absolute top-0 left-0 w-full grid grid-cols-2 gap-2 pb-2"
+            :style="{ transform: `translateY(${row.start}px)` }"
           >
-            <span class="block aspect-square rounded-md overflow-hidden bg-base-300">
-              <MediaCover :path="album[1][0]?.path" :size="160" fallback="disc" />
-            </span>
-            <span class="block mt-1.5 text-[12px] font-medium truncate">{{ album[0] }}</span>
-            <span class="block text-[10px] text-base-content/50 truncate">
-              {{ album[1][0]?.metadata?.albumArtist || album[1][0]?.metadata?.artist || '—' }}
-            </span>
-          </button>
+            <button
+              v-for="cell in rowCells(row.index)"
+              :key="cell.index"
+              class="text-left p-1.5 rounded-field hover:bg-base-content/5 transition-colors"
+              :data-testid="`compact-album-${cell.index}`"
+              @click="selected = cell.album"
+            >
+              <span class="block aspect-square rounded-md overflow-hidden bg-base-300">
+                <MediaCover :path="cell.album[1][0]?.path" :size="160" fallback="disc" />
+              </span>
+              <span class="block mt-1.5 text-[12px] font-medium truncate">{{ cell.album[0] }}</span>
+              <span class="block text-[10px] text-base-content/50 truncate">
+                {{
+                  cell.album[1][0]?.metadata?.albumArtist ||
+                  cell.album[1][0]?.metadata?.artist ||
+                  '—'
+                }}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </template>

@@ -315,6 +315,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('app:setStartupMode', async (_event, mode: unknown) => {
     if (mode === 'main' || mode === 'compact') await saveCompactState({ mode });
   });
+  ipcMain.handle('app:getCompactPinned', () => compactWindow?.isAlwaysOnTop() ?? false);
+  ipcMain.handle('app:setCompactPinned', async (_event, pinned: unknown) => {
+    const value = pinned === true;
+    compactWindow?.setAlwaysOnTop(value);
+    await saveCompactState({ alwaysOnTop: value });
+  });
 
   ipcMain.handle('app:rendererReady', (event) => {
     perf('renderer ready');
