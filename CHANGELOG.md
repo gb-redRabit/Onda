@@ -9,6 +9,19 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [0.10.0](https://github.com/gb-redRabit/Onda/compare/v0.9.0...v0.10.0) (2026-10-27)
+
+
+### Features
+
+* finish backlog batch and add media tools suite ([447ad5c](https://github.com/gb-redRabit/Onda/commit/447ad5ca3db133cef8ebfdeb3204c33d5c5b56f4))
+* finish backlog batch and add media tools suite ([f0d4332](https://github.com/gb-redRabit/Onda/commit/f0d433215f6a43af713c61d30cbc32c0014ee809))
+
+
+### Bug Fixes
+
+* **deps:** bump vulnerable deps and ensure electron binary on install ([91f69e2](https://github.com/gb-redRabit/Onda/commit/91f69e23a1b11523f2490f91d543bddfcad3c658))
+
 ## [0.9.0](https://github.com/gb-redRabit/Onda/compare/v0.8.0...v0.9.0) (2026-10-16)
 
 
