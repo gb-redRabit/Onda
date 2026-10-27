@@ -28,6 +28,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'app:setStartupMode',
   'app:getCompactPinned',
   'app:setCompactPinned',
+  'app:consumeRestoreOnce',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',
@@ -288,6 +289,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
 
 export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
   'explorer:refreshAll',
+  'app:session-handoff-ready',
   'audio-pip:vizData',
   'audio-pip:timeUpdate',
   'audio-pip:theme',
@@ -314,6 +316,7 @@ export const ALLOWED_SEND_CHANNELS: ReadonlySet<string> = new Set([
 export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'window:maximized',
   'window:fullscreenChanged',
+  'app:prepare-session-handoff',
   'dep:progress',
   'updater:event',
   'yt:downloadProgress',

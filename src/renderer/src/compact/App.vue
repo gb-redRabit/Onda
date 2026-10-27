@@ -20,6 +20,7 @@ import {
 } from '@lucide/vue';
 import { useCoreSync } from '@renderer/composables/useCoreSync';
 import { useMediaSession } from '@renderer/composables/useMediaSession';
+import { useSessionPersistence } from '@renderer/composables/useSessionPersistence';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
 import { useAudioPiP } from '@renderer/composables/useAudioPiP';
 import { registerMediaIpcEvents } from '@renderer/composables/appIpc/registerMediaIpcEvents';
@@ -35,6 +36,7 @@ import CompactAlbums from './CompactAlbums.vue';
 const { t } = useI18n();
 useCoreSync();
 useMediaSession();
+useSessionPersistence();
 const player = usePlayerStore();
 const settings = useSettingsStore();
 const { appearance } = storeToRefs(settings);

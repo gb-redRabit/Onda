@@ -79,6 +79,7 @@ const externalDropActive = ref(false);
 let externalDragDepth = 0;
 const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
 let offMaximized: (() => void) | null = null;
+let offSessionHandoff: (() => void) | null = null;
 let unregisterAppIpc: (() => void) | null = null;
 
 function applyNarrowLayout(width: number): void {
@@ -207,6 +208,13 @@ onMounted(async () => {
     window.api?.on('window:maximized', (val: unknown) => {
       isWinMaximized.value = !!val;
     }) ?? null;
+  // Przed automatycznym restartem do compactu main czeka na synchroniczny zapis
+  // sesji (utwór + kolejka), żeby nowy proces mógł ją odtworzyć.
+  offSessionHandoff =
+    window.api?.on('app:prepare-session-handoff', () => {
+      session.persistNow();
+      window.api?.send('app:session-handoff-ready');
+    }) ?? null;
   // Ustawienia mogą już się ładować (uruchomione w main.ts przed mountem). Każdy
   // krok jest chroniony, żeby pojedyncza awaria nie powstrzymała renderera przed
   // osiągnięciem `app:rendererReady` (main trzyma splash do 30-sekundowego watchdoga).
@@ -297,6 +305,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('drop', onExternalDrop);
   window.removeEventListener('dragend', resetExternalDrop);
   offMaximized?.();
+  offSessionHandoff?.();
   unregisterAppIpc?.();
 });
 

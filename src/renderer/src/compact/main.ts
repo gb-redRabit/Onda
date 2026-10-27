@@ -7,6 +7,7 @@ import { i18n, initI18n, loadLocaleMessages } from '@renderer/i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useLibraryStore } from '@renderer/stores/library';
 import { getThemeEngine } from '@renderer/composables/useTheme';
+import { restoreSessionToPlayer } from '@renderer/composables/useSessionPersistence';
 import { ensureMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { setCoreShellMode } from '@renderer/utils/runtimeMode';
 import { logger } from '@shared/logger';
@@ -33,6 +34,14 @@ async function boot(): Promise<void> {
     await Promise.all([initI18n(), settings.load(), ensureMediaServerUrl()]);
     await loadLocaleMessages(settings.appearance.locale);
     await theme.applyTheme();
+
+    // Sesja: automatyczny restart legacy main → compact ustawia jednorazowy
+    // znacznik; zwykły start compactu używa ustawienia „Przywróć ostatnią sesję”.
+    const restoreOnce = (await window.api?.invoke('app:consumeRestoreOnce')) === true;
+    if (restoreOnce || settings.general.restoreSession) {
+      const restored = await restoreSessionToPlayer();
+      logger.info('compact', `session restore: ${restored ? 'ok' : 'none'}`);
+    }
   } catch (error) {
     logger.warn('compact', 'boot with defaults', error);
   }

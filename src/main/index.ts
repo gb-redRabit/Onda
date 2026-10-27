@@ -233,14 +233,38 @@ function initPipForCompact(win: BrowserWindow): void {
   }
 }
 
+/**
+ * Prosi aktywny shell o synchroniczny zapis sesji przed restartem trybu.
+ * Renderer odpowiada `app:session-handoff-ready`; timeout chroni przed
+ * zawieszonym/nieobsługującym tego zdarzenia oknem.
+ */
+function prepareSessionHandoff(shell: BrowserWindow | null): Promise<void> {
+  if (!shell || shell.isDestroyed()) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const done = (): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      ipcMain.removeListener('app:session-handoff-ready', done);
+      resolve();
+    };
+    const timer = setTimeout(done, 400);
+    ipcMain.once('app:session-handoff-ready', done);
+    shell.webContents.send('app:prepare-session-handoff');
+  });
+}
+
 async function switchWindowMode(mode: WindowMode): Promise<void> {
   if (mode !== 'main' && mode !== 'compact') return;
   if (mode === startupMode) return;
 
   if (mode === 'compact' && !coreShellEnabled) {
     // Start w trybie klasycznym nie ma Core - proces musi wstać ponownie w trybie
-    // Core, żeby nie mieć dwóch właścicieli audio. Restart jest automatyczny.
-    await saveCompactState({ mode: 'compact' });
+    // Core, żeby nie mieć dwóch właścicieli audio. Restart jest automatyczny,
+    // a sesję przenosimy jednorazowym znacznikiem w stanie okna.
+    await prepareSessionHandoff(activeShell());
+    await saveCompactState({ mode: 'compact', restoreSessionOnce: true });
     quitting = true;
     logger.info('compact', 'legacy main -> compact: relaunching with Core shell');
     relaunchApp(300);
@@ -362,6 +386,12 @@ app.whenReady().then(async () => {
     const value = pinned === true;
     compactWindow?.setAlwaysOnTop(value);
     await saveCompactState({ alwaysOnTop: value });
+  });
+  ipcMain.handle('app:consumeRestoreOnce', async () => {
+    const state = await loadCompactState();
+    if (state.restoreSessionOnce !== true) return false;
+    await saveCompactState({ restoreSessionOnce: false });
+    return true;
   });
 
   ipcMain.handle('app:rendererReady', (event) => {

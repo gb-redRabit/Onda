@@ -7,11 +7,12 @@ import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
 import { useUIStore } from '@renderer/stores/ui';
 import { AppWindow, Wand2 } from '@lucide/vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import { useCompactSwitch } from '@renderer/composables/useCompactSwitch';
 
 const settings = useSettingsStore();
 const ui = useUIStore();
 const compactStartup = ref(false);
-const switchingToCompact = ref(false);
+const { switching: switchingToCompact, switchToCompact } = useCompactSwitch();
 
 const languages = [
   { id: 'pl', label: 'Polski', native: 'Polski', flag: '🇵🇱' },
@@ -49,21 +50,6 @@ async function setCompactStartup(value: boolean): Promise<void> {
     await window.api?.invoke('app:setStartupMode', value ? 'compact' : 'main');
   } catch {
     /* zapisze się przy następnej próbie */
-  }
-}
-
-/**
- * Natychmiastowe przejście do compactu. W trybie Core-shell to tylko podmiana okna;
- * w klasycznym mainie proces musi się zrestartować, bo nie może istnieć dwóch
- * właścicieli audio (legacy main + Core).
- */
-async function switchToCompactNow(): Promise<void> {
-  if (switchingToCompact.value) return;
-  switchingToCompact.value = true;
-  try {
-    await window.api?.invoke('app:setWindowMode', 'compact');
-  } catch {
-    switchingToCompact.value = false;
   }
 }
 
@@ -157,7 +143,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
         :disabled="switchingToCompact"
         :title="$t('settings.compactSwitchNowHint')"
         data-testid="settings-compact-switch-now"
-        @click="switchToCompactNow"
+        @click="switchToCompact"
       >
         <AppWindow :size="13" />
         {{ $t('settings.compactSwitchNow') }}

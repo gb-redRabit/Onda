@@ -28,6 +28,7 @@ export type IpcInvokeChannel =
   | 'app:setStartupMode'
   | 'app:getCompactPinned'
   | 'app:setCompactPinned'
+  | 'app:consumeRestoreOnce'
   | 'app:setBackgroundMaterial'
   | 'app:setCloseToTray'
   | 'app:getInfo'
@@ -287,6 +288,7 @@ export type IpcInvokeChannel =
 
 export type IpcSendChannel =
   | 'explorer:refreshAll'
+  | 'app:session-handoff-ready'
   | 'audio-pip:vizData'
   | 'audio-pip:timeUpdate'
   | 'audio-pip:theme'
@@ -312,6 +314,7 @@ export type IpcSendChannel =
 export type IpcReceiveChannel =
   | 'window:maximized'
   | 'window:fullscreenChanged'
+  | 'app:prepare-session-handoff'
   | 'dep:progress'
   | 'updater:event'
   | 'yt:downloadProgress'

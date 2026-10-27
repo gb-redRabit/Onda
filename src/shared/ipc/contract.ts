@@ -43,6 +43,7 @@ export const INVOKE_CHANNELS = [
   'app:setStartupMode',
   'app:getCompactPinned',
   'app:setCompactPinned',
+  'app:consumeRestoreOnce',
   'app:setBackgroundMaterial',
   'app:setCloseToTray',
   'app:getInfo',
@@ -307,6 +308,7 @@ export const INVOKE_CHANNELS = [
 
 export const SEND_CHANNELS = [
   'explorer:refreshAll',
+  'app:session-handoff-ready',
   'audio-pip:vizData',
   'audio-pip:timeUpdate',
   'audio-pip:theme',
@@ -333,6 +335,7 @@ export const SEND_CHANNELS = [
 export const RECEIVE_CHANNELS = [
   'window:maximized',
   'window:fullscreenChanged',
+  'app:prepare-session-handoff',
   'dep:progress',
   'updater:event',
   'yt:downloadProgress',

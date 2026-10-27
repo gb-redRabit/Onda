@@ -99,6 +99,24 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
     await expect.poll(getPinned).toBe(false);
     await expect.poll(() => readPinned(userDataDir)).toBe(false);
 
+    // Compact sam zapisuje sesję (utwór + kolejka) do localStorage — ten sam
+    // profil czyta ją potem pełne okno i kolejny start compactu.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const raw = localStorage.getItem('onda-session');
+            if (!raw) return '';
+            try {
+              return (JSON.parse(raw) as { currentPath?: string }).currentPath ?? '';
+            } catch {
+              return '';
+            }
+          }),
+        { timeout: 10_000 }
+      )
+      .toContain('tone');
+
     // Esc chowa okno do tray (odtwarzanie zostaje w Core). PiP audio może się
     // w tym momencie pokazać automatycznie — sprawdzamy samo okno compactu.
     await page.keyboard.press('Escape');

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Minus, Square, Maximize2, X, Search, RectangleVertical } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
+import { useCompactSwitch } from '@renderer/composables/useCompactSwitch';
 
 defineProps<{
   isMaximized: boolean;
@@ -13,28 +14,18 @@ const emit = defineEmits<{
 }>();
 
 const ui = useUIStore();
-
-/**
- * Przejście do compactu z górnego paska. W Core-shell to natychmiastowa podmiana
- * okna; w klasycznym mainie proces restartuje się automatycznie (jeden właściciel audio).
- */
-async function openCompactMode(): Promise<void> {
-  try {
-    await window.api?.invoke('app:setWindowMode', 'compact');
-  } catch {
-    /* okno pozostaje w bieżącym trybie */
-  }
-}
+const { switching, switchToCompact } = useCompactSwitch();
 </script>
 
 <template>
   <div class="flex items-center shrink-0 ml-auto" style="-webkit-app-region: no-drag">
     <button
-      class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
+      class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content disabled:opacity-50"
+      :disabled="switching"
       :title="$t('window.compactMode')"
       :aria-label="$t('window.compactMode')"
       data-testid="window-switch-compact"
-      @click="openCompactMode"
+      @click="switchToCompact"
     >
       <RectangleVertical :size="14" />
     </button>

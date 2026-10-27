@@ -16,6 +16,8 @@ export interface CompactState {
   mode: WindowMode;
   bounds?: WindowBounds;
   alwaysOnTop?: boolean;
+  /** Jednorazowo przywróć sesję przy starcie po automatycznym restarcie trybu. */
+  restoreSessionOnce?: boolean;
 }
 
 const DEFAULT_STATE: CompactState = { mode: 'main' };
@@ -54,7 +56,8 @@ export async function loadCompactState(): Promise<CompactState> {
     state = {
       mode: isMode(parsed.mode) ? parsed.mode : 'main',
       ...(validBounds(parsed.bounds) ? { bounds: validBounds(parsed.bounds) } : {}),
-      ...(typeof parsed.alwaysOnTop === 'boolean' ? { alwaysOnTop: parsed.alwaysOnTop } : {})
+      ...(typeof parsed.alwaysOnTop === 'boolean' ? { alwaysOnTop: parsed.alwaysOnTop } : {}),
+      ...(parsed.restoreSessionOnce === true ? { restoreSessionOnce: true } : {})
     };
   } catch {
     state = { ...DEFAULT_STATE };
