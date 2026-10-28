@@ -11,6 +11,7 @@ import { usePlayerAb } from './player-ab';
 import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { sendCoreCommand } from '@renderer/core/coreClient';
 import { toPlainTrack } from '@shared/core-state';
+import { logger } from '@shared/logger';
 
 export type { CoverResult } from './player-cover';
 
@@ -139,7 +140,7 @@ export const usePlayerStore = defineStore('player', () => {
   function setTrack(track: MediaFile, options?: { resume?: boolean }): void {
     if (isCoreShell()) {
       if (track.type === 'image') {
-        console.warn('[core-shell] image playback is not supported');
+        logger.warn('core-shell', 'image playback is not supported');
         return;
       }
       const plain = toPlainTrack(track);

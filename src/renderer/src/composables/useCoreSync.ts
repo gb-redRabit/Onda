@@ -1,6 +1,7 @@
 import { watch } from 'vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { coreState, initCoreClient } from '@renderer/core/coreClient';
+import { logger } from '@shared/logger';
 
 /**
  * Odbija stan Core w lokalnym store playera. Nie wywołuje akcji store'a, więc nie
@@ -27,8 +28,8 @@ export function useCoreSync(): void {
       if (state.current?.path !== lastLoggedPath || now - lastLoggedAt > 4000) {
         lastLoggedPath = state.current?.path ?? '';
         lastLoggedAt = now;
-        console.info(
-          '[core-shell]',
+        logger.info(
+          'core-shell',
           `sync track=${state.current?.name ?? 'none'} intent=${state.isPlaying} ` +
             `engine=${state.enginePlaying} time=${state.currentTime.toFixed(1)}/` +
             `${state.duration.toFixed(1)} queue=${state.queue.length}`

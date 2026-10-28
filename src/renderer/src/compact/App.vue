@@ -249,7 +249,11 @@ const repeatLabel = computed(() =>
       : t('compact.repeat')
 );
 
-const queueCount = computed(() => player.displayQueue.length);
+// Licznik pokazuje to, co compact faktycznie potrafi zagrać — wideo zostaje
+// w kolejce Core, ale nie jest tu klikalne.
+const queueCount = computed(
+  () => player.displayQueue.filter((track) => track.type === 'audio').length
+);
 const queueBadge = computed(() => (queueCount.value > 99 ? '99+' : String(queueCount.value)));
 
 const dismissedError = ref<string | null>(null);

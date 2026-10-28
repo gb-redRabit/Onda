@@ -48,7 +48,7 @@ function ensureRemoteModule(): void {
   if (remoteInitialized) return;
   remoteInitialized = true;
   initCoreClient();
-  console.info('[core-shell] remote audio player initialized');
+  logger.info('core-shell', 'remote audio player initialized');
   window.api?.on('core:viz', (raw) => {
     if (Array.isArray(raw)) remoteViz.setBins(raw as number[]);
   });

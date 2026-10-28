@@ -75,10 +75,12 @@ export default defineConfig({
           index: resolve('src/renderer/index.html'),
           pip: resolve('src/renderer/pip.html'),
           'audio-pip': resolve('src/renderer/audio-pip.html'),
-          // Spike Fazy 1 (#23): ukryty Core + testowy shell. Do usunięcia po Fazie 1.
           core: resolve('src/renderer/core.html'),
-          'core-test': resolve('src/renderer/core-test.html'),
-          compact: resolve('src/renderer/compact.html')
+          compact: resolve('src/renderer/compact.html'),
+          // Spike Fazy 1 tylko w dev, gdy jawnie włączysz ONDA_CORE_SPIKE=1.
+          ...(process.env.ONDA_CORE_SPIKE === '1'
+            ? { 'core-test': resolve('src/renderer/core-test.html') }
+            : {})
         },
         output: {
           manualChunks: {

@@ -10,7 +10,22 @@ const player = usePlayerStore();
 const dragIndex = ref<number | null>(null);
 
 const current = computed(() => player.currentTrack);
-const items = computed(() => player.displayQueue);
+
+interface QueueEntry {
+  track: MediaFile;
+  /** Indeks w pełnej kolejce Core — potrzebny do remove/reorder. */
+  sourceIndex: number;
+}
+
+// Compact jest audio-only: wideo z kolejki Core nie może być klikalne (nie ma
+// tu elementu <video>). Filtrujemy widok, ale pamiętamy oryginalne indeksy.
+const items = computed<QueueEntry[]>(() => {
+  const out: QueueEntry[] = [];
+  player.displayQueue.forEach((track, sourceIndex) => {
+    if (track.type === 'audio') out.push({ track, sourceIndex });
+  });
+  return out;
+});
 
 // Wiersze kolejki mierzymy, bo wysokość zależy od dwóch linii tekstu i metryk
 // czcionki — wirtualizator dostaje realny rozmiar zamiast sztywnej stałej.
@@ -38,28 +53,33 @@ function trackArtist(track: MediaFile | null | undefined): string {
 }
 
 function playNow(index: number): void {
-  const track = items.value[index];
-  if (!track) return;
-  player.removeFromQueue(index);
-  player.setTrack(track);
+  const entry = items.value[index];
+  if (!entry) return;
+  player.removeFromQueue(entry.sourceIndex);
+  player.setTrack(entry.track);
 }
 
 function onDragStart(index: number): void {
-  dragIndex.value = index;
+  dragIndex.value = items.value[index]?.sourceIndex ?? null;
 }
 
 function onDrop(index: number): void {
   if (dragIndex.value === null) return;
-  player.reorderQueue(dragIndex.value, index);
+  const target = items.value[index]?.sourceIndex;
+  if (target === undefined) return;
+  player.reorderQueue(dragIndex.value, target);
   dragIndex.value = null;
 }
 
 function moveItem(index: number, delta: number): void {
-  const target = index + delta;
-  if (target < 0 || target >= items.value.length) return;
-  player.reorderQueue(index, target);
+  const currentEntry = items.value[index];
+  const targetEntry = items.value[index + delta];
+  if (!currentEntry || !targetEntry) return;
+  player.reorderQueue(currentEntry.sourceIndex, targetEntry.sourceIndex);
   void nextTick(() =>
-    document.querySelector<HTMLElement>(`[data-testid="compact-queue-grip-${target}"]`)?.focus()
+    document
+      .querySelector<HTMLElement>(`[data-testid="compact-queue-grip-${index + delta}"]`)
+      ?.focus()
   );
 }
 
@@ -150,7 +170,7 @@ function onDragOver(event: DragEvent): void {
             :aria-label="$t('compact.playNow')"
             @click="playNow(row.index)"
           >
-            <MediaCover :path="items[row.index]?.path" :size="28" />
+            <MediaCover :path="items[row.index]?.track.path" :size="28" />
             <span
               class="absolute inset-0 hidden group-hover:grid place-items-center bg-black/45 text-white"
             >
@@ -158,16 +178,18 @@ function onDragOver(event: DragEvent): void {
             </span>
           </button>
           <button class="min-w-0 flex-1 text-left" @click="playNow(row.index)">
-            <span class="block text-[12px] truncate">{{ trackTitle(items[row.index]) }}</span>
+            <span class="block text-[12px] truncate">
+              {{ trackTitle(items[row.index]?.track) }}
+            </span>
             <span class="block text-[10px] text-base-content/50 truncate">
-              {{ trackArtist(items[row.index]) }}
+              {{ trackArtist(items[row.index]?.track) }}
             </span>
           </button>
           <button
             class="grid place-items-center w-6 h-6 rounded-field text-base-content/35 hover:text-error hover:bg-error/10 shrink-0"
             :title="$t('compact.remove')"
             :aria-label="$t('compact.remove')"
-            @click="player.removeFromQueue(row.index)"
+            @click="player.removeFromQueue(items[row.index]?.sourceIndex ?? -1)"
           >
             <Trash2 :size="12" />
           </button>

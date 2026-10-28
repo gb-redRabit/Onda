@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { pickImagePath } from '../pickImage';
 
 // Trzy komponenty otwierały wybór obrazu i każdy ponownie implementował to samo
@@ -14,9 +14,6 @@ function stubApi(result: DialogResult | Promise<DialogResult>) {
 }
 
 describe('pickImagePath', () => {
-  beforeEach(() => {
-    vi.stubGlobal('window', window);
-  });
   afterEach(() => {
     delete (window as unknown as { api?: unknown }).api;
     vi.unstubAllGlobals();

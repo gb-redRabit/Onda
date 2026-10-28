@@ -213,6 +213,18 @@ export function isSystemTempPath(
   return normalized === temp || normalized.startsWith(temp + separator);
 }
 
+/**
+ * Zewnętrzny root mediów (np. plik otwarty z argv przez `open-files`) może być
+ * wrażliwym katalogiem tylko wtedy, gdy jest systemowym tempem. Same biblioteki
+ * użytkownika nadal mogą leżeć w `.local`/`.config` — to ich świadoma decyzja.
+ */
+export function isAllowedExternalMediaRoot(
+  target: unknown,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  return isSystemTempPath(target, platform) || !isSensitivePath(target, platform);
+}
+
 /** Katalog nadrzędny ścieżki lub null, gdy ścieżka nie ma użytecznego rodzica. */
 export function parentOf(target: string): string | null {
   const idx = Math.max(target.lastIndexOf('/'), target.lastIndexOf('\\'));

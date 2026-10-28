@@ -82,7 +82,11 @@ export function installProcessSafetyNets(): void {
  * (z limitem), a gdy to zawiedzie — pokazuje komunikat i zamyka aplikację.
  * `unresponsive` jest logowane (Electron i tak nie zabija procesu automatycznie).
  */
-export function installRendererRecovery(win: BrowserWindow, onGone: () => void): void {
+export function installRendererRecovery(
+  win: BrowserWindow,
+  onGone: () => void,
+  options: { onExhausted?: () => void } = {}
+): void {
   let reloads = 0;
   const wc: WebContents = win.webContents;
   wc.on('render-process-gone', (_event, details) => {
@@ -96,9 +100,14 @@ export function installRendererRecovery(win: BrowserWindow, onGone: () => void):
       wc.reload();
       return;
     }
+    if (options.onExhausted) {
+      logger.warn('main', 'renderer recovery exhausted - delegating fallback');
+      options.onExhausted();
+      return;
+    }
     const m = mainMessages();
     dialog.showErrorBox(m.loadFailedTitle, m.rendererCrashMessage(details.reason));
     app.quit();
   });
-  wc.on('unresponsive', () => logger.warn('main', 'renderer unresponsive — UI frozen'));
+  wc.on('unresponsive', () => logger.warn('main', 'renderer unresponsive - UI frozen'));
 }

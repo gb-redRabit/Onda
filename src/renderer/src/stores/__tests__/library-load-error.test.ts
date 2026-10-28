@@ -4,6 +4,10 @@ import { useLibraryLoad } from '../library-load';
 
 vi.mock('@renderer/i18n', () => ({ i18n: { global: { t: (key: string) => key } } }));
 
+function stubWindowApi(invoke: (channel: string, ...args: unknown[]) => Promise<unknown>): void {
+  (window as unknown as { api?: unknown }).api = { invoke };
+}
+
 function makeCtx() {
   return {
     tracks: ref([]),
@@ -27,16 +31,13 @@ describe('useLibraryLoad error state', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    delete (window as unknown as { api?: unknown }).api;
   });
 
   it('records a failed chunk load in loadError and still marks the library loaded', async () => {
-    vi.stubGlobal('window', {
-      api: {
-        invoke: vi.fn(async (channel: string) => {
-          if (channel === 'library:loadScannedChunk') throw new Error('chunk boom');
-          return undefined;
-        })
-      }
+    stubWindowApi(async (channel: string) => {
+      if (channel === 'library:loadScannedChunk') throw new Error('chunk boom');
+      return undefined;
     });
 
     const ctx = makeCtx();
@@ -52,16 +53,12 @@ describe('useLibraryLoad error state', () => {
 
   it('clears an earlier error when a retry starts', async () => {
     let fail = true;
-    vi.stubGlobal('window', {
-      api: {
-        invoke: vi.fn(async (channel: string) => {
-          if (channel === 'library:loadScannedChunk') {
-            if (fail) throw new Error('chunk boom');
-            return { files: [], total: 0, folderTypes: {} };
-          }
-          return undefined;
-        })
+    stubWindowApi(async (channel: string) => {
+      if (channel === 'library:loadScannedChunk') {
+        if (fail) throw new Error('chunk boom');
+        return { files: [], total: 0, folderTypes: {} };
       }
+      return undefined;
     });
 
     const ctx = makeCtx();

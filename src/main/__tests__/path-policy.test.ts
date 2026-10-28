@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
+  isAllowedExternalMediaRoot,
   isFilesystemRoot,
   isProtectedPath,
   isSensitivePath,
@@ -147,6 +148,15 @@ describe('isSystemTempPath', () => {
     expect(isSystemTempPath(join(tmpdir(), '..', 'elsewhere', 'preview.webm'))).toBe(false);
     expect(isSystemTempPath('C:\\Users\\u\\Music\\song.mp3')).toBe(false);
     expect(isSystemTempPath(null)).toBe(false);
+  });
+});
+
+describe('isAllowedExternalMediaRoot', () => {
+  it('allows normal folders and temp, but not sensitive profile roots', () => {
+    expect(isAllowedExternalMediaRoot('C:\\Users\\u\\Music', 'win32')).toBe(true);
+    expect(isAllowedExternalMediaRoot(join(tmpdir(), 'onda'), process.platform)).toBe(true);
+    expect(isAllowedExternalMediaRoot('C:\\Users\\u\\.ssh', 'win32')).toBe(false);
+    expect(isAllowedExternalMediaRoot('/home/u/.config', 'linux')).toBe(false);
   });
 });
 

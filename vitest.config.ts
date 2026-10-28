@@ -60,6 +60,11 @@ export default defineConfig({
         test: {
           name: 'renderer',
           environment: 'jsdom',
+          // vmThreads tworzy jedno środowisko jsdom na wątek zamiast na plik:
+          // pomiar na tym repo to ~5.5 s vs ~19.8 s (162 pliki), przy zachowanej
+          // izolacji plików. Testy nie mogą podmieniać całego `window` —
+          // stubuj tylko `window.api`.
+          pool: 'vmThreads',
           globals: true,
           setupFiles: ['src/renderer/src/vitest.setup.ts'],
           include: ['src/renderer/**/*.test.ts', 'src/shared/**/*.test.ts']
