@@ -192,7 +192,9 @@ npm run build:mac    # DMG (macOS)
 npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-> **Signing:** CI-published builds are unsigned (Windows SmartScreen and macOS Gatekeeper will warn). Signing requires an Authenticode certificate and an Apple Developer ID — see `electron-builder.yml`. Until then, keep `verifyUpdateCodeSignature: false` so `electron-updater` accepts its own unsigned updates.
+> **Signing:** macOS builds are ad-hoc signed (an unsigned bundle is rejected as "damaged" on Apple Silicon), Windows builds are unsigned, so SmartScreen and Gatekeeper still warn. A real Authenticode certificate and an Apple Developer ID remove the warnings - see `RELEASE.md` §6. Until then, keep `verifyUpdateCodeSignature: false` so `electron-updater` accepts its own unsigned updates.
+>
+> **macOS says "Onda is damaged" or "unidentified developer":** right-click the app and choose **Open**, or clear the quarantine flag with `xattr -dr com.apple.quarantine /Applications/Onda.app`. Builds are not notarized yet.
 
 ### Performance & Optimization
 
@@ -414,7 +416,9 @@ npm run build:mac    # DMG (macOS)
 npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-> **Podpisywanie:** buildy publikowane z CI są niespodpisane (Windows SmartScreen i macOS Gatekeeper ostrzegą). Podpisywanie wymaga certyfikatu Authenticode i Apple Developer ID — patrz `electron-builder.yml`. Do tego czasu trzymaj `verifyUpdateCodeSignature: false`, aby `electron-updater` przyjmował własne niespodpisane aktualizacje.
+> **Podpisywanie:** buildy na macOS są podpisane ad-hoc (niepodpisany bundle jest odrzucany jako „uszkodzony” na Apple Silicon), a buildy na Windows są niepodpisane — SmartScreen i Gatekeeper nadal ostrzegają. Prawdziwy certyfikat Authenticode i Apple Developer ID usuwają ostrzeżenia — patrz `RELEASE.md` §6. Do tego czasu trzymaj `verifyUpdateCodeSignature: false`, aby `electron-updater` przyjmował własne niepodpisane aktualizacje.
+>
+> **macOS pokazuje „Onda jest uszkodzona” albo „niezidentyfikowany deweloper”:** kliknij aplikację prawym przyciskiem i wybierz **Otwórz**, albo zdejmij flagę kwarantanny: `xattr -dr com.apple.quarantine /Applications/Onda.app`. Buildy nie są jeszcze notaryzowane.
 
 ### Wydajność i optymalizacja
 

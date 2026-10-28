@@ -106,28 +106,42 @@ pełny fetch nic nie kosztuje.
 
 ## 6. Podpisywanie instalatorów
 
-Kod podpisu **nie jest włączony**:
+Stan obecny:
 
-- `electron-builder.yml` → `win.verifyUpdateCodeSignature: false`
-- `electron-builder.yml` → `mac.notarize: false`
+- macOS: **podpis ad-hoc** (`mac.identity: '-'` w `electron-builder.yml`). Bez
+  jakiegokolwiek podpisu Apple Silicon odmawia uruchomienia procesu, a Gatekeeper
+  zgłasza pobrany bundle jako „uszkodzony" (szara ikona z wykrzyknikiem w Finderze).
+  Podpis ad-hoc naprawia bundle: aplikacja startuje, a Gatekeeper pokazuje zwykłe
+  „niezidentyfikowany deweloper", które użytkownik może obejść (prawy przycisk →
+  Otwórz albo `xattr -dr com.apple.quarantine /Applications/Onda.app`).
+- macOS: `mac.notarize: false` — brak notaryzacji, więc ostrzeżenie Gatekeeper zostaje.
+- Windows: brak podpisu, `win.verifyUpdateCodeSignature: false` — SmartScreen pokazuje
+  „Unknown publisher".
 
-Konsekwencja dla supply-chain: dopóki instalatory są niepodpisane, `electron-updater`
-przyjmuje aktualizację bez weryfikacji podpisu. Jedynym zabezpieczeniem dystrybucji
-jest kanał GitHub Releases + `GH_TOKEN` w CI. Użytkownik zobaczy „Unknown publisher"
-w SmartScreen i „niezidentyfikowany deweloper" w Gatekeeper.
+Konsekwencja dla supply-chain: dopóki instalatory nie są podpisane certyfikatem,
+`electron-updater` przyjmuje aktualizację bez weryfikacji podpisu. Jedynym
+zabezpieczeniem dystrybucji jest kanał GitHub Releases + `GH_TOKEN` w CI.
 
-Aby włączyć podpisywanie:
+Aby włączyć pełne podpisywanie:
 
 1. Windows — certyfikat Authenticode; ustaw `CSC_LINK` + `CSC_KEY_PASSWORD`,
    `CODE_SIGN_PUBLISHER` (subject certyfikatu) i przełącz
    `verifyUpdateCodeSignature: true`. `publisherName` musi być zgodny z subjectem.
-2. macOS — Apple Developer ID; `CSC_LINK` + `CSC_KEY_PASSWORD`, `APPLE_ID`,
-   `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` i `notarize: true`.
+2. macOS — Apple Developer ID; ustaw `CSC_LINK` + `CSC_KEY_PASSWORD`, `APPLE_ID`,
+   `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, zmień `mac.identity` na nazwę
+   certyfikatu (albo usuń tę linię), ustaw `mac.notarize: true` oraz
+   `CSC_IDENTITY_AUTO_DISCOVERY: true` w `build.yml` (bez tego electron-builder nie
+   znajdzie certyfikatu z keychaina).
 3. Oba zdarzenia w tej samej zmianie co `verifyUpdateCodeSignature: true` — włączanie
    weryfikacji podpisu bez certyfikatu odrzuca własne, niespodpisane buildy.
 
 Nie dodawaj pustych `CSC_LINK` / `CSC_KEY_PASSWORD`: electron-builder traktuje nawet
 pustą `CSC_LINK` jako ścieżkę do certyfikatu i przerywa build (macOS: „not a file").
+
+Krok „Smoke test unpacked app (macOS)" w `build.yml` sprawdza przed publikacją, że
+bundle ma ważny podpis (`codesign --verify --deep --strict`), oba slice'y (`lipo -archs`)
+i osiąga kamień milowy `[Onda/boot] window created`. Bez tego uszkodzona paczka mogła
+trafić do wydania — v0.10.0 była niepodpisana.
 
 ## 7. Tryby awarii
 

@@ -141,19 +141,35 @@ mac:
   x64ArchFiles: '**/{@img/**,*.node,*.dylib,ffmpeg/**}'
   # Universal (arm64+x64) is built with `-- --universal` (see CI build.yml);
   # "universal" is NOT a valid MacOsTargetName. ZIP is mandatory for
-  # electron-updater on macOS. Notarization/signing require Apple credentials:
-  #   - electron-builder needs to run on macOS (it does - CI macos job)
-  #   - enable mac.notarize + APPLE_* secrets, then dmg sign/staple
+  # electron-updater on macOS.
+  #
+  # Ad-hoc signature ("-") by default. An unsigned .app is not merely warned
+  # about: Apple Silicon refuses to exec it and Gatekeeper reports the downloaded
+  # bundle as "damaged" (Finder shows the gray icon with an exclamation mark).
+  # Ad-hoc signing keeps the bundle internally consistent, so the app launches
+  # and Gatekeeper shows the normal, bypassable "unidentified developer" prompt.
+  #
+  # To move to a real Developer ID (removes the warning entirely):
+  #   1. set `identity` to the certificate's common name (or delete this line),
+  #   2. provide CSC_LINK + CSC_KEY_PASSWORD and CSC_IDENTITY_AUTO_DISCOVERY=true,
+  #   3. provide APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID and set
+  #      `notarize: true`.
+  # See RELEASE.md §6.
+  identity: '-'
+  # Hardened runtime stays on. Ad-hoc signing cannot satisfy library validation
+  # for Electron's own framework, hence disable-library-validation in
+  # build/entitlements.mac.plist.
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # Must be a map: an array would be deep-merged into Info.plist as numeric keys
+  # ("0", "1", ...) and the usage descriptions would never apply.
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    NSCameraUsageDescription: Application requests access to the device's camera.
+    NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
-  # to enable notarization:
-  #   1. set notarize: true
-  #   2. set env vars: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
 pkg:
   # macOS installer wizard — the equivalent of the NSIS license page: a
   # Welcome page, the EULA, then a Conclusion page, over a branded background.

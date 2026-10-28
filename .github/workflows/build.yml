@@ -232,6 +232,28 @@ jobs:
             echo "Onda.app not found in dist/" >&2
             exit 1
           fi
+          echo "app=$app"
+
+          # An unsigned bundle is reported by Gatekeeper as "damaged" (Finder:
+          # gray icon with an exclamation mark) and Apple Silicon refuses to exec
+          # it. Fail here, before publishing, instead of shipping a dead app.
+          test -x "$app/Contents/MacOS/Onda" || {
+            echo "missing executable: $app/Contents/MacOS/Onda" >&2
+            exit 1
+          }
+          plutil -lint "$app/Contents/Info.plist"
+          codesign -dv --verbose=4 "$app" 2>&1 || true
+          if ! codesign --verify --deep --strict --verbose=2 "$app"; then
+            echo "Onda.app has no valid code signature; Gatekeeper would report it as damaged" >&2
+            exit 1
+          fi
+          archs="$(lipo -archs "$app/Contents/MacOS/Onda")"
+          echo "archs=$archs"
+          if ! echo "$archs" | grep -qw x86_64 || ! echo "$archs" | grep -qw arm64; then
+            echo "expected a universal binary (x86_64 + arm64), got: $archs" >&2
+            exit 1
+          fi
+
           log="$RUNNER_TEMP/onda-smoke.log"
           profile="$RUNNER_TEMP/onda-smoke-profile"
           mkdir -p "$profile"
@@ -241,7 +263,12 @@ jobs:
           if kill -0 "$pid" 2>/dev/null; then kill "$pid" 2>/dev/null || true; fi
           wait "$pid" 2>/dev/null || true
           cat "$log"
-          grep -q "\[Onda/boot\] window created" "$log"
+          if ! grep -q "\[Onda/boot\] window created" "$log"; then
+            echo "--- most recent crash reports ---" >&2
+            ls -1t "$HOME/Library/Logs/DiagnosticReports" 2>/dev/null | head -n 5 >&2 || true
+            echo "packaged app did not reach the 'window created' boot milestone" >&2
+            exit 1
+          fi
 
       # Publikacja jest osobnym, ostatnim krokiem. Dzięki temu uszkodzony
       # installer/`latest.yml` nigdy nie trafi do wydania przed smoke testem,
