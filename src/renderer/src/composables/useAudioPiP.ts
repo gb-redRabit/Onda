@@ -76,14 +76,15 @@ function handleProgressClick(percent: number): void {
 
 let registered = false;
 
-export function useAudioPiP() {
+export function useAudioPiP(options: { prewarm?: boolean } = {}) {
   if (!registered) {
     registered = true;
 
     onMounted(() => {
       if (!window.api) return;
-      // Prewarm okna PiP żeby show() był natychmiastowy.
-      void window.api?.audioPipPrewarm?.();
+      // Prewarm okna PiP — w compactcie można go wyłączyć, żeby nie trzymać
+      // ukrytego renderera od startu.
+      if (options.prewarm !== false) void window.api?.audioPipPrewarm?.();
 
       const removeClosed = window.api.on('audio-pip:closed', () => {
         isActive.value = false;

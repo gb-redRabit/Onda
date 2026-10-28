@@ -23,7 +23,8 @@ const sorted = computed(() =>
 const results = computed(() => {
   const q = query.value.trim();
   if (!q) return sorted.value;
-  return library.search(q).filter((track) => track.type === 'audio');
+  const matches = library.search(q).filter((track) => track.type === 'audio');
+  return [...matches].sort((a, b) => collator.compare(trackTitle(a), trackTitle(b)));
 });
 
 const virtualizer = useVirtualList({

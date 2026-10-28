@@ -17,6 +17,7 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
+  VolumeX,
   X
 } from '@lucide/vue';
 import { useCoreSync } from '@renderer/composables/useCoreSync';
@@ -43,13 +44,15 @@ const settings = useSettingsStore();
 const { appearance } = storeToRefs(settings);
 registerMediaIpcEvents(player);
 const audio = useAudioPlayer();
-const audioPip = useAudioPiP();
+const audioPip = useAudioPiP({ prewarm: false });
 audioPip.dock.value = settings.appearance.audioPipDock;
 audioPip.setAutoShow(settings.appearance.audioPipAutoShow);
 
 type Tab = 'tracks' | 'queue' | 'albums';
 const tab = ref<Tab>('tracks');
 const pinned = ref(false);
+const seekEl = ref<HTMLElement | null>(null);
+const seeking = ref(false);
 const tracksRef = ref<InstanceType<typeof CompactTracks> | null>(null);
 let stopCompactHidden: (() => void) | undefined;
 let stopCompactShown: (() => void) | undefined;
@@ -94,17 +97,44 @@ function formatTime(value: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-function seekTo(event: MouseEvent): void {
+function seekAtClientX(clientX: number): void {
   if (duration.value <= 0) return;
-  const el = event.currentTarget as HTMLElement;
+  const el = seekEl.value;
+  if (!el) return;
   const rect = el.getBoundingClientRect();
-  const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+  const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   audio.seek(ratio * duration.value);
 }
 
 function seekBy(seconds: number): void {
   if (duration.value <= 0) return;
   audio.seek(Math.max(0, Math.min(duration.value, audio.currentTime.value + seconds)));
+}
+
+function onSeekPointerDown(event: PointerEvent): void {
+  if (duration.value <= 0) return;
+  const el = event.currentTarget as HTMLElement;
+  seekEl.value = el;
+  el.setPointerCapture?.(event.pointerId);
+  el.focus();
+  seeking.value = true;
+  seekAtClientX(event.clientX);
+}
+
+function onSeekPointerMove(event: PointerEvent): void {
+  if (!seeking.value) return;
+  seekAtClientX(event.clientX);
+}
+
+function onSeekPointerUp(event: PointerEvent): void {
+  if (!seeking.value) return;
+  seekAtClientX(event.clientX);
+  seeking.value = false;
+  (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
+}
+
+function onSeekPointerCancel(): void {
+  seeking.value = false;
 }
 
 function setVolume(event: Event): void {
@@ -219,6 +249,9 @@ const repeatLabel = computed(() =>
       : t('compact.repeat')
 );
 
+const queueCount = computed(() => player.displayQueue.length);
+const queueBadge = computed(() => (queueCount.value > 99 ? '99+' : String(queueCount.value)));
+
 const dismissedError = ref<string | null>(null);
 const playbackError = computed(() => {
   const error = audio.error.value;
@@ -232,6 +265,13 @@ watch(
   () => audio.error.value,
   (error) => {
     if (!error) dismissedError.value = null;
+  }
+);
+
+watch(
+  () => player.currentTrack?.path,
+  () => {
+    dismissedError.value = null;
   }
 );
 
@@ -331,7 +371,9 @@ function dismissError(): void {
       </div>
 
       <div
-        class="group relative h-1.5 mt-3 rounded-full bg-base-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        ref="seekEl"
+        class="group relative h-1.5 mt-3 rounded-full bg-base-300 cursor-pointer touch-none before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        :class="{ 'cursor-grabbing': seeking }"
         role="slider"
         tabindex="0"
         :aria-label="$t('compact.seek')"
@@ -339,7 +381,10 @@ function dismissError(): void {
         :aria-valuemax="Math.round(duration)"
         :aria-valuenow="Math.round(audio.currentTime.value)"
         data-testid="compact-progress"
-        @click="seekTo"
+        @pointerdown="onSeekPointerDown"
+        @pointermove="onSeekPointerMove"
+        @pointerup="onSeekPointerUp"
+        @pointercancel="onSeekPointerCancel"
         @keydown.left.prevent="seekBy(-5)"
         @keydown.right.prevent="seekBy(5)"
       >
@@ -400,7 +445,17 @@ function dismissError(): void {
           <Repeat v-else :size="14" />
         </button>
         <span class="flex-1" />
-        <Volume2 :size="14" class="text-base-content/45 shrink-0" />
+        <button
+          class="grid place-items-center w-6 h-6 rounded-field text-base-content/45 hover:text-base-content hover:bg-base-content/10 shrink-0"
+          :title="player.isMuted ? $t('compact.unmute') : $t('compact.mute')"
+          :aria-label="player.isMuted ? $t('compact.unmute') : $t('compact.mute')"
+          :aria-pressed="player.isMuted"
+          data-testid="compact-mute"
+          @click="player.toggleMute()"
+        >
+          <VolumeX v-if="player.isMuted" :size="14" />
+          <Volume2 v-else :size="14" />
+        </button>
         <input
           type="range"
           min="0"
@@ -444,6 +499,13 @@ function dismissError(): void {
       >
         <component :is="item.icon" :size="13" />
         {{ item.label }}
+        <span
+          v-if="item.id === 'queue' && queueCount"
+          class="min-w-4 h-4 px-1 grid place-items-center rounded-full bg-base-content/10 text-[9px] tabular-nums"
+          data-testid="compact-queue-count"
+        >
+          {{ queueBadge }}
+        </span>
       </button>
     </nav>
 

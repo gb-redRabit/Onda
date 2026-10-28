@@ -122,10 +122,12 @@ export function registerSettingsHandlers(): void {
       // Hasła proxy również nie wróciły z renderera (maska) — przywróć zapisane.
       const storedNetwork = sanitizeSettings(store.store || {}).sanitized.network;
       restoreProxyPasswords(sanitized.network, storedNetwork);
+      const previousAppearance = sanitizeSettings(store.store || {}).sanitized.appearance;
       const secretSaved = encryptKeysOrDrop(sanitized);
       // Jeden zapis zamiast N osobnych `store.set` — każde `set` re-szyfrowało cały
       // config (pbkdf2Sync) i synchronicznie przepisywało plik na wątku głównym.
       store.store = { ...(store.store || {}), ...sanitized };
+      const nextAppearance = sanitizeSettings(store.store || {}).sanitized.appearance;
       if (sanitized.general) {
         setCloseToTray(sanitized.general.closeToTray !== false);
         applyLogSettings(sanitized.general.logLevel, sanitized.general.logMaxSizeMB);
@@ -136,14 +138,18 @@ export function registerSettingsHandlers(): void {
         void syncSubscriptionsScheduler();
         void syncLinkSubsScheduler();
       }
-      if (sanitized.appearance?.locale) {
-        setMainLocale(sanitized.appearance.locale);
+      const appearanceChanged =
+        !!nextAppearance &&
+        JSON.stringify(previousAppearance ?? {}) !== JSON.stringify(nextAppearance ?? {});
+      if (appearanceChanged && nextAppearance?.locale) {
+        setMainLocale(nextAppearance.locale);
         refreshTray();
       }
       // Motyw/język/geometria muszą trafić też do drugiego shella (compact),
-      // który żyje w osobnym rendererze. Nie wysyłamy sekretów — tylko appearance.
-      if (sanitized.appearance) {
-        const appearance = sanitized.appearance;
+      // który żyje w osobnym rendererze. Nie wysyłamy sekretów — tylko appearance
+      // i tylko wtedy, gdy faktycznie się zmieniło.
+      if (appearanceChanged) {
+        const appearance = nextAppearance;
         for (const win of BrowserWindow.getAllWindows()) {
           if (win.isDestroyed() || win.webContents.id === event.sender.id) continue;
           win.webContents.send('settings:appearance', appearance);

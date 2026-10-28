@@ -825,7 +825,9 @@ export default {
     next: 'Następny',
     play: 'Odtwarzaj',
     pause: 'Pauza',
-    volume: 'Głośność'
+    volume: 'Głośność',
+    mute: 'Wycisz',
+    unmute: 'Wyłącz wyciszenie'
   },
   settings: {
     title: 'Ustawienia',

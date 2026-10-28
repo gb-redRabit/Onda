@@ -224,7 +224,25 @@ describe('queue management', () => {
     store.addToQueue(makeTrack('2'));
     store.addToQueue(makeTrack('3'));
     store.reorderQueue(0, 2);
-    expect(store.queue.map((t) => t.id)).toEqual(['2', '1', '3']);
+    expect(store.queue.map((t) => t.id)).toEqual(['2', '3', '1']);
+  });
+
+  it('reorderQueue moves one step down and up', () => {
+    const store = usePlayerStore();
+    store.addToQueue(makeTrack('1'));
+    store.addToQueue(makeTrack('2'));
+    store.reorderQueue(0, 1);
+    expect(store.queue.map((t) => t.id)).toEqual(['2', '1']);
+    store.reorderQueue(1, 0);
+    expect(store.queue.map((t) => t.id)).toEqual(['1', '2']);
+  });
+
+  it('reorderQueue keeps pending moves inside pending', () => {
+    const store = usePlayerStore();
+    store.pendingQueue.push(makeTrack('p1'), makeTrack('p2'));
+    store.reorderQueue(0, 1);
+    expect(store.pendingQueue.map((t) => t.id)).toEqual(['p2', 'p1']);
+    expect(store.queue).toEqual([]);
   });
 
   it('removeFromQueue handles pendingQueue items', () => {

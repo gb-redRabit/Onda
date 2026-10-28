@@ -16,6 +16,7 @@ import {
   createScanBudget
 } from './library-scan';
 import { broadcastToAllWindows } from '../../utils/broadcast';
+import { e2eFixturesEnabled } from '../../e2e-fixtures';
 import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
 import {
   applyLoudnessUpdates,
@@ -375,6 +376,11 @@ export function registerLibraryHandlers(): void {
       total: number;
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null> => {
+      // Test-only: pozwala sprawdzić realny banner błędu biblioteki w E2E
+      // bez uszkadzania plików użytkownika. Poza try/catch, żeby IPC odrzuciło.
+      if (e2eFixturesEnabled() && process.env.ONDA_E2E_LIBRARY_FAIL === '1') {
+        throw new Error('E2E library load failure');
+      }
       try {
         const data = await loadLibraryScanned();
         if (!data) return null;

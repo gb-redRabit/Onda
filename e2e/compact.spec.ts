@@ -55,9 +55,19 @@ test('compact starts from saved mode and switches to full window', async () => {
 
     // Dodawanie do kolejki z listy utworów (przycisk +).
     await page.getByTestId('compact-track-add-1').click();
+    await page.getByTestId('compact-track-add-2').click();
     await page.getByTestId('compact-tab-queue').click();
     await expect(page.getByTestId('compact-queue')).toBeVisible();
     await expect(page.getByTestId('compact-queue-item-0')).toContainText('tone-02');
+    await expect(page.getByTestId('compact-queue-item-1')).toContainText('tone-03');
+    await expect(page.getByTestId('compact-queue-count')).toHaveText('2');
+
+    // Alt+↑/↓ reorder bez drag&drop; fokus zostaje na przeniesionym wierszu.
+    await page.getByTestId('compact-queue-grip-0').focus();
+    await page.keyboard.press('Alt+ArrowDown');
+    await expect(page.getByTestId('compact-queue-item-0')).toContainText('tone-03');
+    await expect(page.getByTestId('compact-queue-item-1')).toContainText('tone-02');
+    await expect(page.getByTestId('compact-queue-grip-1')).toBeFocused();
 
     await page.getByTestId('compact-tab-albums').click();
     await expect(page.getByTestId('compact-albums')).toBeVisible();

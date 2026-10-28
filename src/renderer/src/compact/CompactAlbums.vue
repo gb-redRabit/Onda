@@ -12,8 +12,20 @@ type AlbumEntry = [label: string, tracks: MediaFile[]];
 
 const library = useLibraryStore();
 const player = usePlayerStore();
-const selected = ref<AlbumEntry | null>(null);
+const selectedKey = ref<string | null>(null);
 const albums = computed(() => library.albums as AlbumEntry[]);
+
+function albumKey(album: AlbumEntry): string {
+  const first = album[1][0];
+  return `${album[0]}::${first?.metadata?.albumArtist || first?.metadata?.artist || ''}`;
+}
+
+// Trzymamy klucz, nie tablicę utworów: po rescanie biblioteki otwarty album
+// dalej pokazuje aktualne dane (albo wraca do siatki, jeśli zniknął).
+const selected = computed<AlbumEntry | null>(() => {
+  if (selectedKey.value === null) return null;
+  return albums.value.find((album) => albumKey(album) === selectedKey.value) ?? null;
+});
 
 // Siatka 2-kolumnowa jest wirtualizowana wierszami — duże biblioteki nie
 // montują setek okładek naraz. Wysokość wiersza mierzymy, bo zależy od
@@ -108,7 +120,7 @@ function addFrom(album: AlbumEntry, index: number): void {
               :key="cell.index"
               class="text-left p-1.5 rounded-field hover:bg-base-content/5 transition-colors"
               :data-testid="`compact-album-${cell.index}`"
-              @click="selected = cell.album"
+              @click="selectedKey = albumKey(cell.album)"
             >
               <span class="block aspect-square rounded-md overflow-hidden bg-base-300">
                 <MediaCover :path="cell.album[1][0]?.path" :size="160" fallback="disc" />
@@ -132,7 +144,7 @@ function addFrom(album: AlbumEntry, index: number): void {
         <button
           class="flex items-center gap-1 text-[11px] text-base-content/60 hover:text-base-content"
           data-testid="compact-album-back"
-          @click="selected = null"
+          @click="selectedKey = null"
         >
           <ChevronLeft :size="14" />
           {{ $t('compact.back') }}

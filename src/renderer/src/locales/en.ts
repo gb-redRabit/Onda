@@ -821,7 +821,9 @@ export default {
     next: 'Next',
     play: 'Play',
     pause: 'Pause',
-    volume: 'Volume'
+    volume: 'Volume',
+    mute: 'Mute',
+    unmute: 'Unmute'
   },
   settings: {
     title: 'Settings',

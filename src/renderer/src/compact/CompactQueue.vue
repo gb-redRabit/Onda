@@ -62,6 +62,16 @@ function moveItem(index: number, delta: number): void {
     document.querySelector<HTMLElement>(`[data-testid="compact-queue-grip-${target}"]`)?.focus()
   );
 }
+
+/** Auto-scroll przy przeciąganiu przy krawędzi listy. */
+function onDragOver(event: DragEvent): void {
+  const el = scrollEl.value;
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const threshold = 36;
+  if (event.clientY - rect.top < threshold) el.scrollTop -= 12;
+  else if (rect.bottom - event.clientY < threshold) el.scrollTop += 12;
+}
 </script>
 
 <template>
@@ -104,7 +114,12 @@ function moveItem(index: number, delta: number): void {
       {{ $t('compact.emptyQueue') }}
     </div>
 
-    <div v-else ref="scrollEl" class="flex-1 min-h-0 overflow-auto compact-scroll px-2 pb-2">
+    <div
+      v-else
+      ref="scrollEl"
+      class="flex-1 min-h-0 overflow-auto compact-scroll px-2 pb-2"
+      @dragover.prevent="onDragOver"
+    >
       <div class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
         <div
           v-for="row in virtualizer.getVirtualItems()"

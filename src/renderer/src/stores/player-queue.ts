@@ -43,10 +43,11 @@ export function usePlayerQueue(enrich: (track: MediaFile) => void) {
     const sourceIdx = fromInPending ? from : from - pendingLen;
     sourceArr.splice(sourceIdx, 1);
     const newPendingLen = pendingQueue.value.length;
-    const adjustedTo = from < to ? to - 1 : to;
-    const toInPending = adjustedTo < newPendingLen;
+    // Docelowy dział ustalamy po liczbie pending PRZED usunięciem: ruch w dół
+    // w obrębie pending musi tam zostać, a nie przeskoczyć do queue.
+    const toInPending = to < pendingLen;
     const destArr = toInPending ? pendingQueue.value : queue.value;
-    const destIdx = toInPending ? adjustedTo : adjustedTo - newPendingLen;
+    const destIdx = toInPending ? to : to - newPendingLen;
     destArr.splice(destIdx, 0, item);
   }
   function insertInQueue(index: number, track: MediaFile) {
