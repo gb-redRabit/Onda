@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { reactive } from 'vue';
+import { nextTick, reactive, watchEffect } from 'vue';
 import { createOnlineDownloads } from '../downloads';
 
 // Regresja: zadania budowane z preferencji subskrypcji (Pinia = reaktywne proxy Vue)
@@ -55,6 +55,27 @@ describe('createOnlineDownloads.submitJobs', () => {
     const dl = createOnlineDownloads(() => {});
     await expect(dl.submitJobs([])).resolves.toEqual([]);
     expect(invoke).not.toHaveBeenCalled();
+  });
+});
+
+describe('createOnlineDownloads.downloadStatusFor', () => {
+  it('stays reactive after an optimistic status update', async () => {
+    invoke.mockResolvedValueOnce(true);
+    const dl = createOnlineDownloads(() => {});
+    dl.upsertTask({ id: '1', videoId: 'x', title: 't', status: 'downloading' } as never);
+
+    let observed: string | null = null;
+    const stop = watchEffect(() => {
+      observed = dl.downloadStatusFor('x');
+    });
+    expect(observed).toBe('downloading');
+
+    await dl.cancelDownload('1');
+    await nextTick();
+
+    expect(observed).toBe('cancelled');
+    expect(dl.coverStatusFor('x')).toBeNull();
+    stop();
   });
 });
 

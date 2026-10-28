@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { i18n } from '@renderer/i18n';
 import { logger } from '@shared/logger';
 import { useUIStore } from '@renderer/stores/ui';
@@ -18,8 +18,16 @@ export function createOnlineDownloads(
 ) {
   const t = i18n.global.t;
   const downloads = ref<DownloadTask[]>([]);
-  // Wyszukiwanie O(1) po videoId - aktualizowane w upsertTask, unika find O(n) na element na render.
-  const downloadByVideoId = new Map<string, DownloadTask>();
+  // Wyliczane z `downloads.value`, a nie ręcznie synchronizowana `Map`: dzięki
+  // temu szablony śledzą zmiany, a każda optymistyczna aktualizacja statusu
+  // (cancel/pause/resume/retryCover) jest widoczna bez dodatkowego bookkeepingu.
+  const downloadByVideoId = computed(() => {
+    const map = new Map<string, DownloadTask>();
+    for (const task of downloads.value) {
+      if (task.videoId) map.set(task.videoId, task);
+    }
+    return map;
+  });
 
   function upsertTask(task: DownloadTask) {
     const idx = downloads.value.findIndex((d) => d.id === task.id);
@@ -29,7 +37,6 @@ export function createOnlineDownloads(
     const becameDownloading = task.status === 'downloading' && prev?.status !== 'downloading';
     if (idx >= 0) downloads.value[idx] = task;
     else downloads.value.push(task);
-    if (task.videoId) downloadByVideoId.set(task.videoId, task);
     if (becameCompleted && task.videoId && task.channelId) {
       markVideoDownloaded(task.videoId, task.channelId);
     }
@@ -97,7 +104,7 @@ export function createOnlineDownloads(
   // pobieranie / gotowe na szybkim przycisku "pobierz").
   function downloadStatusFor(videoId: string): DownloadTask['status'] | null {
     if (!videoId) return null;
-    const task = downloadByVideoId.get(videoId);
+    const task = downloadByVideoId.value.get(videoId);
     return task ? task.status : null;
   }
 
@@ -105,7 +112,7 @@ export function createOnlineDownloads(
   // animowana okładka wciąż jest przygotowywana po zakończeniu pobierania audio).
   function coverStatusFor(videoId: string): CoverStatus | null {
     if (!videoId) return null;
-    const task = downloadByVideoId.get(videoId);
+    const task = downloadByVideoId.value.get(videoId);
     return task?.coverStatus ?? null;
   }
 
@@ -114,10 +121,6 @@ export function createOnlineDownloads(
       const list = (await window.api.invoke('yt:download:list')) as IpcDownloadTask[];
       if (Array.isArray(list)) {
         downloads.value = list.map(toDownloadTask);
-        downloadByVideoId.clear();
-        for (const d of downloads.value) {
-          if (d.videoId) downloadByVideoId.set(d.videoId, d);
-        }
       }
     } catch {
       /* pobrania jeszcze niedostępne */
@@ -213,9 +216,6 @@ export function createOnlineDownloads(
     // wideo nie było wymienione dwa razy (raz jako błąd, raz jako oczekujące).
     const idx = downloads.value.findIndex((d) => d.id === task.id);
     if (idx >= 0) downloads.value.splice(idx, 1);
-    if (task.videoId && downloadByVideoId.get(task.videoId)?.id === task.id) {
-      downloadByVideoId.delete(task.videoId);
-    }
   }
 
   async function pauseAll() {
@@ -307,10 +307,6 @@ export function createOnlineDownloads(
       downloads.value = downloads.value.filter(
         (d) => d.status === 'pending' || d.status === 'downloading' || d.status === 'paused'
       );
-      downloadByVideoId.clear();
-      for (const d of downloads.value) {
-        if (d.videoId) downloadByVideoId.set(d.videoId, d);
-      }
     } catch {
       /* czyszczenie nie powiodło się */
     }
