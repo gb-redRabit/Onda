@@ -33,13 +33,17 @@ async function workDirFor(taskId: string): Promise<string> {
   return dir;
 }
 
-let staleWorkDirsCleaned = false;
+let staleWorkDirsCleanup: Promise<void> | null = null;
 async function cleanupStaleWorkDirsOnce(): Promise<void> {
-  if (staleWorkDirsCleaned) return;
-  staleWorkDirsCleaned = true;
-  await rm(join(tmpdir(), 'onda-cover-src'), { recursive: true, force: true }).catch(
-    () => undefined
-  );
+  if (!staleWorkDirsCleanup) {
+    // Wspólna obietnica zamiast flagi ustawianej przed `rm`: drugie zadanie
+    // nie utworzy katalogu, zanim trwające sprzątanie go usunie.
+    staleWorkDirsCleanup = rm(join(tmpdir(), 'onda-cover-src'), {
+      recursive: true,
+      force: true
+    }).catch(() => undefined);
+  }
+  return staleWorkDirsCleanup;
 }
 
 // Kodowanie pierwsze­go strumienia wideo w pliku (przez ffprobe).

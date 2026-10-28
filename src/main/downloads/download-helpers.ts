@@ -5,6 +5,8 @@ import type { IpcDownloadTask } from '../../shared/types/ipc';
 import { AUDIO_EXTS } from '../../shared/constants';
 import { resolveFolderTokens } from './cover-spec';
 import { sanitizeFilenameSpaced } from '../../shared/text';
+import { isSafeAbsolutePath } from '../utils/validate';
+import { isProtectedDestructivePath } from '../path-policy';
 
 // Czyste helpery wyodrębnione z `download-manager.ts` (plan 2.8) — bez stanu kolejki.
 
@@ -52,12 +54,28 @@ export function buildFormatSelector(quality: string, kind: 'audio' | 'video'): s
 }
 
 export function resolveOutputDir(job: Job): string {
-  return (
-    resolveFolderTokens(job.outputDir.trim(), {
+  const resolved =
+    resolveFolderTokens((job.outputDir ?? '').trim(), {
       channelTitle: job.channelTitle,
       playlistTitle: job.playlistTitle
-    }) || app.getPath('downloads')
-  );
+    }) || app.getPath('downloads');
+  // Tokeny `{channel}`/`{playlist}` mogą zmienić bezpieczny szablon w katalog
+  // systemowy (`C:\{channel}` + kanał "Windows"). Walidujemy wynik, nie wejście.
+  return isAllowedDownloadDir(resolved) ? resolved : app.getPath('downloads');
+}
+
+/** Czy katalog nadaje się na cel pobierania po rozwinięciu tokenów. */
+export function isAllowedDownloadDir(dir: string): boolean {
+  if (!isSafeAbsolutePath(dir)) return false;
+  try {
+    return !isProtectedDestructivePath(dir, process.platform, [
+      app.getPath('home'),
+      app.getPath('appData'),
+      app.getPath('userData')
+    ]);
+  } catch {
+    return false;
+  }
 }
 
 // Kandydackie rozszerzenia finalnego pliku mediów, używane do zlokalizowania

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { logger } from '../../shared/logger';
 import type { IpcDownloadJobInput, IpcDownloadTask } from '../../shared/types/ipc';
-import { type Job } from './download-helpers';
+import { type Job, resolveOutputDir, isAllowedDownloadDir } from './download-helpers';
 import { snapshotDownloadTask } from './download-snapshot';
 import { normalizeCoverSpec } from './cover-spec';
 import { buildJobSource } from './download-source';
@@ -116,6 +116,27 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     // Pobierania z bezpośredniego URL nie mają kroku miniatury yt-dlp — odrzuć covery typu thumbnail.
     const finalCover = source && cover?.type === 'thumbnail' ? undefined : cover;
     const now = Date.now();
+    const requestedOutputDir =
+      typeof input.outputDir === 'string' &&
+      isSafeAbsolutePath(input.outputDir) &&
+      !isProtectedPath(input.outputDir)
+        ? input.outputDir
+        : '';
+    // Sprawdzamy także wynik rozwinięcia `{channel}`/`{playlist}` — szablon
+    // `C:\{channel}` z kanałem "Windows" daje katalog systemowy.
+    const resolvedOutputDir = requestedOutputDir
+      ? resolveOutputDir({
+          outputDir: requestedOutputDir,
+          channelTitle: input.channelTitle,
+          playlistTitle: input.playlistTitle
+        } as Job)
+      : '';
+    const safeOutputDir =
+      requestedOutputDir &&
+      isAllowedDownloadDir(requestedOutputDir) &&
+      isAllowedDownloadDir(resolvedOutputDir)
+        ? requestedOutputDir
+        : '';
     const job: Job = {
       id: randomUUID(),
       url: input.url,
@@ -124,12 +145,7 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
       kind: input.kind === 'video' ? 'video' : 'audio',
       format: input.format || 'mp3',
       quality: input.quality || 'best',
-      outputDir:
-        typeof input.outputDir === 'string' &&
-        isSafeAbsolutePath(input.outputDir) &&
-        !isProtectedPath(input.outputDir)
-          ? input.outputDir
-          : '',
+      outputDir: safeOutputDir,
       filenameTemplate: input.filenameTemplate || '{title} - {artist}',
       progress: 0,
       speed: '',

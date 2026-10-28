@@ -18,11 +18,12 @@ const cache = new Map<BinTool, ResolvedBinary | null>();
 // Rozwiązuje binarium (najpierw zarządzane userData/bin, potem PATH), cache per proces.
 export async function resolveBin(tool: BinTool): Promise<string | null> {
   if (cache.has(tool)) {
-    return cache.get(tool)?.path ?? null;
+    const res = cache.get(tool);
+    return res && !res.broken ? res.path : null;
   }
   const res = await resolveBinary(getBinDir(), tool);
   cache.set(tool, res);
-  return res?.path ?? null;
+  return res && !res.broken ? res.path : null;
 }
 
 export async function resolveBinInfo(tool: BinTool): Promise<ResolvedBinary | null> {

@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import { join } from 'path';
 import { logger } from '../../shared/logger';
-import { type Job } from './download-helpers';
+import { type Job, isAllowedDownloadDir, resolveOutputDir } from './download-helpers';
 import { loadSources } from '../ipc/sources/sources-store';
 import { loadPersistedJobs, queueFilePath } from './download-queue-store';
 import { jobs, queueOrder } from './download-state';
@@ -46,8 +46,25 @@ export async function restoreDownloadQueue(): Promise<void> {
     let status = task.status;
     if (status === 'completed' || status === 'cancelled') continue;
     if (status === 'downloading') status = 'paused';
+    const requestedOutputDir = typeof task.outputDir === 'string' ? task.outputDir : '';
+    const resolvedOutputDir = requestedOutputDir
+      ? resolveOutputDir({ ...task, outputDir: requestedOutputDir } as Job)
+      : '';
+    const outputDir =
+      requestedOutputDir &&
+      isAllowedDownloadDir(requestedOutputDir) &&
+      isAllowedDownloadDir(resolvedOutputDir)
+        ? requestedOutputDir
+        : '';
+    if (requestedOutputDir && !outputDir) {
+      logger.warn(
+        'downloads',
+        `dropped unsafe outputDir from persisted job ${task.id}: ${requestedOutputDir}`
+      );
+    }
     const job: Job = {
       ...task,
+      outputDir,
       status,
       progress: 0,
       speed: '',

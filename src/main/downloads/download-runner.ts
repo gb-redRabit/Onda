@@ -9,7 +9,7 @@ import { runJobAttempt } from './download-attempt';
 import { postProcess } from './download-post-process';
 import { classifyYtDlpError, redactSecrets } from './error-classifier';
 import { isWithinWindow, msUntilWindowStart } from './schedule';
-import { jobs, queueOrder, hold, persist } from './download-state';
+import { jobs, queueOrder, hold, persist, jobAbortControllers } from './download-state';
 import { readMaxConcurrent, readNightSchedule, readRetryConfig } from './download-settings';
 import type { NightSchedule } from './download-settings';
 
@@ -62,19 +62,33 @@ async function runJob(job: Job): Promise<void> {
   job.status = 'downloading';
   job.progress = 0;
   persist(job);
+  // Kontroler obejmuje CAŁE zadanie, nie tylko pojedynczą próbę transportu.
+  // Bez tego cancel/pause w fazie `resolveBin`/`getYtAuthConfig`/backoffu
+  // zwracały false i polecenie użytkownika ginęło.
+  const runAbort = new AbortController();
+  jobAbortControllers.set(job.id, runAbort);
+  const stopRequested = (): boolean =>
+    runAbort.signal.aborted || job.status === 'cancelled' || job.status === 'paused';
   let auth: YtAuthConfig | null = null;
   try {
     const bin = (await resolveBin('yt-dlp')) || 'yt-dlp';
+    if (stopRequested()) return;
     // Może być null, gdy autoryzacja jest wyłączona ("none") lub nie istnieje
     // ważna sesja — publiczne filmy nadal można pobierać bez cookies, a yt-dlp
     // zgłasza konkretny błąd dla treści z ograniczeniem wieku / prywatnych / tylko dla członków.
     auth = await getYtAuthConfig();
+    if (stopRequested()) return;
     // Tryb providera (PikPak/MEGA/Drive…) nie używa yt-dlp ani jego argumentów —
     // URL jest syntetyczny (`provider://…`) i walidacja http w buildBaseArgs by go odrzuciła.
     const base = job.source?.mode === 'provider' ? [] : await buildBaseArgs(job);
+    if (stopRequested()) return;
     const retryCfg = await readRetryConfig();
     for (let attempt = 1; attempt <= Math.max(1, retryCfg.attempts); attempt++) {
+      if (stopRequested()) return;
       const result = await runJobAttempt(job, bin, auth, base);
+      // `runJobAttempt` usuwa swój kontroler; przywracamy kontroler zadania,
+      // żeby pauza/cancel działały także w czasie backoffu.
+      if (!runAbort.signal.aborted) jobAbortControllers.set(job.id, runAbort);
       if (result.finishedOk) {
         // Post-processing (metadane/okładka/sync biblioteki) jest NIEKRYTYCZNE:
         // plik jest już pobrany, a `reportCompleted` zaksięgował go jako ukończony.
@@ -109,10 +123,10 @@ async function runJob(job: Job): Promise<void> {
       await new Promise((r) => setTimeout(r, retryCfg.baseMs * 2 ** (attempt - 1)));
       // Ponownie sprawdza status po backoffie — użytkownik mógł wstrzymać/anulować
       // podczas oczekiwania (job.child jest undefined, więc pause/cancel nie może go zabić).
-      const postSleep = job.status as IpcDownloadTask['status'];
-      if (postSleep === 'cancelled' || postSleep === 'paused') return;
+      if (stopRequested()) return;
     }
   } catch (e) {
+    if (stopRequested()) return;
     const msg = e instanceof Error ? e.message : String(e);
     logger.warn('downloads', `job failed: ${msg}`);
     job.status = 'error';
@@ -121,6 +135,7 @@ async function runJob(job: Job): Promise<void> {
   } finally {
     running--;
     job.child = undefined;
+    if (jobAbortControllers.get(job.id) === runAbort) jobAbortControllers.delete(job.id);
     persist(job);
     await cleanupYtAuthTemp(auth);
     void pump();

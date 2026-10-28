@@ -6,6 +6,11 @@ import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
 // kolejki. Runner i trwałość są mockowane — test jest offline i deterministyczny.
 
 vi.mock('../download-runner', () => ({ pump: vi.fn(async () => {}) }));
+vi.mock('electron', () => ({
+  app: {
+    getPath: (name: string) => (name === 'downloads' ? 'C:/Users/test/Downloads' : 'C:/Users/test')
+  }
+}));
 vi.mock('../download-queue-store', () => ({
   persistJobs: vi.fn(async () => {}),
   queueFilePath: vi.fn(() => 'C:/tmp/ondaqueue.json'),
@@ -64,6 +69,28 @@ describe('addDownloadJobs', () => {
     expect(created[0]).toMatchObject({ status: 'pending', kind: 'video', format: 'mp4' });
     expect(created[0].source?.mode).toBe('ytdlp');
     expect(listDownloadJobs()).toHaveLength(1);
+  });
+
+  it('drops an output template that expands into a protected directory', async () => {
+    const created = await addDownloadJobs([
+      jobInput({
+        url: 'https://www.youtube.com/watch?v=abc12345678',
+        outputDir: 'C:\\{channel}',
+        channelTitle: 'Windows'
+      })
+    ]);
+    expect(created[0].outputDir).toBe('');
+  });
+
+  it('keeps a safe output template after token expansion', async () => {
+    const created = await addDownloadJobs([
+      jobInput({
+        url: 'https://www.youtube.com/watch?v=abc12345678',
+        outputDir: 'C:\\Users\\test\\Downloads\\{channel}',
+        channelTitle: 'Windows'
+      })
+    ]);
+    expect(created[0].outputDir).toBe('C:\\Users\\test\\Downloads\\{channel}');
   });
 
   it('sanitizes http fileName and preserves source identity (no private-network trust)', async () => {

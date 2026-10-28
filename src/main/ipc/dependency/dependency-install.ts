@@ -2,6 +2,7 @@ import { dialog, BrowserWindow, type WebContents } from 'electron';
 import { mkdir, chmod, unlink, rm, copyFile } from 'fs/promises';
 import { basename, join } from 'path';
 import { runCommand } from '../../utils/exec';
+import { replaceFileAtomic, safeUnlink } from '../../utils/fs-atomic';
 import { mainMessages } from '../../i18n-main';
 import {
   ytdlpBinaryName,
@@ -44,6 +45,10 @@ export async function installYtdlpManaged(
     const binDir = getBinDir();
     await mkdir(binDir, { recursive: true });
     const dest = join(binDir, ytdlpBinaryName());
+    const staging = `${dest}.staging`;
+    // Pobieramy do pliku tymczasowego: dopóki SHA-256 nie przejdzie, nie wolno
+    // podmienić działającej binarki na potencjalnie uszkodzoną.
+    await safeUnlink(staging);
     // Zawsze rozwiązuj najnowsze wydanie z aktywnego kanału (GitHub
     // *tag* jest niezmienny, w przeciwieństwie do zmiennego redirectu `latest`); przypięty tag
     // jest tylko fallbackiem, gdy API GitHub jest nieosiągalne.
@@ -52,21 +57,20 @@ export async function installYtdlpManaged(
     const shaUrl = ytdlpShaUrl(version);
 
     emitProgress(sender, 'yt-dlp', reinstall ? 'update' : 'download', 5);
-    await downloadFile(url, dest, signal, (received, total) => {
+    await downloadFile(url, staging, signal, (received, total) => {
       const pct = total > 0 ? 5 + Math.round((received / total) * 85) : 5;
       emitProgress(sender, 'yt-dlp', 'download', pct);
     });
     if (process.platform !== 'win32') {
-      await chmod(dest, 0o755);
+      await chmod(staging, 0o755);
     }
 
     emitProgress(sender, 'yt-dlp', 'verify', 92);
     try {
-      await verifyDownloadedFile(dest, shaUrl, basename(url), signal);
+      await verifyDownloadedFile(staging, shaUrl, basename(url), signal);
+      await replaceFileAtomic(staging, dest);
     } catch (e) {
-      await unlink(dest).catch(() => {
-        /* best-effort */
-      });
+      await safeUnlink(staging);
       const err = e as { message?: string };
       if (err.message === 'cancelled' || signal.aborted) {
         return { success: false, cancelled: true };
@@ -276,13 +280,13 @@ export async function installSystem(sender: WebContents, tool: BinTool): Promise
     emitProgress(sender, tool, 'verify', 90);
     invalidateBinaries();
     const info = await resolveBinInfo(tool);
-    if (info) {
+    if (info && !info.broken) {
       emitProgress(sender, tool, 'done', 100);
       return { success: true, path: info.path, managed: info.managed };
     }
     return {
       success: false,
-      error: `Instalacja zakończyła się, ale binarka nie jest dostępna. Skopiuj komendę i uruchom ręcznie: ${cmd}\n\n${output}`
+      error: `Instalacja zakończyła się, ale binarka nie przeszła testu --version. Skopiuj komendę i uruchom ręcznie: ${cmd}\n\n${output}`
     };
   } catch (e) {
     const err = e as { stderr?: string; stdout?: string; message?: string };
