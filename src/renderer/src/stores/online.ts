@@ -183,11 +183,19 @@ export const useOnlineStore = defineStore('online', () => {
       result = undefined;
     }
     logger.info('yt', `playStream resolve ms=${Math.round(performance.now() - t0)}`, result);
-    // Nowsza intencja mogła zastąpić ten oczekujący utwór. Kliknięcie TEGO SAMEGO
-    // wideo (np. playAllStreams zajmujące ten sam pierwszy element) nie może anulować
-    // rozwiązania URL — tylko inne wideo przejmuje kontrolę.
+    // Nowsza intencja mogła zastąpić ten oczekujący utwór. `setTrack`/`clearTrack`
+    // (np. wybór lokalnego pliku) zerują `streamPending` — wtedy spóźniona
+    // odpowiedź yt-dlp NIE może nadpisać tego, co użytkownik właśnie wybrał.
     const superseding = player.streamPending;
-    if (superseding && superseding.id !== pending.id) {
+    if (!superseding) {
+      logger.warn(
+        'yt',
+        'playStream pending cleared by local selection — dropping resolved URL',
+        `clicked=${pending.id}`
+      );
+      return;
+    }
+    if (superseding.id !== pending.id) {
       logger.warn(
         'yt',
         'playStream pending superseded — dropping resolved URL',

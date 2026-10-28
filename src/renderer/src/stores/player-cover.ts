@@ -181,15 +181,23 @@ export function usePlayerCover() {
     } catch {
       /* zostaw zera */
     }
+    const updates: Array<{ path: string; updater: (track: MediaFile) => void }> = [];
     for (const b of batch) {
       const dur = results[b.track.path] ?? 0;
       if (dur > 0) {
-        useLibraryStore().updateTrack(b.track.path, (t) => {
-          t.duration = dur;
+        // Ustawiamy także sam obiekt utworu: część utworów (np. z kolejki)
+        // nie należy do biblioteki i bez tego zostawała z duration = 0.
+        b.track.duration = dur;
+        updates.push({
+          path: b.track.path,
+          updater: (t) => {
+            t.duration = dur;
+          }
         });
       }
       b.resolve();
     }
+    if (updates.length) useLibraryStore().updateTracksBatch(updates);
   }
 
   async function enrichTrack(track: MediaFile): Promise<void> {

@@ -144,6 +144,23 @@ export const useLibraryStore = defineStore('library', () => {
     return track;
   }
 
+  /**
+   * Zmiany wielu utworów w jednej transakcji: jedno `triggerRef` zamiast N
+   * przeliczeń artystów/albumów (np. po zbiorczym odczycie duration).
+   */
+  function updateTracksBatch(
+    updates: ReadonlyArray<{ path: string; updater: (track: MediaFile) => void }>
+  ): void {
+    let changed = false;
+    for (const { path, updater } of updates) {
+      const idx = indexOfTrack(path);
+      if (idx < 0) continue;
+      updater(tracks.value[idx]);
+      changed = true;
+    }
+    if (changed) triggerRef(tracks);
+  }
+
   // Zmiana statystyk odtwarzania: tylko widoki statystyk od tego zależą, więc nie może
   // `triggerRef(tracks)` — to pogrupowałoby na nowo artystów/albumy przy każdym odtworzeniu.
   function updateTrackStats(
@@ -206,6 +223,7 @@ export const useLibraryStore = defineStore('library', () => {
     addTrack,
     removeTrack,
     updateTrack,
+    updateTracksBatch,
     updateTrackStats,
     createPlaylist,
     addToPlaylist,

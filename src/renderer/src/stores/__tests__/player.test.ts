@@ -76,6 +76,20 @@ describe('setTrack', () => {
     expect(store.consumeResumeIntent(t2.path)).toBe(false);
     expect(store.consumeResumeIntent(t1.path)).toBe(true);
   });
+
+  it('clears a pending online stream when the user selects a local track', () => {
+    const store = usePlayerStore();
+    store.streamPending = makeTrack('stream');
+    store.setTrack(makeTrack('local'));
+    expect(store.streamPending).toBeNull();
+  });
+
+  it('clears a pending online stream when the track is cleared', () => {
+    const store = usePlayerStore();
+    store.streamPending = makeTrack('stream');
+    store.clearTrack();
+    expect(store.streamPending).toBeNull();
+  });
 });
 
 describe('play/pause/toggle', () => {

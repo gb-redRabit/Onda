@@ -138,6 +138,8 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   function setTrack(track: MediaFile, options?: { resume?: boolean }): void {
+    // Wybór lokalnego utworu unieważnia trwające rozwiązywanie streamu online.
+    streamPending.value = null;
     if (isCoreShell()) {
       if (track.type === 'image') {
         logger.warn('core-shell', 'image playback is not supported');
@@ -164,6 +166,7 @@ export const usePlayerStore = defineStore('player', () => {
     recordPlay(track);
   }
   function clearTrack(): void {
+    streamPending.value = null;
     if (isCoreShell()) sendCoreCommand({ type: 'clear' });
     clearTrackBase();
   }
