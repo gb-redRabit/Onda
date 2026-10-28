@@ -1,5 +1,6 @@
 import { posix, win32 } from 'path';
 import { tmpdir } from 'os';
+import { realpathSync } from 'fs';
 
 // Destrukcyjne handlery fs IPC (delete / move / copy / mkdir) działają z pełnymi
 // uprawnieniami użytkownika, a renderer jest jedyną rzeczą między przejętą
@@ -241,16 +242,45 @@ export function isSensitivePath(
  * legalne pliki tymczasowe (podglądy, narzędzia, testy) dostawały 403 z serwera
  * mediów mimo jawnego `media:grantAccess`.
  */
+/**
+ * True dla ścieżek w systemowym katalogu tymczasowym. `tmpdir()` na Windows
+ * bywa krótką nazwą 8.3 (`RUNNER~1`), a `realpath` zwraca długą — porównujemy
+ * oba warianty. Uwzględniamy też `TEMP`/`TMP`/`TMPDIR`/`RUNNER_TEMP`, bo CI
+ * (szczególnie GitHub Actions) używa własnego katalogu tymczasowego.
+ */
 export function isSystemTempPath(
   target: unknown,
   platform: NodeJS.Platform = process.platform
 ): boolean {
   if (typeof target !== 'string' || !target) return false;
-  const temp = normalizeFor(tmpdir(), platform).replace(/[\\/]+$/, '');
-  if (!temp) return false;
-  const normalized = normalizeFor(target, platform);
   const separator = platform === 'win32' ? '\\' : '/';
-  return normalized === temp || normalized.startsWith(temp + separator);
+  const realOrSelf = (value: string): string => {
+    try {
+      return realpathSync.native(value);
+    } catch {
+      return value;
+    }
+  };
+  const roots = [
+    tmpdir(),
+    process.env.TEMP,
+    process.env.TMP,
+    process.env.TMPDIR,
+    process.env.RUNNER_TEMP
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+  const variants = new Set<string>();
+  for (const root of roots) {
+    for (const value of [root, realOrSelf(root)]) {
+      variants.add(normalizeFor(value, platform).replace(/[\\/]+$/, ''));
+    }
+  }
+  for (const value of [target, realOrSelf(target)]) {
+    const normalized = normalizeFor(value, platform);
+    for (const root of variants) {
+      if (root && (normalized === root || normalized.startsWith(root + separator))) return true;
+    }
+  }
+  return false;
 }
 
 /**

@@ -72,7 +72,6 @@
     "jassub": "^2.5.7",
     "jsdom": "^30.1.2",
     "lfa-ponyfill": "^1.1.1",
-    "lightningcss-win32-x64-msvc": "^1.33.0",
     "pinia": "^4.0.3",
     "prettier": "^3.7.4",
     "tailwindcss": "^4.3.2",

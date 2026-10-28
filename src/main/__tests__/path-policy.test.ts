@@ -171,6 +171,18 @@ describe('isSystemTempPath', () => {
     }
   });
 
+  it('accepts a CI temp root from RUNNER_TEMP/TMPDIR', () => {
+    const old = process.env.RUNNER_TEMP;
+    const ciTemp = join(tmpdir(), 'onda-ci-temp');
+    process.env.RUNNER_TEMP = ciTemp;
+    try {
+      expect(isSystemTempPath(join(ciTemp, 'subtitle.srt'))).toBe(true);
+    } finally {
+      if (old === undefined) delete process.env.RUNNER_TEMP;
+      else process.env.RUNNER_TEMP = old;
+    }
+  });
+
   it('rejects paths outside the temp dir', () => {
     expect(isSystemTempPath(join(tmpdir(), '..', 'elsewhere', 'preview.webm'))).toBe(false);
     expect(isSystemTempPath('C:\\Users\\u\\Music\\song.mp3')).toBe(false);
