@@ -52,7 +52,8 @@ export class PipManager {
 
   init(): void {
     this.preview.setClosedHandler(() => sendToWindow(this.mainWindow, 'pip:previewClosed'));
-    this.createWindow();
+    // Okno tworzymy dopiero w `ensureWindow()` (show/preload/loadTrack). Ukryty
+    // PiP od startu nie może utrzymywać procesu przy życiu po zamknięciu shella.
     this.registerIpc();
   }
 

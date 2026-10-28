@@ -20,7 +20,7 @@ import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-handlers';
 import { syncLinkSubsScheduler } from './ipc/providers/providers-handlers';
-import { shouldCloseToTray } from './windows/close-behavior';
+import { shouldCloseToTray, shouldHideShellOnClose } from './windows/close-behavior';
 import { windowIcon } from './windows/window-icon';
 import { createWindow as createBrowserWindow } from './windows/window-factory';
 import { GLASS_WINDOW_OPTS } from './windows/window-presets';
@@ -75,6 +75,39 @@ const splash = new SplashController({
 app.on('before-quit', () => {
   quitting = true;
 });
+
+/** Wspólna decyzja dla obu shelli: chowamy do tray tylko gdy jest po co. */
+function shouldHideShell(): boolean {
+  return shouldHideShellOnClose({
+    quitting,
+    trayAvailable: hasTray(),
+    closeToTray: shouldCloseToTray()
+  });
+}
+
+/**
+ * Kończy aplikację bez pozostawiania procesu w tle. `quitting` musi być ustawione
+ * przed `app.quit()`, żeby handlery `close` nie schowały okien do tray.
+ */
+function quitApp(): void {
+  if (quitting) return;
+  quitting = true;
+  app.quit();
+}
+
+/**
+ * Wywoływane, gdy aktywny shell zostanie naprawdę zniszczony (nie schowany).
+ * Ukryte okna PiP nie mogą utrzymywać procesu przy życiu ani blokować
+ * `window-all-closed`, dlatego zamykamy je razem z shellem.
+ */
+function handleShellClosed(): void {
+  if (quitting) return;
+  pipManager.destroy();
+  audioPipManager.destroy();
+  pipReady = false;
+  audioPipReady = false;
+  if (process.platform !== 'darwin') quitApp();
+}
 
 // Zapisuje fazę na osi czasu startu (Diagnostyka → Wydajność) i loguje ją.
 function perf(label: string): number {
@@ -138,13 +171,14 @@ function createWindow(options: { showWhenReady?: boolean } = {}): BrowserWindow 
   });
 
   win.on('close', (e) => {
-    if (hasTray() && shouldCloseToTray()) {
+    if (shouldHideShell()) {
       e.preventDefault();
       win.hide();
     }
   });
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null;
+    handleShellClosed();
   });
 
   // Diagnostyka startu: renderer, który nigdy nie kończy ładowania, wygląda
@@ -194,7 +228,8 @@ function wireMainWindow(win: BrowserWindow): void {
 
 function wireCompactWindow(win: BrowserWindow): void {
   win.on('closed', () => {
-    compactWindow = null;
+    if (compactWindow === win) compactWindow = null;
+    handleShellClosed();
   });
   win.webContents.on('did-finish-load', sendShellActivity);
   installRendererRecovery(win, () => {}, {
@@ -307,7 +342,7 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
       compactWindow = createCompactWindow({
         state: await loadCompactState(),
         showOnReady: true,
-        hideOnClose: () => !quitting
+        hideOnClose: shouldHideShell
       });
       wireCompactWindow(compactWindow);
       initPipForCompact(compactWindow);
@@ -437,8 +472,7 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('app:quit', () => {
-    destroyTray();
-    app.quit();
+    quitApp();
   });
 
   // Łagodne wyłączanie: opróżnia debounce'owaną persystencję i zatrzymuje pracę
@@ -461,7 +495,7 @@ app.whenReady().then(async () => {
     compactWindow = createCompactWindow({
       state: savedState,
       showOnReady: false,
-      hideOnClose: () => !quitting
+      hideOnClose: shouldHideShell
     });
     wireCompactWindow(compactWindow);
     initPipForCompact(compactWindow);
@@ -547,6 +581,6 @@ app.on('window-all-closed', () => {
   pipReady = false;
   audioPipReady = false;
   if (process.platform !== 'darwin') {
-    app.quit();
+    quitApp();
   }
 });

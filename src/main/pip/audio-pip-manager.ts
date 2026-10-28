@@ -99,14 +99,8 @@ export class AudioPipManager {
     screen.on('display-metrics-changed', this.onDisplayMetricsChanged);
     screen.on('display-added', this.repositionForDisplayChange);
     screen.on('display-removed', this.repositionForDisplayChange);
-    // Prewarm: okno ładowane raz w tle, show() jest potem natychmiastowy.
-    setImmediate(() => {
-      try {
-        this.ensureWindow();
-      } catch {
-        /* lazy fallback w show() */
-      }
-    });
+    // Bez prewarmu przy starcie: okno powstaje w `show()`/`prewarm()` (IPC).
+    // Ukryty PiP nie może blokować zamknięcia aplikacji.
   }
 
   /** Jawny prewarm z IPC (np. po starcie apki). */
