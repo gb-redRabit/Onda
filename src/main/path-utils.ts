@@ -8,10 +8,15 @@ function normalizeForPlatform(path: string, platform: NodeJS.Platform): string {
 
 function fileUrlToFilesystemPath(raw: string, platform: NodeJS.Platform): string {
   // `fileURLToPath` używa gramatyki hosta; w testach uruchamianych na Windows
-  // potrzebujemy też poprawnej ścieżki POSIX, więc dla obcej platformy bierzemy
-  // `pathname` i dekodujemy percent-encoding samego URL-a.
+  // potrzebujemy też poprawnej ścieżki POSIX i odwrotnie (CI Linux/macOS testuje
+  // ścieżki Windows).
   if (platform === process.platform) return fileURLToPath(raw);
-  return decodeURIComponent(new URL(raw).pathname);
+  const decoded = decodeURIComponent(new URL(raw).pathname);
+  if (platform === 'win32') {
+    // `file:///D:/Music/A.mp3` → `D:\Music\A.mp3` (bez wiodącego backslasha).
+    return win32.normalize(decoded.replace(/^\/([A-Za-z]:)/, '$1'));
+  }
+  return decoded;
 }
 
 /**

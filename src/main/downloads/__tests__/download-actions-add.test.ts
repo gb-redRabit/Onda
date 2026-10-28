@@ -83,14 +83,18 @@ describe('addDownloadJobs', () => {
   });
 
   it('keeps a safe output template after token expansion', async () => {
+    const outputDir =
+      process.platform === 'win32'
+        ? 'C:\\Users\\test\\Downloads\\{channel}'
+        : '/home/test/Downloads/{channel}';
     const created = await addDownloadJobs([
       jobInput({
         url: 'https://www.youtube.com/watch?v=abc12345678',
-        outputDir: 'C:\\Users\\test\\Downloads\\{channel}',
+        outputDir,
         channelTitle: 'Windows'
       })
     ]);
-    expect(created[0].outputDir).toBe('C:\\Users\\test\\Downloads\\{channel}');
+    expect(created[0].outputDir).toBe(outputDir);
   });
 
   it('sanitizes http fileName and preserves source identity (no private-network trust)', async () => {
