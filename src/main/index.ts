@@ -29,7 +29,6 @@ import { SplashController } from './windows/splash';
 import { startCoreService } from './core/core-spike';
 import { createCompactWindow } from './compact/compact-window';
 import { loadCompactState, saveCompactState, type WindowMode } from './compact/compact-state';
-import { isAllowedExternalMediaRoot } from './path-policy';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
@@ -88,13 +87,7 @@ const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: n
 
 const openFiles = new OpenFileForwarder(
   () => activeShell(),
-  (dir) => {
-    if (!isAllowedExternalMediaRoot(dir)) {
-      logger.warn('media', `refusing sensitive external root: ${dir}`);
-      return;
-    }
-    void addAllowedRoot(dir);
-  }
+  (dir) => void addAllowedRoot(dir, { external: true })
 );
 
 // Nadpisanie E2E/portable: kieruje cały profil (ustawienia, logi, tokeny) do

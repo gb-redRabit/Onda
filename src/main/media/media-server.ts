@@ -14,7 +14,7 @@ import {
 } from './media-server-guards';
 import { handleStreamProxy, handleProviderStreamProxy } from './media-server-stream';
 import { isServableMediaPath } from './media-paths';
-import { isProtectedPath } from '../path-policy';
+import { isAllowedExternalMediaRoot, isProtectedPath } from '../path-policy';
 export { isAllowedStreamHost, validateStreamUrl };
 
 export interface MediaServer {
@@ -76,12 +76,28 @@ export async function setAllowedRoots(roots: string[]): Promise<void> {
  */
 const MAX_EXTRA_ROOTS = 200;
 
+export interface AddAllowedRootOptions {
+  /**
+   * Root pochodzi spoza biblioteki użytkownika (np. plik przekazany w argv).
+   * Wtedy odrzucamy wrażliwe katalogi profilu; jawne biblioteki użytkownika
+   * (dodane w Ustawieniach) nadal mogą leżeć w `.local`/`.config`.
+   */
+  external?: boolean;
+}
+
 /** False po osiągnięciu sufitu lub przy próbie dodania chronionej ścieżki. */
-export async function addAllowedRoot(root: string): Promise<boolean> {
+export async function addAllowedRoot(
+  root: string,
+  options: AddAllowedRootOptions = {}
+): Promise<boolean> {
   if (typeof root !== 'string' || !root) return false;
   const real = await resolveReal(root);
   if (isProtectedPath(real)) {
     logger.warn('media', `refusing protected root: ${real}`);
+    return false;
+  }
+  if (options.external && !isAllowedExternalMediaRoot(real)) {
+    logger.warn('media', `refusing sensitive external root: ${real}`);
     return false;
   }
   if (extraRoots.includes(real)) return true;

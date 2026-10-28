@@ -280,6 +280,26 @@ describe('media-server', () => {
     expect(getExtraRoots()).not.toContain(protectedDir);
   });
 
+  it('refuses sensitive profile roots for external callers', async () => {
+    // Plik przekazany przez argv/OS nie może odsłonić `.ssh` ani podobnych katalogów.
+    const sensitive = join(os.homedir(), '.ssh');
+    expect(await addAllowedRoot(sensitive, { external: true })).toBe(false);
+    expect(getExtraRoots()).not.toContain(sensitive);
+  });
+
+  it('allows external roots from the OS temp dir', async () => {
+    // Wyjątek temp jest potrzebny narzędziom i podglądom zapisującym w os.tmpdir().
+    const scratch = await makeGrantableScratch('ms-external-temp');
+    const dir = scratch.dir;
+    const file = join(dir, 'clip.mp4');
+    await fs.writeFile(file, Buffer.alloc(64, 0x41));
+    tempFiles.push(file);
+
+    expect(await addAllowedRoot(dir, { external: true })).toBe(true);
+    const res = await request(`/${server!.token}/?path=${encodeURIComponent(file)}`);
+    expect(res.status).toBe(200);
+  });
+
   it('keeps extra roots when library roots are replaced', async () => {
     // To samo uzasadnienie co w powyższym teście dodatkowych korzeni.
     const scratch = await makeGrantableScratch('ms-keep');
