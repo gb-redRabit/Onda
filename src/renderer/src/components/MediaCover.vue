@@ -145,6 +145,26 @@ onMounted(() => {
   obs.observe(observedTarget);
 });
 
+watch(
+  () => props.path,
+  (path) => {
+    if (!path || props.cover?.data) {
+      inView.value = true;
+      loaded.value = true;
+      return;
+    }
+    loaded.value = false;
+    const cached = player.getCover(path);
+    if (cached.data) {
+      loaded.value = true;
+      return;
+    }
+    // Element jest już w viewporcie (wirtualizowany wiersz został reużyty):
+    // IntersectionObserver nie wyemituje drugi raz, więc ładujemy od razu.
+    if (inView.value) player.loadCover(path);
+  }
+);
+
 onUnmounted(() => {
   if (observedTarget) {
     getSharedObserver()?.unobserve(observedTarget);

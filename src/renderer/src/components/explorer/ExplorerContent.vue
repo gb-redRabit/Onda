@@ -103,7 +103,7 @@ defineExpose({ reveal });
     >
       <div
         v-for="virtualRow in virtualizer.getVirtualItems()"
-        :key="virtualRow.index"
+        :key="files[virtualRow.index].path"
         :style="{
           position: 'absolute',
           top: 0,
@@ -231,7 +231,7 @@ defineExpose({ reveal });
       <div :style="{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }">
         <div
           v-for="virtualRow in virtualizer.getVirtualItems()"
-          :key="virtualRow.index"
+          :key="files[virtualRow.index].path"
           :style="{
             position: 'absolute',
             top: 0,

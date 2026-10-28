@@ -23,9 +23,9 @@ const emit = defineEmits<{
 }>();
 
 const { rootEl, systemIcon, mediaThumb } = useThumbnail(
-  props.item.path,
-  props.item.isDirectory,
-  props.isAtDrives,
+  () => props.item.path,
+  () => props.item.isDirectory,
+  () => props.isAtDrives,
   96
 );
 if (import.meta.env.DEV) {

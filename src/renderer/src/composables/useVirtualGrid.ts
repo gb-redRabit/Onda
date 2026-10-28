@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue';
+import { ref, watch, type Ref } from 'vue';
 
 interface VirtualGrid {
   cols: Ref<number>;
@@ -14,6 +14,7 @@ export function useVirtualGrid(
 ): VirtualGrid {
   const cols = ref(defaultCols);
   let indexRowObserver: ResizeObserver | null = null;
+  let stopWatch: ReturnType<typeof watch> | null = null;
 
   function resolveWidth(): number {
     return typeof colWidth === 'function' ? colWidth() : colWidth;
@@ -27,8 +28,9 @@ export function useVirtualGrid(
     cols.value = Math.max(2, Math.floor(el.clientWidth / width));
   }
 
-  function observe(): void {
+  function attachObserver(): void {
     indexRowObserver?.disconnect();
+    indexRowObserver = null;
     const el = scrollRef.value;
     if (!el) return;
     indexRowObserver = new ResizeObserver(() => update());
@@ -36,7 +38,19 @@ export function useVirtualGrid(
     update();
   }
 
+  function observe(): void {
+    // Kontener siatki jest w gałęzi `v-else` (domyślnie lista), więc w
+    // `onMounted` jego ref bywa `null`. Obserwujemy ref, a nie tylko moment
+    // montowania — po przełączeniu na siatkę obserwator podłącza się sam.
+    attachObserver();
+    if (!stopWatch) {
+      stopWatch = watch(scrollRef, attachObserver, { flush: 'post' });
+    }
+  }
+
   function destroy(): void {
+    stopWatch?.();
+    stopWatch = null;
     indexRowObserver?.disconnect();
     indexRowObserver = null;
   }
