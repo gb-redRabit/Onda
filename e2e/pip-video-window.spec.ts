@@ -10,6 +10,7 @@ const FIXTURE = resolve(__dirname, 'fixtures', 'sample.webm');
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
   grantMediaAccess: (filePath: string) => Promise<boolean>;
+  getMediaServerUrl: () => Promise<string>;
   pipStart: (
     src: string,
     settings?: { position?: string; width?: number; height?: number }
@@ -32,7 +33,8 @@ test.describe('video PiP window', () => {
         page.evaluate(
           async (args) => {
             const api = (window as unknown as { api: OndaTestApi }).api;
-            const src = `${(window as unknown as { api: { mediaServerUrl: string } }).api.mediaServerUrl}?path=${encodeURIComponent(args.path)}`;
+            const base = await api.getMediaServerUrl();
+            const src = `${base}?path=${encodeURIComponent(args.path)}`;
             await api.pipStart(src, {
               position: args.position,
               width: args.width,
