@@ -12,6 +12,9 @@ export interface ZipEntry {
 const EOCD_SIG = 0x06054b50;
 const CENTRAL_SIG = 0x02014b50;
 const LOCAL_SIG = 0x04034b50;
+// ZIP bomb: pojedynczy wpis nie może rozpakować się do nieograniczonej pamięci
+// w procesie głównym. AnimeSub używa małych napisów, więc 16 MB jest hojnym limitem.
+const MAX_ENTRY_OUTPUT_BYTES = 16 * 1024 * 1024;
 
 function findEndOfCentralDirectory(buf: Buffer): number {
   const min = Math.max(0, buf.length - 65557);
@@ -46,7 +49,13 @@ export function readZip(buf: Buffer): ZipEntry[] {
     const dataStart = localOffset + 30 + localNameLen + localExtraLen;
     const raw = buf.subarray(dataStart, dataStart + compressedSize);
     try {
-      entries.push({ name, data: method === 0 ? Buffer.from(raw) : inflateRawSync(raw) });
+      entries.push({
+        name,
+        data:
+          method === 0
+            ? Buffer.from(raw)
+            : inflateRawSync(raw, { maxOutputLength: MAX_ENTRY_OUTPUT_BYTES })
+      });
     } catch {
       /* pomiń wpis, którego nie da się rozpakować */
     }

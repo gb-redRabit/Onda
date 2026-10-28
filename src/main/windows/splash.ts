@@ -52,6 +52,9 @@ export class SplashController {
 
     splash.loadFile(join(__dirname, '../../resources/splash.html'));
     installNavigationGuard(splash);
+    splash.on('closed', () => {
+      if (this.win === splash) this.win = null;
+    });
     this.win = splash;
   }
 
@@ -63,7 +66,7 @@ export class SplashController {
       `SHOW WINDOW — ${total}ms (mainReady=${this.mainReady} minTimer=${this.minTimerDone} renderer=${this.rendererReady})`
     );
     this.send('Gotowe', 100);
-    this.win?.close();
+    if (this.win && !this.win.isDestroyed()) this.win.close();
     this.win = null;
     const main = this.deps.getMainWindow();
     if (!this.deps.isStartHidden()) {
@@ -88,12 +91,13 @@ export class SplashController {
   }
 
   send(label: string, progress: number): void {
-    this.win?.webContents.send('splash:status', { label, progress });
+    if (!this.win || this.win.isDestroyed()) return;
+    this.win.webContents.send('splash:status', { label, progress });
   }
 
   forceClose(): void {
     if (!this.win) return;
-    this.win.close();
+    if (!this.win.isDestroyed()) this.win.close();
     this.win = null;
     const main = this.deps.getMainWindow();
     if (!this.deps.isStartHidden() && !main?.isVisible()) {

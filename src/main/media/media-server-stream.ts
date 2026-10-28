@@ -64,6 +64,13 @@ export async function handleStreamProxy(
   rawUrl: string
 ): Promise<void> {
   const startTs = Date.now();
+  let clientClosed = false;
+  // Rejestrujemy zamykanie klienta PRZED pierwszym `await`: przy przewijaniu
+  // <video> close potrafi przyjść, zanim upstream odpowie, i wtedy strumień
+  // otwarty później nie miałby już żadnego obserwatora.
+  res.once('close', () => {
+    clientClosed = true;
+  });
   if (!rawUrl) {
     res.writeHead(400);
     res.end('missing url');
@@ -123,6 +130,7 @@ export async function handleStreamProxy(
     }
 
     for (let attempt = 0; attempt < STREAM_MAX_ATTEMPTS; attempt++) {
+      if (clientClosed || res.destroyed) return;
       let upRes: http.IncomingMessage;
       try {
         upRes = await streamProxyRequest(
@@ -144,6 +152,11 @@ export async function handleStreamProxy(
         }
         res.writeHead(502);
         res.end('upstream error');
+        return;
+      }
+
+      if (clientClosed || res.destroyed) {
+        upRes.destroy();
         return;
       }
 
@@ -247,6 +260,10 @@ export async function handleProviderStreamProxy(
   res: http.ServerResponse,
   token: string
 ): Promise<void> {
+  let clientClosed = false;
+  res.once('close', () => {
+    clientClosed = true;
+  });
   if (!token) {
     res.writeHead(400);
     res.end('missing provider token');
@@ -274,6 +291,10 @@ export async function handleProviderStreamProxy(
     stream = resolved.stream;
     if (resolved.mime) mime = resolved.mime;
     size = resolved.size;
+    if (clientClosed || res.destroyed) {
+      (stream as import('stream').Readable).destroy?.();
+      return;
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const limit = detectProviderLimit(msg);
@@ -308,6 +329,10 @@ export async function handleProviderStreamProxy(
     'media-server',
     `provider stream mime=${mime} size=${size ?? '?'} range=${req.headers.range ?? 'none'}`
   );
+  if (clientClosed || res.destroyed) {
+    (stream as import('stream').Readable).destroy?.();
+    return;
+  }
   const headers: http.OutgoingHttpHeaders = {
     'Content-Type': mime,
     'Accept-Ranges': 'bytes',

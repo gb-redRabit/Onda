@@ -24,4 +24,13 @@ describe('readZip', () => {
     expect(readZip(Buffer.from('nie archiwum'))).toEqual([]);
     expect(readZip(Buffer.alloc(0))).toEqual([]);
   });
+
+  it('skips an entry that decompresses beyond the in-memory limit', () => {
+    // 17 MB zer kompresuje się do kilku KB — bez `maxOutputLength` byłaby to
+    // klasyczna bomba ZIP blokująca proces główny.
+    const zip = buildZip([
+      { name: 'bomb.txt', content: Buffer.alloc(17 * 1024 * 1024), deflate: true }
+    ]);
+    expect(readZip(zip)).toEqual([]);
+  });
 });

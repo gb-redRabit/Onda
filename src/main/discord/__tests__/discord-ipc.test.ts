@@ -25,6 +25,15 @@ describe('frame encoding', () => {
     expect(discordIpcCandidates()).toEqual(['custom-path']);
     delete process.env.ONDA_DISCORD_IPC_PATH;
   });
+
+  it('flags a frame above the size limit instead of buffering it forever', () => {
+    const header = Buffer.alloc(8);
+    header.writeUInt32LE(1, 0);
+    header.writeUInt32LE(1024 * 1024 + 1, 4);
+    const decoded = decodeFrames(header);
+    expect(decoded.frames).toEqual([]);
+    expect(decoded.corrupted).toBe(true);
+  });
 });
 
 describe('discord ipc connection', () => {

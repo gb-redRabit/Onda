@@ -24,13 +24,21 @@ export function encodeFrame(op: number, payload: unknown): Buffer {
   return frame;
 }
 
-export function decodeFrames(buffer: Buffer): { frames: DiscordFrame[]; rest: Buffer } {
+export function decodeFrames(buffer: Buffer): {
+  frames: DiscordFrame[];
+  rest: Buffer;
+  corrupted?: boolean;
+} {
   const frames: DiscordFrame[] = [];
   let offset = 0;
   while (buffer.length - offset >= 8) {
     const op = buffer.readUInt32LE(offset);
     const length = buffer.readUInt32LE(offset + 4);
-    if (length > MAX_FRAME_BYTES) break;
+    if (length > MAX_FRAME_BYTES) {
+      // Nie konsumujemy ramki i nie pozwalamy `onData` doklejać kolejnych
+      // chunków w nieskończoność. Wywołujący zamyka gniazdo.
+      return { frames, rest: buffer.subarray(offset), corrupted: true };
+    }
     if (buffer.length - offset - 8 < length) break;
     const json = buffer.subarray(offset + 8, offset + 8 + length).toString('utf-8');
     offset += 8 + length;
@@ -99,8 +107,13 @@ export class DiscordConnection {
 
   private onData(chunk: Buffer): void {
     this.buffer = Buffer.concat([this.buffer, chunk]);
-    const { frames, rest } = decodeFrames(this.buffer);
+    const { frames, rest, corrupted } = decodeFrames(this.buffer);
     this.buffer = rest;
+    if (corrupted) {
+      this.socket.destroy();
+      this.handleClose();
+      return;
+    }
     for (const frame of frames) {
       if (frame.op === OP_PING) {
         this.write(OP_PONG, frame.data);

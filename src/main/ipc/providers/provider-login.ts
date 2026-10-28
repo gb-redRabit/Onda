@@ -226,8 +226,13 @@ export async function startProviderLogin(providerId: string): Promise<{
   // popupów (`action:'deny'`) sprawiała, że taki przycisk nic nie robi — dlatego pozwalamy
   // na popup i trzymamy go w tej samej partycji, żeby jego cookies też zostały zebrane.
   const popups = new Set<BrowserWindow>();
+  const authSession = session.fromPartition(partition);
   const onWindowCreated = (_event: Electron.Event, created: BrowserWindow): void => {
     if (created === win) return;
+    // `browser-window-created` jest globalne: bez filtra okno eksploratora,
+    // narzędzi czy PiP zostałoby uznane za popup logowania, dostało obcy UA
+    // i blokowało zakończenie logowania do 5 minut.
+    if (created.webContents.session !== authSession) return;
     popups.add(created);
     try {
       if (ua) created.webContents.setUserAgent(ua);
