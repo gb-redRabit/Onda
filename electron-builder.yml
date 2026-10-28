@@ -10,8 +10,6 @@ fileAssociations:
       - wav
       - m4a
       - aac
-      - m3u
-      - m3u8
       - opus
       - mp4
       - mkv
@@ -41,7 +39,7 @@ files:
   # planning docs, tests, build tooling). electron-builder does not read
   # .gitignore, so they must be excluded explicitly or they get bundled.
   - '!{.memory,.opencode,.github,.vscode}'
-  - '!{docs,tests,scripts}'
+  - '!{docs,tests,scripts,e2e,coverage,test-results,playwright-report}'
   - '!**/*.tsbuildinfo'
   - '!{.markdownlint.json,.nvmrc,vitest.config.ts,generate-random-icon.js}'
 # FFmpeg/ffprobe are NOT bundled: the app downloads the pinned, SHA-256
