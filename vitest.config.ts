@@ -22,8 +22,7 @@ export default defineConfig({
       include: ['src/**/*.ts', 'src/**/*.vue'],
       // Pomijamy to, co nie jest logiką: testy, deklaracje typów oraz słowniki
       // i18n (dane) — inaczej zaciemniają sygnał pokrycia. Komponenty `.vue`
-      // też są poza zakresem: nie ma testów montujących, więc ich pokrycie
-      // mierzy się przez E2E.
+      // są mierzone; testy montujące pokrywają krytyczne z nich.
       exclude: [
         'src/**/__tests__/**',
         'src/**/*.test.ts',
@@ -33,13 +32,13 @@ export default defineConfig({
       // Progi są minimalnym progiem regresji. Po włączeniu `.vue` do pomiaru
       // mianownik urósł o ~11.6k linii (w tym nieprzetestowane widoki narzędzi),
       // więc progi są przeliczone na nowy mianownik, a nie obniżone względem
-      // pokrytego kodu: pokryte linie wzrosły z 11 333 do 11 923.
-      // Pomiar: linie 32.2%, instrukcje 31.5%, funkcje 25.6%, gałęzie 27.5%.
+      // pokrytego kodu.
+      // Pomiar (2026-10-28): linie 33.38%, instrukcje 32.63%, funkcje 26.52%, gałęzie 28.98%.
       thresholds: {
-        lines: 31,
-        statements: 30,
-        functions: 24,
-        branches: 26
+        lines: 32,
+        statements: 31,
+        functions: 26,
+        branches: 28
       }
     },
     projects: [

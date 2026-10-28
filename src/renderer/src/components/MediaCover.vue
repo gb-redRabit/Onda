@@ -125,10 +125,11 @@ onMounted(() => {
 
   const obs = getSharedObserver();
   if (!obs || !el.value) {
-    // Brak dostępnego IntersectionObserver (jsdom, stare środowisko) — ładuj natychmiast.
+    // Brak dostępnego IntersectionObserver (jsdom, stare środowisko) — ładuj
+    // natychmiast, ale nie ponawiaj requestu, jeśli cache już ma okładkę.
     loaded.value = true;
     inView.value = true;
-    player.loadCover(props.path);
+    if (!cached.data) player.loadCover(props.path);
     return;
   }
 
@@ -139,7 +140,7 @@ onMounted(() => {
     inView.value = isIntersecting;
     if (isIntersecting) {
       loaded.value = true;
-      player.loadCover(props.path!);
+      if (!player.getCover(props.path!).data) player.loadCover(props.path!);
     }
   });
   obs.observe(observedTarget);
