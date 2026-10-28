@@ -4,6 +4,7 @@ import { realpath } from 'fs/promises';
 import { SharpService } from './utils/sharp';
 import { allowedAppOrigin } from './utils/origin-guard';
 import { isPathWithinAllowedRoots } from './media/media-server';
+import { isSensitivePath, isSystemTempPath } from './path-policy';
 import { logger } from '../shared/logger';
 import { MAX_THUMB_SIZE, MAX_RESIZE_WIDTH } from '../shared/constants';
 
@@ -11,7 +12,6 @@ const allowedPrefixes: string[] = [];
 
 function getAllowedPrefixes(): string[] {
   if (allowedPrefixes.length === 0) {
-    const home = app.getPath('home');
     const docs = app.getPath('documents');
     const music = app.getPath('music');
     const pics = app.getPath('pictures');
@@ -19,11 +19,13 @@ function getAllowedPrefixes(): string[] {
     const downloads = app.getPath('downloads');
     const desktop = app.getPath('desktop');
     const temp = app.getPath('temp');
-    // normalizuj wszystkie, aby uniknąć niezgodności wielkości liter na Windows
-    const paths = [home, docs, music, pics, vids, downloads, desktop, temp];
+    // `home` celowo NIE jest tu wpisany: obejmowałby `.ssh`, `.config`,
+    // AppData i profile przeglądarek. Podkatalogi użytkownika niżej wystarczą
+    // do obrazów biblioteki, a resztę przyznaje serwer mediów.
+    const paths = [docs, music, pics, vids, downloads, desktop, temp];
     for (const p of paths) {
-      const n = normalize(p).toLowerCase();
-      allowedPrefixes.push(n);
+      const n = normalize(p);
+      allowedPrefixes.push(process.platform === 'win32' ? n.toLowerCase() : n);
     }
   }
   return allowedPrefixes;
@@ -68,7 +70,11 @@ export function registerOndaProtocolHandler(): void {
       } catch {
         // poniższy test korzenia nadal obowiązuje
       }
-      const normalizedForPrefix = normalize(real).toLowerCase();
+      if (isSensitivePath(real) && !isSystemTempPath(real) && !isPathWithinAllowedRoots(real)) {
+        return new Response('path not allowed', { status: 403 });
+      }
+      const normalizedForPrefix =
+        process.platform === 'win32' ? normalize(real).toLowerCase() : normalize(real);
       const prefixes = getAllowedPrefixes();
       // Dozwolone jest to, co leży w katalogach systemowych użytkownika ORAZ
       // w korzeniach serwera mediów (biblioteka + jawnie przyznane katalogi),

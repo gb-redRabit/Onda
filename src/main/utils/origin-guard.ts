@@ -14,8 +14,14 @@ export function allowedAppOrigin(origin: string | null | undefined): string | nu
     return null;
   }
   if (parsed.protocol === 'file:') return origin;
-  const isLocalDev =
-    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-    (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
-  return isLocalDev ? origin : null;
+  // W produkcji renderer jest ładowany z pliku, więc origin http://localhost
+  // nie ma legalnego zastosowania. W dev dopuszczamy wyłącznie dokładny origin
+  // serwera Vite, a nie dowolny port na localhost.
+  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  if (!devUrl) return null;
+  try {
+    return new URL(devUrl).origin === origin ? origin : null;
+  } catch {
+    return null;
+  }
 }

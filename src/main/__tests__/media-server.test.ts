@@ -63,11 +63,16 @@ function request(
 }
 
 beforeAll(async () => {
+  // Produkcyjny media server nie akceptuje dowolnego localhost; w dev Vite
+  // ustawia dokładny origin, a test musi symulować ten sam kontrakt.
+  (process.env as Record<string, string | undefined>)['ELECTRON_RENDERER_URL'] =
+    'http://localhost:5173';
   server = await createMediaServer();
   await setAllowedRoots([os.tmpdir()]);
 });
 
 afterAll(async () => {
+  delete (process.env as Record<string, string | undefined>)['ELECTRON_RENDERER_URL'];
   const s = server;
   server = null;
   if (s) {
