@@ -83,9 +83,17 @@ export default defineConfig({
             : {})
         },
         output: {
-          manualChunks: {
-            'vendor-vue': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
-            'vendor-ui': ['@lucide/vue', '@tanstack/vue-virtual']
+          // Vite 8/Rolldown nie przyjmuje już obiektu `manualChunks` — funkcja
+          // zachowuje te same chunki vendora (Vue + UI) bez zmiany zachowania.
+          manualChunks(id: string) {
+            if (!id.includes('node_modules')) return undefined;
+            if (/[\\/]node_modules[\\/](vue|vue-router|pinia|vue-i18n)[\\/]/.test(id)) {
+              return 'vendor-vue';
+            }
+            if (/[\\/]node_modules[\\/](@lucide[\\/]vue|@tanstack[\\/]vue-virtual)[\\/]/.test(id)) {
+              return 'vendor-ui';
+            }
+            return undefined;
           }
         }
       }
