@@ -4,7 +4,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePluginsStore, snapshotTrack, type TrackSnapshot } from '@renderer/stores/plugins';
 import { audioEvents } from '@renderer/utils/audioEvents';
-import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
+import type { PluginHookPayload } from '@renderer/modules/plugins/pluginShim';
 
 export function usePluginsHooks(): void {
   const store = usePluginsStore();

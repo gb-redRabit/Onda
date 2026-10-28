@@ -1,5 +1,5 @@
 import { logger } from '@shared/logger';
-import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
+import type { PluginHookPayload } from '@renderer/modules/plugins/pluginShim';
 
 export type PluginHookName =
   | 'app:start'

@@ -5,7 +5,7 @@ import { useUIStore } from '../ui';
 import { usePlayerStore } from '../player';
 import { useLibraryStore } from '../library';
 import type { MediaFile } from '@renderer/types/media';
-import { wrapIntoWorker } from '@renderer/modules/plugins/plugin-shim';
+import { wrapIntoWorker } from '@renderer/modules/plugins/pluginShim';
 
 class FakeWorker {
   onmessage: ((e: { data: unknown }) => void) | null = null;

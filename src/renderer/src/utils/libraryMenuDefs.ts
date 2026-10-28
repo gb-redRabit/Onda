@@ -5,7 +5,7 @@ import type { useLibraryStore } from '@renderer/stores/library';
 import type { useLibrarySelectionStore } from '@renderer/stores/library-selection';
 import type { usePluginsStore } from '@renderer/stores/plugins';
 import { snapshotTrack } from '@renderer/stores/plugins';
-import type { PluginHookPayload } from '@renderer/modules/plugins/plugin-shim';
+import type { PluginHookPayload } from '@renderer/modules/plugins/pluginShim';
 import type { ContextMenuAction } from '@renderer/composables/useContextMenu';
 import { revealInFolder, copyPathToClipboard } from '@renderer/utils/menuActions';
 

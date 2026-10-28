@@ -1,5 +1,5 @@
 import type { Ref, ShallowRef } from 'vue';
-import type { PluginCommandEntry, PluginHookPayload } from './plugin-shim';
+import type { PluginCommandEntry, PluginHookPayload } from './pluginShim';
 import type { PluginWorkerHandle } from './pluginWorker';
 import { isKnownHook } from '@renderer/utils/pluginHooks';
 

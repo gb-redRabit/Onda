@@ -6,7 +6,7 @@ import type {
   PluginManifest,
   IpcPluginInstallResult
 } from '@shared/types/ipc';
-import type { PluginCommandEntry } from '@renderer/modules/plugins/plugin-shim';
+import type { PluginCommandEntry } from '@renderer/modules/plugins/pluginShim';
 import type { PluginSlotItem } from '@shared/plugin-ui-slots';
 import type { PluginWorkerHandle } from '@renderer/modules/plugins/pluginWorker';
 import { createPluginSpawner, type PluginUiStatus } from '@renderer/modules/plugins/pluginSpawner';

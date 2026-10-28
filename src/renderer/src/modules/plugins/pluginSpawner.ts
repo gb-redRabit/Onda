@@ -1,6 +1,6 @@
 import type { Ref, ShallowRef } from 'vue';
 import type { PluginManifest } from '@shared/types/ipc';
-import type { PluginCommandEntry } from './plugin-shim';
+import type { PluginCommandEntry } from './pluginShim';
 import { createPluginWorker, type PluginWorkerHandle } from './pluginWorker';
 import { omitKey, validateShortcut } from '@renderer/utils/plugins-helpers';
 

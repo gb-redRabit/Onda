@@ -3,8 +3,8 @@ import type {
   PluginHookPayload,
   PluginWorkerMsg,
   PluginMainMsg
-} from './plugin-shim';
-import { buildPluginWorkerCode, wrapIntoWorker, readWorkerMsg } from './plugin-shim';
+} from './pluginShim';
+import { buildPluginWorkerCode, wrapIntoWorker, readWorkerMsg } from './pluginShim';
 
 export const PLUGIN_READY_TIMEOUT_MS = 10_000;
 export const PLUGIN_MAX_PENDING_API_REQUESTS = 16;

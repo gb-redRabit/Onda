@@ -6,7 +6,7 @@ import {
   readWorkerMsg,
   readMainMsg,
   wrapIntoWorker
-} from '../plugin-shim';
+} from '../pluginShim';
 
 describe('plugin protocol helpers', () => {
   it('wrapIntoWorker/readWorkerMsg round-trip', () => {
