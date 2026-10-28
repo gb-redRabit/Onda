@@ -222,6 +222,27 @@ jobs:
           cat "$log"
           grep -q "\[Onda/boot\] window created" "$log"
 
+      - name: Smoke test unpacked app (macOS)
+        if: matrix.os == 'macos-latest' && github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="$(find dist -maxdepth 3 -name 'Onda.app' -type d | head -n 1)"
+          if [ -z "$app" ]; then
+            echo "Onda.app not found in dist/" >&2
+            exit 1
+          fi
+          log="$RUNNER_TEMP/onda-smoke.log"
+          profile="$RUNNER_TEMP/onda-smoke-profile"
+          mkdir -p "$profile"
+          ONDA_USER_DATA_DIR="$profile" "$app/Contents/MacOS/Onda" --no-sandbox >"$log" 2>&1 &
+          pid=$!
+          sleep 25
+          if kill -0 "$pid" 2>/dev/null; then kill "$pid" 2>/dev/null || true; fi
+          wait "$pid" 2>/dev/null || true
+          cat "$log"
+          grep -q "\[Onda/boot\] window created" "$log"
+
       # Publikacja jest osobnym, ostatnim krokiem. Dzięki temu uszkodzony
       # installer/`latest.yml` nigdy nie trafi do wydania przed smoke testem,
       # a workflow_dispatch (gałąź main) nie nadpisuje assetów ostatniego tagu.
