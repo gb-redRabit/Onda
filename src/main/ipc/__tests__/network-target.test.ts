@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createPinnedLookup,
+  isLoopbackHost,
   isNeverPublicAddress,
   isNonPublicAddress,
   privateNetworkAllowedForTarget,
@@ -17,21 +18,64 @@ describe('network target validation', () => {
     '::1',
     'fc00::1',
     'fe80::1',
-    '::ffff:127.0.0.1'
+    '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '::ffff:169.254.169.254',
+    '::ffff:a9fe:a9fe'
   ])('classifies %s as non-public', (address) => {
     expect(isNonPublicAddress(address)).toBe(true);
   });
 
-  it.each(['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111'])('allows public address %s', (address) => {
-    expect(isNonPublicAddress(address)).toBe(false);
-  });
-
-  it.each(['127.0.0.1', '127.1.2.3', '0.0.0.0', '169.254.169.254', '::1', 'fe80::1', 'ff00::1'])(
-    'classifies %s as never-public even for a caller allowing private networks',
+  it.each(['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111', '::ffff:8.8.8.8', '::ffff:808:808'])(
+    'allows public address %s',
     (address) => {
-      expect(isNeverPublicAddress(address)).toBe(true);
+      expect(isNonPublicAddress(address)).toBe(false);
     }
   );
+
+  it.each([
+    '127.0.0.1',
+    '127.1.2.3',
+    '0.0.0.0',
+    '169.254.169.254',
+    '::1',
+    'fe80::1',
+    'ff00::1',
+    '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '::ffff:169.254.169.254'
+  ])('classifies %s as never-public even for a caller allowing private networks', (address) => {
+    expect(isNeverPublicAddress(address)).toBe(true);
+  });
+
+  it('does not treat an IPv4-mapped public address as never-public', () => {
+    expect(isNeverPublicAddress('::ffff:8.8.8.8')).toBe(false);
+    expect(isNeverPublicAddress('::ffff:808:808')).toBe(false);
+  });
+
+  it.each([
+    '127.0.0.1',
+    '[::1]',
+    'localhost',
+    'app.localhost',
+    '::ffff:127.0.0.1',
+    '::ffff:7f00:1'
+  ])('recognizes loopback host %s', (host) => {
+    expect(isLoopbackHost(host)).toBe(true);
+  });
+
+  it.each(['8.8.8.8', '::ffff:8.8.8.8', 'example.com'])('does not treat %s as loopback', (host) => {
+    expect(isLoopbackHost(host)).toBe(false);
+  });
+
+  it('refuses an IPv4-mapped loopback with private networks allowed', async () => {
+    await expect(
+      resolveNetworkTarget('http://[::ffff:127.0.0.1]:8080/stream', {
+        allowPrivateNetwork: true,
+        blockLoopback: true
+      })
+    ).rejects.toThrow('Loopback address is not allowed');
+  });
 
   it.each(['192.168.1.50', '10.0.0.8', '172.16.5.5', 'fc00::1', '8.8.8.8'])(
     'does not treat RFC1918/ULA %s as never-public',

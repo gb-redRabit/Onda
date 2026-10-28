@@ -75,10 +75,29 @@ export interface ResolvedNetworkTarget {
 
 type LookupAllAddresses = (hostname: string) => Promise<LookupAddress[]>;
 
+/**
+ * Zamienia IPv4-mapped IPv6 (`::ffff:127.0.0.1`, `::ffff:7f00:1`) na czysty
+ * IPv4. `URL` normalizuje taki adres do postaci szesnastkowej, więc bez tego
+ * `isNeverPublicAddress`/`isLoopbackHost` widziały tylko `::ffff:0:0/96`
+ * i przepuszczały loopback oraz endpoint metadanych chmury.
+ */
+export function canonicalizeNetworkAddress(address: string): string {
+  const lower = address.trim().toLowerCase();
+  if (!lower.startsWith('::ffff:')) return lower;
+  const rest = lower.slice('::ffff:'.length);
+  if (isIP(rest) === 4) return rest;
+  const hex = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(rest);
+  if (!hex) return lower;
+  const high = parseInt(hex[1], 16);
+  const low = parseInt(hex[2], 16);
+  return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
+}
+
 export function isNonPublicAddress(address: string): boolean {
-  const family = isIP(address);
-  if (family === 4) return NON_PUBLIC_V4.check(address, 'ipv4');
-  if (family === 6) return NON_PUBLIC_V6.check(address, 'ipv6');
+  const canonical = canonicalizeNetworkAddress(address);
+  const family = isIP(canonical);
+  if (family === 4) return NON_PUBLIC_V4.check(canonical, 'ipv4');
+  if (family === 6) return NON_PUBLIC_V6.check(canonical, 'ipv6');
   return true;
 }
 
@@ -93,9 +112,10 @@ export function isNonPublicAddress(address: string): boolean {
  * rozwiązuje, a potem sprawdza odpowiedzi).
  */
 export function isNeverPublicAddress(address: string): boolean {
-  const family = isIP(address);
-  if (family === 4) return NEVER_PUBLIC_V4.check(address, 'ipv4');
-  if (family === 6) return NEVER_PUBLIC_V6.check(address, 'ipv6');
+  const canonical = canonicalizeNetworkAddress(address);
+  const family = isIP(canonical);
+  if (family === 4) return NEVER_PUBLIC_V4.check(canonical, 'ipv4');
+  if (family === 6) return NEVER_PUBLIC_V6.check(canonical, 'ipv6');
   return true;
 }
 
@@ -110,8 +130,9 @@ export function isLoopbackHost(host: string): boolean {
     .toLowerCase()
     .replace(/^\[|\]$/g, '');
   if (h === 'localhost' || h.endsWith('.localhost')) return true;
-  if (h === '::1') return true;
-  return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h);
+  const canonical = canonicalizeNetworkAddress(h);
+  if (canonical === '::1') return true;
+  return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(canonical);
 }
 
 export interface NetworkTargetOptions {
