@@ -33,6 +33,7 @@ function resumeAndPlay() {
 
 let moduleInitialized = false;
 let remoteInitialized = false;
+let abLoopWatchStarted = false;
 const remoteViz = createVizShim(256);
 let remoteVizActive = false;
 // Kilku konsumentów (główny wizualizator + PiP audio) może potrzebować strumienia
@@ -44,9 +45,30 @@ let sawCoreState = false;
  * Shell nie ma własnego AudioContext. Refy tego modułu są wspólne dla obu trybów,
  * więc wystarczy je karmić tickami z Core — reszta UI działa bez zmian.
  */
+/**
+ * Pętla A–B dla audio. Wcześniej żyła w `PlayerBar`, który jest odmontowywany
+ * na trasach `/audio` i `/player` — tam pętla po cichu przestawała działać.
+ * Jeden watcher na moduł obsługuje oba tryby (lokalny silnik i Core).
+ */
+function ensureAbLoopWatcher(): void {
+  if (abLoopWatchStarted) return;
+  abLoopWatchStarted = true;
+  watch(currentTime, (time) => {
+    const target = usePlayerStore().abLoopTarget(time);
+    if (target === null) return;
+    if (isCoreShell()) {
+      currentTime.value = target;
+      sendCoreCommand({ type: 'seek', time: target });
+      return;
+    }
+    audioEngine.seek(target);
+  });
+}
+
 function ensureRemoteModule(): void {
   if (remoteInitialized) return;
   remoteInitialized = true;
+  ensureAbLoopWatcher();
   initCoreClient();
   logger.info('core-shell', 'remote audio player initialized');
   window.api?.on('core:viz', (raw) => {
@@ -227,7 +249,7 @@ function scheduleEqGraph(bands: EqBand[]): void {
 function ensureModule() {
   if (moduleInitialized) return;
   moduleInitialized = true;
-
+  ensureAbLoopWatcher();
   wireAudioEvents({
     currentTime,
     duration,

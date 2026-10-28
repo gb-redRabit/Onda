@@ -59,6 +59,12 @@ export function useEqualizerPanel(refs: EqualizerPanelRefs) {
   onMounted(() => document.addEventListener('click', onClickOutside));
   onUnmounted(() => document.removeEventListener('click', onClickOutside));
 
+  // W Core Shell analizator jest wirtualny (`remoteViz`) i dostaje biny tylko
+  // wtedy, gdy jakiś konsument zgłosi `viz: active`. Wizualizator robi to sam;
+  // equalizer otwierany z paska odtwarzacza musi zrobić to samo.
+  onMounted(() => audio.setVizActive(true));
+  onUnmounted(() => audio.setVizActive(false));
+
   const bandTypes: EqBandType[] = ['lowshelf', 'peaking', 'highshelf'];
   const limits = EQ_LIMITS;
   const presetLabels: Record<string, string> = {

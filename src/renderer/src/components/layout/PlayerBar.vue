@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   Volume2,
@@ -31,15 +31,6 @@ const router = useRouter();
 const pluginsStore = usePluginsStore();
 const { pinned, togglePin } = useAlwaysOnTop();
 const isMini = ref(false);
-
-// Pętla A–B dla audio: egzekwowana na zegarze silnika (element audio nie jest w tym widoku).
-watch(
-  () => audio.currentTime.value,
-  (t) => {
-    const target = player.abLoopTarget(t);
-    if (target !== null) audio.seek(target);
-  }
-);
 
 const COVER_SHAPE_CLIP: Record<string, string> = {
   circle: 'circle(50%)',

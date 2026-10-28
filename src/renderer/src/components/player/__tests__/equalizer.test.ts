@@ -33,6 +33,7 @@ const h = vi.hoisted(() => ({
     setEqSnap: vi.fn(),
     setAudioDelay: vi.fn(),
     setNightMode: vi.fn(),
+    setVizActive: vi.fn(),
     getAnalyserNode: vi.fn(() => null),
     getAudioContext: vi.fn(() => null)
   },

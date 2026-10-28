@@ -10,6 +10,7 @@ import {
 import { buildAudioPipState, resolveAudioPipLayoutOpts, type AudioPipDock } from './audioPipState';
 import { createAudioPipRuntime } from './audioPipRuntime';
 import { dispatchAudioPipAction } from './audioPipActions';
+import { isCoreShell } from '@renderer/utils/runtimeMode';
 
 // Singleton, dzięki czemu stan audio PiP jest współdzielony w całej aplikacji (App.vue
 // zarządza cyklem życia, widoki przełączają pokaż/ukryj).
@@ -104,6 +105,7 @@ export function useAudioPiP(options: { prewarm?: boolean } = {}) {
 
       document.addEventListener('visibilitychange', handleVisibilityChange);
 
+      const player = usePlayerStore();
       const onTrackChange = () => {
         if (isActive.value) {
           const state = buildAudioPipState();
@@ -136,6 +138,13 @@ export function useAudioPiP(options: { prewarm?: boolean } = {}) {
 
       cleanups.push(audioEvents.on('trackLoaded', onTrackChange));
       cleanups.push(audioEvents.on('playStateChange', onPlayState));
+
+      // Core Shell nie emituje lokalnych `audioEvents` — stan playera jest
+      // odbiciem `core:state`, więc PiP musi reagować na store, nie na silnik.
+      if (isCoreShell()) {
+        cleanups.push(watch(() => player.currentTrack, onTrackChange));
+        cleanups.push(watch(() => player.isPlaying, onPlayState));
+      }
 
       cleanups.push(() => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
