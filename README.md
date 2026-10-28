@@ -177,7 +177,7 @@ npm run dev
 Quality gates:
 
 ```bash
-npm test           # 3197 unit tests (Vitest)
+npm test           # 3199 unit tests (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (run `npm run build` first)
@@ -210,7 +210,7 @@ Onda is built to stay smooth on large libraries and slow disks.
 | **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                                                                                |
 | **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence, spawn semaphore for subtitle extraction, LRU eviction for cover/thumbnail caches. |
 | **Race-free selection & search** | Request-id/token guards make stale async responses (search pagination, cover loads, module switches, library scans) no-ops.                                                                                                 |
-| **Quality gates**                | 3197 unit tests + 59 Playwright E2E specs + lint + typecheck + IPC codegen check run on every change.                                                                                                                       |
+| **Quality gates**                | 3199 unit tests + 61 Playwright E2E specs + lint + typecheck + IPC codegen check run on every change.                                                                                                                       |
 
 ### Security
 
@@ -399,7 +399,7 @@ npm run dev
 Bramki jakości:
 
 ```bash
-npm test           # 3197 testy jednostkowe (Vitest)
+npm test           # 3199 testy jednostkowe (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (najpierw `npm run build`)
@@ -432,7 +432,7 @@ Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i w
 | **Praca poza wątkiem głównym**                   | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                                                               |
 | **Bezpieczeństwo zasobów**                       | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki, semafor spawnu przy ekstrakcji napisów, ewiction LRU cache okładek/miniatur. |
 | **Wolne od wyścigów zaznaczanie i wyszukiwanie** | Tokeny/request-id sprawiają, że przedawnione odpowiedzi (paginacja wyszukiwania, ładowanie okładek, przełączenia modułów, skany biblioteki) są no-opami.                                                             |
-| **Bramki jakości**                               | 3197 testów jednostkowych + 59 specyfikacji E2E + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                                                                         |
+| **Bramki jakości**                               | 3199 testów jednostkowych + 61 specyfikacji E2E + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                                                                         |
 
 ### Bezpieczeństwo
 
