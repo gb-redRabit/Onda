@@ -100,17 +100,27 @@ test.describe('video PiP subtitles', () => {
       expect(pipErrors).toEqual([]);
 
       // Realny dowód renderowania: zrzut okna i czerwone piksele napisu.
-      await pip.waitForTimeout(800);
-      const shot = await pip.screenshot();
-      const { data: pixels, info } = await sharp(shot).raw().toBuffer({ resolveWithObject: true });
-      let redPixels = 0;
-      for (let i = 0; i < pixels.length; i += info.channels) {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-        if (r > 180 && g < 80 && b < 80) redPixels++;
-      }
-      expect(redPixels).toBeGreaterThan(20);
+      // Poll zamiast stałego `waitForTimeout` — na wolniejszym CI JASSUB
+      // potrzebuje więcej czasu, a fałszywy negatyw byłby gorszy niż 20 s.
+      await expect
+        .poll(
+          async () => {
+            const shot = await pip.screenshot();
+            const { data: pixels, info } = await sharp(shot)
+              .raw()
+              .toBuffer({ resolveWithObject: true });
+            let redPixels = 0;
+            for (let i = 0; i < pixels.length; i += info.channels) {
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+              if (r > 180 && g < 80 && b < 80) redPixels++;
+            }
+            return redPixels;
+          },
+          { timeout: 20_000 }
+        )
+        .toBeGreaterThan(20);
 
       expect(onda.pageErrors).toEqual([]);
     } finally {
