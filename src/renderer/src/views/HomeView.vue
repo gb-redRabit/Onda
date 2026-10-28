@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { Clock, Music2, TrendingUp, Heart, Disc3, ListMusic, Mic2, ArrowRight } from '@lucide/vue';
+import { Disc3, Heart, ListMusic, Mic2, Music2, TrendingUp } from '@lucide/vue';
 import { playTrackList } from '@renderer/utils/playTracks';
 import HomeShelf from '@renderer/components/home/HomeShelf.vue';
 import HomeMediaCard from '@renderer/components/home/HomeMediaCard.vue';
 import HomeContinueCard from '@renderer/components/home/HomeContinueCard.vue';
+import HomeWelcomeCard from '@renderer/components/home/HomeWelcomeCard.vue';
+import HomeStatsPanel from '@renderer/components/home/HomeStatsPanel.vue';
+import HomeQuickPicks from '@renderer/components/home/HomeQuickPicks.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
@@ -19,7 +22,10 @@ const {
   actions,
   counters,
   openLibrary,
-  recentTracks,
+  openFile,
+  openFolder,
+  playRandom,
+  quickPicks,
   mostPlayed,
   favoriteTracks,
   playlists,
@@ -65,84 +71,60 @@ async function onPlayFromStart(): Promise<void> {
     class="p-6 max-w-7xl mx-auto"
     @contextmenu="homeContextMenu.showHomeMenu($event)"
   >
-    <PageHeader :title="t('home.welcome')" :subtitle="t('home.subtitle')" class="mb-6" />
-
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <button
-        v-for="a in actions"
-        :key="a.labelKey"
-        :data-testid="'home-action-' + a.id"
-        class="flex items-center gap-4 p-5 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:border-base-300 hover:bg-base-content/10 transition-all group text-left"
-        @click="a.route()"
-      >
-        <div class="w-12 h-12 rounded-box bg-primary/10 flex items-center justify-center">
-          <component :is="a.icon" :size="22" class="text-primary-text" />
-        </div>
-        <div class="flex-1">
-          <div class="text-sm font-semibold">{{ $t(a.labelKey) }}</div>
-          <div class="text-xs text-base-content/50 mt-0.5">{{ $t(a.descKey) }}</div>
-        </div>
-        <ArrowRight
-          :size="16"
-          class="text-base-content/50 group-hover:text-base-content group-hover:translate-x-0.5 transition-all"
-        />
-      </button>
-    </div>
-
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
-      <template v-if="library.isLoading || !library.isLoaded">
-        <div
-          v-for="i in 5"
-          :key="i"
-          class="p-4 rounded-box bg-base-100 border border-base-300 animate-pulse"
-        >
-          <div class="h-8 w-16 rounded-field bg-base-content/10 mb-2" />
-          <div class="h-3 w-24 rounded-field bg-base-content/10" />
-        </div>
-      </template>
-      <template v-else>
+    <PageHeader :title="t('home.welcome')" :subtitle="t('home.subtitle')" class="mb-6">
+      <template #actions>
         <button
-          v-for="s in counters"
-          :key="s.key"
-          :data-testid="'home-counter-' + s.tab"
-          class="p-4 rounded-box bg-base-100 border border-base-300 text-left hover:bg-base-content/5 transition-colors"
-          :title="$t('home.openInLibrary')"
-          @click="openLibrary(s.tab)"
+          v-for="a in actions"
+          :key="a.labelKey"
+          :data-testid="'home-action-' + a.id"
+          class="inline-flex items-center gap-1.5 rounded-full border border-base-300 bg-base-100/(--glass-alpha) px-3 py-1.5 text-xs font-medium text-base-content/75 backdrop-blur transition-colors hover:border-primary/40 hover:bg-base-content/10 hover:text-base-content"
+          :title="$t(a.labelKey)"
+          :aria-label="$t(a.labelKey)"
+          @click="a.route()"
         >
-          <div :class="['text-3xl font-bold', s.color]">{{ s.value }}</div>
-          <div class="text-xs text-base-content/50 mt-1">{{ $t(s.key) }}</div>
+          <component :is="a.icon" :size="15" class="shrink-0 text-primary-text" />
+          <span class="hidden md:inline">{{ $t(a.labelKey) }}</span>
         </button>
       </template>
+    </PageHeader>
+
+    <!-- Bento: hero (2/3) + liczby biblioteki (1/3). -->
+    <div class="grid grid-cols-1 gap-4 mb-8 xl:grid-cols-3">
+      <HomeContinueCard
+        v-if="has('continue') && continueTrack"
+        class="xl:col-span-2"
+        :track="continueTrack"
+        :position="continuePosition"
+        @play="playContinue"
+        @play-from-start="onPlayFromStart"
+      />
+      <HomeWelcomeCard
+        v-else
+        class="xl:col-span-2"
+        :can-shuffle="library.totalCount > 0"
+        @shuffle="playRandom"
+        @open-files="openFile"
+        @open-folder="openFolder"
+      />
+
+      <HomeStatsPanel
+        class="xl:col-span-1"
+        :items="counters"
+        :loading="library.isLoading || !library.isLoaded"
+        @open="openLibrary"
+      />
     </div>
 
-    <HomeContinueCard
-      v-if="has('continue') && continueTrack"
-      :track="continueTrack"
-      :position="continuePosition"
-      @play="playContinue"
-      @play-from-start="onPlayFromStart"
-    />
-
-    <HomeShelf
-      v-if="has('recent') && recentTracks.length"
-      :title="$t('home.recentlyPlayed')"
-      :icon="Clock"
-      :item-count="recentTracks.length"
+    <!-- Szybki powrót: ostatnio grane jako mini-karty, bez szukania na półce. -->
+    <HomeQuickPicks
+      v-if="has('recent') && quickPicks.length"
+      :items="quickPicks"
+      :title="$t('home.quickPicks')"
       :see-all-label="$t('home.showAll')"
       @see-all="openLibrary('tracks')"
-    >
-      <HomeMediaCard
-        v-for="item in recentTracks"
-        :key="item.path"
-        :title="trackTitle(item)"
-        :subtitle="trackSubtitle(item)"
-        :cover-path="item.path"
-        :cover-size="132"
-        :fallback="item.type === 'video' ? 'film' : 'music'"
-        @play="player.setTrack(item)"
-        @contextmenu="homeContextMenu.showRecentMenu($event, item)"
-      />
-    </HomeShelf>
+      @play="player.setTrack($event)"
+      @contextmenu="homeContextMenu.showRecentMenu"
+    />
 
     <EmptyState
       v-else-if="has('recent') && library.isLoaded"
@@ -164,9 +146,10 @@ async function onPlayFromStart(): Promise<void> {
         v-for="item in mostPlayed"
         :key="item.path"
         :title="trackTitle(item)"
-        :subtitle="$t('home.playCount', { count: item.playCount })"
+        :subtitle="trackSubtitle(item)"
         :cover-path="item.path"
         :cover-size="132"
+        :badge="`${item.playCount}×`"
         @play="player.setTrack(item)"
         @contextmenu="homeContextMenu.showRecentMenu($event, item)"
       />
@@ -208,6 +191,7 @@ async function onPlayFromStart(): Promise<void> {
         :cover-path="pl.coverUrl || pl.tracks[0]?.path"
         :cover-size="132"
         fallback="play"
+        stacked
         :open-label="$t('home.openInLibrary')"
         @play="playTrackList(pl.tracks)"
         @open="openLibrary('playlists')"
@@ -230,6 +214,7 @@ async function onPlayFromStart(): Promise<void> {
         :cover-path="tracks[0]?.path"
         :cover-size="132"
         fallback="disc"
+        stacked
         :open-label="$t('home.openInLibrary')"
         @play="playTrackList(tracks)"
         @open="openLibrary('albums')"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch, type Component } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Component } from 'vue';
 import { ChevronLeft, ChevronRight } from '@lucide/vue';
 
 const props = defineProps<{
@@ -15,6 +15,12 @@ const emit = defineEmits<{ (e: 'seeAll'): void }>();
 const scroller = ref<HTMLElement | null>(null);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(false);
+
+// Maski krawędzi pojawiają się tylko po tej stronie, po której jest co przewijać.
+const fadeStyle = computed(() => ({
+  '--shelf-fade-left': canScrollLeft.value ? '2.5rem' : '0px',
+  '--shelf-fade-right': canScrollRight.value ? '2.5rem' : '0px'
+}));
 
 function updateArrows(): void {
   const el = scroller.value;
@@ -38,12 +44,23 @@ watch(
   () => void nextTick(updateArrows)
 );
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(() => {
   window.addEventListener('resize', updateArrows);
+  // Szerokość półki zmienia się też przy zwijaniu sidebara, bez zdarzenia resize okna.
+  if (typeof ResizeObserver !== 'undefined' && scroller.value) {
+    resizeObserver = new ResizeObserver(updateArrows);
+    resizeObserver.observe(scroller.value);
+  }
   void nextTick(updateArrows);
 });
 
-onUnmounted(() => window.removeEventListener('resize', updateArrows));
+onUnmounted(() => {
+  window.removeEventListener('resize', updateArrows);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+});
 </script>
 
 <template>
@@ -53,26 +70,26 @@ onUnmounted(() => window.removeEventListener('resize', updateArrows));
         <component :is="icon" :size="16" class="text-primary-text shrink-0" />
         <span class="truncate">{{ title }}</span>
       </h2>
-      <div class="flex items-center gap-1 shrink-0">
+      <div class="flex items-center gap-1.5 shrink-0">
         <button
           v-if="canScrollLeft"
-          class="p-1 rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
+          class="grid h-7 w-7 place-items-center rounded-full border border-base-300 bg-base-100/(--glass-alpha) text-base-content/60 shadow-sm backdrop-blur transition-colors hover:bg-base-content/10 hover:text-base-content"
           :aria-label="$t('home.scrollLeft')"
           @click="scrollBy(-1)"
         >
-          <ChevronLeft :size="16" />
+          <ChevronLeft :size="15" />
         </button>
         <button
           v-if="canScrollRight"
-          class="p-1 rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
+          class="grid h-7 w-7 place-items-center rounded-full border border-base-300 bg-base-100/(--glass-alpha) text-base-content/60 shadow-sm backdrop-blur transition-colors hover:bg-base-content/10 hover:text-base-content"
           :aria-label="$t('home.scrollRight')"
           @click="scrollBy(1)"
         >
-          <ChevronRight :size="16" />
+          <ChevronRight :size="15" />
         </button>
         <button
           v-if="seeAllLabel"
-          class="text-xs text-primary-text hover:text-primary-text/90 font-medium transition-colors ml-1"
+          class="ml-1 text-xs font-medium text-primary-text transition-colors hover:text-primary-text/80"
           @click="emit('seeAll')"
         >
           {{ seeAllLabel }}
@@ -81,7 +98,8 @@ onUnmounted(() => window.removeEventListener('resize', updateArrows));
     </div>
     <div
       ref="scroller"
-      class="flex gap-3 overflow-x-auto pb-1 scroll-smooth"
+      class="shelf-scroller flex gap-3 overflow-x-auto pb-1 scroll-smooth"
+      :style="fadeStyle"
       @scroll.passive="updateArrows"
     >
       <slot />

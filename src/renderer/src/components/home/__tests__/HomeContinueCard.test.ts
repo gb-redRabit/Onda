@@ -35,7 +35,9 @@ async function renderCard(track: MediaFile, position: number, locale = 'pl'): Pr
         home: {
           continueTitle: 'Kontynuuj',
           resume: 'Wznów',
-          playFromStart: 'Odtwórz od nowa'
+          playFromStart: 'Odtwórz od nowa',
+          mediaTypeAudio: 'Audio',
+          mediaTypeVideo: 'Wideo'
         }
       },
       en: {
@@ -43,7 +45,9 @@ async function renderCard(track: MediaFile, position: number, locale = 'pl'): Pr
         home: {
           continueTitle: 'Continue',
           resume: 'Resume',
-          playFromStart: 'Play from start'
+          playFromStart: 'Play from start',
+          mediaTypeAudio: 'Audio',
+          mediaTypeVideo: 'Video'
         }
       }
     },
@@ -58,6 +62,12 @@ async function renderCard(track: MediaFile, position: number, locale = 'pl'): Pr
 }
 
 describe('HomeContinueCard', () => {
+  it('shows the media type and file format next to the title', async () => {
+    const html = await renderCard(mockAudioTrack, 0, 'pl');
+    expect(html).toContain('Audio');
+    expect(html).toContain('MP3');
+  });
+
   it('displays "Wznów" and "Odtwórz od nowa" for audio track when position > 5, even with duration = 0', async () => {
     const html = await renderCard(mockAudioTrack, 45, 'pl');
     expect(html).toContain('Wznów');

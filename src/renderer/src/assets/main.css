@@ -217,6 +217,25 @@ input:not([type='range']):focus-visible {
   background: color-mix(in oklab, var(--color-base-content) 50%, transparent);
 }
 
+/* Poziome półki na Home: natywny pasek przewijania jest zbędny (nawigacja jest
+   w nagłówku półki), a maska wygasza tylko tę krawędź, po której jest co
+   przewijać — `--shelf-fade-*` ustawia HomeShelf. */
+.shelf-scroller {
+  scrollbar-width: none;
+  --shelf-fade-left: 0px;
+  --shelf-fade-right: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--shelf-fade-left),
+    #000 calc(100% - var(--shelf-fade-right)),
+    transparent 100%
+  );
+}
+.shelf-scroller::-webkit-scrollbar {
+  display: none;
+}
+
 /* Sliders: the track must stay visible on any surface (base-200/base-100), so it
    is a tinted overlay instead of another base colour, and the thumb carries the
    accent colour. */

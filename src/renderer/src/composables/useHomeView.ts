@@ -1,7 +1,17 @@
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, type Component } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { FolderOpen, Disc3, Radio, FolderUp } from '@lucide/vue';
+import {
+  FolderOpen,
+  Disc3,
+  Radio,
+  FolderUp,
+  LibraryBig,
+  Music2,
+  Film,
+  Image,
+  ListMusic
+} from '@lucide/vue';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -18,6 +28,13 @@ import type { TabId } from '@renderer/utils/libraryTabs';
 
 // Logika widoku Home (akcje, liczniki, półki, karta kontynuacji) wyodrębniona z
 // `HomeView.vue`. Template składa półki z zwróconego stanu.
+
+/** Pozycja siatki „Szybki powrót” — sformatowana raz, bez powtarzania logiki w karcie. */
+export interface HomeQuickPick {
+  track: MediaFile;
+  title: string;
+  subtitle: string;
+}
 
 export function useHomeView() {
   const router = useRouter();
@@ -82,6 +99,7 @@ export function useHomeView() {
     key: string;
     color: string;
     tab: TabId;
+    icon: Component;
   }
 
   const counters = computed<HomeCounter[]>(() => [
@@ -89,21 +107,36 @@ export function useHomeView() {
       value: library.totalCount,
       key: 'home.totalTracks',
       color: 'text-base-content',
-      tab: 'overview'
+      tab: 'overview',
+      icon: LibraryBig
     },
     {
       value: library.audioCount,
       key: 'home.audioFiles',
       color: 'text-primary-text',
-      tab: 'tracks'
+      tab: 'tracks',
+      icon: Music2
     },
-    { value: library.videoCount, key: 'home.videoFiles', color: 'text-success', tab: 'video' },
-    { value: library.imageCount, key: 'home.imageFiles', color: 'text-secondary', tab: 'images' },
+    {
+      value: library.videoCount,
+      key: 'home.videoFiles',
+      color: 'text-success',
+      tab: 'video',
+      icon: Film
+    },
+    {
+      value: library.imageCount,
+      key: 'home.imageFiles',
+      color: 'text-secondary',
+      tab: 'images',
+      icon: Image
+    },
     {
       value: library.playlists.length,
       key: 'library.playlists',
       color: 'text-warning',
-      tab: 'playlists'
+      tab: 'playlists',
+      icon: ListMusic
     }
   ]);
 
@@ -135,6 +168,29 @@ export function useHomeView() {
     if (artist) return artist;
     const duration = track.duration || track.metadata?.duration || 0;
     return duration > 0 ? formatDuration(duration) : track.extension;
+  }
+
+  // „Szybki powrót”: 6 ostatnich utworów w formacie mini-kart (2×3 / 3×2).
+  const quickPicks = computed<HomeQuickPick[]>(() =>
+    recentTracks.value.slice(0, 6).map((track) => ({
+      track,
+      title: trackTitle(track),
+      subtitle: trackSubtitle(track)
+    }))
+  );
+
+  // Losowy utwór z biblioteki dla pustego hero. Preferuj audio (wideorandka
+  // przeniosłaby użytkownika do widoku odtwarzacza bez wyraźnego powodu).
+  function playRandom(): void {
+    const pool = library.audioTracks.length
+      ? library.audioTracks
+      : library.tracks.filter((track) => track.type !== 'image');
+    if (!pool.length) return;
+    const picked = pool[Math.floor(Math.random() * pool.length)];
+    player.clearQueue();
+    player.setTrack(picked);
+    player.play();
+    if (picked.type === 'video') void router.push('/player');
   }
 
   // Wbudowane reguły liczby mnogiej vue-i18n błędnie obsługują polskie one/few/many
@@ -235,8 +291,12 @@ export function useHomeView() {
     actions,
     counters,
     openLibrary,
+    // akcje szybkie (pigułki w nagłówku + puste hero)
+    openFile,
+    openFolder,
+    playRandom,
     // półki
-    recentTracks,
+    quickPicks,
     mostPlayed,
     favoriteTracks,
     playlists,

@@ -67,6 +67,9 @@ test.describe('all views — structure', () => {
       for (const id of ['open-file', 'open-folder', 'library', 'online']) {
         await expect(page.getByTestId(`home-action-${id}`)).toBeVisible();
       }
+      // Bento: puste konto nie ma czego wznawiać → hero powitalne.
+      await expect(page.getByTestId('home-welcome')).toBeVisible();
+      await expect(page.getByTestId('home-stats')).toBeVisible();
       // Liczniki renderują się, gdy (pusta) biblioteka zostanie załadowana.
       await expect(page.getByTestId('home-counter-overview')).toBeVisible({ timeout: 15_000 });
       for (const tab of ['tracks', 'video', 'images', 'playlists']) {
