@@ -1,4 +1,4 @@
-import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
+import { _electron as electron, test, type ElectronApplication, type Page } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -10,6 +10,9 @@ export interface OndaApp {
   app: ElectronApplication;
   page: Page;
   pageErrors: string[];
+  /** Ostatnie linie stdout/stderr procesu Electrona (np. stack SIGTRAP). */
+  stdout: string[];
+  stderr: string[];
   userDataDir: string;
   dispose: () => Promise<void>;
 }
@@ -27,6 +30,21 @@ export interface LaunchOptions {
 
 const MAIN_WINDOW_TIMEOUT_MS = 30_000;
 const CLOSE_TIMEOUT_MS = 5_000;
+/** Ile linii logów procesu trzymamy — dość na stack, bez rozdymania artefaktów. */
+const MAX_LOG_LINES = 400;
+
+function capLogs(lines: string[]): void {
+  if (lines.length > MAX_LOG_LINES) lines.splice(0, lines.length - MAX_LOG_LINES);
+}
+
+function collectProcessLogs(proc: NodeJS.ReadableStream | null | undefined, sink: string[]): void {
+  proc?.on('data', (chunk: Buffer | string) => {
+    for (const line of String(chunk).split(/\r?\n/)) {
+      if (line.trim()) sink.push(line);
+    }
+    capLogs(sink);
+  });
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -70,6 +88,10 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
 
   const app = await electron.launch({ args, env });
   const proc = app.process();
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  collectProcessLogs(proc.stdout, stdout);
+  collectProcessLogs(proc.stderr, stderr);
   try {
     const page = await waitForMainWindow(app, options.windowFile);
 
@@ -80,6 +102,8 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
       app,
       page,
       pageErrors,
+      stdout,
+      stderr,
       userDataDir,
       dispose: async () => {
         // Onda ukrywa się do tray zamiast zamykać (close-to-tray), więc najpierw zniszcz
@@ -147,4 +171,21 @@ export async function dismissWizard(page: Page): Promise<void> {
     if (gone) return;
   }
   throw new Error('onboarding wizard did not close after 3 attempts');
+}
+
+/**
+ * Dołącza logi procesu Electrona i błędy renderera do artefaktu testu.
+ * Na macOS runner crashuje SIGTRAP-em, więc bez stderr nie da się ustalić,
+ * czy to natywny abort Electrona, czy błąd aplikacji.
+ */
+export async function attachElectronDiagnostics(onda: OndaApp): Promise<void> {
+  const info = test.info();
+  const attach = async (name: string, lines: string[]): Promise<void> => {
+    const body = lines.join('\n');
+    if (!body.trim()) return;
+    await info.attach(name, { body, contentType: 'text/plain' });
+  };
+  await attach('electron-stderr.log', onda.stderr);
+  await attach('electron-stdout.log', onda.stdout);
+  await attach('renderer-errors.log', onda.pageErrors);
 }

@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { launchOnda, dismissWizard } from './helpers/app';
+import { attachElectronDiagnostics, launchOnda, dismissWizard } from './helpers/app';
 
 // Operacje na plikach w eksploratorze na prawdziwym katalogu tymczasowym: nowy folder
 // (prompt), zmiana nazwy, usunięcie do kosza (domyślnie) i wykrywanie duplikatów.
@@ -45,7 +45,7 @@ test.describe('explorer file operations', () => {
 
   test('creates, renames, trashes and de-duplicates files', async () => {
     // Na runnerze macOS proces Electron kończy się sygnałem SIGTRAP przy otwarciu
-    // dialogu "nowy folder" (crash, nie asercja) — pomijamy tam, dopóki nie zbierzemy trace'a.
+    // dialogu "nowy folder" (crash, nie asercja) — pomijamy tam, dopóki nie zbierzemy trace'a; `attachElectronDiagnostics` zbiera stderr Electrona do artefaktu testu.
     test.skip(
       process.platform === 'darwin',
       'macOS runner: Electron exits (SIGTRAP) on the new-folder prompt'
@@ -153,6 +153,7 @@ test.describe('explorer file operations', () => {
 
       expect(onda.pageErrors).toEqual([]);
     } finally {
+      await attachElectronDiagnostics(onda);
       await onda.dispose();
     }
   });

@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { launchOnda, dismissWizard } from './helpers/app';
+import { attachElectronDiagnostics, launchOnda, dismissWizard } from './helpers/app';
 import { createMediaFixture } from './helpers/media';
 
 // Menu kontekstowe prawego przycisku na trzech głównych powierzchniach: utworze biblioteki,
@@ -62,6 +62,7 @@ test.describe('context menu — library track', () => {
 
       expect(onda.pageErrors).toEqual([]);
     } finally {
+      await attachElectronDiagnostics(onda);
       await onda.dispose();
     }
   });
@@ -79,7 +80,7 @@ test.describe('context menu — explorer item', () => {
   test('copies the item path to the system clipboard', async () => {
     // Na runnerze macOS proces Electron kończy się sygnałem SIGTRAP przy prawym
     // kliknięciu elementu eksploratora (crash, nie asercja) — ten sam wzorzec co
-    // w `explorer-file-ops.spec.ts`. Pomijamy tam, dopóki nie zbierzemy trace'a.
+    // w `explorer-file-ops.spec.ts`. Pomijamy tam, dopóki nie zbierzemy trace'a; `attachElectronDiagnostics` zbiera stderr Electrona do artefaktu testu.
     test.skip(
       process.platform === 'darwin',
       'macOS runner: Electron exits (SIGTRAP) on the explorer item context menu'
@@ -108,6 +109,7 @@ test.describe('context menu — explorer item', () => {
 
       expect(onda.pageErrors).toEqual([]);
     } finally {
+      await attachElectronDiagnostics(onda);
       await onda.dispose();
     }
   });
@@ -152,6 +154,7 @@ test.describe('context menu — playing track', () => {
 
       expect(onda.pageErrors).toEqual([]);
     } finally {
+      await attachElectronDiagnostics(onda);
       await onda.dispose();
     }
   });
