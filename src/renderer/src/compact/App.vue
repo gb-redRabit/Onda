@@ -42,7 +42,7 @@ useSessionPersistence();
 const player = usePlayerStore();
 const settings = useSettingsStore();
 const { appearance } = storeToRefs(settings);
-registerMediaIpcEvents(player);
+const removeMediaIpcEvents = registerMediaIpcEvents(player);
 const audio = useAudioPlayer();
 const audioPip = useAudioPiP({ prewarm: false });
 audioPip.dock.value = settings.appearance.audioPipDock;
@@ -239,6 +239,7 @@ onBeforeUnmount(() => {
   stopCompactHidden?.();
   stopCompactShown?.();
   stopAppearance?.();
+  removeMediaIpcEvents();
 });
 
 const repeatLabel = computed(() =>

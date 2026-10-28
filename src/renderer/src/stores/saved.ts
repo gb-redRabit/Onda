@@ -29,8 +29,9 @@ export const useSavedStore = defineStore('saved', () => {
           tracks.value = data.tracks ?? [];
           playlists.value = data.playlists ?? [];
         }
-      } finally {
         loaded = true;
+      } finally {
+        loading = null;
       }
     })();
     return loading;

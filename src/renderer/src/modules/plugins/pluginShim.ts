@@ -59,7 +59,7 @@ export const PLUGIN_API_SHIM = [
   // `Worker`/`SharedWorker` MUSZĄ być tu również: bez tego plugin tworzy zagnieżdżony
   // worker z Blob URL (CSP dopuszcza `worker-src blob:`), a tam świeży global ma
   // natywny `fetch` — blokada na `self` nie chroni nowego kontekstu.
-  '  var BLOCKED_GLOBALS = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","indexedDB","caches","Worker","SharedWorker"];',
+  '  var BLOCKED_GLOBALS = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","indexedDB","caches","Worker","SharedWorker","WebTransport","BroadcastChannel"];',
   '  var globalProto = Object.getPrototypeOf(self);',
   '  for (var bi = 0; bi < BLOCKED_GLOBALS.length; bi++) {',
   '    try { Object.defineProperty(globalProto, BLOCKED_GLOBALS[bi], { value: undefined, writable: false, configurable: false }); } catch (e) { /* ignore */ }',

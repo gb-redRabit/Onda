@@ -1,6 +1,6 @@
 import { onUnmounted } from 'vue';
 
-export function useTimeoutFn(callback: () => void, delay: number) {
+export function useTimeoutFn(callback: () => void, delay: number | (() => number)) {
   let id: ReturnType<typeof setTimeout> | null = null;
 
   const stop = (): void => {
@@ -12,7 +12,8 @@ export function useTimeoutFn(callback: () => void, delay: number) {
 
   const start = (): void => {
     stop();
-    id = setTimeout(callback, delay);
+    const ms = typeof delay === 'function' ? delay() : delay;
+    id = setTimeout(callback, ms);
   };
 
   onUnmounted(stop);

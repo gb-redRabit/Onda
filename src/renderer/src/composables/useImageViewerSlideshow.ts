@@ -79,25 +79,28 @@ export function useImageViewerSlideshow(deps: SlideshowDeps) {
     scheduleAdvance();
   }
 
-  const { start: scheduleAdvance, stop: cancelAdvance } = useTimeoutFn(() => {
-    if (!slideshowActive.value) return;
-    if (shuffleSlideshow.value && shuffleOrder.length > 0) {
-      const nextIdx = shuffleOrder.shift()!;
-      deps.navigate(nextIdx, 'next');
-      runProgress();
-      scheduleAdvance();
-    } else if (deps.hasNext.value) {
-      deps.next();
-      runProgress();
-      scheduleAdvance();
-    } else if (deps.loop.value) {
-      deps.loadAt(0);
-      runProgress();
-      scheduleAdvance();
-    } else {
-      stopSlideshow();
-    }
-  }, slideshowInterval.value);
+  const { start: scheduleAdvance, stop: cancelAdvance } = useTimeoutFn(
+    () => {
+      if (!slideshowActive.value) return;
+      if (shuffleSlideshow.value && shuffleOrder.length > 0) {
+        const nextIdx = shuffleOrder.shift()!;
+        deps.navigate(nextIdx, 'next');
+        runProgress();
+        scheduleAdvance();
+      } else if (deps.hasNext.value) {
+        deps.next();
+        runProgress();
+        scheduleAdvance();
+      } else if (deps.loop.value) {
+        deps.loadAt(0);
+        runProgress();
+        scheduleAdvance();
+      } else {
+        stopSlideshow();
+      }
+    },
+    () => slideshowInterval.value
+  );
 
   function stopSlideshow() {
     slideshowActive.value = false;

@@ -23,8 +23,9 @@ export const useRadioStore = defineStore('radio', () => {
         const data = (await window.api?.radioLoad()) as
           { stations?: IpcRadioStation[] } | undefined;
         stations.value = data?.stations ?? [];
-      } finally {
         loaded = true;
+      } finally {
+        loading = null;
       }
     })();
     return loading;

@@ -75,7 +75,9 @@ function writeSession(player: ReturnType<typeof usePlayerStore>): void {
       SESSION_KEY,
       JSON.stringify({
         currentPath: player.currentTrack.path,
-        queue: player.queue.slice(0, MAX_PERSISTED_QUEUE).map((track) => track.path),
+        queue: [...player.queue, ...player.pendingQueue]
+          .slice(0, MAX_PERSISTED_QUEUE)
+          .map((track) => track.path),
         isPlaying: player.isPlaying,
         shuffle: player.shuffle,
         repeat: player.repeat,

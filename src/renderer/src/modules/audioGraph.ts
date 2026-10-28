@@ -229,6 +229,20 @@ export class AudioGraph {
         logger.warn('audioEngine', 'disconnect eq filter failed', e);
       }
     }
+    for (const node of [
+      this.preampNode,
+      this.monitorNode,
+      this.nightCompressor,
+      this.nightMakeup,
+      this.nightDialogueEq,
+      this.delayNode
+    ]) {
+      try {
+        node?.disconnect();
+      } catch (e) {
+        logger.warn('audioEngine', 'disconnect graph node failed', e);
+      }
+    }
   }
 
   connectVideoElement(videoEl: HTMLVideoElement, initialVolume = 1): void {
@@ -399,6 +413,8 @@ export class AudioGraph {
     this.sourceNode = null;
     this.gainNode = null;
     this.eqFilters = [];
+    this.preampNode = null;
+    this.monitorNode = null;
     this.videoSourceNode = null;
     this.videoGainNode = null;
     this.videoSourceEl = null;
@@ -407,5 +423,6 @@ export class AudioGraph {
     this.nightDialogueEq = null;
     this.delayNode = null;
     this.eqChainBuilt = false;
+    this.eqSignature = '';
   }
 }
