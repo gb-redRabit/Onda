@@ -37,9 +37,14 @@ async function confirmDialog(page: Page): Promise<void> {
 }
 
 test.describe('explorer file operations', () => {
-  const dir = createFsFixture();
+  let dir = '';
 
-  test.afterAll(() => {
+  test.beforeEach(() => {
+    // Każda próba (także retry) dostaje własny fixture; test modyfikuje i usuwa pliki.
+    dir = createFsFixture();
+  });
+
+  test.afterEach(() => {
     rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 

@@ -6,9 +6,15 @@ import { launchOnda, dismissWizard } from './helpers/app';
 import { encryptLegacyConfig, legacyStoreKey } from './helpers/legacy-store';
 
 test.describe('legacy profile migration', () => {
-  const profileDir = mkdtempSync(join(tmpdir(), 'onda-legacy-'));
+  let profileDir = '';
 
-  test.afterAll(() => {
+  test.beforeEach(() => {
+    // Świeży katalog na każdą próbę — retry Playwrighta nie może trafić na
+    // profil zmodyfikowany przez poprzedni, nieudany przebieg.
+    profileDir = mkdtempSync(join(tmpdir(), 'onda-legacy-'));
+  });
+
+  test.afterEach(() => {
     rmSync(profileDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 

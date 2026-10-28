@@ -1,18 +1,18 @@
 import { test, expect, type Page } from '@playwright/test';
 import { execFileSync } from 'child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'fs';
+import { copyFileSync, existsSync, mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
+import { findFfmpegTools, seedFfmpegProfile } from './helpers/ffmpeg';
 
-const sourceBin = join(process.env.APPDATA ?? '', 'onda', 'bin');
-const ffmpeg = join(sourceBin, 'ffmpeg.exe');
-const ffprobe = join(sourceBin, 'ffprobe.exe');
-const canConcat = existsSync(ffmpeg) && existsSync(ffprobe);
+const tools = findFfmpegTools();
 
 function probeDuration(path: string): number {
+  if (!tools) throw new Error('FFmpeg missing');
   return Number(
     execFileSync(
-      ffprobe,
+      tools.ffprobe,
       [
         '-v',
         'error',
@@ -46,21 +46,20 @@ async function dropFiles(page: Page, inputs: string[]): Promise<void> {
 }
 
 test.describe('video concat', () => {
-  const resultsDir = join(process.cwd(), 'test-results');
-  mkdirSync(resultsDir, { recursive: true });
-  const mediaDir = mkdtempSync(join(resultsDir, 'video-concat-'));
+  const mediaDir = mkdtempSync(join(tmpdir(), 'onda-video-concat-'));
 
   test.afterAll(() => {
     rmSync(mediaDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 
-  test.skip(!canConcat, 'FFmpeg is not installed in the local Onda profile');
+  test.skip(!tools, 'FFmpeg is not installed in the profile, resources/ or PATH');
 
   test('joins videos in a separate tool window', async () => {
+    if (!tools) throw new Error('FFmpeg missing');
     const source = join(mediaDir, 'first.webm');
     const second = join(mediaDir, 'second.webm');
     execFileSync(
-      ffmpeg,
+      tools.ffmpeg,
       [
         '-y',
         '-hide_banner',
@@ -90,11 +89,7 @@ test.describe('video concat', () => {
     copyFileSync(source, second);
 
     const onda = await launchOnda({
-      profileSetup: (dir) => {
-        mkdirSync(join(dir, 'bin'), { recursive: true });
-        copyFileSync(ffmpeg, join(dir, 'bin', 'ffmpeg.exe'));
-        copyFileSync(ffprobe, join(dir, 'bin', 'ffprobe.exe'));
-      }
+      profileSetup: (dir) => seedFfmpegProfile(dir, tools)
     });
     const { page } = onda;
     try {

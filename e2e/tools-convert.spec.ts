@@ -1,15 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { execFileSync } from 'child_process';
-import { copyFileSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import { join } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 import { dropFileOn } from './helpers/dragDrop';
 import { createMediaFixture } from './helpers/media';
+import { findFfmpegTools, seedFfmpegProfile } from './helpers/ffmpeg';
 
-const sourceBin = join(process.env.APPDATA ?? '', 'onda', 'bin');
-const ffmpeg = join(sourceBin, 'ffmpeg.exe');
-const ffprobe = join(sourceBin, 'ffprobe.exe');
-const canConvert = existsSync(ffmpeg) && existsSync(ffprobe);
+const tools = findFfmpegTools();
 
 async function dropFile(page: Page, input: string): Promise<void> {
   await dropFileOn(
@@ -26,12 +24,13 @@ test.describe('tools conversion', () => {
     rmSync(media.dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 
-  test.skip(!canConvert, 'FFmpeg is not installed in the local Onda profile');
+  test.skip(!tools, 'FFmpeg is not installed in the profile, resources/ or PATH');
 
   test('converts dropped audio and video through the tools view', async () => {
+    if (!tools) throw new Error('FFmpeg missing');
     const videoPath = join(media.dir, 'clip.mp4');
     execFileSync(
-      ffmpeg,
+      tools.ffmpeg,
       [
         '-y',
         '-hide_banner',
@@ -60,11 +59,7 @@ test.describe('tools conversion', () => {
     );
 
     const onda = await launchOnda({
-      profileSetup: (dir) => {
-        mkdirSync(join(dir, 'bin'), { recursive: true });
-        copyFileSync(ffmpeg, join(dir, 'bin', 'ffmpeg.exe'));
-        copyFileSync(ffprobe, join(dir, 'bin', 'ffprobe.exe'));
-      }
+      profileSetup: (dir) => seedFfmpegProfile(dir, tools)
     });
     const { page } = onda;
     try {

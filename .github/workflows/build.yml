@@ -85,6 +85,22 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Testy narzędzi FFmpeg mają działać także na czystym runnerze, a nie
+      # tylko na maszynie z `%APPDATA%\onda\bin`. Helper E2E szuka binarek
+      # w profilu, resources/ffmpeg i PATH.
+      - name: Install FFmpeg for tool E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            brew install ffmpeg
+          else
+            choco install ffmpeg --no-progress -y
+          fi
+
       - name: E2E (Electron, Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run e2e
