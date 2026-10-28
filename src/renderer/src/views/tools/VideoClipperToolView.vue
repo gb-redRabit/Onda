@@ -25,6 +25,23 @@ import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
+import { useVideoThumbnails } from '@renderer/composables/useVideoThumbnails';
+import {
+  FRAME_STRIP_MIN_PX,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  TRACK_PAD_PCT,
+  TRACK_SPAN_PCT,
+  ZOOM_LEVELS,
+  buildTimelineTicks,
+  extensionOf as extensionOfPath,
+  fileNameOf,
+  formatTimecode as formatTimecodeOf,
+  frameStripCovers as frameStripCoversOf,
+  percentageOf,
+  snapTimeToTargets,
+  trackPctOf
+} from '@renderer/utils/videoClipper';
 import type {
   MediaConvertProgress,
   VideoClipAudio,
@@ -48,40 +65,6 @@ interface ClipItem {
 }
 
 const VIDEO_EXTS = new Set(['mp4', 'mkv', 'webm', 'avi', 'mov', 'wmv', 'flv', 'm4v', 'ts']);
-const TRACK_PAD_PCT = 8;
-const TRACK_SPAN_PCT = 84;
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 256;
-const ZOOM_LEVELS = [1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256];
-const FRAME_STRIP_MIN_PX = 6;
-const FRAME_STRIP_MAX = 120;
-const MIN_THUMBNAILS = 10;
-const MAX_THUMBNAILS = 120;
-const THUMB_TARGET_WIDTH = 150;
-const SNAP_PX = 8;
-const TICK_STEPS = [
-  1 / 120,
-  1 / 60,
-  1 / 30,
-  1 / 15,
-  0.05,
-  1 / 10,
-  0.2,
-  0.5,
-  1,
-  2,
-  5,
-  10,
-  15,
-  30,
-  60,
-  120,
-  300,
-  600,
-  900,
-  1800,
-  3600
-];
 
 const { t } = useI18n();
 const { sendToMain } = useToolBridge();
@@ -104,12 +87,6 @@ const clipFormat = ref<VideoClipFormat>('video');
 const audioMode = ref<VideoClipAudio>('keep');
 const rotation = ref<VideoClipRotation>(0);
 const targetSizeMb = ref(0);
-const thumbnails = ref<string[]>([]);
-const thumbsLoading = ref(false);
-const thumbsRefreshing = ref(false);
-const thumbsError = ref('');
-const frameStrip = ref<{ startSec: number; stepSec: number; frames: string[] } | null>(null);
-const frameStripLoading = ref(false);
 const outputDir = ref('');
 const status = ref<ClipStatus>('idle');
 const progress = ref(0);
@@ -127,17 +104,12 @@ const cancelRequested = ref(false);
 const clips = ref<ClipItem[]>([]);
 let currentJobId = '';
 let offProgress: (() => void) | null = null;
-let thumbToken = 0;
-let thumbRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-let lastThumbCount = 0;
-let frameStripTimer: ReturnType<typeof setTimeout> | null = null;
-let frameStripToken = 0;
 
 const videoUrl = computed(() => (videoPath.value ? toMediaServerUrl(videoPath.value) : ''));
 const clipDuration = computed(() => Math.max(0, endSec.value - startSec.value));
-const startPct = computed(() => percentage(startSec.value));
-const endPct = computed(() => percentage(endSec.value));
-const currentPct = computed(() => percentage(currentTime.value));
+const startPct = computed(() => percentageOf(startSec.value, duration.value));
+const endPct = computed(() => percentageOf(endSec.value, duration.value));
+const currentPct = computed(() => percentageOf(currentTime.value, duration.value));
 const zoomLabel = computed(() => {
   const zoom = Math.round(timelineZoom.value * 100) / 100;
   return Number.isInteger(zoom) ? String(zoom) : zoom.toFixed(1);
@@ -178,80 +150,50 @@ const frameWidthPx = computed(() =>
 const frameStripActive = computed(
   () => frameWidthPx.value >= FRAME_STRIP_MIN_PX && duration.value > 0
 );
-const frameStripCovers = computed(() => {
-  const strip = frameStrip.value;
-  if (!strip || strip.frames.length === 0 || !duration.value || timelineWidthPx.value <= 0) {
-    return false;
-  }
-  const timeAt = (px: number): number => {
-    const percent = (px / timelineWidthPx.value) * 100;
-    return Math.min(
-      duration.value,
-      Math.max(0, ((percent - TRACK_PAD_PCT) / TRACK_SPAN_PCT) * duration.value)
-    );
-  };
-  const viewStart = timeAt(timelineScrollLeft.value);
-  const viewEnd = timeAt(timelineScrollLeft.value + timelineViewportWidth.value);
-  const stripStart = strip.startSec;
-  const stripEnd = strip.startSec + strip.frames.length * strip.stepSec;
-  const margin = strip.stepSec * 2;
-  return viewStart >= stripStart - margin && viewEnd <= stripEnd + margin;
+const {
+  thumbnails,
+  thumbsLoading,
+  thumbsRefreshing,
+  thumbsError,
+  frameStrip,
+  frameStripLoading,
+  cancelThumbnails,
+  cancelFrameStrip,
+  scheduleThumbnailRefresh,
+  scheduleFrameStrip,
+  generateThumbnails
+} = useVideoThumbnails({
+  videoPath,
+  duration,
+  videoFps,
+  timelineZoom,
+  timelineScrollEl,
+  timelineEl,
+  frameStripActive: () => frameStripActive.value
 });
 
-function chooseTickStep(pixelsPerSecondValue: number, minSpacingPx: number): number {
-  return (
-    TICK_STEPS.find((step) => step * pixelsPerSecondValue >= minSpacingPx) ??
-    TICK_STEPS[TICK_STEPS.length - 1]
-  );
-}
+const frameStripCovers = computed(() =>
+  frameStripCoversOf({
+    strip: frameStrip.value,
+    duration: duration.value,
+    widthPx: timelineWidthPx.value,
+    scrollLeft: timelineScrollLeft.value,
+    viewportWidth: timelineViewportWidth.value
+  })
+);
 
-const timelineTicks = computed(() => {
-  if (duration.value <= 0 || timelineWidthPx.value <= 0 || pixelsPerSecond.value <= 0) return [];
-  const majorStep = chooseTickStep(pixelsPerSecond.value, timelineZoom.value >= 32 ? 120 : 64);
-  const minorStep = majorStep / 5;
-  const showFrames = frameWidthPx.value >= 3;
-  const width = timelineWidthPx.value;
-  const timeAtPercent = (percent: number): number =>
-    Math.min(
-      duration.value,
-      Math.max(0, ((percent - TRACK_PAD_PCT) / TRACK_SPAN_PCT) * duration.value)
-    );
-  const visibleStart = timeAtPercent((timelineScrollLeft.value / width) * 100);
-  const visibleEnd = timeAtPercent(
-    ((timelineScrollLeft.value + timelineViewportWidth.value) / width) * 100
-  );
-  const from = Math.max(0, visibleStart - majorStep * 2);
-  const to = Math.min(duration.value, visibleEnd + majorStep * 2);
-  const ticks: { left: number; label?: string; kind: 'major' | 'minor' | 'frame' }[] = [];
-  const seen = new Set<string>();
-
-  const push = (seconds: number, kind: 'major' | 'minor' | 'frame', label?: string): void => {
-    if (seconds < 0 || seconds > duration.value) return;
-    const key = seconds.toFixed(6);
-    if (seen.has(key)) return;
-    seen.add(key);
-    ticks.push({ left: (seconds / duration.value) * 100, label, kind });
-  };
-
-  const majorStart = Math.ceil(from / majorStep - 1e-9) * majorStep;
-  for (let time = majorStart; time <= to + 1e-6; time += majorStep) {
-    push(time, 'major', formatRulerTime(time, majorStep));
-  }
-  if (!showFrames && minorStep > 0) {
-    const minorStart = Math.ceil(from / minorStep - 1e-9) * minorStep;
-    for (let time = minorStart; time <= to + 1e-6; time += minorStep) {
-      push(time, 'minor');
-    }
-  }
-  if (showFrames) {
-    const step = frameDuration.value;
-    const frameStart = Math.ceil(from / step - 1e-9) * step;
-    for (let time = frameStart; time <= to + 1e-6; time += step) {
-      ticks.push({ left: (time / duration.value) * 100, kind: 'frame' });
-    }
-  }
-  return ticks;
-});
+const timelineTicks = computed(() =>
+  buildTimelineTicks({
+    duration: duration.value,
+    widthPx: timelineWidthPx.value,
+    pixelsPerSecond: pixelsPerSecond.value,
+    zoom: timelineZoom.value,
+    frameWidthPx: frameWidthPx.value,
+    frameDuration: frameDuration.value,
+    scrollLeft: timelineScrollLeft.value,
+    viewportWidth: timelineViewportWidth.value
+  })
+);
 
 function updateTimelineMetrics(): void {
   const outer = timelineScrollEl.value;
@@ -267,240 +209,31 @@ function onTimelineScroll(): void {
   scheduleFrameStrip();
 }
 
-function percentage(seconds: number): number {
-  if (duration.value <= 0) return 0;
-  return Math.min(100, Math.max(0, (seconds / duration.value) * 100));
-}
-
 function trackPct(value: number): number {
-  return TRACK_PAD_PCT + (value * TRACK_SPAN_PCT) / 100;
+  return trackPctOf(value);
 }
 
 function fileName(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
-  const total = Math.floor(seconds);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const secs = total % 60;
-  const mm = String(minutes).padStart(2, '0');
-  const ss = String(secs).padStart(2, '0');
-  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
+  return fileNameOf(path);
 }
 
 function formatTimecode(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '00:00:00:00';
-  const fps = Math.max(1, Math.round(videoFps.value || 30));
-  const totalFrames = Math.max(0, Math.round(seconds * fps));
-  const frames = totalFrames % fps;
-  const totalSeconds = Math.floor(totalFrames / fps);
-  const secs = totalSeconds % 60;
-  const minutes = Math.floor(totalSeconds / 60) % 60;
-  const hours = Math.floor(totalSeconds / 3600);
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(
-    secs
-  ).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+  return formatTimecodeOf(seconds, videoFps.value);
 }
 
 function snapTime(value: number, exclude?: DragTarget): number {
-  const fps = Math.max(1, videoFps.value || 30);
-  let snapped = Math.max(0, Math.min(duration.value, Math.round(value * fps) / fps));
-  if (!snapEnabled.value) return snapped;
-  const threshold = pixelsPerSecond.value > 0 ? SNAP_PX / pixelsPerSecond.value : 0.05;
-  const targets: number[] = [];
-  if (exclude !== 'start') targets.push(startSec.value);
-  if (exclude !== 'end') targets.push(endSec.value);
-  if (exclude !== 'playhead') targets.push(currentTime.value);
-  for (const target of targets) {
-    if (Math.abs(snapped - target) <= threshold) {
-      snapped = Math.max(0, Math.min(duration.value, Math.round(target * fps) / fps));
-      break;
-    }
-  }
-  return snapped;
-}
-
-function formatRulerTime(seconds: number, step: number): string {
-  if (step < 0.1) {
-    const hundredths = Math.round(seconds * 100);
-    return `${formatTime(Math.floor(hundredths / 100))}.${String(hundredths % 100).padStart(2, '0')}`;
-  }
-  if (step < 1) {
-    const tenths = Math.round(seconds * 10);
-    return `${formatTime(Math.floor(tenths / 10))}.${tenths % 10}`;
-  }
-  return formatTime(seconds);
+  return snapTimeToTargets(value, {
+    duration: duration.value,
+    fps: videoFps.value,
+    enabled: snapEnabled.value,
+    pixelsPerSecond: pixelsPerSecond.value,
+    targets: { start: startSec.value, end: endSec.value, playhead: currentTime.value },
+    exclude
+  });
 }
 
 function extensionOf(path: string): string {
-  const name = fileName(path);
-  const idx = name.lastIndexOf('.');
-  return idx >= 0 ? name.slice(idx + 1).toLowerCase() : '';
-}
-
-function cancelThumbnails(): void {
-  thumbToken += 1;
-  thumbsLoading.value = false;
-  thumbsRefreshing.value = false;
-  thumbsError.value = '';
-  lastThumbCount = 0;
-  if (thumbRefreshTimer) {
-    clearTimeout(thumbRefreshTimer);
-    thumbRefreshTimer = null;
-  }
-}
-
-function desiredThumbnailCount(): number {
-  const width = timelineScrollEl.value?.clientWidth || 0;
-  const contentWidth = Math.max(width, 320) * timelineZoom.value;
-  return Math.min(
-    MAX_THUMBNAILS,
-    Math.max(MIN_THUMBNAILS, Math.ceil(contentWidth / THUMB_TARGET_WIDTH))
-  );
-}
-
-async function requestFfmpegThumbnails(count: number, token: number): Promise<boolean> {
-  if (!videoPath.value) return false;
-  thumbsRefreshing.value = true;
-  try {
-    const result = await window.api.clipThumbnails({
-      inputPath: videoPath.value,
-      count
-    });
-    if (token !== thumbToken) return false;
-    if (result.success && result.frames?.length) {
-      thumbnails.value = result.frames;
-      if (result.fps && result.fps > 0) videoFps.value = result.fps;
-      lastThumbCount = count;
-      thumbsError.value = '';
-      scheduleFrameStrip();
-      return true;
-    }
-    if (!thumbnails.value.length) {
-      thumbsError.value = result.error || t('tools.clipThumbnailsUnavailable');
-    }
-    return false;
-  } catch (error) {
-    if (token === thumbToken && !thumbnails.value.length) {
-      thumbsError.value = error instanceof Error ? error.message : String(error);
-    }
-    return false;
-  } finally {
-    if (token === thumbToken) {
-      thumbsLoading.value = false;
-      thumbsRefreshing.value = false;
-    }
-  }
-}
-
-function scheduleThumbnailRefresh(delay = 220): void {
-  if (!videoPath.value || duration.value <= 0 || frameStripActive.value) return;
-  if (thumbRefreshTimer) clearTimeout(thumbRefreshTimer);
-  thumbRefreshTimer = setTimeout(() => {
-    thumbRefreshTimer = null;
-    if (!videoPath.value || duration.value <= 0 || frameStripActive.value) return;
-    const count = desiredThumbnailCount();
-    if (count === lastThumbCount && thumbnails.value.length) return;
-    thumbToken += 1;
-    const token = thumbToken;
-    void requestFfmpegThumbnails(count, token);
-  }, delay);
-}
-
-function cancelFrameStrip(): void {
-  frameStripToken += 1;
-  frameStripLoading.value = false;
-  frameStrip.value = null;
-  if (frameStripTimer) {
-    clearTimeout(frameStripTimer);
-    frameStripTimer = null;
-  }
-}
-
-function scheduleFrameStrip(delay = 180): void {
-  if (!videoPath.value || !frameStripActive.value) return;
-  if (frameStripTimer) clearTimeout(frameStripTimer);
-  frameStripTimer = setTimeout(() => {
-    frameStripTimer = null;
-    void requestFrameStrip();
-  }, delay);
-}
-
-async function requestFrameStrip(): Promise<void> {
-  if (!videoPath.value || !frameStripActive.value || duration.value <= 0) return;
-  const outer = timelineScrollEl.value;
-  const el = timelineEl.value;
-  if (!outer || !el || el.clientWidth <= 0) return;
-
-  const width = el.clientWidth;
-  const timeAtPx = (px: number): number => {
-    const percent = (px / width) * 100;
-    return Math.min(
-      duration.value,
-      Math.max(0, ((percent - TRACK_PAD_PCT) / TRACK_SPAN_PCT) * duration.value)
-    );
-  };
-  const visibleStart = timeAtPx(outer.scrollLeft);
-  const visibleEnd = timeAtPx(outer.scrollLeft + outer.clientWidth);
-  const fps = Math.max(1, videoFps.value);
-  const frameStep = 1 / fps;
-  const visibleCount = Math.min(
-    FRAME_STRIP_MAX,
-    Math.max(1, Math.ceil((visibleEnd - visibleStart) / frameStep))
-  );
-  const extra = Math.max(0, FRAME_STRIP_MAX - visibleCount);
-  const padCount = Math.min(Math.floor(visibleCount * 0.75), Math.floor(extra / 2));
-  const count = Math.min(FRAME_STRIP_MAX, visibleCount + padCount * 2);
-  const start = Math.max(
-    0,
-    Math.floor((visibleStart - padCount * frameStep) / frameStep) * frameStep
-  );
-  const end = Math.min(duration.value, start + count * frameStep);
-  const stepSec = (end - start) / count;
-  const current = frameStrip.value;
-  if (
-    current &&
-    Math.abs(current.startSec - start) < frameStep / 2 &&
-    Math.abs(current.stepSec - stepSec) < 1e-4
-  ) {
-    return;
-  }
-
-  const token = frameStripToken + 1;
-  frameStripToken = token;
-  frameStripLoading.value = true;
-  try {
-    const result = await window.api.clipThumbnails({
-      inputPath: videoPath.value,
-      count,
-      startSec: start,
-      endSec: end
-    });
-    if (token !== frameStripToken) return;
-    if (result.success && result.frames?.length) {
-      frameStrip.value = {
-        startSec: result.startSec ?? start,
-        stepSec: result.stepSec ?? stepSec,
-        frames: result.frames
-      };
-    }
-  } catch {
-    // Przy dużym zoomie zostaje poprzedni pasek albo widok ogólny.
-  } finally {
-    if (token === frameStripToken) frameStripLoading.value = false;
-  }
-}
-
-async function generateThumbnails(): Promise<void> {
-  cancelThumbnails();
-  thumbnails.value = [];
-  if (!videoPath.value || duration.value <= 0) return;
-  thumbsLoading.value = true;
-  const token = thumbToken;
-  await requestFfmpegThumbnails(desiredThumbnailCount(), token);
+  return extensionOfPath(path);
 }
 
 async function loadVideo(path: string): Promise<void> {
