@@ -152,26 +152,24 @@ jobs:
               || list_releases | grep -qxF "$GITHUB_REF_NAME"
           fi
 
-      - name: Build & Publish
-        # PR-y tylko walidują (test/build/e2e); instalatory buduje i publikuje
-        # dopiero push do main (bez publikacji) albo tag/workflow_dispatch.
+      - name: Build installers
+        # PR-y tylko walidują (test/build/e2e). Instalatory budujemy bez
+        # publikacji; upload następuje dopiero po smoke testach i tylko dla tagu.
         if: github.event_name != 'pull_request'
-        # Publish only for tags (the release-please flow) or an explicit manual
-        # run; ordinary pushes to main still build + smoke-test but do not touch
-        # the GitHub release, so a push never re-uploads the current version's
-        # assets. Drop the condition if you want every push to publish too.
-        run: npx electron-builder ${{ matrix.args }} --publish "${{ (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && 'always' || 'never' }}"
+        run: npx electron-builder ${{ matrix.args }} --publish never
         env:
-          # electron-builder's github publisher requires this (see
-          # electron-builder.yml `publish`); release.yml already uses the same
-          # repo-scoped secret for tags/PRs.
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          # release-please owns the published release for a tag. electron-builder
-          # otherwise refuses to upload into a published release older than two
-          # hours (electron-builder#1183), which makes re-runs/manual publishes
-          # silently attach nothing. Ignore the age check so the installers
-          # always land on the release-please release.
-          EP_GH_IGNORE_TIME: '1'
+          # Code signing is OFF until certificates are provisioned. See
+          # RELEASE.md §6 and electron-builder.yml (win.publisherName /
+          # verifyUpdateCodeSignature, mac.notarize).
+          #
+          # Do NOT add empty CSC_LINK/CSC_KEY_PASSWORD vars here — electron-builder
+          # treats even an empty CSC_LINK as a cert path and fails (macOS: "not a
+          # file"). When certs are available, add the real secrets and:
+          #   - Windows: CSC_LINK, CSC_KEY_PASSWORD (or CODE_SIGN_PUBLISHER for
+          #     publisherName + verifyUpdateCodeSignature: true).
+          #   - macOS: CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID,
+          #     APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID (notarize: true).
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Smoke test installer (Windows)
         if: matrix.os == 'windows-latest' && github.event_name != 'pull_request'
@@ -207,18 +205,37 @@ jobs:
           echo "launcher exit=$? (124 = timeout, expected for a GUI app)"
           cat "$log"
           grep -q "\[Onda/boot\] window created" "$log"
+
+      # Publikacja jest osobnym, ostatnim krokiem. Dzięki temu uszkodzony
+      # installer/`latest.yml` nigdy nie trafi do wydania przed smoke testem,
+      # a workflow_dispatch (gałąź main) nie nadpisuje assetów ostatniego tagu.
+      - name: Publish installers (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          GH_OWNER: ${{ github.repository_owner }}
-          # Code signing is OFF until certificates are provisioned. See
-          # RELEASE.md §6 and electron-builder.yml (win.publisherName /
-          # verifyUpdateCodeSignature, mac.notarize).
-          #
-          # Do NOT add empty CSC_LINK/CSC_KEY_PASSWORD vars here — electron-builder
-          # treats even an empty CSC_LINK as a cert path and fails (macOS: "not a
-          # file"). When certs are available, add the real secrets and:
-          #   - Windows: CSC_LINK, CSC_KEY_PASSWORD (or CODE_SIGN_PUBLISHER for
-          #     publisherName + verifyUpdateCodeSignature: true).
-          #   - macOS: CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID,
-          #     APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID (notarize: true).
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.pkg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.blockmap
+          )
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "No installer artifacts found in dist/" >&2
+            exit 1
+          fi
+          gh release upload "$GITHUB_REF_NAME" "${artifacts[@]}" --clobber
+
+          # Manifesty auto-update publikujemy na końcu: jeżeli upload
+          # instalatora padnie, użytkownicy nie zobaczą nowego `latest.yml`.
+          manifests=(dist/latest.yml dist/latest-linux.yml dist/latest-mac.yml)
+          if [ ${#manifests[@]} -gt 0 ]; then
+            gh release upload "$GITHUB_REF_NAME" "${manifests[@]}" --clobber
+          fi
