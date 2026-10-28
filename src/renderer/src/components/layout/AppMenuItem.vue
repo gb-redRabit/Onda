@@ -9,13 +9,21 @@ defineProps<{ icon?: unknown; label?: string }>();
   <button
     role="menuitem"
     tabindex="-1"
-    class="w-full px-3 py-1.5 text-left text-xs text-base-content/70 hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
+    class="group mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-base-content/75 transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:bg-primary/10 focus-visible:text-primary-text focus-visible:outline-none"
     :aria-label="label"
     v-bind="$attrs"
   >
-    <component :is="icon" v-if="icon" :size="13" />
+    <component
+      :is="icon"
+      v-if="icon"
+      :size="14"
+      class="shrink-0 text-base-content/50 group-hover:text-primary-text/80"
+    />
     <slot />
-    <span v-if="$slots.hint" class="ml-auto text-[11px] text-base-content/50 font-mono">
+    <span
+      v-if="$slots.hint"
+      class="ml-auto rounded-md bg-base-content/5 px-1.5 py-0.5 text-[10px] font-mono text-base-content/45 group-hover:bg-primary/10 group-hover:text-primary-text/80"
+    >
       <slot name="hint" />
     </span>
   </button>

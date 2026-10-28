@@ -89,19 +89,22 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
   <div
     data-app-menu
     role="menubar"
-    class="relative z-40 flex h-9 bg-base-100/(--glass-alpha) border border-b border-base-300 shrink-0 select-none"
+    aria-orientation="horizontal"
+    class="relative z-40 flex h-10 bg-base-100/(--glass-alpha) border-b border-base-300 shrink-0 select-none"
     style="-webkit-app-region: drag"
   >
-    <div class="flex items-center shrink-0" style="-webkit-app-region: no-drag">
-      <div class="flex items-center gap-2 px-3">
+    <div class="flex items-center shrink-0 gap-0.5 pl-2" style="-webkit-app-region: no-drag">
+      <div class="flex items-center gap-2 px-2">
         <img :src="appIcon" alt="Onda Logo" class="w-5 h-5 object-contain" />
+        <span class="text-[13px] font-semibold tracking-wide text-base-content/90">Onda</span>
       </div>
+      <div class="w-px h-4 bg-base-300/80 mx-1" role="separator" aria-orientation="vertical" />
 
       <!-- Plik -->
       <div class="relative">
         <button
-          class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'file' }"
+          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'file' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'file'"
           data-menu-trigger="file"
@@ -132,8 +135,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Widok -->
       <div class="relative">
         <button
-          class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'view' }"
+          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'view' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'view'"
           data-menu-trigger="view"
@@ -157,8 +160,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Odtwarzanie -->
       <div v-if="player.currentTrack" class="relative">
         <button
-          class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'playback' }"
+          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'playback' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'playback'"
           data-menu-trigger="playback"
@@ -180,8 +183,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Pomoc -->
       <div class="relative">
         <button
-          class="h-9 px-2.5 text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          :class="{ 'bg-primary/10 text-primary-text': openDropdown === 'help' }"
+          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'help' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'help'"
           data-menu-trigger="help"

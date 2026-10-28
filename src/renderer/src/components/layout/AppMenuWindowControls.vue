@@ -18,46 +18,48 @@ const { switching, switchToCompact } = useCompactSwitch();
 </script>
 
 <template>
-  <div class="flex items-center shrink-0 ml-auto" style="-webkit-app-region: no-drag">
+  <div class="flex items-center shrink-0 ml-auto h-10" style="-webkit-app-region: no-drag">
+    <div class="w-px h-4 bg-base-300/70 mx-1" role="separator" aria-orientation="vertical" />
     <button
-      class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content disabled:opacity-50"
+      class="h-8 my-1 px-3 flex items-center rounded-lg hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       :disabled="switching"
       :title="$t('window.compactMode')"
       :aria-label="$t('window.compactMode')"
       data-testid="window-switch-compact"
       @click="switchToCompact"
     >
-      <RectangleVertical :size="14" />
+      <RectangleVertical :size="15" />
     </button>
     <button
-      class="h-9 px-3 flex items-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
+      class="h-8 my-1 px-3 flex items-center rounded-lg hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       :title="$t('menu.search')"
       :aria-label="$t('menu.search')"
       @click="ui.toggleGlobalSearch()"
     >
-      <Search :size="14" />
+      <Search :size="15" />
     </button>
+    <div class="w-px h-4 bg-base-300/70 mx-1" role="separator" aria-orientation="vertical" />
     <button
-      class="h-9 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
+      class="h-10 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       :aria-label="$t('window.minimize')"
       @click="emit('minimize')"
     >
-      <Minus :size="14" />
+      <Minus :size="15" />
     </button>
     <button
-      class="h-9 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/70 hover:text-base-content"
+      class="h-10 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       :aria-label="$t('window.maximize')"
       @click="emit('maximize')"
     >
-      <Maximize2 v-if="!isMaximized" :size="12" />
-      <Square v-else :size="10" />
+      <Maximize2 v-if="!isMaximized" :size="13" />
+      <Square v-else :size="11" />
     </button>
     <button
-      class="h-9 w-11 flex items-center justify-center hover:bg-error/80 transition-colors text-base-content/70 hover:text-error-content"
+      class="h-10 w-11 flex items-center justify-center hover:bg-error/85 transition-colors text-base-content/60 hover:text-error-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
       :aria-label="$t('window.close')"
       @click="emit('close')"
     >
-      <X :size="14" />
+      <X :size="15" />
     </button>
   </div>
 </template>

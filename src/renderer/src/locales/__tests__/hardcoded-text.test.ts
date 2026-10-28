@@ -30,7 +30,7 @@ const ALLOWED: { match: RegExp; why: string }[] = [
   { match: /^(GET|POST|PUT|PATCH|DELETE|HEAD)$/, why: 'HTTP method' },
   {
     match:
-      /^(YouTube|SoundCloud|MusicBrainz|OpenSubtitles|Node\.js|Electron|Chrome|OpenAI|Generic|Ken Burns|SC|YT|LIB|WebM|MP4|SRT|VTT|ASS)$/,
+      /^(Onda|YouTube|SoundCloud|MusicBrainz|OpenSubtitles|Node\.js|Electron|Chrome|OpenAI|Generic|Ken Burns|SC|YT|LIB|WebM|MP4|SRT|VTT|ASS)$/,
     why: 'proper noun or format name'
   },
   { match: /^(debug|info|warn|error)$/, why: 'log level name, searched in the log viewer' },
