@@ -24,43 +24,35 @@ import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import {
+  MAX_OUTPUT_DIMENSION,
+  annotationBounds,
+  aspectRatioOf,
+  clamp as clampTag,
+  computeAspectCrop,
+  cropHandleCursor,
+  extensionForFormat,
+  fileNameOf as fileName,
+  formatBytes,
+  hitAnnotation as hitAnnotationIn,
+  hitCropHandleAt,
+  resizeCropRect,
+  suggestOutputPath,
+  type Annotation,
+  type AnnotationKind,
+  type Aspect,
+  type CropHandle,
+  type CropRect,
+  type TargetRect
+} from '@renderer/utils/imageStudio';
+import {
   IMAGE_OUTPUT_FORMATS,
   type ImageOutputFormat,
   type ImageStudioLoadResult
 } from '@shared/types/tools';
 
-type Aspect = 'free' | '1:1' | '16:9' | '4:3';
-type Tool = 'crop' | 'rect' | 'arrow' | 'text' | 'blur' | 'pixelate';
-
-interface Annotation {
-  id: string;
-  kind: Exclude<Tool, 'crop'>;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  color: string;
-  width: number;
-  text?: string;
-}
-
-interface CropRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-interface TargetRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
+type Tool = 'crop' | AnnotationKind;
 const MAX_PREVIEW_W = 720;
 const MAX_PREVIEW_H = 540;
-const MAX_OUTPUT_DIMENSION = 4096;
 
 const { t } = useI18n();
 const { context } = useToolBridge();
@@ -158,8 +150,6 @@ const ADJUST_FIELDS = [
   { id: 'sharpen', label: 'imageStudioSharpen', min: 0, max: 100 }
 ] as const;
 
-type CropHandle = 'move' | 'nw' | 'ne' | 'sw' | 'se' | 'draw';
-
 let estimateTimer: ReturnType<typeof setTimeout> | null = null;
 let drag:
   | {
@@ -171,40 +161,6 @@ let drag:
     }
   | { mode: 'annotation'; startX: number; startY: number; annotationId: string }
   | null = null;
-
-function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || bytes <= 0) return '—';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let value = bytes;
-  let index = 0;
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
-function fileName(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function extensionForFormat(format: ImageOutputFormat): string {
-  return format === 'jpeg' ? 'jpg' : format;
-}
-
-function suggestOutputPath(path: string, format: ImageOutputFormat): string {
-  const normalized = path.replace(/\\/g, '/');
-  const slash = normalized.lastIndexOf('/');
-  const dir = slash >= 0 ? normalized.slice(0, slash) : '.';
-  const name = slash >= 0 ? normalized.slice(slash + 1) : normalized;
-  const dot = name.lastIndexOf('.');
-  const base = dot >= 0 ? name.slice(0, dot) : name;
-  return `${dir}/${base}-edited.${extensionForFormat(format)}`;
-}
-
-function clampTag(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
 
 function resetCropToFull(): void {
   crop.x = 0;
@@ -278,21 +234,15 @@ function onDropImage(event: DragEvent): void {
 
 function applyAspect(): void {
   if (!orientedW.value || !orientedH.value) return;
-  if (aspect.value === 'free') {
+  const next = computeAspectCrop(aspect.value, orientedW.value, orientedH.value);
+  if (!next) {
     resetCropToFull();
   } else {
-    const ratio = aspect.value === '1:1' ? 1 : aspect.value === '16:9' ? 16 / 9 : 4 / 3;
-    let w = orientedW.value;
-    let h = w / ratio;
-    if (h > orientedH.value) {
-      h = orientedH.value;
-      w = h * ratio;
-    }
-    crop.x = (orientedW.value - w) / 2;
-    crop.y = (orientedH.value - h) / 2;
-    crop.w = w;
-    crop.h = h;
-    outputWidth.value = Math.min(Math.round(w), MAX_OUTPUT_DIMENSION);
+    crop.x = next.x;
+    crop.y = next.y;
+    crop.w = next.w;
+    crop.h = next.h;
+    outputWidth.value = Math.min(Math.round(next.w), MAX_OUTPUT_DIMENSION);
   }
   renderPreview();
   scheduleEstimate();
@@ -584,14 +534,7 @@ function updateCropFromDrag(sx: number, sy: number, ex: number, ey: number): voi
   let y2 = Math.max(sy, ey);
   let w = Math.max(1, x2 - x1);
   let h = Math.max(1, y2 - y1);
-  const ratio =
-    aspect.value === '1:1'
-      ? 1
-      : aspect.value === '16:9'
-        ? 16 / 9
-        : aspect.value === '4:3'
-          ? 4 / 3
-          : 0;
+  const ratio = aspectRatioOf(aspect.value);
   if (ratio > 0) {
     if (w / h > ratio) w = h * ratio;
     else h = w / ratio;
@@ -623,125 +566,29 @@ function updateCropFromDrag(sx: number, sy: number, ex: number, ey: number): voi
   renderPreview();
 }
 
-function aspectRatio(): number {
-  if (aspect.value === '1:1') return 1;
-  if (aspect.value === '16:9') return 16 / 9;
-  if (aspect.value === '4:3') return 4 / 3;
-  return 0;
-}
-
-/** Obrys adnotacji w układzie obrazu (tekst ma rozmiar oszacowany z fontu). */
-function annotationBounds(annotation: Annotation): TargetRect {
-  const x = Math.min(annotation.x1, annotation.x2);
-  const y = Math.min(annotation.y1, annotation.y2);
-  if (annotation.kind === 'text' && annotation.text) {
-    const fontSize = Math.max(8, annotation.width * 2);
-    const lines = annotation.text.split('\n');
-    const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
-    return {
-      x,
-      y,
-      w: Math.max(1, longest * fontSize * 0.6),
-      h: Math.max(1, lines.length * fontSize * 1.2)
-    };
-  }
-  return {
-    x,
-    y,
-    w: Math.max(1, Math.abs(annotation.x2 - annotation.x1)),
-    h: Math.max(1, Math.abs(annotation.y2 - annotation.y1))
-  };
-}
-
-function hitAnnotation(point: { x: number; y: number }): Annotation | null {
-  for (let index = annotations.value.length - 1; index >= 0; index -= 1) {
-    const annotation = annotations.value[index];
-    const bounds = annotationBounds(annotation);
-    const pad = Math.max(6, annotation.width);
-    if (
-      point.x >= bounds.x - pad &&
-      point.x <= bounds.x + bounds.w + pad &&
-      point.y >= bounds.y - pad &&
-      point.y <= bounds.y + bounds.h + pad
-    ) {
-      return annotation;
-    }
-  }
-  return null;
-}
-
 function hitCropHandle(event: PointerEvent): CropHandle {
   const canvas = canvasRef.value;
   if (!canvas) return 'draw';
   const rect = canvas.getBoundingClientRect();
   const px = ((event.clientX - rect.left) / rect.width) * canvas.width;
   const py = ((event.clientY - rect.top) / rect.height) * canvas.height;
-  const scale = previewScale.value;
-  const x = crop.x * scale;
-  const y = crop.y * scale;
-  const w = crop.w * scale;
-  const h = crop.h * scale;
-  const radius = 14;
-  const near = (a: number, b: number): boolean => Math.abs(a - b) <= radius;
-  if (near(px, x) && near(py, y)) return 'nw';
-  if (near(px, x + w) && near(py, y)) return 'ne';
-  if (near(px, x) && near(py, y + h)) return 'sw';
-  if (near(px, x + w) && near(py, y + h)) return 'se';
-  if (px >= x && px <= x + w && py >= y && py <= y + h) return 'move';
-  return 'draw';
+  return hitCropHandleAt(px, py, crop, previewScale.value);
 }
 
 function resizeCrop(handle: CropHandle, origin: CropRect, dx: number, dy: number): void {
-  const width = orientedW.value;
-  const height = orientedH.value;
-  let left = origin.x;
-  let top = origin.y;
-  let right = origin.x + origin.w;
-  let bottom = origin.y + origin.h;
-  if (handle === 'nw') {
-    left = clampTag(left + dx, 0, right - 4);
-    top = clampTag(top + dy, 0, bottom - 4);
-  } else if (handle === 'ne') {
-    right = clampTag(right + dx, left + 4, width);
-    top = clampTag(top + dy, 0, bottom - 4);
-  } else if (handle === 'sw') {
-    left = clampTag(left + dx, 0, right - 4);
-    bottom = clampTag(bottom + dy, top + 4, height);
-  } else if (handle === 'se') {
-    right = clampTag(right + dx, left + 4, width);
-    bottom = clampTag(bottom + dy, top + 4, height);
-  }
-  let w = right - left;
-  let h = bottom - top;
-  const ratio = aspectRatio();
-  if (ratio > 0) {
-    if (w / h > ratio) w = h * ratio;
-    else h = w / ratio;
-    if (handle === 'nw' || handle === 'sw') left = right - w;
-    else right = left + w;
-    if (handle === 'nw' || handle === 'ne') top = bottom - h;
-    else bottom = top + h;
-    if (left < 0) {
-      left = 0;
-      right = w;
-    }
-    if (top < 0) {
-      top = 0;
-      bottom = h;
-    }
-    if (right > width) {
-      right = width;
-      left = width - w;
-    }
-    if (bottom > height) {
-      bottom = height;
-      top = height - h;
-    }
-  }
-  crop.x = clampTag(left, 0, width - 4);
-  crop.y = clampTag(top, 0, height - 4);
-  crop.w = Math.max(4, Math.min(width - crop.x, right - crop.x));
-  crop.h = Math.max(4, Math.min(height - crop.y, bottom - crop.y));
+  const next = resizeCropRect(
+    handle,
+    origin,
+    dx,
+    dy,
+    orientedW.value,
+    orientedH.value,
+    aspectRatioOf(aspect.value)
+  );
+  crop.x = next.x;
+  crop.y = next.y;
+  crop.w = next.w;
+  crop.h = next.h;
   renderPreview();
 }
 
@@ -751,15 +598,7 @@ function updateCursor(event: PointerEvent): void {
     cropCursor.value = 'crosshair';
     return;
   }
-  const handle = hitCropHandle(event);
-  cropCursor.value =
-    handle === 'move'
-      ? 'move'
-      : handle === 'nw' || handle === 'se'
-        ? 'nwse-resize'
-        : handle === 'ne' || handle === 'sw'
-          ? 'nesw-resize'
-          : 'crosshair';
+  cropCursor.value = cropHandleCursor(hitCropHandle(event));
 }
 
 function deleteSelected(): void {
@@ -785,7 +624,7 @@ function onPointerDown(event: PointerEvent): void {
   } else {
     // Klik w istniejącą adnotację = zaznaczenie (kolor/rozmiar edytują ją na żywo),
     // a nie rysowanie kolejnej.
-    const hit = hitAnnotation(point);
+    const hit = hitAnnotationIn(annotations.value, point);
     if (hit) {
       selectedId.value = hit.id;
       renderPreview();
