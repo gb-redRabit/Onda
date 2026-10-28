@@ -69,6 +69,11 @@ const errorMsg = ref('');
 const rotation = ref(0);
 const flipH = ref(false);
 const flipV = ref(false);
+// Cache bazowego canvasu: `renderPreview` jest wołany na każdym `pointermove`,
+// a buildBaseCanvas + sharpen to pełny przebieg po pikselach. Klucz obejmuje
+// wszystkie parametry, które zmieniają obraz bazowy.
+let baseCache: { key: string; canvas: HTMLCanvasElement } | null = null;
+let imageRevision = 0;
 
 const adjust = reactive({
   brightness: 100,
@@ -197,6 +202,8 @@ async function loadPath(path: string): Promise<void> {
     estimatedBytes.value = null;
     const img = await loadImageElement(result.dataUrl);
     image.value = img;
+    imageRevision++;
+    baseCache = null;
     await nextTick();
     renderPreview();
   } catch (error) {
@@ -264,7 +271,24 @@ function toggleFlip(axis: 'h' | 'v'): void {
   scheduleEstimate();
 }
 
+function baseCacheKey(maxDimension?: number): string {
+  return [
+    imageRevision,
+    maxDimension ?? 'full',
+    rotation.value,
+    flipH.value ? 1 : 0,
+    flipV.value ? 1 : 0,
+    adjust.brightness,
+    adjust.contrast,
+    adjust.saturation,
+    adjust.temperature,
+    adjust.sharpen
+  ].join('|');
+}
+
 function buildBaseCanvas(maxDimension?: number): HTMLCanvasElement {
+  const cacheKey = maxDimension ? baseCacheKey(maxDimension) : '';
+  if (maxDimension && baseCache?.key === cacheKey) return baseCache.canvas;
   const img = image.value as HTMLImageElement;
   const width = orientedW.value;
   const height = orientedH.value;
@@ -297,6 +321,7 @@ function buildBaseCanvas(maxDimension?: number): HTMLCanvasElement {
   }
 
   if (adjust.sharpen > 0) sharpenCanvas(canvas, adjust.sharpen / 100);
+  if (maxDimension) baseCache = { key: cacheKey, canvas };
   return canvas;
 }
 
