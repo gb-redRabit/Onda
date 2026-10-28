@@ -45,7 +45,8 @@ export function createOnlineStreams() {
     const player = usePlayerStore();
     logger.info('yt', `playAllStreams start items=${items.length} first=${items[0]!.id}`);
     // Pasek odtwarzacza pojawia się natychmiast z pierwszym elementem, gdy ten się rozwiązuje.
-    player.streamPending = buildStreamTrack(items[0]!, `yt:${items[0]!.id}`, 0);
+    const initialPending = buildStreamTrack(items[0]!, `yt:${items[0]!.id}`, 0);
+    player.streamPending = initialPending;
     player.enrichTrack(player.streamPending);
     // Rozwiązuj z małym limitem współbieżności: równoległe procesy yt-dlp dobijają
     // YouTube i wzmacniają przejściowe okna limitu 403. Pierwszy element
@@ -85,7 +86,10 @@ export function createOnlineStreams() {
             if (player.streamPending?.id === track.id) player.streamPending = null;
           } else if (player.streamPending && player.streamPending.id !== track.id) {
             // przejdź dalej: zakolejkuj też items[0], w oryginalnej kolejności
-          } else {
+          } else if (player.streamPending === initialPending) {
+            // Tylko właściciel pierwotnego pendingu może promować pierwszy
+            // element. Jeśli użytkownik wybrał lokalny plik, `setTrack` wyzerował
+            // pending — play-all nie może nadpisać jego decyzji.
             player.streamPending = null;
             player.setTrack(track);
             player.enrichTrack(track);
@@ -118,7 +122,7 @@ export function createOnlineStreams() {
         t('youtube.playAllFailures', { count: failures })
       );
     }
-    if (!started) {
+    if (!started && player.streamPending === initialPending) {
       player.streamPending = null;
     }
   }
