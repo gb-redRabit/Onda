@@ -60,12 +60,29 @@ export function useVideoSource(
 
   async function setupVideo(track: MediaFile | null) {
     if (!track || track.type !== 'video' || !videoRef.value) return;
+
+    const src = getTrackSrc(track);
+    const el = videoRef.value;
+    const sourceChanged = el.getAttribute('data-src') !== src;
+    // Token zmieniamy tylko przy faktycznej zmianie źródła. Dzięki temu dwa
+    // równoległe wywołania dla tego samego utworu (ref + watcher) nie unieważniają
+    // nawzajem swojej inicjalizacji napisów.
+    const loadId = sourceChanged ? ++currentLoadId : currentLoadId;
+
     // Wideo lokalne jest serwowane przez lokalny serwer mediów — przyznaj dostęp do
     // folderu utworu, zanim element zażąda URL. Zdalne URL-e nie potrzebują zgody.
     if (!/^https?:\/\//i.test(track.path)) await window.api?.grantMediaAccess(track.path);
-    const el = videoRef.value;
-    const src = getTrackSrc(track);
-    if (el.getAttribute('data-src') !== src) {
+    if (loadId !== currentLoadId || videoRef.value !== el) return;
+
+    /** Napisy inicjalizujemy dokładnie raz na faktycznie wczytane źródło. */
+    const markReady = (): void => {
+      if (loadId !== currentLoadId) return;
+      if (lastLoadedPath === track.path) return;
+      lastLoadedPath = track.path;
+      onVideoReady(el);
+    };
+
+    if (sourceChanged) {
       audioEngine.disconnectSecondaryAudio();
       const seekTo = player.pipTime > 0 ? player.pipTime : player.currentTime;
       if (player.pipTime > 0) player.pipTime = 0;
@@ -93,6 +110,7 @@ export function useVideoSource(
         () => {
           if (seekTo > 0) el.currentTime = seekTo;
           el.playbackRate = settings.playback.playbackSpeed;
+          markReady();
         },
         { once: true, signal }
       );
@@ -110,72 +128,60 @@ export function useVideoSource(
         checkVideoAudioCodec(track, el);
         attachVideoTranscodeFallback(el, track, player, notify, transcodeState, signal);
       }
+      return;
+    }
+
+    audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
+    el.playbackRate = settings.playback.playbackSpeed;
+    if (player.isPlaying && !player.pipActive)
+      el.play().catch((e) => logger.warn('video', 'resume play rejected', e));
+
+    if (el.readyState >= 1) {
+      markReady();
     } else {
-      audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
-      el.playbackRate = settings.playback.playbackSpeed;
-      if (player.isPlaying && !player.pipActive)
-        el.play().catch((e) => logger.warn('video', 'resume play rejected', e));
+      // To samo źródło może być w trakcie ładowania (np. ref zamontował element,
+      // a watcher wywołał setup ponownie). Token jest wspólny, więc listener
+      // wystarczy dodać bez unieważniania trwającego `loadedmetadata`.
+      el.addEventListener('loadedmetadata', markReady, { once: true });
     }
   }
 
   function onVideoRef(el: unknown) {
-    if (el && videoRef.value !== el) {
+    if (!el) {
+      currentLoadId++;
+      lastLoadedPath = '';
+      setupAbort?.abort();
+      setupAbort = null;
+      const old = videoRef.value;
+      videoRef.value = null;
+      if (old) {
+        old.pause();
+        old.removeAttribute('src');
+        old.load();
+      }
+      audioEngine.disconnectVideoElement();
+      audioEngine.disconnectSecondaryAudio();
+      player.clearSubtitles();
+      return;
+    }
+
+    const video = el as HTMLVideoElement;
+    if (videoRef.value !== video) {
       videoEventsConnected.value = false;
     }
-    videoRef.value = el as HTMLVideoElement;
-    if (el && player.currentTrack?.type === 'video') {
-      const loadId = ++currentLoadId;
-      setupVideo(player.currentTrack);
-      const video = el as HTMLVideoElement;
-      let connectAttempts = 0;
-      // Czeka, aż element zostanie dołączony do DOM, potem jednorazowo przygotowuje
-      // napisy. rAF naturalnie dławi się wraz z kartą, koszt jest ograniczony (~2s).
-      const tryInit = () => {
-        if (loadId !== currentLoadId) return;
-        if (!video.isConnected) {
-          if (++connectAttempts <= 120) {
-            requestAnimationFrame(tryInit);
-          }
-          return;
-        }
-        if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-          if (video.readyState >= 1 || video.videoWidth > 0) {
-            lastLoadedPath = player.currentTrack.path;
-            onVideoReady(video);
-          } else {
-            video.addEventListener(
-              'loadedmetadata',
-              () => {
-                if (loadId !== currentLoadId) return;
-                if (player.currentTrack && player.currentTrack.path !== lastLoadedPath) {
-                  lastLoadedPath = player.currentTrack.path;
-                  onVideoReady(video);
-                }
-              },
-              { once: true }
-            );
-          }
-        }
-      };
-      tryInit();
+    videoRef.value = video;
+    if (player.currentTrack?.type === 'video') {
+      void setupVideo(player.currentTrack);
     }
   }
 
-  // Śledzi oczekującą inicjalizację onVideoRef i anuluje ją, jeśli bieżący utwór
-  // zmieni się, zanim element zostanie podłączony. Wywoływane przez pojedynczy scalony
-  // watcher currentTrack w useVideoPlayer.
+  // Śledzi zmianę utworu i unieważnia tylko stan poprzedniego źródła. Inicjalizacja
+  // napisów należy do `setupVideo` (po `loadedmetadata`), więc nie oznaczamy tutaj
+  // nowej ścieżki jako już wczytanej.
   function onTrackChanged(track: MediaFile | null, oldTrack: MediaFile | null): void {
     if (oldTrack && track?.path !== oldTrack?.path) {
-      currentLoadId++;
+      lastLoadedPath = '';
       transcodeState.attempted = '';
-    }
-    if (track?.type === 'video' && track.path !== lastLoadedPath) {
-      lastLoadedPath = track.path;
-      if (!/^https?:\/\//i.test(track.path)) {
-        player.loadSubtitles(track.path);
-      } else {
-        player.clearSubtitles();
-      }
     }
   }
 

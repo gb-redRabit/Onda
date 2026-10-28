@@ -27,8 +27,9 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
   function init(track: MediaFile | null) {
     if (track?.type === 'video') {
       ensureLocalVideoAudio();
-      source.setupVideo(track);
-
+      // Element montuje się przez `:ref="onVideoRef"`, które samo wywołuje
+      // setupVideo. Tutaj tylko przygotowujemy audio i stan PiP — bez drugiego
+      // równoległego ładowania tego samego źródła.
       if (player.pipActive) {
         pipCtrl.updatePiPSubtitles(track, true);
       } else {

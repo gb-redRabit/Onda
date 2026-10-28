@@ -120,6 +120,9 @@ export function usePlayerSubtitles() {
   }
 
   function clearSubtitles(): void {
+    // Unieważnia trwające `loadSubtitles`, żeby jego końcowe przypisanie nie
+    // przywróciło napisów po przejściu na audio/nowy utwór.
+    ++currentLoadId;
     subtitleTracks.value = [];
     activeSubtitleId.value = null;
   }
