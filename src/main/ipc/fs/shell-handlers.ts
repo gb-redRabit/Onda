@@ -20,10 +20,24 @@ const EXECUTABLE_EXTS = new Set([
   '.ps1',
   '.msi',
   '.vbs',
+  '.vbe',
   '.js',
+  '.jse',
+  '.wsf',
+  '.wsh',
+  '.hta',
   '.jar',
   '.scr',
-  '.reg'
+  '.pif',
+  '.cpl',
+  '.msc',
+  '.reg',
+  '.appref-ms',
+  '.app',
+  '.command',
+  '.desktop',
+  '.sh',
+  '.appimage'
 ]);
 
 /** Jeden odłączony shell naraz, aby kanału nie można było użyć jako pętli spawn. */
@@ -89,13 +103,16 @@ export async function openWithDefault(
     return;
   }
   try {
-    const ext = extname(filePath).toLowerCase();
-    if (ext === '.lnk' || ext === '.url') {
+    // Sprawdzamy rozszerzenie po rozwiązaniu symlinków: `utwor.mp3 -> calc.exe`
+    // nie może ominąć okna potwierdzenia tylko dlatego, że link ma inne rozszerzenie.
+    const real = await realpath(filePath);
+    const exts = [extname(filePath).toLowerCase(), extname(real).toLowerCase()];
+    if (exts.some((ext) => ext === '.lnk' || ext === '.url')) {
       logger.warn('fs', `openWithDefault blocked (shortcut file): ${filePath}`);
       return;
     }
     // Pliki wykonywalne mogą uruchomić dowolny kod — wymagamy wyraźnego potwierdzenia.
-    if (EXECUTABLE_EXTS.has(ext)) {
+    if (exts.some((ext) => EXECUTABLE_EXTS.has(ext))) {
       const win = BrowserWindow.fromWebContents(event.sender);
       const m = mainMessages();
       const options: Electron.MessageBoxOptions = {
@@ -104,7 +121,7 @@ export async function openWithDefault(
         defaultId: 0,
         cancelId: 0,
         title: m.openExecTitle,
-        message: m.openExecMessage(filePath),
+        message: m.openExecMessage(real),
         detail: m.openExecDetail
       };
       const { response } = win
@@ -112,7 +129,6 @@ export async function openWithDefault(
         : await dialog.showMessageBox(options);
       if (response !== 1) return;
     }
-    const real = await realpath(filePath);
     await shell.openPath(real);
   } catch (e) {
     logger.warn('fs', `openWithDefault failed for ${filePath}`, e);

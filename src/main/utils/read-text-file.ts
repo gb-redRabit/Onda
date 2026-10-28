@@ -1,7 +1,8 @@
-import { readFile, stat } from 'fs/promises';
-import { extname } from 'path';
+import { readFile, stat, realpath } from 'fs/promises';
+import { basename, extname } from 'path';
 import { logger } from '../../shared/logger';
 import { isSafeAbsolutePath } from './validate';
+import { isProtectedPath, isSensitivePath, isSystemTempPath } from '../path-policy';
 
 // Odczyty napisów/tekstu zwracają zawartość pliku do renderera, więc handler jest
 // prymitywem odczytu pliku lokalnego: bez sprawdzenia kształtu przejęty renderer
@@ -24,6 +25,23 @@ export interface ReadTextFileDeps {
 }
 
 const defaultDeps: ReadTextFileDeps = { stat, readFile };
+
+/** Pliki sesji/cookies nigdy nie są legalnym importem TXT/CSV ani napisami. */
+function isForbiddenReadName(filePath: string): boolean {
+  const name = basename(filePath).toLowerCase();
+  return name === 'youtube-cookies.txt' || name.startsWith('onda-yt-cookies-');
+}
+
+/**
+ * Blokuje odczyt danych logowania i plików systemowych. Wyjątek dla katalogu
+ * tymczasowego jest konieczny: napisy i importy często leżą w `%TEMP%`, które
+ * na Windows znajduje się pod `AppData`.
+ */
+function isSensitiveReadPath(filePath: string): boolean {
+  if (isForbiddenReadName(filePath)) return true;
+  if (isSystemTempPath(filePath)) return false;
+  return isProtectedPath(filePath) || isSensitivePath(filePath);
+}
 
 /**
  * Fallback dla plików napisów w starszych kodowaniach. Polskie napisy z serwisów są
@@ -57,26 +75,40 @@ export async function readTextFileWithinBounds(
   deps: ReadTextFileDeps = defaultDeps
 ): Promise<{ ok: true; text: string } | { ok: false; reason: ReadTextFailure }> {
   if (!isSafeAbsolutePath(filePath)) return { ok: false, reason: 'invalid' };
-  if (!allowedExts.has(extname(filePath).toLowerCase())) {
-    logger.warn(label, `rejected read with disallowed extension: ${filePath}`);
+
+  // Rozwiązujemy symlink PRZED sprawdzeniem rozszerzenia i polityki ścieżek:
+  // `notatki.txt -> ~/.ssh/id_rsa` nie może udawać legalnego importu.
+  let realPath = filePath;
+  try {
+    realPath = await realpath(filePath);
+  } catch {
+    // brak pliku lub brak dostępu — poniższe `stat` zwróci właściwy błąd
+  }
+
+  if (isSensitiveReadPath(filePath) || isSensitiveReadPath(realPath)) {
+    logger.warn(label, `rejected sensitive read: ${filePath}`);
+    return { ok: false, reason: 'forbidden' };
+  }
+  if (!allowedExts.has(extname(realPath).toLowerCase())) {
+    logger.warn(label, `rejected read with disallowed extension: ${realPath}`);
     return { ok: false, reason: 'forbidden' };
   }
 
   let size: number;
   try {
-    const info = await deps.stat(filePath);
+    const info = await deps.stat(realPath);
     if (!info.isFile()) return { ok: false, reason: 'forbidden' };
     size = info.size;
   } catch {
     return { ok: false, reason: 'unreadable' };
   }
   if (size > maxBytes) {
-    logger.warn(label, `rejected read of oversized file (${size} bytes): ${filePath}`);
+    logger.warn(label, `rejected read of oversized file (${size} bytes): ${realPath}`);
     return { ok: false, reason: 'too-large' };
   }
 
   try {
-    const buf = await deps.readFile(filePath);
+    const buf = await deps.readFile(realPath);
     // `stat` i `readFile` ścigają się ze współbieżnym zapisem; sprawdź ponownie,
     // aby rosnący plik nie prześlizgnął się obok limitu między tymi wywołaniami.
     if (buf.byteLength > maxBytes) return { ok: false, reason: 'too-large' };

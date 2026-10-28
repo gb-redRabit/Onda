@@ -6,7 +6,8 @@ import {
   readTextFileWithinBounds,
   SUBTITLE_EXTS,
   SUBTITLE_MAX_BYTES,
-  TEXT_EXTS
+  TEXT_EXTS,
+  TEXT_MAX_BYTES
 } from '../read-text-file';
 
 describe('readTextFileWithinBounds', () => {
@@ -37,6 +38,18 @@ describe('readTextFileWithinBounds', () => {
     // YouTube, który nie ma rozszerzenia napisów.
     const p = await write('youtube-cookies.txt', 'SID=secret-session-id');
     const result = await readTextFileWithinBounds(p, SUBTITLE_EXTS, SUBTITLE_MAX_BYTES, 'test');
+    expect(result).toEqual({ ok: false, reason: 'forbidden' });
+  });
+
+  it('rejects a cookies file even when .txt is an allowed extension', async () => {
+    const p = await write('youtube-cookies.txt', 'SID=secret-session-id');
+    const result = await readTextFileWithinBounds(p, TEXT_EXTS, TEXT_MAX_BYTES, 'test');
+    expect(result).toEqual({ ok: false, reason: 'forbidden' });
+  });
+
+  it('rejects temporary yt-dlp cookie files', async () => {
+    const p = await write('onda-yt-cookies-123.txt', 'SID=secret-session-id');
+    const result = await readTextFileWithinBounds(p, TEXT_EXTS, TEXT_MAX_BYTES, 'test');
     expect(result).toEqual({ ok: false, reason: 'forbidden' });
   });
 

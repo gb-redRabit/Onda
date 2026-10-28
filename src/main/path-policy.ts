@@ -157,6 +157,46 @@ export function isProtectedPath(
 }
 
 /**
+ * Sam katalog domowy użytkownika (`C:\Users\<user>`, `/home/<user>`,
+ * `/Users/<user>`), bez jego zawartości. `protectedPathReason` blokuje tylko
+ * korzenie systemowe, więc mutacje fs muszą sprawdzić ten przypadek osobno.
+ */
+export function isUserProfileRoot(
+  target: unknown,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (typeof target !== 'string' || !target || target.includes('\0')) return false;
+  if (!isAbsoluteFor(target, platform)) return false;
+  const segments = segmentsOf(normalizeFor(target, platform), platform);
+  if (segments.length !== 2) return false;
+  const first = segments[0].toLowerCase();
+  if (platform === 'win32') return first === 'users';
+  return first === 'home' || first === 'users';
+}
+
+/**
+ * Dodatkowa ochrona dla operacji destrukcyjnych: system + dom użytkownika +
+ * jawnie podane korzenie profilu (`appData`, `userData`). Sprawdzamy tylko
+ * dokładne ścieżki, nie całe poddrzewa — użytkownik musi móc zarządzać
+ * własnymi plikami w domu.
+ */
+export function isProtectedDestructivePath(
+  target: unknown,
+  platform: NodeJS.Platform = process.platform,
+  extraRoots: readonly string[] = []
+): boolean {
+  if (isProtectedPath(target, platform)) return true;
+  if (isUserProfileRoot(target, platform)) return true;
+  if (typeof target !== 'string' || !target) return false;
+  const normalized = normalizeFor(target, platform).replace(/[\\/]+$/, '');
+  return extraRoots.some((root) => {
+    if (typeof root !== 'string' || !root) return false;
+    const normalizedRoot = normalizeFor(root, platform).replace(/[\\/]+$/, '');
+    return normalizedRoot.length > 0 && normalized === normalizedRoot;
+  });
+}
+
+/**
  * Segmenty katalogów, których nie chcemy przyznawać serwerowi mediów nawet na
  * żądanie użytkownika (dane logowania, konfiguracja, profile przeglądarek).
  * To obrona w głąb wobec allowlisty rozszerzeń serwera: root i tak nie wyda

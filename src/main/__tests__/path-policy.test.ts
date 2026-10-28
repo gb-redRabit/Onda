@@ -4,9 +4,11 @@ import { tmpdir } from 'os';
 import {
   isAllowedExternalMediaRoot,
   isFilesystemRoot,
+  isProtectedDestructivePath,
   isProtectedPath,
   isSensitivePath,
   isSystemTempPath,
+  isUserProfileRoot,
   parentOf,
   protectedPathReason
 } from '../path-policy';
@@ -104,6 +106,31 @@ describe('protectedPathReason', () => {
   it('exposes a boolean wrapper for the handlers', () => {
     expect(isProtectedPath('C:\\Windows', 'win32')).toBe(true);
     expect(isProtectedPath('C:\\Users\\u\\Music', 'win32')).toBe(false);
+  });
+
+  it('recognises the user profile root itself without blocking its contents', () => {
+    expect(isUserProfileRoot('C:\\Users\\u', 'win32')).toBe(true);
+    expect(isUserProfileRoot('C:\\Users\\u\\', 'win32')).toBe(true);
+    expect(isUserProfileRoot('C:\\Users\\u\\Music', 'win32')).toBe(false);
+    expect(isUserProfileRoot('/home/u', 'linux')).toBe(true);
+    expect(isUserProfileRoot('/home/u/music', 'linux')).toBe(false);
+    expect(isUserProfileRoot('/Users/u', 'darwin')).toBe(true);
+    expect(isUserProfileRoot('relative', 'linux')).toBe(false);
+  });
+
+  it('blocks the profile root and extra app roots for destructive operations', () => {
+    expect(isProtectedDestructivePath('C:\\Users\\u', 'win32')).toBe(true);
+    expect(
+      isProtectedDestructivePath('C:\\Users\\u\\AppData', 'win32', ['C:\\Users\\u\\AppData'])
+    ).toBe(true);
+    expect(
+      isProtectedDestructivePath('C:\\Users\\u\\AppData\\Roaming\\onda', 'win32', [
+        'C:\\Users\\u\\AppData\\Roaming\\onda'
+      ])
+    ).toBe(true);
+    expect(isProtectedDestructivePath('C:\\Users\\u\\Music\\song.mp3', 'win32')).toBe(false);
+    expect(isProtectedDestructivePath('/home/u', 'linux')).toBe(true);
+    expect(isProtectedDestructivePath('/home/u/music/song.mp3', 'linux')).toBe(false);
   });
 
   it('allows user-owned files under AppData (mutating handlers must not use isSensitivePath)', () => {

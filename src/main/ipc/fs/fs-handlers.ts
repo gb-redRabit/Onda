@@ -1,5 +1,5 @@
-import { ipcMain } from 'electron';
-import { readdir, stat, mkdir, lstat, unlink, rm } from 'fs/promises';
+import { app, ipcMain } from 'electron';
+import { readdir, stat, mkdir, lstat, unlink, rm, realpath } from 'fs/promises';
 import { join } from 'path';
 import { withTimeout } from '../../utils/with-timeout';
 import { mainMessages } from '../../i18n-main';
@@ -10,7 +10,7 @@ import { getDrives, getFileItem } from './fs-utils';
 import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath } from '../../utils/validate';
 import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../../utils/read-text-file';
-import { isProtectedPath, parentOf } from '../../path-policy';
+import { isProtectedPath, isProtectedDestructivePath, parentOf } from '../../path-policy';
 import { getStore } from '../cover/cover-cache';
 import { findDuplicates, moveItems, copyItems } from './fs-transfer';
 import {
@@ -52,6 +52,34 @@ async function touchesProtectedAncestor(target: string): Promise<boolean> {
       if (!parent) return false;
       current = parent;
     }
+  }
+  return false;
+}
+
+/** Korzenie profilu, których nie wolno usunąć/przenieść w całości. */
+function destructiveRoots(): string[] {
+  try {
+    return [app.getPath('home'), app.getPath('appData'), app.getPath('userData')];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Sprawdza zarówno ścieżkę podaną przez renderer, jak i jej `realpath`.
+ * Dzięki temu symlink do katalogu domowego nie omija polityki, a usunięcie
+ * samego linku nadal jest bezpieczne (link rozwiązuje się do celu).
+ */
+async function isBlockedDestructivePath(filePath: string): Promise<boolean> {
+  const roots = destructiveRoots();
+  if (isProtectedDestructivePath(filePath, process.platform, roots)) return true;
+  try {
+    const real = await realpath(filePath);
+    if (real !== filePath && isProtectedDestructivePath(real, process.platform, roots)) {
+      return true;
+    }
+  } catch {
+    // ścieżka nie istnieje / brak dostępu — sam handler zgłosi błąd operacji
   }
   return false;
 }
@@ -150,7 +178,7 @@ export function registerFsHandlers(): void {
       logger.warn('fs', 'delete rejected invalid path');
       return false;
     }
-    if (isProtectedPath(filePath)) {
+    if (await isBlockedDestructivePath(filePath)) {
       logger.warn('fs', `delete rejected protected path: ${filePath}`);
       return false;
     }
@@ -182,11 +210,11 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('fs:move', async (_event, paths: unknown, destination: unknown) => {
-    await moveItems(paths, destination);
+    await moveItems(paths, destination, destructiveRoots());
   });
 
   ipcMain.handle('fs:copy', async (_event, paths: unknown, destination: unknown) => {
-    await copyItems(paths, destination);
+    await copyItems(paths, destination, destructiveRoots());
   });
 
   ipcMain.handle('fs:findDuplicates', async (_event, directory: unknown) => {

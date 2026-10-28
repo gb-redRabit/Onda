@@ -1,8 +1,8 @@
-import { readdir, stat, lstat, unlink, rm, copyFile, cp, rename } from 'fs/promises';
+import { readdir, stat, lstat, unlink, rm, copyFile, cp, rename, realpath } from 'fs/promises';
 import { join, basename } from 'path';
 import { stripDuplicateSuffix, fileHash, uniqueDestPath } from './fs-utils';
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
-import { isProtectedPath, parentOf } from '../../path-policy';
+import { isProtectedDestructivePath, parentOf } from '../../path-policy';
 import { logger } from '../../../shared/logger';
 
 // `fs:findDuplicates` hash'uje pliki-kandydatów. Przypadek użycia explorera to
@@ -89,6 +89,25 @@ export async function findDuplicates(directory: string): Promise<DupGroup[]> {
 }
 
 /**
+ * Ścieżka do sprawdzenia po rozwiązaniu symlinków. Dla nieistniejącego celu
+ * rozwiązujemy rodzica i dokładamy nazwę, żeby kopiowanie do nowego folderu
+ * nadal działało.
+ */
+async function resolveForCheck(target: string): Promise<string> {
+  try {
+    return await realpath(target);
+  } catch {
+    const parent = parentOf(target);
+    if (!parent) return target;
+    try {
+      return join(await realpath(parent), basename(target));
+    } catch {
+      return target;
+    }
+  }
+}
+
+/**
  * Wspólna walidacja `fs:move`/`fs:copy`: argumenty, chroniony cel i (dla
  * przenoszenia, które usuwa źródło) chronione źródła. Zwraca `null`, gdy cała
  * operacja jest odrzucona, oraz przefiltrowaną listę źródeł.
@@ -96,13 +115,18 @@ export async function findDuplicates(directory: string): Promise<DupGroup[]> {
 export async function validateTransferArgs(
   paths: unknown,
   destination: unknown,
-  op: 'move' | 'copy'
+  op: 'move' | 'copy',
+  extraRoots: readonly string[] = []
 ): Promise<{ sources: string[]; destination: string } | null> {
   if (!isSafeStringArray(paths) || !isSafeAbsolutePath(destination)) {
     logger.warn('fs', `${op} rejected invalid arguments`);
     return null;
   }
-  if (isProtectedPath(destination) || isProtectedPath(parentOf(destination))) {
+  const realDestination = await resolveForCheck(destination);
+  if (
+    isProtectedDestructivePath(destination, process.platform, extraRoots) ||
+    isProtectedDestructivePath(realDestination, process.platform, extraRoots)
+  ) {
     logger.warn('fs', `${op} rejected protected destination: ${destination}`);
     return null;
   }
@@ -110,9 +134,15 @@ export async function validateTransferArgs(
   for (const src of paths) {
     if (!isSafeAbsolutePath(src)) continue;
     // Przenoszenie to usunięcie u źródła: obowiązuje ten sam guard.
-    if (op === 'move' && isProtectedPath(src)) {
-      logger.warn('fs', `move rejected protected source: ${src}`);
-      continue;
+    if (op === 'move') {
+      const realSource = await resolveForCheck(src);
+      if (
+        isProtectedDestructivePath(src, process.platform, extraRoots) ||
+        isProtectedDestructivePath(realSource, process.platform, extraRoots)
+      ) {
+        logger.warn('fs', `move rejected protected source: ${src}`);
+        continue;
+      }
     }
     sources.push(src);
   }
@@ -120,8 +150,12 @@ export async function validateTransferArgs(
 }
 
 /** Przenosi pliki/katalogi (rename z fallbackiem copy+delete) do `destination`. */
-export async function moveItems(paths: unknown, destination: unknown): Promise<void> {
-  const args = await validateTransferArgs(paths, destination, 'move');
+export async function moveItems(
+  paths: unknown,
+  destination: unknown,
+  extraRoots: readonly string[] = []
+): Promise<void> {
+  const args = await validateTransferArgs(paths, destination, 'move', extraRoots);
   if (!args) return;
   for (const src of args.sources) {
     try {
@@ -151,8 +185,12 @@ export async function moveItems(paths: unknown, destination: unknown): Promise<v
 }
 
 /** Kopiuje pliki/katalogi do `destination`. */
-export async function copyItems(paths: unknown, destination: unknown): Promise<void> {
-  const args = await validateTransferArgs(paths, destination, 'copy');
+export async function copyItems(
+  paths: unknown,
+  destination: unknown,
+  extraRoots: readonly string[] = []
+): Promise<void> {
+  const args = await validateTransferArgs(paths, destination, 'copy', extraRoots);
   if (!args) return;
   for (const src of args.sources) {
     try {
