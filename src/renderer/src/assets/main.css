@@ -415,3 +415,64 @@ input[type='range']:focus-visible {
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
 }
+
+/* ---------------------------------------------------------------------------
+   Desktop defaults + współdzielone utilities (audyt UI/UX, P1).
+
+   Zaznaczanie tekstu wyłączamy tylko na chromie aplikacji; treść (logi,
+   ścieżki, komunikaty błędów, nazwy plików) musi dać się skopiować. Obrazy
+   i ikony nie są przeciągalne jako pliki — przeciąganie należy do wierszy
+   i kafelków, które ustawiają `draggable` jawnie.
+--------------------------------------------------------------------------- */
+@layer base {
+  html {
+    cursor: default;
+  }
+
+  button,
+  [role='button'],
+  a,
+  nav,
+  header,
+  .no-select {
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable='true'],
+  .selectable {
+    user-select: text;
+  }
+
+  img,
+  svg {
+    -webkit-user-drag: none;
+  }
+}
+
+/* Szkło dla warstw pływających (PlayerBar, menu, modale, toasty). */
+@utility glass {
+  background-color: color-mix(in oklab, var(--color-base-100) var(--glass-alpha), transparent);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+/* Gradient pod tekstem na obrazie/okładce. */
+@utility scrim {
+  background-image: linear-gradient(to top, rgb(0 0 0 / 0.7), transparent);
+}
+
+/* Regiony własnego titlebara (Electron). */
+@utility app-drag {
+  -webkit-app-region: drag;
+}
+
+@utility app-nodrag {
+  -webkit-app-region: no-drag;
+}
+
+/* Wspólny stan interaktywny dla elementów, które nie są `Button`. */
+@utility interactive {
+  @apply transition-[color,background-color,box-shadow,transform] duration-150 hover:bg-base-content/8 active:bg-base-content/12 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:pointer-events-none disabled:opacity-45;
+}
