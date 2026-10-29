@@ -22,18 +22,21 @@ const emit = defineEmits<{
 const base =
   'inline-flex items-center justify-center rounded-field transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
-const variants: Record<string, string> = {
+// Warianty muszą być liczone reaktywnie: `props.active` zmienia się w trakcie
+// życia przycisku (np. po włączeniu podglądu), a wcześniej klasy były budowane
+// raz w `setup` i zostawały z pierwszą wartością.
+const variants = computed<Record<string, string>>(() => ({
   default: `text-base-content/70 hover:bg-base-content/10 hover:text-base-content ${props.active ? 'bg-base-content/10 text-base-content' : ''}`,
   primary: `bg-primary text-primary-content hover:bg-primary/90 ${props.active ? 'bg-primary/90' : ''}`,
   danger: `text-base-content/70 hover:bg-error/10 hover:text-error ${props.active ? 'bg-error/10 text-error' : ''}`
-};
+}));
 
 const sizes: Record<string, string> = {
   sm: 'p-1.5',
   md: 'p-2'
 };
 
-const cls = computed(() => `${base} ${variants[props.variant]} ${sizes[props.size]}`);
+const cls = computed(() => `${base} ${variants.value[props.variant]} ${sizes[props.size]}`);
 </script>
 
 <template>
@@ -42,6 +45,7 @@ const cls = computed(() => `${base} ${variants[props.variant]} ${sizes[props.siz
     :class="cls"
     :disabled="disabled"
     :title="title"
+    :aria-label="title"
     @click="emit('click', $event)"
   >
     <slot />
