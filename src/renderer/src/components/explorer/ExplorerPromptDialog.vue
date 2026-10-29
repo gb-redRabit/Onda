@@ -57,7 +57,7 @@ function onKeydown(e: KeyboardEvent) {
       ref="inputRef"
       :value="value"
       type="text"
-      class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-none focus:ring-1 focus:ring-primary"
+      class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-hidden focus:ring-1 focus:ring-primary"
       @input="emit('update:value', ($event.target as HTMLInputElement).value)"
       @keydown="onKeydown"
     />

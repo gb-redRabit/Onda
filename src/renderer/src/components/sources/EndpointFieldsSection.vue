@@ -21,7 +21,7 @@ const { t } = useI18n();
       :list="fieldId('path')"
       placeholder="/series/list"
       :aria-label="t('sources.endpointPath')"
-      class="w-full px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+      class="w-full px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
     />
     <datalist :id="fieldId('path')">
       <option v-for="k in availableKeys" :key="k" :value="`{${k}}`" />
@@ -42,7 +42,7 @@ const { t } = useI18n();
           :list="fieldId('title')"
           :placeholder="t('sources.fTitle')"
           :aria-label="t('sources.fTitle')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('title')">
           <option v-for="o in fieldOptions" :key="o" :value="o" />
@@ -55,7 +55,7 @@ const { t } = useI18n();
           :list="fieldId('thumb')"
           :placeholder="t('sources.fThumbnail')"
           :aria-label="t('sources.fThumbnail')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('thumb')">
           <option v-for="o in fieldOptions" :key="o" :value="o" />
@@ -68,7 +68,7 @@ const { t } = useI18n();
           :list="fieldId('sub')"
           :placeholder="t('sources.fSubtitle')"
           :aria-label="t('sources.fSubtitle')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('sub')">
           <option v-for="o in fieldOptions" :key="o" :value="o" />
@@ -85,7 +85,7 @@ const { t } = useI18n();
       :list="fieldId('media')"
       :placeholder="t('sources.downloadNone')"
       :aria-label="t('sources.downloadField')"
-      class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+      class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
     />
     <datalist :id="fieldId('media')">
       <option v-for="o in fieldOptions" :key="o" :value="o" />
@@ -99,7 +99,7 @@ const { t } = useI18n();
       :list="fieldId('player')"
       :placeholder="t('sources.fPlayerUrlPh')"
       :aria-label="t('sources.fPlayerUrl')"
-      class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+      class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
     />
     <datalist :id="fieldId('player')">
       <option v-for="o in fieldOptions" :key="o" :value="o" />

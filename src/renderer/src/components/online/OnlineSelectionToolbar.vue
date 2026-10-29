@@ -39,7 +39,7 @@ const allSelected = computed(
         :value="rangeStart"
         type="number"
         min="1"
-        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
+        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
         @input="emit('update:rangeStart', Number(($event.target as HTMLInputElement).value))"
       />
       <span>-</span>
@@ -47,7 +47,7 @@ const allSelected = computed(
         :value="rangeEnd"
         type="number"
         min="1"
-        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
+        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
         @input="emit('update:rangeEnd', Number(($event.target as HTMLInputElement).value))"
       />
       <OnlineButton variant="secondary" size="sm" @click="emit('selectRange')">

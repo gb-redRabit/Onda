@@ -78,7 +78,7 @@ function onHoverLeave() {
     tabindex="0"
     :aria-pressed="selected"
     :aria-label="track.metadata?.title || track.name"
-    class="flex-1 flex flex-col fx-depth rounded-box border transition-all overflow-hidden group text-left min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+    class="flex-1 flex flex-col fx-depth rounded-box border transition-all overflow-hidden group text-left min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-hidden"
     :class="
       selected
         ? 'bg-primary/12 border-primary/50'

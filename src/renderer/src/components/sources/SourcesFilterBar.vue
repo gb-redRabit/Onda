@@ -21,7 +21,7 @@ const { t } = useI18n();
         type="text"
         :placeholder="t('sources.filterPlaceholder')"
         :aria-label="t('sources.filterPlaceholder')"
-        class="w-full pl-8 pr-8 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+        class="w-full pl-8 pr-8 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20"
       />
       <button
         v-if="filterText"
@@ -35,7 +35,7 @@ const { t } = useI18n();
     </div>
     <select
       v-model="sortMode"
-      class="shrink-0 px-2 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+      class="shrink-0 px-2 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary/20"
       :title="t('sources.sortBy')"
       :aria-label="t('sources.sortBy')"
     >

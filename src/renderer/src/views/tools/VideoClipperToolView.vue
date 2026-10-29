@@ -1332,7 +1332,7 @@ onBeforeUnmount(() => {
                   v-model="clipFormat"
                   data-testid="clip-format"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="video">{{ t('tools.clipFormatVideo') }}</option>
                   <option value="gif">{{ t('tools.clipFormatGif') }}</option>
@@ -1347,7 +1347,7 @@ onBeforeUnmount(() => {
                   v-model="clipMode"
                   data-testid="clip-mode"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="copy">{{ t('tools.clipModeCopy') }}</option>
                   <option value="exact">{{ t('tools.clipModeExact') }}</option>
@@ -1362,7 +1362,7 @@ onBeforeUnmount(() => {
                   v-model="container"
                   data-testid="clip-container"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="mp4">{{ t('tools.mp4') }}</option>
                   <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -1378,7 +1378,7 @@ onBeforeUnmount(() => {
                   v-model="audioMode"
                   data-testid="clip-audio"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
                   <option value="mute">{{ t('tools.clipAudioMute') }}</option>
@@ -1394,7 +1394,7 @@ onBeforeUnmount(() => {
                   v-model.number="rotation"
                   data-testid="clip-rotation"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option :value="0">{{ t('tools.clipRotationNone') }}</option>
                   <option :value="90">90°</option>
@@ -1411,7 +1411,7 @@ onBeforeUnmount(() => {
                   v-model.number="targetSizeMb"
                   data-testid="clip-target-size"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option :value="0">{{ t('tools.clipTargetNone') }}</option>
                   <option :value="10">10 MB</option>
@@ -1429,7 +1429,7 @@ onBeforeUnmount(() => {
                     type="text"
                     :disabled="busy"
                     :placeholder="t('tools.outputDefault')"
-                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   />
                   <button
                     class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"

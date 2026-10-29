@@ -295,7 +295,7 @@ const {
         type="text"
         :aria-label="$t('equalizer.presetName')"
         :placeholder="$t('equalizer.presetName')"
-        class="flex-1 min-w-0 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+        class="flex-1 min-w-0 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-hidden"
         data-testid="eq-preset-name-input"
         @keydown.enter="confirmSavePreset"
       />

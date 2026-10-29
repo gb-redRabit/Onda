@@ -366,7 +366,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               v-if="field.type === 'text'"
               type="text"
               :data-testid="`plugin-setting-${p.id}-${field.key}`"
-              class="w-40 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-none"
+              class="w-40 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-hidden"
               :value="String(settingsValue(p.id, field) ?? '')"
               @change="onSettingChange(p.id, field.key, ($event.target as HTMLInputElement).value)"
             />
@@ -374,7 +374,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               v-else-if="field.type === 'number'"
               type="number"
               :data-testid="`plugin-setting-${p.id}-${field.key}`"
-              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-none"
+              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-hidden"
               :min="field.min"
               :max="field.max"
               :value="Number(settingsValue(p.id, field))"

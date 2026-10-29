@@ -80,7 +80,7 @@ onUnmounted(() => grid.destroy());
       <div class="flex items-center gap-1.5">
         <select
           v-model="sortKey"
-          class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
+          class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-hidden"
         >
           <option value="name">{{ $t('library.sortArtist') }} Aâ†’Z</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>

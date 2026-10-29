@@ -107,7 +107,7 @@ const tableViews = [
         <select
           v-model="model.tableMode"
           :aria-label="t('sources.tableSource')"
-          class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none"
+          class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden"
         >
           <option value="endpoint">{{ t('sources.tableSourceEndpoint') }}</option>
           <option value="field">{{ t('sources.tableSourceField') }}</option>
@@ -124,7 +124,7 @@ const tableViews = [
           type="text"
           :list="fieldId('tpath')"
           :placeholder="t('sources.tableEndpointPathPh')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('tpath')">
           <option
@@ -142,7 +142,7 @@ const tableViews = [
           type="text"
           :list="fieldId('tfield')"
           :placeholder="t('sources.tableArrayFieldPh')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('tfield')">
           <option v-for="o in fieldOptions" :key="o" :value="o" />
@@ -177,7 +177,7 @@ const tableViews = [
         <select
           v-model="model.tableChildId"
           :aria-label="t('sources.openRow')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
         >
           <option value="">{{ t('sources.noChild') }}</option>
           <option v-for="o in levelOptions" :key="o.id" :value="o.id">{{ o.label }}</option>

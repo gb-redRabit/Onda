@@ -94,7 +94,7 @@ watch(format, (value) => {
             v-model="format"
             data-testid="history-export-format"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="csv">CSV</option>
             <option value="json">JSON</option>
@@ -109,7 +109,7 @@ watch(format, (value) => {
             v-model="type"
             data-testid="history-export-type"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="all">{{ t('tools.historyExportTypeAll') }}</option>
             <option value="audio">{{ t('tools.historyExportTypeAudio') }}</option>
@@ -125,7 +125,7 @@ watch(format, (value) => {
             v-model="sort"
             data-testid="history-export-sort"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="lastPlayed">{{ t('tools.historyExportSortLastPlayed') }}</option>
             <option value="playCount">{{ t('tools.historyExportSortPlayCount') }}</option>
@@ -154,7 +154,7 @@ watch(format, (value) => {
               type="text"
               :disabled="busy"
               :placeholder="t('tools.historyExportOutputHint')"
-              class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+              class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             />
             <button
               class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"

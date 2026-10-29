@@ -192,7 +192,7 @@ function close(): void {
             data-testid="smart-playlist-name"
             type="text"
             :placeholder="t('library.smartPlaylists.namePlaceholder')"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
           />
         </label>
         <label class="block">
@@ -201,7 +201,7 @@ function close(): void {
           </span>
           <select
             v-model="match"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
           >
             <option value="all">{{ t('library.smartPlaylists.matchAll') }}</option>
             <option value="any">{{ t('library.smartPlaylists.matchAny') }}</option>
@@ -246,7 +246,7 @@ function close(): void {
         >
           <select
             :value="rule.field"
-            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
             :aria-label="t('library.smartPlaylists.field')"
             @change="
               setField(index, ($event.target as HTMLSelectElement).value as SmartPlaylistField)
@@ -259,7 +259,7 @@ function close(): void {
 
           <select
             :value="rule.operator"
-            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
             :aria-label="t('library.smartPlaylists.operator')"
             @change="
               setOperator(
@@ -278,7 +278,7 @@ function close(): void {
               v-if="valueKind(rule) === 'text'"
               :value="String(rule.value ?? '')"
               type="text"
-              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+              class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
               :aria-label="t('library.smartPlaylists.value')"
               @input="setValue(index, ($event.target as HTMLInputElement).value)"
             />
@@ -290,7 +290,7 @@ function close(): void {
                 :value="Number(rule.value) || 0"
                 type="number"
                 min="0"
-                class="w-full min-w-0 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                class="w-full min-w-0 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
                 :aria-label="t('library.smartPlaylists.value')"
                 @input="setNumberValue(index, ($event.target as HTMLInputElement).value)"
               />
@@ -305,7 +305,7 @@ function close(): void {
               <input
                 :value="Array.isArray(rule.value) ? rule.value[0] : 0"
                 type="number"
-                class="w-full min-w-0 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                class="w-full min-w-0 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
                 :aria-label="t('library.smartPlaylists.value')"
                 @input="setNumberValue(index, ($event.target as HTMLInputElement).value, 0)"
               />
@@ -313,7 +313,7 @@ function close(): void {
               <input
                 :value="Array.isArray(rule.value) ? rule.value[1] : 0"
                 type="number"
-                class="w-full min-w-0 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                class="w-full min-w-0 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
                 :aria-label="t('library.smartPlaylists.value')"
                 @input="setNumberValue(index, ($event.target as HTMLInputElement).value, 1)"
               />
@@ -339,7 +339,7 @@ function close(): void {
           </span>
           <select
             v-model="sort"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
           >
             <option value="">{{ t('library.smartPlaylists.sortNone') }}</option>
             <option v-for="key in SMART_SORT_KEYS" :key="key" :value="key">
@@ -353,7 +353,7 @@ function close(): void {
           </span>
           <select
             v-model="sortDir"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
           >
             <option value="asc">{{ t('library.smartPlaylists.asc') }}</option>
             <option value="desc">{{ t('library.smartPlaylists.desc') }}</option>
@@ -365,7 +365,7 @@ function close(): void {
           </span>
           <select
             v-model.number="limit"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
           >
             <option :value="0">{{ t('library.smartPlaylists.limitAll') }}</option>
             <option :value="25">25</option>

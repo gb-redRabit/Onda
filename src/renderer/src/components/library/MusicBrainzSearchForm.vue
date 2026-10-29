@@ -32,7 +32,7 @@ const canSearch = computed(
         <input
           v-model="artist"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Skillet'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>
@@ -41,7 +41,7 @@ const canSearch = computed(
         <input
           v-model="title"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Monster'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>
@@ -50,7 +50,7 @@ const canSearch = computed(
         <input
           v-model="album"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Awake'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>
@@ -59,7 +59,7 @@ const canSearch = computed(
         <input
           v-model="year"
           :placeholder="$t('musicbrainz.examplePrefix') + '2009'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>

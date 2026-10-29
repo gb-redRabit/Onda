@@ -377,7 +377,7 @@ function dismissError(): void {
 
       <div
         ref="seekEl"
-        class="group relative h-1.5 mt-3 rounded-full bg-base-300 cursor-pointer touch-none before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        class="group relative h-1.5 mt-3 rounded-full bg-base-300 cursor-pointer touch-none before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
         :class="{ 'cursor-grabbing': seeking }"
         role="slider"
         tabindex="0"

@@ -128,7 +128,7 @@ onMounted(async () => {
         <Gauge :size="13" class="text-base-content/50" />
         <select
           :value="settings.network.downloadSpeedLimit"
-          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-none"
+          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
           :title="t('downloads.speedLimit')"
           :aria-label="t('downloads.speedLimit')"
           @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
@@ -145,7 +145,7 @@ onMounted(async () => {
         <input
           v-model="scheduleTime"
           type="time"
-          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-none"
+          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
           :title="t('downloads.scheduleStart')"
           :aria-label="t('downloads.scheduleStart')"
         />

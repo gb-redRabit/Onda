@@ -81,7 +81,7 @@ async function openImageStudio(): Promise<void> {
     aria-modal="true"
     :aria-label="currentFile?.name"
     tabindex="-1"
-    class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none outline-none"
+    class="fixed inset-0 z-50 flex flex-col bg-base-200/95 select-none outline-hidden"
     :class="slideshowActive && !uiVisible ? 'cursor-none' : ''"
     @click.self="handleClose"
     @wheel.passive="onWheel"

@@ -30,7 +30,7 @@ function clearSearch() {
       v-model="searchQuery"
       type="text"
       :placeholder="$t('explorer.search')"
-      class="w-48 pl-8 pr-7 py-1.5 text-xs fx-depth rounded-field bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/50 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+      class="w-48 pl-8 pr-7 py-1.5 text-xs fx-depth rounded-field bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/50 outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
       data-testid="explorer-search"
     />
     <button

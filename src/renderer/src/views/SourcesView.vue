@@ -146,7 +146,7 @@ onMounted(() => {
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
             :aria-label="$t('sources.level')"
-            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
             @change="onEndpointChange(($event.target as HTMLSelectElement).value)"
           >
             <option v-for="e in activeSource.endpoints" :key="e.id" :value="e.id">
@@ -175,7 +175,7 @@ onMounted(() => {
             type="text"
             :aria-label="$t('sources.queryParams')"
             :placeholder="$t('sources.queryParams')"
-            class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+            class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
           />
           <div v-if="sources.paginationMode === 'page'" class="flex items-center gap-1 shrink-0">
             <IconButton
@@ -188,7 +188,7 @@ onMounted(() => {
               v-model.number="pageInput"
               type="number"
               min="1"
-              class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+              class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-center font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
               :title="$t('sources.currentPage')"
               :aria-label="$t('sources.currentPage')"
               @change="goToPage"

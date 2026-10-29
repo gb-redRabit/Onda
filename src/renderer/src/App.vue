@@ -441,7 +441,7 @@ function onWindowBlur() {
         ref="mainRef"
         tabindex="-1"
         :data-route="route.name"
-        class="flex-1 min-w-0 relative overflow-auto flex flex-col outline-none"
+        class="flex-1 min-w-0 relative overflow-auto flex flex-col outline-hidden"
       >
         <router-view v-slot="{ Component }">
           <transition name="page" mode="out-in">

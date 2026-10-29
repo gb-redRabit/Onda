@@ -192,7 +192,7 @@ async function addDirect() {
         type="text"
         :placeholder="$t('radio.urlPlaceholder')"
         :aria-label="$t('radio.urlPlaceholder')"
-        class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-3 py-2 text-sm text-base-content focus:outline-none focus:border-primary"
+        class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-3 py-2 text-sm text-base-content focus:outline-hidden focus:border-primary"
         @keyup.enter="addDirect"
       />
       <input
@@ -200,7 +200,7 @@ async function addDirect() {
         type="text"
         :placeholder="$t('radio.namePlaceholder')"
         :aria-label="$t('radio.namePlaceholder')"
-        class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-3 py-2 text-sm text-base-content focus:outline-none focus:border-primary"
+        class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-3 py-2 text-sm text-base-content focus:outline-hidden focus:border-primary"
         @keyup.enter="addDirect"
       />
       <div v-if="directError" class="flex items-center gap-2 text-xs text-error">

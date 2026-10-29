@@ -143,7 +143,7 @@ a:focus-visible {
 }
 
 /* Pola formularzy nie mają globalnego ringu focus — bez tego klawiatura gubi pozycję
-   na `select`/tekstowych (wiele komponentów ustawia tylko `focus:outline-none`). */
+   na `select`/tekstowych (wiele komponentów ustawia tylko `focus:outline-hidden`). */
 select:focus-visible,
 textarea:focus-visible,
 input:not([type='range']):focus-visible {

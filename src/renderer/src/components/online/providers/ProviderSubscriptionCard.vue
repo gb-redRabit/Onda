@@ -111,7 +111,7 @@ function saveReplace(): void {
         <input
           v-model="editUrl"
           type="text"
-          class="flex-1 min-w-0 rounded-field border border-base-300 bg-base-100 px-2 py-1 text-xs text-base-content outline-none focus:border-primary"
+          class="flex-1 min-w-0 rounded-field border border-base-300 bg-base-100 px-2 py-1 text-xs text-base-content outline-hidden focus:border-primary"
           :aria-label="t('providers.pasteNewLink')"
           :placeholder="t('providers.pasteNewLink')"
           @keydown.enter="saveReplace"

@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
             v-model="search"
             :placeholder="t('settings.searchSettings')"
             :aria-label="t('settings.searchSettings')"
-            class="w-full pl-9 pr-8 h-9 rounded-field bg-base-200 border border-base-300 text-[13px] text-base-content outline-none transition-all placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            class="w-full pl-9 pr-8 h-9 rounded-field bg-base-200 border border-base-300 text-[13px] text-base-content outline-hidden transition-all placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             data-testid="settings-search"
             @keydown="onSearchKeydown"
           />

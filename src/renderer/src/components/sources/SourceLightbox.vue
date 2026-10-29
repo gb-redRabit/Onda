@@ -62,7 +62,7 @@ function onKeydown(event: KeyboardEvent): void {
       tabindex="-1"
       @keydown="onKeydown"
     >
-      <div ref="panelRef" class="flex flex-col h-full w-full outline-none">
+      <div ref="panelRef" class="flex flex-col h-full w-full outline-hidden">
         <!-- Pasek narzędzi -->
         <div class="shrink-0 flex items-center gap-2 px-3 py-2 text-white/80">
           <span class="text-xs font-mono tabular-nums shrink-0">

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -150,7 +150,7 @@ async function pasteThemeJson() {
               <span class="text-sm flex-1 min-w-0 truncate">{{ tokenLabel(id) }}</span>
               <input
                 type="text"
-                class="w-28 px-2.5 py-1.5 fx-depth rounded-field bg-base-200 border border-base-300 text-xs font-mono text-base-content/70 focus:border-primary/50 focus:outline-none"
+                class="w-28 px-2.5 py-1.5 fx-depth rounded-field bg-base-200 border border-base-300 text-xs font-mono text-base-content/70 focus:border-primary/50 focus:outline-hidden"
                 :value="colorValue(id)"
                 @change="updateColor(id, ($event.target as HTMLInputElement).value)"
               />

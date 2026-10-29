@@ -326,7 +326,7 @@ function fieldLabel(field: AudioTagField): string {
             v-model="batchField"
             data-testid="tools-tag-batch-field"
             :disabled="saving || selectedCount === 0"
-            class="rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option v-for="field in AUDIO_TAG_FIELDS" :key="field" :value="field">
               {{ fieldLabel(field) }}
@@ -338,7 +338,7 @@ function fieldLabel(field: AudioTagField): string {
             type="text"
             :disabled="saving || selectedCount === 0"
             :placeholder="t('tools.tagEditorBatchValue')"
-            class="w-44 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="w-44 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             @keydown.enter="applyBatch"
           />
           <button
@@ -362,7 +362,7 @@ function fieldLabel(field: AudioTagField): string {
           type="text"
           :disabled="coverBusy"
           :placeholder="t('tools.tagEditorCoverPick')"
-          class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+          class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
         />
         <button
           class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
@@ -495,7 +495,7 @@ function fieldLabel(field: AudioTagField): string {
                   type="text"
                   :disabled="saving || !row.writable || !!row.error"
                   :aria-label="`${row.name} ${fieldLabel(field)}`"
-                  class="w-full min-w-24 rounded-field border border-base-300/70 bg-base-100 px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="w-full min-w-24 rounded-field border border-base-300/70 bg-base-100 px-1.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   @input="markDirty(row)"
                 />
               </td>

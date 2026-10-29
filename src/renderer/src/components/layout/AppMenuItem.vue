@@ -9,7 +9,7 @@ defineProps<{ icon?: unknown; label?: string }>();
   <button
     role="menuitem"
     tabindex="-1"
-    class="group mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-base-content/75 transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:bg-primary/10 focus-visible:text-primary-text focus-visible:outline-none"
+    class="group mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-base-content/75 transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:bg-primary/10 focus-visible:text-primary-text focus-visible:outline-hidden"
     :aria-label="label"
     v-bind="$attrs"
   >

@@ -248,7 +248,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           :aria-activedescendant="
             ui.searchMode === 'global' ? `app-search-item-${activeIndex}` : undefined
           "
-          class="flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/50"
+          class="flex-1 bg-transparent text-sm text-base-content outline-hidden placeholder:text-base-content/50"
           :placeholder="
             ui.searchMode === 'view' ? $t('menu.viewSearch') : $t('cmdPalette.placeholder')
           "

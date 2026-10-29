@@ -125,7 +125,7 @@ function onGainDrag(e: MouseEvent): void {
         :value="band.type"
         :data-testid="'eq-type-' + index"
         :aria-label="$t('equalizer.type')"
-        class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-100 border border-base-300 text-[11px] focus:border-primary focus:outline-none"
+        class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-100 border border-base-300 text-[11px] focus:border-primary focus:outline-hidden"
         @change="emit('patch', { type: ($event.target as HTMLSelectElement).value as EqBandType })"
       >
         <option v-for="tp in bandTypes" :key="tp" :value="tp">{{ typeLabel(tp) }}</option>

@@ -442,7 +442,7 @@ async function confirmDownloadFolder(): Promise<void> {
         <textarea
           v-model="credValue"
           rows="3"
-          class="w-full rounded-field border border-base-300 bg-base-200/(--glass-alpha) px-3 py-2 text-xs text-base-content fx-depth outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
+          class="w-full rounded-field border border-base-300 bg-base-200/(--glass-alpha) px-3 py-2 text-xs text-base-content fx-depth outline-hidden transition-all focus:border-primary focus:ring-2 focus:ring-primary/15"
           :aria-label="t('providers.cookiePlaceholder')"
           :placeholder="t('providers.cookiePlaceholder')"
           data-testid="providers-cookie-input"

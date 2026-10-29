@@ -20,7 +20,7 @@ const emit = defineEmits<{
 
     <button
       v-if="searchable"
-      class="h-7 w-7 grid place-items-center rounded-field hover:bg-base-content/8 transition-colors text-base-content/55 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      class="h-7 w-7 grid place-items-center rounded-field hover:bg-base-content/8 transition-colors text-base-content/55 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       style="-webkit-app-region: no-drag"
       :title="$t('menu.viewSearch')"
       :aria-label="$t('menu.viewSearch')"

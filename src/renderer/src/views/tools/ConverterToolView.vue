@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="audioFormat"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="mp3">MP3</option>
                   <option value="flac">FLAC</option>
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model.number="audioBitrate"
                   :disabled="busy || bitrateDisabled"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option :value="128">{{ t('tools.bitrateOption', { value: 128 }) }}</option>
                   <option :value="192">{{ t('tools.bitrateOption', { value: 192 }) }}</option>
@@ -366,7 +366,7 @@ onBeforeUnmount(() => {
                   v-model="videoContainer"
                   data-testid="tools-video-format"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="mp4">{{ t('tools.mp4') }}</option>
                   <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="videoQuality"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="high">{{ t('tools.qualityHigh') }}</option>
                   <option value="medium">{{ t('tools.qualityMedium') }}</option>
@@ -399,7 +399,7 @@ onBeforeUnmount(() => {
                     type="text"
                     :disabled="busy"
                     :placeholder="t('tools.outputDefault')"
-                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   />
                   <button
                     class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"

@@ -158,7 +158,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
           type="number"
           min="0"
           :value="settings.download.defaultCoverClipStart"
-          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           @change="
             settings.updateDownload({
               defaultCoverClipStart: parseInt(($event.target as HTMLInputElement).value) || 0
@@ -172,7 +172,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
           type="number"
           min="1"
           :value="settings.download.defaultCoverClipEnd"
-          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+          class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           @change="
             settings.updateDownload({
               defaultCoverClipEnd: parseInt(($event.target as HTMLInputElement).value) || 30
@@ -185,7 +185,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <SettingsSectionTitle :title="$t('settings.clipFormat')" />
       <select
         :value="settings.download.defaultCoverClipFormat"
-        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
         @change="
           settings.updateDownload({
             defaultCoverClipFormat: ($event.target as HTMLSelectElement).value as 'webm' | 'mp4'
@@ -209,7 +209,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <SettingsSectionTitle :title="$t('settings.defaultSubsLangs')" />
       <input
         :value="settings.download.defaultSubsLangs"
-        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition-all"
         :placeholder="$t('youtube.subsLangsPlaceholder')"
         @change="
           settings.updateDownload({
@@ -224,7 +224,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
     <div class="flex items-center gap-2">
       <input
         :value="settings.download.filenameTemplate"
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition-all"
         @change="
           settings.updateDownload({ filenameTemplate: ($event.target as HTMLInputElement).value })
         "

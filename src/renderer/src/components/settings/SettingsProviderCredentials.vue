@@ -146,7 +146,7 @@ async function login(id: string): Promise<void> {
           <input
             v-model="editing[row.id]"
             type="text"
-            class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-200/(--glass-alpha) px-3 py-1.5 text-xs text-base-content fx-depth transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
+            class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-200/(--glass-alpha) px-3 py-1.5 text-xs text-base-content fx-depth transition-all focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
             :aria-label="t('providers.cookiePlaceholder')"
             :placeholder="t('providers.cookiePlaceholder')"
             @keydown.enter="save(row.id)"

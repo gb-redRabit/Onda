@@ -47,7 +47,7 @@ async function onPickFile() {
 }
 
 const INPUT_BASE =
-  'mt-1 w-full py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none';
+  'mt-1 w-full py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden';
 
 /** Wiersz klipu z 3 kolumnami jest węższy, więc traci stopień poziomego paddingu. */
 function inputClass(compact: boolean): string {

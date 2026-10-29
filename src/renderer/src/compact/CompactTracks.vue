@@ -91,7 +91,7 @@ defineExpose({ focusSearch });
           type="search"
           :placeholder="$t('compact.searchPlaceholder')"
           :aria-label="$t('compact.searchPlaceholder')"
-          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-base-300 text-[12px] outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-base-300 text-[12px] outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
           data-testid="compact-search"
         />
       </label>

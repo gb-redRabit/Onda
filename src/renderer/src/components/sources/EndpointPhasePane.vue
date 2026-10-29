@@ -82,7 +82,7 @@ function buildPreview(): string {
         type="text"
         :placeholder="t('sources.endpointName')"
         :aria-label="t('sources.endpointName')"
-        class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+        class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
       />
     </div>
 

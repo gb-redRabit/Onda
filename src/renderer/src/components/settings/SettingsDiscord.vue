@@ -132,7 +132,7 @@ watch(
         autocomplete="off"
         spellcheck="false"
         :placeholder="$t('settings.discordClientIdPlaceholder')"
-        class="w-56 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+        class="w-56 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
         :class="{ 'border-error/60': clientId.length > 0 && !clientIdValid }"
         @change="saveClientId"
         @blur="saveClientId"

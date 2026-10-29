@@ -178,7 +178,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           data-testid="online-search-input"
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
-          class="w-full pl-[46px] pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 transition-shadow"
+          class="w-full pl-[46px] pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 transition-shadow"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.enter="emit('submit')"
           @dragover.prevent
@@ -255,7 +255,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioFormat"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
           @change="
             settings.updateDownload({
               defaultAudioFormat: readSelect($event, AUDIO_FORMATS)
@@ -270,7 +270,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-else
           :value="settings.download.defaultVideoQuality"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
           @change="
             settings.updateDownload({
               defaultVideoQuality: readSelect($event, VIDEO_QUALITIES)
@@ -283,7 +283,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'video'"
           :value="settings.download.defaultVideoContainer"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
           @change="
             settings.updateDownload({
               defaultVideoContainer: readSelect($event, VIDEO_CONTAINERS)
@@ -296,7 +296,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioQuality"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-none"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
           @change="
             settings.updateDownload({
               defaultAudioQuality: readSelect($event, AUDIO_QUALITIES)

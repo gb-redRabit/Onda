@@ -332,7 +332,7 @@ watch(
                 v-model="format"
                 data-testid="batch-images-format"
                 :disabled="busy"
-                class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
               >
                 <option v-for="item in IMAGE_OUTPUT_FORMATS" :key="item" :value="item">
                   {{ item.toUpperCase() }}
@@ -366,7 +366,7 @@ watch(
                   type="number"
                   min="0"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
               </label>
               <label class="block">
@@ -379,7 +379,7 @@ watch(
                   type="number"
                   min="0"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
               </label>
             </div>
@@ -396,7 +396,7 @@ watch(
                   type="text"
                   :disabled="busy"
                   :placeholder="t('tools.outputDefault')"
-                  class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
                 <button
                   class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"

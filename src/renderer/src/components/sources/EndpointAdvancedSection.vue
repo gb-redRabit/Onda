@@ -20,7 +20,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         <select
           v-model="model.method"
           :aria-label="t('sources.method')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden"
         >
           <option value="GET">GET</option>
           <option value="POST">POST</option>
@@ -33,7 +33,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.params')"
           type="text"
           placeholder="rating=safe"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -43,7 +43,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.arrayPath')"
           type="text"
           placeholder="data"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -53,7 +53,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.pageParam')"
           type="text"
           placeholder="page"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -64,7 +64,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           type="number"
           min="1"
           placeholder="1"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -74,7 +74,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.nextFromField')"
           type="text"
           placeholder="pagination.next_token"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -84,7 +84,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.totalField')"
           type="text"
           placeholder="pagination.has_next"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -94,7 +94,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.rangeCountField')"
           type="text"
           placeholder="episodes"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -105,7 +105,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           type="number"
           min="1"
           placeholder="12"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -116,7 +116,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           type="number"
           min="0"
           placeholder="1"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -126,7 +126,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.rangeTitleTemplate')"
           type="text"
           :placeholder="$t('sources.episodeTemplatePlaceholder') + ' {n}'"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -136,7 +136,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.fId')"
           type="text"
           placeholder="mal_id"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -146,7 +146,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.fType')"
           type="text"
           placeholder="video"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -156,7 +156,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.fDuration')"
           type="text"
           placeholder="duration"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -166,7 +166,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
           :aria-label="t('sources.fSourceUrl')"
           type="text"
           placeholder="url"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
       </div>
     </div>

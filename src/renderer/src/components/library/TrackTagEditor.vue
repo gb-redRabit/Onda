@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
@@ -240,28 +240,28 @@ async function save() {
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.filename') }}</span>
           <input
             v-model="name"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.titleField') }}</span>
           <input
             v-model="title"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.artist') }}</span>
           <input
             v-model="artist"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.album') }}</span>
           <input
             v-model="album"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <div class="grid grid-cols-3 gap-2.5">
@@ -269,14 +269,14 @@ async function save() {
             <span class="text-xs font-medium text-base-content/70">{{ $t('tags.year') }}</span>
             <input
               v-model="year"
-              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
             />
           </label>
           <label class="block col-span-2">
             <span class="text-xs font-medium text-base-content/70">{{ $t('tags.genre') }}</span>
             <input
               v-model="genre"
-              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
             />
           </label>
         </div>
@@ -284,7 +284,7 @@ async function save() {
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.trackNo') }}</span>
           <input
             v-model="trackNumber"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
       </div>

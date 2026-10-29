@@ -104,7 +104,7 @@ async function applyProperties() {
         <input
           v-model="propertiesName"
           type="text"
-          class="w-full mt-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-none focus:ring-1 focus:ring-primary"
+          class="w-full mt-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-hidden focus:ring-1 focus:ring-primary"
           @keydown.enter="applyProperties"
         />
       </div>

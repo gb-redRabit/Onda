@@ -87,7 +87,7 @@ function commitRadioRename(id: string) {
             <input
               v-model="editingRadioName"
               type="text"
-              class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-2 py-1 text-sm text-base-content focus:outline-none focus:border-primary"
+              class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-2 py-1 text-sm text-base-content focus:outline-hidden focus:border-primary"
               @keyup.enter="commitRadioRename(s.id)"
               @keyup.esc="editingRadioId = null"
               @blur="commitRadioRename(s.id)"

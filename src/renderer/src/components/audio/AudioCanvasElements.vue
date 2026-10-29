@@ -61,7 +61,7 @@ function styleFor(el: AudioLayoutElement) {
     v-for="el in props.elements"
     v-show="el.visible"
     :key="el.id"
-    class="absolute overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+    class="absolute overflow-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/60"
     :style="styleFor(el)"
     :tabindex="isDraggable(el) ? 0 : undefined"
     :role="isDraggable(el) ? 'group' : undefined"

@@ -31,7 +31,7 @@ const sponsorBlock = defineModel<'off' | 'mark' | 'remove'>('sponsorBlock', { re
 
 const { t } = useI18n();
 const INPUT =
-  'mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none';
+  'mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden';
 </script>
 
 <template>

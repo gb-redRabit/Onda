@@ -116,7 +116,7 @@ const {
       aria-modal="true"
       :aria-label="$t('audioView.layoutEditor')"
       tabindex="-1"
-      class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col outline-none"
+      class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col outline-hidden"
     >
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-base font-bold">{{ $t('audioView.layoutEditor') }}</h2>

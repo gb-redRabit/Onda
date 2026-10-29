@@ -32,7 +32,7 @@ const { t } = useI18n();
     <div class="flex items-center gap-2">
       <select
         v-model="folderMode"
-        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
       >
         <option value="global">{{ t('youtube.prefOutputDirGlobal') }}</option>
         <option v-if="channelTitle" value="channel">
@@ -70,7 +70,7 @@ const { t } = useI18n();
       v-else-if="folderMode === 'custom'"
       v-model="outputDir"
       readonly
-      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none"
+      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
       :placeholder="t('youtube.prefOutputDirPlaceholder')"
     />
   </section>

@@ -27,7 +27,7 @@ const { trackCount } = useCountLabel();
       <input
         v-model="query"
         :placeholder="tab === 'overview' ? t('library.searchPlaceholder') : t('library.search')"
-        class="w-full h-9 pl-9 pr-8 rounded-field bg-base-200/70 border border-base-300/80 text-[13px] focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/10 placeholder:text-base-content/50 transition-all"
+        class="w-full h-9 pl-9 pr-8 rounded-field bg-base-200/70 border border-base-300/80 text-[13px] focus:border-primary/50 focus:outline-hidden focus:ring-2 focus:ring-primary/10 placeholder:text-base-content/50 transition-all"
       />
       <button
         v-if="query"
@@ -44,7 +44,7 @@ const { trackCount } = useCountLabel();
       <div class="relative">
         <select
           v-model="sortKey"
-          class="appearance-none h-9 pl-2.5 pr-7 rounded-field bg-base-200/70 border border-base-300/80 text-xs font-medium focus:border-primary/50 focus:outline-none cursor-pointer"
+          class="appearance-none h-9 pl-2.5 pr-7 rounded-field bg-base-200/70 border border-base-300/80 text-xs font-medium focus:border-primary/50 focus:outline-hidden cursor-pointer"
         >
           <option value="added">{{ t('library.sortAdded') }}</option>
           <option value="title">{{ t('library.sortTitle') }}</option>

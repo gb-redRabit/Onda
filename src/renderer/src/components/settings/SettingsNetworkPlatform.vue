@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -176,7 +176,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
 
       <template v-else-if="settings.youtube.method === 'browser'">
         <select
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
+          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition-all"
           :value="settings.youtube.cookiesBrowser"
           @change="onBrowserChange"
         >
