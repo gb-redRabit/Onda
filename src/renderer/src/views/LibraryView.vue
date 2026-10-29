@@ -340,7 +340,13 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
         class="h-12 rounded-box bg-base-100 border border-base-300 animate-pulse"
       ></div>
     </div>
-    <div v-else class="flex-1 flex flex-col min-h-0">
+    <div
+      v-else
+      :id="'library-panel-' + tab"
+      class="flex-1 flex flex-col min-h-0"
+      role="tabpanel"
+      :aria-labelledby="'library-tab-' + tab"
+    >
       <LibraryOverviewTab
         v-if="tab === 'overview'"
         :query="query"

@@ -44,10 +44,12 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
     <div class="ui-segmented" role="tablist" :aria-label="t('nav.online')">
       <button
         v-for="(tab, i) in tabs"
+        :id="'online-tab-' + tab.key"
         :key="tab.key"
         type="button"
         role="tab"
         :data-testid="'online-tab-' + tab.key"
+        :aria-controls="'online-panel-' + tab.key"
         :aria-selected="modelValue === tab.key"
         :tabindex="modelValue === tab.key ? 0 : -1"
         class="flex items-center gap-1.5 text-xs font-medium"

@@ -95,10 +95,12 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
     >
       <button
         v-for="(tabItem, i) in props.tabs"
+        :id="'library-tab-' + tabItem.id"
         :key="tabItem.id"
         role="tab"
         data-tab
         :data-testid="'library-tab-' + tabItem.id"
+        :aria-controls="'library-panel-' + tabItem.id"
         :aria-selected="props.modelValue === tabItem.id"
         :tabindex="props.modelValue === tabItem.id ? 0 : -1"
         :aria-label="tabItem.label"

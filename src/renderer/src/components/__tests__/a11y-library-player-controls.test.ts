@@ -15,6 +15,10 @@ const DOWNLOADS = read('src/renderer/src/components/downloads/DownloadRowActions
 const SOURCES_SIDEBAR = read('src/renderer/src/components/sources/SourcesSidebar.vue');
 const APP = read('src/renderer/src/App.vue');
 const IMAGE_VIEWER = read('src/renderer/src/components/explorer/ImageViewer.vue');
+const LIBRARY_TABS = read('src/renderer/src/components/library/LibraryTabBar.vue');
+const LIBRARY_VIEW = read('src/renderer/src/views/LibraryView.vue');
+const ONLINE_TABS = read('src/renderer/src/components/online/OnlineViewTabs.vue');
+const ONLINE_VIEW = read('src/renderer/src/views/OnlineView.vue');
 
 describe('IconButton enforces an accessible name', () => {
   it('requires a label prop and applies it as aria-label', () => {
@@ -85,5 +89,19 @@ describe('additional labelled controls', () => {
   it('image viewer is a modal dialog', () => {
     expect(IMAGE_VIEWER).toMatch(/role="dialog"/);
     expect(IMAGE_VIEWER).toMatch(/aria-modal="true"/);
+  });
+});
+
+describe('tab lists are wired to their panels', () => {
+  it('library tabs control a named tabpanel', () => {
+    expect(LIBRARY_TABS).toMatch(/aria-controls="'library-panel-' \+ tabItem\.id"/);
+    expect(LIBRARY_VIEW).toMatch(/role="tabpanel"/);
+    expect(LIBRARY_VIEW).toMatch(/:aria-labelledby="'library-tab-' \+ tab"/);
+  });
+
+  it('online tabs control a named tabpanel', () => {
+    expect(ONLINE_TABS).toMatch(/aria-controls="'online-panel-' \+ tab\.key"/);
+    expect(ONLINE_VIEW).toMatch(/role="tabpanel"/);
+    expect(ONLINE_VIEW).toMatch(/:aria-labelledby="'online-tab-' \+ activeSection"/);
   });
 });

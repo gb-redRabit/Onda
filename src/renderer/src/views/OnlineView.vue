@@ -265,7 +265,12 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
       <p v-if="searchError" class="text-xs text-error mt-3">{{ searchError }}</p>
     </PageHeader>
 
-    <div class="flex-1 min-h-0">
+    <div
+      :id="'online-panel-' + activeSection"
+      class="flex-1 min-h-0"
+      role="tabpanel"
+      :aria-labelledby="'online-tab-' + activeSection"
+    >
       <div v-if="activeSection === 'subscriptions'" class="h-full overflow-auto p-4">
         <OnlineSubscriptionsPanel
           :subscriptions="yt.subscriptions"
