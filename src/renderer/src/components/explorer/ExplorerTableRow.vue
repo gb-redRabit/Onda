@@ -10,7 +10,7 @@ import { useThumbnail } from '@renderer/composables/useThumbnail';
 const props = defineProps<{
   item: FileItem;
   isSelected: boolean;
-  isAtDrives: boolean;
+  isDriveList: boolean;
   isLibraryFolder?: boolean;
   hoveredFolderPath?: string | null;
   isCut?: boolean;
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 const { rootEl, systemIcon, mediaThumb } = useThumbnail(
   () => props.item.path,
   () => props.item.isDirectory,
-  () => props.isAtDrives,
+  () => props.isDriveList,
   96
 );
 if (import.meta.env.DEV) {
@@ -33,7 +33,7 @@ if (import.meta.env.DEV) {
 }
 
 function iconComponent() {
-  if (props.isAtDrives) return HardDrive;
+  if (props.isDriveList) return HardDrive;
   if (props.item.isDirectory) return FolderOpen;
   return fileTypeIcon(props.item.extension);
 }
@@ -42,7 +42,7 @@ function iconComponent() {
 <template>
   <button
     ref="rootEl"
-    :draggable="!isAtDrives"
+    :draggable="!isDriveList"
     :data-file-path="item.path"
     :data-testid="`explorer-item-${item.name}`"
     :data-folder-path="item.isDirectory ? item.path : undefined"
@@ -70,13 +70,13 @@ function iconComponent() {
   >
     <div class="flex items-center gap-2 min-w-0">
       <img
-        v-if="mediaThumb && !isAtDrives && !item.isDirectory"
+        v-if="mediaThumb && !isDriveList && !item.isDirectory"
         alt=""
         :src="mediaThumb"
         class="w-4 h-4 object-contain shrink-0"
       />
       <img
-        v-else-if="systemIcon && !isAtDrives && !item.isDirectory"
+        v-else-if="systemIcon && !isDriveList && !item.isDirectory"
         alt=""
         :src="systemIcon"
         class="w-4 h-4 object-contain shrink-0"
@@ -85,28 +85,28 @@ function iconComponent() {
         :is="iconComponent()"
         v-else
         :size="14"
-        :class="isAtDrives || item.isDirectory ? 'text-primary-text shrink-0' : 'shrink-0'"
+        :class="isDriveList || item.isDirectory ? 'text-primary-text shrink-0' : 'shrink-0'"
       />
       <span class="truncate">{{ item.name }}</span>
       <span
-        v-if="isLibraryFolder && !isAtDrives"
+        v-if="isLibraryFolder && !isDriveList"
         class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
         >LIB</span
       >
     </div>
     <span class="text-base-content/50 text-xs font-mono">
       {{
-        isAtDrives
+        isDriveList
           ? item.size > 0
             ? formatFileSize(item.size)
-            : '—'
+            : 'â€”'
           : item.isDirectory
-            ? '—'
+            ? 'â€”'
             : formatFileSize(item.size)
       }}
     </span>
     <span class="text-base-content/50 text-xs">{{
-      item.extension || (isAtDrives ? $t('explorer.drive') : '—')
+      item.extension || (isDriveList ? $t('explorer.drive') : 'â€”')
     }}</span>
     <span class="text-base-content/50 text-xs text-right font-mono">{{
       new Date(item.modifiedAt).toLocaleDateString()

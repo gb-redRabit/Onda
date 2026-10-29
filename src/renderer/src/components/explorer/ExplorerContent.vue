@@ -88,7 +88,7 @@ defineExpose({ reveal });
       <Loader :size="56" :label="$t('common.loading')" />
     </div>
 
-    <div v-if="explorer.isAtDrives && files.length > 0" class="mb-3">
+    <div v-if="explorer.isDriveList && files.length > 0" class="mb-3">
       <h3
         class="text-xs font-medium text-base-content/50 uppercase tracking-wider flex items-center gap-2 px-1"
       >
@@ -113,7 +113,7 @@ defineExpose({ reveal });
         }"
       >
         <button
-          :draggable="!explorer.isAtDrives"
+          :draggable="!explorer.isDriveList"
           :data-file-path="files[virtualRow.index].path"
           :data-folder-path="
             files[virtualRow.index].isDirectory ? files[virtualRow.index].path : undefined
@@ -153,7 +153,7 @@ defineExpose({ reveal });
             class="w-4 h-4 object-contain shrink-0"
           />
           <HardDrive
-            v-else-if="explorer.isAtDrives"
+            v-else-if="explorer.isDriveList"
             :size="12"
             class="text-primary-text shrink-0"
           />
@@ -170,7 +170,7 @@ defineExpose({ reveal });
           />
           <span class="truncate flex-1">{{ files[virtualRow.index].name }}</span>
           <span
-            v-if="isLibraryFolder(files[virtualRow.index].path) && !explorer.isAtDrives"
+            v-if="isLibraryFolder(files[virtualRow.index].path) && !explorer.isDriveList"
             class="text-[8px] px-1 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40"
             >LIB</span
           >
@@ -206,7 +206,7 @@ defineExpose({ reveal });
             :item="item"
             :view-mode="explorer.viewMode"
             :is-selected="explorer.selectedFiles.has(item.path)"
-            :is-at-drives="explorer.isAtDrives"
+            :is-drive-list="explorer.isDriveList"
             :is-library-folder="!item.isDirectory ? false : isLibraryFolder(item.path)"
             :hovered-folder-path="hoveredFolderPath"
             :is-cut="fileClipboard.isCut(item.path)"
@@ -221,7 +221,7 @@ defineExpose({ reveal });
       </div>
     </div>
 
-    <!-- szczegóły: zwirtualizowana tabela -->
+    <!-- szczegĂłĹ‚y: zwirtualizowana tabela -->
     <div v-else-if="explorer.viewMode === 'details' && files.length > 0">
       <ExplorerDetailsHeader
         :sort-by="explorer.sortBy"
@@ -243,7 +243,7 @@ defineExpose({ reveal });
           <ExplorerTableRow
             :item="files[virtualRow.index]"
             :is-selected="explorer.selectedFiles.has(files[virtualRow.index].path)"
-            :is-at-drives="explorer.isAtDrives"
+            :is-drive-list="explorer.isDriveList"
             :is-library-folder="
               !files[virtualRow.index].isDirectory
                 ? false
@@ -259,7 +259,7 @@ defineExpose({ reveal });
       </div>
     </div>
 
-    <!-- nakładka zaznaczania pasmem -->
+    <!-- nakĹ‚adka zaznaczania pasmem -->
     <div
       v-if="bandSelect"
       class="fixed pointer-events-none z-40 rounded-field border"

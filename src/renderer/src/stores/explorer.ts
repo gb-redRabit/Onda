@@ -3,7 +3,7 @@ import { ref, shallowRef, computed, watch } from 'vue';
 import type { FileItem, ViewMode, SortBy, SortOrder } from '@renderer/types/explorer';
 import { VIEW_MODES } from '@renderer/types/explorer';
 import { useSettingsStore } from './settings';
-import { isDrivePath, parentPath } from '@renderer/utils/explorerPath';
+import { parentPath } from '@renderer/utils/explorerPath';
 import { sortFiles } from '@renderer/utils/explorerSort';
 import { createBatchLoader } from '@renderer/utils/explorerLoader';
 import { createExplorerTabs } from './explorer-tabs';
@@ -27,10 +27,12 @@ export const useExplorerStore = defineStore('explorer', () => {
   const { tabs, activeTabIndex, addTab, closeTab, switchTab, reorderTab, syncActiveTab } =
     createExplorerTabs(navigateTo);
 
-  const isAtDrives = computed(() => isDrivePath(currentPath.value));
+  // `currentPath === ''` to lista dysków. Sam korzeń dysku (`D:\`) jest zwykłym
+  // katalogiem: ma foldery/pliki i własną ikonę, a nie kafelki dysków.
+  const isDriveList = computed(() => currentPath.value === '');
   const canGoBack = computed(() => historyIndex.value > 0);
   const canGoForward = computed(() => historyIndex.value < history.value.length - 1);
-  const canGoUp = computed(() => currentPath.value !== '' && !isAtDrives.value);
+  const canGoUp = computed(() => currentPath.value !== '');
   const selectedCount = computed(() => selectedFiles.value.size);
 
   // Podczas wsadowego ładowania nie sortuj ponownie przy każdej partii (O(n² log n) dla dużych
@@ -132,7 +134,7 @@ export const useExplorerStore = defineStore('explorer', () => {
     loadError,
     tabs,
     activeTabIndex,
-    isAtDrives,
+    isDriveList,
     canGoBack,
     canGoForward,
     canGoUp,

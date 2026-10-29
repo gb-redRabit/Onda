@@ -49,3 +49,34 @@ describe('explorer reorderTab', () => {
     expect(store.activeTabIndex).toBe(2);
   });
 });
+
+describe('explorer drive list vs drive root', () => {
+  it('treats the empty path as the drive list', () => {
+    const store = useExplorerStore();
+    store.navigateTo('');
+    expect(store.isDriveList).toBe(true);
+    expect(store.canGoUp).toBe(false);
+  });
+
+  it('treats a drive root as a regular folder listing', () => {
+    const store = useExplorerStore();
+    store.navigateTo('D:\\Music');
+    expect(store.isDriveList).toBe(false);
+
+    store.goUp();
+    expect(store.currentPath).toBe('D:');
+    expect(store.isDriveList).toBe(false);
+    expect(store.canGoUp).toBe(true);
+  });
+
+  it('goes up from a drive root back to the drive list', () => {
+    const store = useExplorerStore();
+    store.navigateTo('D:\\Music');
+    store.goUp(); // D:\Music -> D:
+    store.goUp(); // D: -> lista dysków
+
+    expect(store.currentPath).toBe('');
+    expect(store.isDriveList).toBe(true);
+    expect(store.canGoUp).toBe(false);
+  });
+});

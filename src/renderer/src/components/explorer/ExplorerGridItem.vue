@@ -12,7 +12,7 @@ import { useThumbnail } from '@renderer/composables/useThumbnail';
 const props = defineProps<{
   item: FileItem;
   isSelected: boolean;
-  isAtDrives: boolean;
+  isDriveList: boolean;
   isLibraryFolder?: boolean;
   viewMode?: string;
   hoveredFolderPath?: string | null;
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 const { rootEl, systemIcon, mediaThumb } = useThumbnail(
   props.item.path,
   props.item.isDirectory,
-  props.isAtDrives,
+  props.isDriveList,
   320
 );
 if (import.meta.env.DEV) {
@@ -56,7 +56,7 @@ const size = computed(() => {
 <template>
   <button
     ref="rootEl"
-    :draggable="!isAtDrives"
+    :draggable="!isDriveList"
     :data-file-path="item.path"
     :data-testid="`explorer-item-${item.name}`"
     :data-folder-path="item.isDirectory ? item.path : undefined"
@@ -85,14 +85,18 @@ const size = computed(() => {
   >
     <div
       class="rounded-field flex items-center justify-center overflow-hidden shrink-0"
-      :class="isAtDrives ? 'bg-primary/10' : isLibraryFolder ? 'bg-primary/30' : 'bg-neutral'"
+      :class="isDriveList ? 'bg-primary/10' : isLibraryFolder ? 'bg-primary/30' : 'bg-neutral'"
       :style="{
         width: `${size.icon}px`,
         height: `${size.icon}px`,
         marginBottom: `${size.mb * 4}px`
       }"
     >
-      <HardDrive v-if="isAtDrives" :size="Math.round(size.icon * 0.55)" class="text-primary-text" />
+      <HardDrive
+        v-if="isDriveList"
+        :size="Math.round(size.icon * 0.55)"
+        class="text-primary-text"
+      />
       <FolderOpen
         v-else-if="item.isDirectory"
         :size="Math.round(size.icon * 0.55)"
@@ -118,12 +122,12 @@ const size = computed(() => {
     </div>
     <span :class="`truncate w-full leading-tight font-medium ${size.fs}`">{{ item.name }}</span>
     <span
-      v-if="isAtDrives && item.size > 0"
+      v-if="isDriveList && item.size > 0"
       :class="`text-[11px] text-base-content/50 ${size.fs}`"
       >{{ formatFileSize(item.size) }}</span
     >
     <span
-      v-if="isLibraryFolder && !isAtDrives"
+      v-if="isLibraryFolder && !isDriveList"
       class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
       >LIB</span
     >

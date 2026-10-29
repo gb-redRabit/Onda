@@ -11,7 +11,7 @@ import {
 } from '@renderer/utils/thumbLoader';
 import { logger } from '@shared/logger';
 
-// Pojedynczy wsp�łdzielony IntersectionObserver dla każdego elementu miniatury — jeden
+// Pojedynczy wspďż˝Ĺ‚dzielony IntersectionObserver dla kaĹĽdego elementu miniatury â€” jeden
 // obserwator zamiast jednego na wiersz.
 const thumbVisibleCallbacks = new WeakMap<Element, () => void>();
 
@@ -45,7 +45,7 @@ function resolvePath(source: ValueOrGetter<string> | Ref<string>): string {
 export function useThumbnail(
   pathSource: ValueOrGetter<string> | Ref<string>,
   isDirectorySource: ValueOrGetter<boolean>,
-  isAtDrivesSource: ValueOrGetter<boolean>,
+  isDriveListSource: ValueOrGetter<boolean>,
   thumbSize = 320
 ) {
   const systemIcon = ref<string | null>(null);
@@ -64,13 +64,13 @@ export function useThumbnail(
     return resolveValue(isDirectorySource);
   }
 
-  function currentIsAtDrives(): boolean {
-    return resolveValue(isAtDrivesSource);
+  function currentIsDriveList(): boolean {
+    return resolveValue(isDriveListSource);
   }
 
   function requestThumb(): void {
     const path = currentPath();
-    if (!path || currentIsAtDrives() || currentIsDirectory() || thumbFired) return;
+    if (!path || currentIsDriveList() || currentIsDirectory() || thumbFired) return;
     thumbFired = true;
     const generation = ++requestGeneration;
 
@@ -162,8 +162,8 @@ export function useThumbnail(
     requestThumb();
   });
 
-  // Wirtualizowane wiersze są reużywane: zmiana `path` musi wyczyścić starą
-  // miniaturę i pobrać nową, zamiast zostawiać obraz poprzedniego pliku.
+  // Wirtualizowane wiersze sÄ… reuĹĽywane: zmiana `path` musi wyczyĹ›ciÄ‡ starÄ…
+  // miniaturÄ™ i pobraÄ‡ nowÄ…, zamiast zostawiaÄ‡ obraz poprzedniego pliku.
   watch(
     () => currentPath(),
     () => {
