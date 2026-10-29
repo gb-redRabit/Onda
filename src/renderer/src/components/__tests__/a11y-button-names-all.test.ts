@@ -14,6 +14,7 @@ interface ButtonOpeningTag {
   line: number;
   tag: string;
   hasName: boolean;
+  hiddenFromAt: boolean;
   textContent: string;
 }
 
@@ -36,6 +37,9 @@ function readButtons(file: string): ButtonOpeningTag[] {
       line,
       tag: tag.replace(/\s+/g, ' '),
       hasName: /aria-label|aria-labelledby|:title|title=/.test(tag),
+      // `aria-hidden` przycisk to świadoma afordancja tylko dla myszy (np. hover
+      // Play na karcie, której nazwę niesie rozciągnięty przycisk-kontrolka).
+      hiddenFromAt: /aria-hidden="true"/.test(tag),
       textContent
     });
   }
@@ -64,7 +68,9 @@ describe('all component icon-only buttons are named', () => {
   });
 
   it.each(files)('%s: every icon-only button has an accessible name', (file) => {
-    const unnamed = readButtons(file).filter((b) => !b.hasName && b.textContent === '');
+    const unnamed = readButtons(file).filter(
+      (b) => !b.hiddenFromAt && !b.hasName && b.textContent === ''
+    );
     const rel = file.slice(file.indexOf('components')).replace(/\\/g, '/');
     expect(
       unnamed.map((b) => `${rel}:${b.line} ${b.tag}`),

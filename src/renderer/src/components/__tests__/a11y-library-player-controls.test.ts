@@ -15,6 +15,7 @@ const DOWNLOADS = read('src/renderer/src/components/downloads/DownloadRowActions
 const SOURCES_SIDEBAR = read('src/renderer/src/components/sources/SourcesSidebar.vue');
 const APP = read('src/renderer/src/App.vue');
 const IMAGE_VIEWER = read('src/renderer/src/components/explorer/ImageViewer.vue');
+const LIBRARY_CARD = read('src/renderer/src/components/library/LibraryTrackCard.vue');
 const LIBRARY_TABS = read('src/renderer/src/components/library/LibraryTabBar.vue');
 const LIBRARY_VIEW = read('src/renderer/src/views/LibraryView.vue');
 const ONLINE_TABS = read('src/renderer/src/components/online/OnlineViewTabs.vue');
@@ -89,6 +90,27 @@ describe('additional labelled controls', () => {
   it('image viewer is a modal dialog', () => {
     expect(IMAGE_VIEWER).toMatch(/role="dialog"/);
     expect(IMAGE_VIEWER).toMatch(/aria-modal="true"/);
+  });
+});
+
+describe('LibraryTrackCard has no nested interactive controls', () => {
+  it('uses an article with one stretched selection button', () => {
+    expect(LIBRARY_CARD).toMatch(/<article/);
+    expect(LIBRARY_CARD).not.toMatch(/role="button"/);
+    expect(LIBRARY_CARD).toMatch(/:aria-pressed="selected"/);
+  });
+
+  it('never hides a focusable control behind aria-hidden', () => {
+    expect(LIBRARY_CARD).not.toMatch(/aria-hidden="true"/);
+    expect(LIBRARY_CARD).toMatch(/data-testid="library-track-play"/);
+  });
+
+  it('labels every icon action and keeps it a real button', () => {
+    expect(LIBRARY_CARD).toMatch(/:aria-label="\$t\('common\.editTags'\)"/);
+    expect(LIBRARY_CARD).toMatch(/\$t\('common\.addFav'\)/);
+    expect(LIBRARY_CARD).toMatch(/:aria-label="\$t\('library\.removeFromPlaylist'\)"/);
+    const typeButtons = LIBRARY_CARD.match(/type="button"/g) ?? [];
+    expect(typeButtons.length).toBeGreaterThanOrEqual(4);
   });
 });
 

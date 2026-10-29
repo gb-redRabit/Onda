@@ -38,13 +38,21 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    v-activate
-    class="group w-36 sm:w-38 shrink-0 cursor-pointer rounded-box border border-base-300/75 bg-base-100 p-2.5 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/3"
-    @click="emit('play')"
+  <!-- Cała karta jest jednym przyciskiem (bez zagnieżdżonych kontrolek).
+       Widoczne Play / „otwórz” to afordancje dla myszy; dostępność zapewnia
+       rozciągnięty przycisk, więc jego duplikaty są ukryte przed czytnikiem. -->
+  <article
+    class="group relative w-36 sm:w-38 shrink-0 rounded-box border border-base-300/75 bg-base-100 p-2.5 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/3"
     @contextmenu="emit('contextmenu', $event)"
   >
-    <div class="relative" :class="stacked && !round ? 'pt-1.5' : ''">
+    <button
+      type="button"
+      class="absolute inset-0 z-0 rounded-box"
+      :aria-label="`${$t('common.play')}: ${title}`"
+      @click="emit('play')"
+    />
+
+    <div class="relative z-10 pointer-events-none" :class="stacked && !round ? 'pt-1.5' : ''">
       <!-- Stos kart: tylko kolekcje (playlisty/albumy), nigdy okrągły avatar. -->
       <template v-if="stacked && !round">
         <div
@@ -87,7 +95,7 @@ const emit = defineEmits<{
         <button
           v-if="openLabel"
           type="button"
-          class="absolute right-1.5 top-1.5 z-10 grid h-6.5 w-6.5 place-items-center rounded-field bg-black/55 text-white/90 opacity-0 backdrop-blur-xs transition-opacity hover:bg-black/75 group-hover:opacity-100 group-focus-within:opacity-100"
+          class="pointer-events-auto absolute right-1.5 top-1.5 z-10 grid h-6.5 w-6.5 place-items-center rounded-field bg-black/55 text-white/90 opacity-0 backdrop-blur-xs transition-opacity hover:bg-black/75 group-hover:opacity-100 group-focus-within:opacity-100"
           :title="openLabel"
           :aria-label="openLabel"
           @click.stop="emit('open')"
@@ -95,22 +103,24 @@ const emit = defineEmits<{
           <ArrowRight :size="13" />
         </button>
 
-        <!-- Kwadratowe okładki: Play w prawym dolnym rogu. -->
+        <!-- Kwadratowe okładki: Play w prawym dolnym rogu (tylko mysz). -->
         <button
           v-if="!round"
           type="button"
-          class="absolute bottom-2 right-2 z-10 grid h-8.5 w-8.5 translate-y-1 place-items-center rounded-full bg-primary text-primary-content opacity-0 shadow-md transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100"
-          :aria-label="$t('common.play')"
+          tabindex="-1"
+          aria-hidden="true"
+          class="pointer-events-auto absolute bottom-2 right-2 z-10 grid h-8.5 w-8.5 translate-y-1 place-items-center rounded-full bg-primary text-primary-content opacity-0 shadow-md transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100"
           @click.stop="emit('play')"
         >
           <Play :size="15" fill="currentColor" class="ml-0.5" />
         </button>
-        <!-- Okrągłe awatary: Play na środku koła. -->
+        <!-- Okrągłe awatary: Play na środku koła (tylko mysz). -->
         <button
           v-else
           type="button"
-          class="absolute inset-0 z-10 grid place-items-center rounded-full bg-black/35 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-          :aria-label="$t('common.play')"
+          tabindex="-1"
+          aria-hidden="true"
+          class="pointer-events-auto absolute inset-0 z-10 grid place-items-center rounded-full bg-black/35 text-white opacity-0 transition-opacity group-hover:opacity-100"
           @click.stop="emit('play')"
         >
           <span
@@ -122,7 +132,7 @@ const emit = defineEmits<{
       </div>
     </div>
 
-    <div class="mt-2 px-0.5">
+    <div class="relative z-10 pointer-events-none mt-2 px-0.5">
       <div class="truncate text-xs font-medium text-base-content" :title="title">
         {{ title }}
       </div>
@@ -130,5 +140,5 @@ const emit = defineEmits<{
         {{ subtitle }}
       </div>
     </div>
-  </div>
+  </article>
 </template>

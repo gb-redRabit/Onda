@@ -34,11 +34,16 @@ function render(props: CardProps): Promise<string> {
   });
   const app = createSSRApp({ render: () => h(HomeMediaCard, props) });
   app.use(i18n);
-  app.directive('activate', {});
   return renderToString(app);
 }
 
 describe('HomeMediaCard', () => {
+  it('uses an article with one stretched control, not a nested role=button', async () => {
+    const html = await render({ title: 'Song' });
+    expect(html).toContain('<article');
+    expect(html).not.toContain('role="button"');
+  });
+
   it('renders the play-count badge when one is provided', async () => {
     const html = await render({ title: 'Song', badge: '14×' });
     expect(html).toContain('14×');
@@ -56,8 +61,15 @@ describe('HomeMediaCard', () => {
     expect(html).toContain('rounded-full');
   });
 
-  it('keeps a labelled play control inside every card', async () => {
-    const html = await render({ title: 'Song' });
-    expect(html).toContain('aria-label="Odtwórz"');
+  it('keeps one labelled play control, with mouse-only duplicates hidden', async () => {
+    const html = await render({ title: 'Song', openLabel: 'Otwórz' });
+
+    // Jedna nazwa dla czytnika: rozciągnięty przycisk karty.
+    expect(html).toContain('aria-label="Odtwórz: Song"');
+
+    // Widoczne Play / overlay są dla myszy, nie dla AT.
+    expect(html).not.toContain('aria-label="Odtwórz"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain('aria-hidden="true"');
   });
 });

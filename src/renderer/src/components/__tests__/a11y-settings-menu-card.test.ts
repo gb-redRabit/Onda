@@ -32,9 +32,10 @@ describe('context menu keyboard support', () => {
 });
 
 describe('library track card is not a nested button', () => {
-  it('uses role="button" root instead of a <button>', () => {
-    expect(CARD).toMatch(/role="button"/);
-    expect(CARD).toMatch(/tabindex="0"/);
+  it('uses an article with a stretched selection control', () => {
+    expect(CARD).toMatch(/<article/);
+    expect(CARD).not.toMatch(/role="button"/);
+    expect(CARD).toMatch(/:aria-pressed="selected"/);
     // Root nie może być <button>, bo w środku są przyciski akcji.
     expect(CARD).not.toMatch(/<button\s+data-testid="library-track-card"/);
   });

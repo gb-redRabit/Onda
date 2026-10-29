@@ -70,6 +70,7 @@ function pick(playlistId: string) {
 <template>
   <div ref="btn" class="relative">
     <button
+      type="button"
       :class="buttonClass"
       :aria-label="$t('common.addToPlaylist')"
       :title="$t('common.addToPlaylist')"

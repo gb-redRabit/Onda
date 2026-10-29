@@ -30,12 +30,6 @@ function onCheckboxClick(e: MouseEvent) {
   emit('select', e, true);
 }
 
-// Klawiatura (Space/Enter na karcie = rola button) niesie te same modyfikatory;
-// przekazujemy zdarzenie jako wspólny kształt, bo `select` czyta tylko ctrl/shift/meta.
-function onKeySelect(e: KeyboardEvent) {
-  emit('select', e as unknown as MouseEvent, false);
-}
-
 const library = useLibraryStore();
 const player = usePlayerStore();
 const { showTrackMenu } = useLibraryContextMenu();
@@ -71,128 +65,140 @@ function onHoverLeave() {
 </script>
 
 <template>
-  <!-- Root to role=button, nie button: w karcie są przyciski akcji (ulubione/playlisty/tagi). -->
-  <div
+  <!-- Karta to <article> z jednym „rozciągniętym” przyciskiem na całą powierzchnię:
+       klik zaznacza, dwuklik/Enter odtwarza. Dzięki temu nie ma zagnieżdżonych
+       kontrolek (role=button z przyciskami w środku), a czytnik widzi jedną nazwę
+       karty i osobne akcje. -->
+  <article
     data-testid="library-track-card"
-    role="button"
-    tabindex="0"
-    :aria-pressed="selected"
-    :aria-label="track.metadata?.title || track.name"
-    class="flex-1 flex flex-col fx-depth rounded-box border transition-all overflow-hidden group text-left min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-hidden"
+    class="relative flex-1 flex flex-col fx-depth rounded-box border transition-all overflow-hidden group text-left min-w-0"
     :class="
       selected
         ? 'bg-primary/12 border-primary/50'
-        : 'bg-base-100 border-base-300/80 hover:bg-base-100 hover:border-primary/35'
+        : 'bg-base-100 border-base-300/80 hover:border-primary/35'
     "
     draggable="true"
-    @click="emit('select', $event, false)"
-    @keydown.enter.prevent="playNow"
-    @keydown.space.prevent="onKeySelect($event)"
-    @dblclick="playNow"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
     @mouseenter="onHover"
     @mouseleave="onHoverLeave"
   >
-    <div
-      class="w-full aspect-square bg-base-200 flex items-center justify-center relative overflow-hidden"
-    >
-      <!-- Jawny checkbox: zaznaczanie pojedynczego utworu działa na kartach
-           niezależnie od kliknięcia/odtwarzania (spójnie z widokiem listy). -->
-      <input
-        type="checkbox"
-        class="checkbox checkbox-xs absolute top-2 left-2 z-10 transition-opacity"
-        :class="
-          selected
-            ? 'opacity-100'
-            : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
-        "
-        :checked="selected"
-        :aria-label="track.metadata?.title || track.name"
-        data-testid="library-track-select"
-        @click.stop="onCheckboxClick"
-      />
-      <MediaCover
-        :path="props.track.path"
-        :size="160"
-        :autoplay="hovered"
-        fallback="play"
-        class="w-full h-full transition-transform duration-300 ease-out group-hover:scale-105"
-      />
-      <!-- Klik w okładkę tylko ZAZNACZA (spójnie z wierszem); odtwarzanie przez
-           przycisk play lub dwuklik. -->
-      <div
-        class="absolute inset-0 bg-gradient-to-t from-base-300/80 via-base-300/10 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
-        role="presentation"
-        aria-hidden="true"
-        @click.stop="emit('select', $event, false)"
-      >
-        <button
-          type="button"
-          data-testid="library-track-play"
-          class="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 transition-all shadow-lg"
-          :aria-label="$t('common.play')"
-          @click.stop="playNow"
-        >
-          <Play :size="18" class="ml-0.5" />
-        </button>
-      </div>
+    <button
+      type="button"
+      class="absolute inset-0 z-0 rounded-box focus-visible:ring-2 focus-visible:ring-primary/40"
+      :aria-label="track.metadata?.title || track.name"
+      :aria-pressed="selected"
+      @click="emit('select', $event, false)"
+      @dblclick="playNow"
+      @keydown.enter.prevent="playNow"
+    />
 
-      <!-- Akcje w prawym górnym rogu -->
+    <div class="relative z-10 flex flex-col pointer-events-none">
       <div
-        class="absolute top-1.5 right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
-        @click.stop
+        class="w-full aspect-square bg-base-200 flex items-center justify-center relative overflow-hidden"
       >
-        <button
-          class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm transition-colors"
+        <!-- Jawny checkbox: zaznaczanie pojedynczego utworu działa na kartach
+             niezależnie od kliknięcia/odtwarzania (spójnie z widokiem listy). -->
+        <input
+          type="checkbox"
+          class="checkbox checkbox-xs pointer-events-auto absolute top-2 left-2 z-20 transition-opacity"
           :class="
-            player.isFavorite(track.path)
-              ? 'text-error hover:text-error/90'
-              : 'text-base-content/80 hover:text-base-content hover:bg-base-300'
+            selected
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
           "
-          :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
-          @click.stop="player.toggleFavorite(track.path)"
-        >
-          <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
-        </button>
-        <PlaylistAddMenu
-          v-if="showPlaylist"
-          :tracks="[track]"
-          :icon-size="14"
-          button-class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/80 hover:text-base-content hover:bg-base-300 transition-colors"
+          :checked="selected"
+          :aria-label="track.metadata?.title || track.name"
+          data-testid="library-track-select"
+          @click.stop="onCheckboxClick"
         />
-        <button
-          class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/80 hover:text-base-content hover:bg-base-300 transition-colors"
-          :title="$t('common.editTags')"
-          @click="emit('edit', track)"
+        <MediaCover
+          :path="props.track.path"
+          :size="160"
+          :autoplay="hovered"
+          fallback="play"
+          class="w-full h-full transition-transform duration-300 ease-out group-hover:scale-105"
+        />
+        <!-- Klik w okładkę tylko ZAZNACZA (spójnie z wierszem); odtwarzanie przez
+             przycisk play lub dwuklik. Gradient jest dekoracyjny i nie ukrywa
+             przycisku przed czytnikiem ekranu. -->
+        <div
+          class="absolute inset-0 bg-gradient-to-t from-base-300/80 via-base-300/10 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         >
-          <Edit3 :size="14" />
-        </button>
-        <button
-          v-if="playlistId"
-          class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-error hover:text-error/80 hover:bg-base-300 transition-colors"
-          :aria-label="$t('library.removeFromPlaylist')"
-          @click="removeFromPlaylist"
-        >
-          <Trash2 :size="14" />
-        </button>
-      </div>
+          <button
+            type="button"
+            data-testid="library-track-play"
+            class="pointer-events-auto absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 transition-all shadow-lg"
+            :aria-label="$t('common.play')"
+            @click.stop="playNow"
+          >
+            <Play :size="18" class="ml-0.5" />
+          </button>
+        </div>
 
-      <div
-        v-if="track.duration"
-        class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content text-[10px] font-mono tabular-nums"
-      >
-        {{ formatDuration(track.duration, '—') }}
+        <!-- Akcje w prawym górnym rogu -->
+        <div
+          class="pointer-events-auto absolute top-1.5 right-1.5 z-20 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+          @click.stop
+        >
+          <button
+            type="button"
+            class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm transition-colors"
+            :class="
+              player.isFavorite(track.path)
+                ? 'text-error hover:text-error/90'
+                : 'text-base-content/80 hover:text-base-content hover:bg-base-300'
+            "
+            :aria-label="
+              player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')
+            "
+            :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
+            @click.stop="player.toggleFavorite(track.path)"
+          >
+            <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
+          </button>
+          <PlaylistAddMenu
+            v-if="showPlaylist"
+            :tracks="[track]"
+            :icon-size="14"
+            button-class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/80 hover:text-base-content hover:bg-base-300 transition-colors"
+          />
+          <button
+            type="button"
+            class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/80 hover:text-base-content hover:bg-base-300 transition-colors"
+            :aria-label="$t('common.editTags')"
+            :title="$t('common.editTags')"
+            @click="emit('edit', track)"
+          >
+            <Edit3 :size="14" />
+          </button>
+          <button
+            v-if="playlistId"
+            type="button"
+            class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-error hover:text-error/80 hover:bg-base-300 transition-colors"
+            :aria-label="$t('library.removeFromPlaylist')"
+            @click="removeFromPlaylist"
+          >
+            <Trash2 :size="14" />
+          </button>
+        </div>
+
+        <div
+          v-if="track.duration"
+          class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content text-[10px] font-mono tabular-nums"
+        >
+          {{ formatDuration(track.duration, '—') }}
+        </div>
+      </div>
+      <div class="p-2.5">
+        <div class="text-[13px] font-medium truncate leading-snug">
+          {{ track.metadata?.title || track.name }}
+        </div>
+        <div class="text-xs text-base-content/50 mt-0.5 truncate">
+          {{ track.metadata?.artist || t('common.unknown')
+          }}{{ track.metadata?.album ? ` · ${track.metadata.album}` : '' }}
+        </div>
       </div>
     </div>
-    <div class="p-2.5">
-      <div class="text-[13px] font-medium truncate leading-snug">
-        {{ track.metadata?.title || track.name }}
-      </div>
-      <div class="text-xs text-base-content/50 mt-0.5 truncate">
-        {{ track.metadata?.artist || t('common.unknown')
-        }}{{ track.metadata?.album ? ` · ${track.metadata.album}` : '' }}
-      </div>
-    </div>
-  </div>
+  </article>
 </template>
