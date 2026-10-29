@@ -34,6 +34,7 @@ const {
   trackTitle,
   trackSubtitle,
   trackCountLabel,
+  playCountBadge,
   continueTrack,
   continuePosition,
   playContinue,
@@ -154,7 +155,7 @@ async function onPlayFromStart(): Promise<void> {
             :subtitle="trackSubtitle(item)"
             :cover-path="item.path"
             :cover-size="132"
-            :badge="`${item.playCount}×`"
+            :badge="playCountBadge(item.playCount)"
             @play="player.setTrack(item)"
             @contextmenu="homeContextMenu.showRecentMenu($event, item)"
           />

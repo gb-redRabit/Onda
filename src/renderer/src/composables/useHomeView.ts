@@ -36,6 +36,12 @@ export interface HomeQuickPick {
   subtitle: string;
 }
 
+/** Badge licznika odtworzeń; `1×` to szum, więc pokazujemy dopiero od drugiego. */
+export function playCountBadge(count: number | undefined): string {
+  const value = count ?? 0;
+  return value > 1 ? `${value}×` : '';
+}
+
 export function useHomeView() {
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -170,6 +176,9 @@ export function useHomeView() {
     return duration > 0 ? formatDuration(duration) : track.extension;
   }
 
+  // Badge na okładce „Najczęściej granych”: licznik od 2 wzwyż. Pojedyncze
+  // odtworzenie to szum — plakietka „1×” na prawie każdej okładce nic nie wnosi.
+  // (Funkcja jest na poziomie modułu, żeby dała się przetestować bez Pinii.)
   // „Szybki powrót”: 6 ostatnich utworów w formacie mini-kart (2×3 / 3×2).
   const quickPicks = computed<HomeQuickPick[]>(() =>
     recentTracks.value.slice(0, 6).map((track) => ({
@@ -306,6 +315,7 @@ export function useHomeView() {
     trackTitle,
     trackSubtitle,
     trackCountLabel,
+    playCountBadge,
     // kontynuacja
     continueTrack,
     continuePosition,
