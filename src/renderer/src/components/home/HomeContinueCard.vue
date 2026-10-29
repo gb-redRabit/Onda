@@ -33,96 +33,89 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
 <template>
   <section
     data-testid="home-continue"
-    class="relative isolate flex flex-col justify-center overflow-hidden rounded-box border border-base-300 bg-base-100 p-5 fx-depth"
+    class="flex flex-col justify-center rounded-box border border-base-300/80 bg-base-100 p-4 sm:p-5"
   >
-    <!-- Ambient glow: ta sama okładka, rozmyta i przygaszona pod treścią. -->
-    <div
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-0 -z-10 scale-125 opacity-25 blur-2xl"
-    >
-      <MediaCover :path="track.path" :size="48" :fallback="coverFallback" class="h-full w-full" />
-    </div>
-
-    <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div
-        class="relative h-28 w-28 shrink-0 overflow-hidden rounded-box bg-base-200 shadow-xl ring-1 ring-base-content/10"
+        class="relative h-18 w-18 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-field border border-base-300/70 bg-base-200"
       >
-        <MediaCover
-          :path="track.path"
-          :size="112"
-          :fallback="coverFallback"
-          class="h-full w-full"
-        />
+        <MediaCover :path="track.path" :size="88" :fallback="coverFallback" class="h-full w-full" />
       </div>
 
       <div class="min-w-0 flex-1">
-        <div class="mb-1.5 flex flex-wrap items-center gap-2">
-          <span
-            class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-text"
-          >
-            <component :is="TypeIcon" :size="12" />
-            {{ $t(typeLabel) }}
-          </span>
-          <span
-            v-if="formatLabel"
-            class="rounded-full border border-base-300 px-2 py-0.5 text-[10px] font-medium text-base-content/60"
-          >
-            {{ formatLabel }}
-          </span>
-          <span class="text-[11px] font-medium uppercase tracking-wide text-base-content/45">
+        <div
+          class="mb-1 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-base-content/50"
+        >
+          <span class="font-semibold uppercase tracking-wider text-primary-text">
             {{ $t('home.continueTitle') }}
           </span>
+          <span aria-hidden="true">·</span>
+          <span class="inline-flex items-center gap-1 text-base-content/65">
+            <component :is="TypeIcon" :size="11" class="text-primary-text" />
+            {{ $t(typeLabel) }}
+          </span>
+          <template v-if="formatLabel">
+            <span aria-hidden="true">·</span>
+            <span class="font-mono text-[10px] text-base-content/50">{{ formatLabel }}</span>
+          </template>
         </div>
 
-        <h2 class="truncate text-lg font-semibold" :title="title">{{ title }}</h2>
-        <p v-if="subtitle" class="mt-0.5 truncate text-sm text-base-content/55">
+        <h2
+          class="truncate text-base font-semibold tracking-tight text-base-content"
+          :title="title"
+        >
+          {{ title }}
+        </h2>
+        <p v-if="subtitle" class="mt-0.5 truncate text-xs text-base-content/55">
           {{ subtitle }}
         </p>
 
-        <div v-if="hasProgress" class="mt-3">
+        <div v-if="hasProgress" class="mt-2.5 flex items-center gap-3">
           <div
             v-if="duration > 0"
-            class="h-1.5 rounded-full bg-base-content/10 overflow-hidden"
+            class="h-1 flex-1 max-w-xs rounded-full bg-base-300 overflow-hidden"
             role="progressbar"
             :aria-valuenow="Math.round(percent)"
             aria-valuemin="0"
             aria-valuemax="100"
             :aria-label="title"
           >
-            <div class="h-full bg-primary" :style="{ width: percent + '%' }" />
+            <div class="h-full bg-primary rounded-full" :style="{ width: percent + '%' }" />
           </div>
-          <div
-            class="mt-1.5 flex items-center justify-between gap-3 font-mono text-[11px] text-base-content/50"
-          >
+          <div class="flex items-center gap-2 font-mono text-[11px] text-base-content/50 shrink-0">
             <span>
               {{ formatDuration(position)
               }}<span v-if="duration > 0"> / {{ formatDuration(duration) }}</span>
             </span>
-            <span v-if="duration > 0">{{ Math.round(percent) }}%</span>
+            <span v-if="duration > 0" class="text-base-content/40"
+              >({{ Math.round(percent) }}%)</span
+            >
           </div>
         </div>
-        <div v-else-if="duration" class="mt-2 font-mono text-[11px] text-base-content/50">
+        <div v-else-if="duration" class="mt-1.5 font-mono text-[11px] text-base-content/50">
           {{ formatDuration(duration) }}
         </div>
       </div>
 
       <div class="flex shrink-0 items-center gap-2">
         <button
-          class="fx-noise flex items-center gap-2 px-4 py-2 rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors fx-depth"
+          type="button"
+          class="fx-noise flex h-8.5 items-center gap-1.5 px-3.5 rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
           :aria-label="`${hasProgress ? $t('home.resume') : $t('common.play')}: ${title}`"
           @click="emit('play')"
         >
-          <Play :size="16" />
+          <Play :size="14" fill="currentColor" />
           {{ hasProgress ? $t('home.resume') : $t('common.play') }}
         </button>
         <button
           v-if="hasProgress"
-          class="fx-noise grid h-9 w-9 place-items-center rounded-field border border-base-300 bg-base-200/80 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
+          type="button"
+          class="fx-noise grid h-8.5 w-8.5 place-items-center rounded-field border border-base-300/80 bg-base-200/50 text-base-content/70 hover:bg-base-content/8 hover:text-base-content transition-colors"
           :aria-label="`${$t('home.playFromStart')}: ${title}`"
           :title="$t('home.playFromStart')"
           @click="emit('playFromStart')"
         >
-          <RotateCcw :size="15" />
+          <RotateCcw :size="14" />
         </button>
       </div>
     </div>

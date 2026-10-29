@@ -108,20 +108,20 @@ function onResizeStart(e: MouseEvent) {
 <template>
   <div class="relative shrink-0 h-full self-stretch">
     <aside
-      class="bg-base-100/(--glass-alpha) border border-r border-base-300 flex flex-col overflow-hidden transition-[width] duration-150 h-full"
+      class="bg-base-100/(--glass-alpha) border-r border-base-300/80 flex flex-col overflow-hidden transition-[width] duration-150 h-full"
       :style="{ width: (collapsed ? 54 : width) + 'px' }"
     >
-      <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav class="flex-1 p-2 space-y-0.5 overflow-y-auto">
         <button
           v-for="item in navItems"
           :key="item.label"
-          class="fx-noise w-full flex items-center gap-3 p-3 fx-depth rounded-field text-sm font-medium transition-all"
+          class="relative w-full flex items-center gap-3 px-3 py-2.5 rounded-field text-sm font-medium transition-colors"
           :aria-label="item.label"
           :aria-current="route.path === item.route ? 'page' : undefined"
           :class="
             route.path === item.route
-              ? 'bg-primary text-primary-content shadow-lg shadow-primary/25'
-              : 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
+              ? 'bg-primary/14 text-primary-text font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.75 before:rounded-full before:bg-primary'
+              : 'text-base-content/65 hover:bg-base-content/8 hover:text-base-content'
           "
           @click="router.push(item.route)"
         >
@@ -154,7 +154,7 @@ function onResizeStart(e: MouseEvent) {
                 v-for="[album, tracks] in library.albums"
                 :key="album"
                 v-activate
-                class="group flex items-center gap-2 px-3 py-2 rounded-field text-xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors cursor-pointer"
+                class="group flex items-center gap-2 px-3 py-2 rounded-field text-xs text-base-content/70 hover:bg-base-content/8 hover:text-base-content transition-colors cursor-pointer"
                 @click="router.push('/library?album=' + encodeURIComponent(album))"
               >
                 <Disc3 :size="13" class="shrink-0 text-primary-text/70" />
@@ -168,15 +168,15 @@ function onResizeStart(e: MouseEvent) {
 
       <SidebarQueuePreview v-if="!collapsed" />
 
-      <div class="p-2 space-y-1">
+      <div class="p-2 space-y-0.5 border-t border-base-300/60">
         <button
-          class="fx-noise w-full flex items-center gap-3 px-3 py-2.5 fx-depth rounded-field text-sm font-medium transition-all"
+          class="relative w-full flex items-center gap-3 px-3 py-2 rounded-field text-sm font-medium transition-colors"
           :aria-label="$t('nav.settings')"
           :aria-current="route.path === '/settings' ? 'page' : undefined"
           :class="
             route.path === '/settings'
-              ? 'bg-primary text-primary-content shadow-lg shadow-primary/25'
-              : 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content'
+              ? 'bg-primary/14 text-primary-text font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.75 before:rounded-full before:bg-primary'
+              : 'text-base-content/65 hover:bg-base-content/8 hover:text-base-content'
           "
           @click="router.push('/settings')"
         >
@@ -184,7 +184,7 @@ function onResizeStart(e: MouseEvent) {
           <span v-if="!collapsed">{{ $t('nav.settings') }}</span>
         </button>
         <button
-          class="fx-noise w-full flex items-center gap-3 px-3 py-2.5 fx-depth rounded-field text-sm text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70 transition-colors"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-field text-sm text-base-content/50 hover:bg-base-content/8 hover:text-base-content/75 transition-colors"
           :aria-label="collapsed ? $t('nav.expand') : $t('nav.collapse')"
           @click="collapsed = !collapsed"
         >

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Download, Pause, Play, Trash2, Upload, X, Gauge } from '@lucide/vue';
+import { Download, Pause, Play, Trash2, Upload, X, Gauge, SlidersHorizontal } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
@@ -28,6 +28,7 @@ function setSpeedLimit(kb: number): void {
 
 const scheduleTime = ref('');
 const scheduledAt = ref<number | null>(null);
+const showOptions = ref(false);
 
 async function applySchedule() {
   const m = scheduleTime.value.match(/^(\d{1,2}):(\d{2})$/);
@@ -54,98 +55,141 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div
-    class="ui-page-header flex flex-wrap items-center gap-3 border-b border-base-300 bg-base-100/(--glass-alpha) p-4"
-  >
-    <Download :size="24" class="text-primary-text" />
-    <h1 class="shrink-0 text-lg font-bold tracking-tight">{{ t('downloads.title') }}</h1>
-    <span
-      v-if="activeCount"
-      class="text-xs bg-primary/10 text-primary-text px-2 py-0.5 rounded-full font-medium"
-      >{{ activeCount }} {{ t('status.active') }}</span
-    >
-    <div class="flex-1" />
-    <button
-      v-if="activeCount"
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.pauseAll')"
-      @click="yt.pauseAll"
-    >
-      <Pause :size="12" />
-      {{ t('downloads.pauseAll') }}
-    </button>
-    <button
-      v-if="pausedCount"
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.resumeAll')"
-      @click="yt.resumeAll"
-    >
-      <Play :size="12" />
-      {{ t('downloads.resumeAll') }}
-    </button>
-    <button
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.exportQueue')"
-      @click="yt.exportQueue"
-    >
-      <Upload :size="12" />
-      {{ t('downloads.exportQueue') }}
-    </button>
-    <button
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.importQueue')"
-      @click="yt.importQueue"
-    >
-      <Download :size="12" />
-      {{ t('downloads.importQueue') }}
-    </button>
-    <div class="flex items-center gap-1.5 text-xs text-base-content/70">
-      <Gauge :size="12" />
-      <select
-        :value="settings.network.downloadSpeedLimit"
-        class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
-        :title="t('downloads.speedLimit')"
-        :aria-label="t('downloads.speedLimit')"
-        @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
+  <div class="border-b border-base-300/80 bg-base-100/(--glass-alpha) backdrop-blur">
+    <div class="ui-page-header flex flex-wrap items-center gap-3 px-5 py-3.5">
+      <div
+        class="grid h-8 w-8 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text"
       >
-        <option v-for="kb in SPEED_OPTIONS" :key="kb" :value="kb">
-          {{ kb === 0 ? t('settings.speedUnlimited') : `${kb / 1024} MB/s` }}
-        </option>
-      </select>
+        <Download :size="17" />
+      </div>
+      <h1 class="shrink-0 text-base font-semibold tracking-tight text-base-content">
+        {{ t('downloads.title') }}
+      </h1>
+      <span
+        v-if="activeCount"
+        class="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-medium text-primary-text"
+        >{{ activeCount }} {{ t('status.active') }}</span
+      >
+      <div class="flex-1" />
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          v-if="activeCount"
+          type="button"
+          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          :title="t('downloads.pauseAll')"
+          @click="yt.pauseAll"
+        >
+          <Pause :size="13" />
+          {{ t('downloads.pauseAll') }}
+        </button>
+        <button
+          v-if="pausedCount"
+          type="button"
+          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          :title="t('downloads.resumeAll')"
+          @click="yt.resumeAll"
+        >
+          <Play :size="13" />
+          {{ t('downloads.resumeAll') }}
+        </button>
+        <button
+          v-if="hasFinished"
+          type="button"
+          data-testid="downloads-clear-finished"
+          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          @click="clearFinished"
+        >
+          <Trash2 :size="13" />
+          {{ t('downloads.clearFinished') }}
+        </button>
+        <button
+          type="button"
+          class="fx-noise flex h-8 w-8 items-center justify-center rounded-field border transition-colors"
+          :class="
+            showOptions || scheduledAt || settings.network.downloadSpeedLimit > 0
+              ? 'border-primary/40 bg-primary/14 text-primary-text'
+              : 'border-base-300 bg-base-100 text-base-content/65 hover:bg-base-content/8 hover:text-base-content'
+          "
+          :title="t('downloads.speedLimit')"
+          :aria-label="t('downloads.speedLimit')"
+          :aria-expanded="showOptions"
+          @click="showOptions = !showOptions"
+        >
+          <SlidersHorizontal :size="14" />
+        </button>
+      </div>
     </div>
-    <div class="flex items-center gap-1">
-      <input
-        v-model="scheduleTime"
-        type="time"
-        class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
-        :title="t('downloads.scheduleStart')"
-        :aria-label="t('downloads.scheduleStart')"
-      />
+
+    <div
+      v-show="showOptions"
+      class="flex flex-wrap items-center gap-2.5 border-t border-base-300/60 bg-base-200/35 px-5 py-2.5 text-xs"
+    >
+      <div class="flex items-center gap-1.5 text-xs text-base-content/70">
+        <Gauge :size="13" class="text-base-content/50" />
+        <select
+          :value="settings.network.downloadSpeedLimit"
+          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-none"
+          :title="t('downloads.speedLimit')"
+          :aria-label="t('downloads.speedLimit')"
+          @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
+        >
+          <option v-for="kb in SPEED_OPTIONS" :key="kb" :value="kb">
+            {{ kb === 0 ? t('settings.speedUnlimited') : `${kb / 1024} MB/s` }}
+          </option>
+        </select>
+      </div>
+
+      <div class="h-4 w-px bg-base-300/80" />
+
+      <div class="flex items-center gap-1.5">
+        <input
+          v-model="scheduleTime"
+          type="time"
+          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-none"
+          :title="t('downloads.scheduleStart')"
+          :aria-label="t('downloads.scheduleStart')"
+        />
+        <button
+          type="button"
+          class="fx-noise h-7 rounded-field border border-base-300 bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors disabled:opacity-40"
+          :disabled="!scheduleTime"
+          @click="applySchedule"
+        >
+          {{ t('downloads.scheduleSet') }}
+        </button>
+        <button
+          v-if="scheduledAt"
+          type="button"
+          class="fx-noise flex h-7 w-7 items-center justify-center rounded-field border border-base-300 bg-base-100 text-xs text-base-content/70 hover:bg-base-content/8 transition-colors"
+          :title="t('downloads.scheduleClear')"
+          :aria-label="t('downloads.scheduleClear')"
+          @click="clearSchedule"
+        >
+          <X :size="12" />
+        </button>
+      </div>
+
+      <div class="flex-1" />
+
       <button
-        class="fx-noise px-2 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-        :disabled="!scheduleTime"
-        @click="applySchedule"
+        type="button"
+        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+        :title="t('downloads.exportQueue')"
+        @click="yt.exportQueue"
       >
-        {{ t('downloads.scheduleSet') }}
+        <Upload :size="12" />
+        {{ t('downloads.exportQueue') }}
       </button>
       <button
-        v-if="scheduledAt"
-        class="fx-noise px-2 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-        :title="t('downloads.scheduleClear')"
-        @click="clearSchedule"
+        type="button"
+        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+        :title="t('downloads.importQueue')"
+        @click="yt.importQueue"
       >
-        <X :size="12" />
+        <Download :size="12" />
+        {{ t('downloads.importQueue') }}
       </button>
     </div>
-    <button
-      v-if="hasFinished"
-      data-testid="downloads-clear-finished"
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
-      @click="clearFinished"
-    >
-      <Trash2 :size="12" />
-      {{ t('downloads.clearFinished') }}
-    </button>
 
     <ExplorerPromptDialog
       :visible="prompt.promptVisible.value"

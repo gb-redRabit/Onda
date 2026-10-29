@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -303,9 +303,11 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     @dragover.prevent
     @drop.prevent="onLibraryDrop"
   >
-    <!-- Przyklejony szklany nagĹ‚Ăłwek â€” Minimal Spotify -->
-    <div class="ui-page-header sticky top-0 z-10 backdrop-blur border-b border-base-300 shrink-0">
-      <div class="px-4 pt-4 pb-3">
+    <!-- Przyklejony szklany nagłówek — Minimal Spotify -->
+    <div
+      class="ui-page-header sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border-b border-base-300/80 shrink-0"
+    >
+      <div class="px-5 py-3.5">
         <LibraryHeader
           :total-count="library.totalCount"
           :is-scanning="library.isScanning"

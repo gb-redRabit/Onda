@@ -92,7 +92,7 @@ async function onNavDrop(e: DragEvent, path: string) {
 
 <template>
   <div
-    class="w-56 shrink-0 border border-r border-base-300 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden"
+    class="w-56 shrink-0 border-r border-base-300/80 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden"
   >
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- szybkie linki -->
@@ -104,9 +104,9 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="link in quickLinks"
         :key="link.label"
-        class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left disabled:opacity-40"
+        class="fx-noise w-full flex items-center gap-2 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left disabled:opacity-40"
         :class="{
-          'bg-primary/10 text-primary-text': isActiveLink(link),
+          'bg-primary/14 text-primary-text font-medium': isActiveLink(link),
           'ring-2 ring-primary bg-primary/50': dropTargetPath === resolvePath(link)
         }"
         :disabled="link.label !== 'This PC' && !resolvePath(link)"
@@ -129,9 +129,9 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="drive in drives"
         :key="drive.path"
-        class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left"
+        class="fx-noise w-full flex items-center gap-2 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left"
         :class="{
-          'bg-primary/10 text-primary-text': explorer.currentPath === drive.path,
+          'bg-primary/14 text-primary-text font-medium': explorer.currentPath === drive.path,
           'ring-2 ring-primary bg-primary/50': dropTargetPath === drive.path
         }"
         @click="explorer.navigateTo(drive.path)"
@@ -153,9 +153,9 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="folder in library.folders"
         :key="folder"
-        class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors text-left"
+        class="fx-noise w-full flex items-center gap-2 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left"
         :class="{
-          'bg-primary/10 text-primary-text': explorer.currentPath === folder,
+          'bg-primary/14 text-primary-text font-medium': explorer.currentPath === folder,
           'ring-2 ring-primary bg-primary/50': dropTargetPath === folder
         }"
         @click="explorer.navigateTo(folder)"

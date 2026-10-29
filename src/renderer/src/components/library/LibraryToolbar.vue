@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { ArrowUpDown, ChevronDown, Disc3, Search } from '@lucide/vue';
+import { ArrowUpDown, ChevronDown, Disc3, Search, X } from '@lucide/vue';
 import type { ChipId, SortDir, SortKey } from '@renderer/utils/libraryView';
 
 defineProps<{ tab: string; chips: Array<{ id: ChipId; label: string }>; count: number }>();
@@ -16,23 +16,24 @@ const { t } = useI18n();
 
 <template>
   <!-- Wiersz wyszukiwania + kontrolek -->
-  <div v-if="tab !== 'playlists'" class="flex gap-2 mt-3">
+  <div v-if="tab !== 'playlists'" class="flex items-center gap-2 mt-2.5">
     <div class="relative flex-1 group">
       <Search
         :size="14"
-        class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 group-focus-within:text-primary-text transition-colors"
+        class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 group-focus-within:text-primary-text transition-colors pointer-events-none"
       />
       <input
         v-model="query"
         :placeholder="tab === 'overview' ? t('library.searchPlaceholder') : t('library.search')"
-        class="w-full pl-9 pr-8 py-2.5 rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-base-content/60 transition-all"
+        class="w-full h-9 pl-9 pr-8 rounded-field bg-base-200/70 border border-base-300/80 text-[13px] focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/10 placeholder:text-base-content/50 transition-all"
       />
       <button
         v-if="query"
-        class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-selector hover:bg-base-300 text-base-content/60 hover:text-base-content transition-colors"
+        class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
+        :aria-label="t('common.close')"
         @click="query = ''"
       >
-        ×
+        <X :size="13" />
       </button>
     </div>
 
@@ -41,7 +42,7 @@ const { t } = useI18n();
       <div class="relative">
         <select
           v-model="sortKey"
-          class="appearance-none pl-2.5 pr-6 py-2.5 rounded-field bg-base-100 border border-base-300 text-xs font-medium focus:border-primary focus:outline-none cursor-pointer"
+          class="appearance-none h-9 pl-2.5 pr-7 rounded-field bg-base-200/70 border border-base-300/80 text-xs font-medium focus:border-primary/50 focus:outline-none cursor-pointer"
         >
           <option value="added">{{ t('library.sortAdded') }}</option>
           <option value="title">{{ t('library.sortTitle') }}</option>
@@ -52,12 +53,13 @@ const { t } = useI18n();
         </select>
         <ChevronDown
           :size="12"
-          class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/60"
+          class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/55"
         />
       </div>
       <button
-        class="p-2.5 rounded-selector bg-base-100 border border-base-300 hover:border-primary/30 text-base-content/60 hover:text-primary-text transition-colors"
+        class="grid h-9 w-9 place-items-center rounded-field bg-base-200/70 border border-base-300/80 hover:border-primary/40 text-base-content/65 hover:text-primary-text transition-colors"
         :title="sortDir === 'asc' ? '↑' : '↓'"
+        :aria-label="sortDir === 'asc' ? '↑' : '↓'"
         @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
       >
         <ArrowUpDown
@@ -70,7 +72,7 @@ const { t } = useI18n();
 
     <button
       v-if="tab === 'tracks'"
-      class="hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-field bg-primary/10 text-primary-text text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0 border border-primary/20 fx-depth"
+      class="hidden md:inline-flex h-9 items-center gap-1.5 px-3 rounded-field bg-primary/10 text-primary-text text-xs font-medium hover:bg-primary/18 transition-colors shrink-0 border border-primary/25"
       :title="t('library.searchInMusicBrainz')"
       @click="emit('openMusicbrainz')"
     >
@@ -78,26 +80,26 @@ const { t } = useI18n();
     </button>
   </div>
 
-  <!-- Szybkie filtry (chips) — w stylu Spotify -->
+  <!-- Szybkie filtry (chips) -->
   <div
     v-if="tab === 'tracks'"
-    class="flex gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-1"
+    class="flex items-center gap-1.5 mt-2 overflow-x-auto scrollbar-none pb-0.5"
     style="scrollbar-width: none"
   >
     <button
       v-for="c in chips"
       :key="c.id"
-      class="px-3 py-1.5 rounded-selector text-xs font-medium whitespace-nowrap border transition-all duration-150"
+      class="h-7 px-3 rounded-full text-xs font-medium whitespace-nowrap border transition-colors duration-150"
       :class="
         chip === c.id
-          ? 'bg-base-content text-base-100 border-base-content'
-          : 'bg-base-100 text-base-content/70 border-base-300 hover:border-base-content/20 hover:text-base-content'
+          ? 'bg-primary/18 text-primary-text border-primary/35'
+          : 'bg-base-200/50 text-base-content/65 border-base-300/70 hover:border-base-content/20 hover:text-base-content'
       "
       @click="chip = c.id"
     >
       {{ c.label }}
     </button>
-    <span class="ml-auto text-[11px] text-base-content/60 self-center hidden sm:inline"
+    <span class="ml-auto text-[11px] text-base-content/55 self-center hidden sm:inline tabular-nums"
       >{{ count }} {{ t('library.tracksCount') }}</span
     >
   </div>

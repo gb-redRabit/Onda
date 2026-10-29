@@ -108,7 +108,7 @@ const colors = {
 <template>
   <div
     data-testid="download-row"
-    class="p-3 rounded-box bg-base-100 border border-base-300 group/row"
+    class="p-3 rounded-box bg-base-100/90 border border-base-300/80 hover:border-base-content/20 transition-colors group/row"
     @contextmenu="openMenu($event, downloadCtx(task))"
   >
     <div class="flex items-center gap-3">
@@ -154,7 +154,7 @@ const colors = {
         >
           <span class="truncate">sha256: {{ task.fileHash.slice(0, 16) }}…</span>
           <button
-            class="fx-noise p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors shrink-0"
+            class="fx-noise p-0.5 rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors shrink-0"
             :title="t('downloads.copyHash')"
             @click="copyText(task.fileHash)"
           >

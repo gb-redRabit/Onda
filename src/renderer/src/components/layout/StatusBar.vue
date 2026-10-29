@@ -197,7 +197,7 @@ function openContextMenu(e: MouseEvent) {
   <div
     v-if="settings.statusBar.visible"
     data-app-statusbar
-    class="h-6 bg-base-100/(--glass-alpha) border border-t border-base-300 flex items-center px-3 text-[11px] text-base-content/50 shrink-0 gap-4 select-none"
+    class="h-6 bg-base-100/(--glass-alpha) border-t border-base-300/80 flex items-center px-3 text-[11px] text-base-content/50 shrink-0 gap-4 select-none"
     @contextmenu="openContextMenu"
   >
     <template v-if="hasSection('playing')">

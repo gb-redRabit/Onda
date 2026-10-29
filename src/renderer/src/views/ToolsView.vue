@@ -82,41 +82,54 @@ async function openTool(id: ToolId): Promise<void> {
 
 <template>
   <div data-testid="tools-hub" class="flex h-full flex-col">
-    <PageHeader :title="t('tools.title')" :subtitle="t('tools.subtitle')" :icon="Wrench" />
+    <PageHeader :title="t('tools.title')" :subtitle="t('tools.subtitle')" :icon="Wrench" sticky />
 
-    <div class="flex-1 overflow-auto p-4">
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <button
-          v-for="card in cards"
-          :key="card.id"
-          :data-testid="`tools-card-${card.id}`"
-          class="group flex min-h-44 flex-col rounded-box border border-base-300 bg-base-100/70 p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60"
-          :disabled="opening !== null"
-          @click="openTool(card.id)"
-        >
-          <span
-            class="mb-4 flex h-11 w-11 items-center justify-center rounded-field bg-primary/10 text-primary-text transition-colors group-hover:bg-primary/15"
+    <div class="flex-1 overflow-auto p-6">
+      <div class="mx-auto max-w-6xl space-y-6">
+        <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+          <button
+            v-for="card in cards"
+            :key="card.id"
+            :data-testid="`tools-card-${card.id}`"
+            class="group flex items-start gap-3.5 rounded-box border border-base-300/80 bg-base-100 p-4 text-left transition-all hover:border-primary/40 hover:bg-base-content/4 fx-depth disabled:cursor-wait disabled:opacity-60"
+            :disabled="opening !== null"
+            @click="openTool(card.id)"
           >
-            <component :is="card.icon" :size="22" />
-          </span>
-          <span class="text-sm font-semibold text-base-content">{{ card.title }}</span>
-          <span class="mt-1 text-xs leading-relaxed text-base-content/60">
-            {{ card.description }}
-          </span>
-          <span
-            class="mt-auto flex items-center gap-1.5 pt-4 text-xs font-medium text-primary-text"
-          >
-            {{ t('tools.openInNewWindow') }}
-            <ExternalLink :size="13" />
-          </span>
-        </button>
+            <span
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text transition-colors group-hover:bg-primary/16"
+            >
+              <component :is="card.icon" :size="19" />
+            </span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="truncate text-sm font-semibold text-base-content">{{
+                  card.title
+                }}</span>
+                <ExternalLink
+                  :size="13"
+                  class="shrink-0 text-base-content/35 transition-colors group-hover:text-primary-text"
+                  :title="t('tools.openInNewWindow')"
+                />
+              </div>
+              <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-base-content/60">
+                {{ card.description }}
+              </p>
+              <span
+                class="mt-2.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary-text/80 group-hover:text-primary-text"
+              >
+                {{ t('tools.openInNewWindow') }}
+              </span>
+            </div>
+          </button>
+        </div>
 
         <div
-          class="flex min-h-44 flex-col items-center justify-center rounded-box border border-dashed border-base-300 p-4 text-center text-base-content/45"
+          class="flex items-center gap-2.5 rounded-box border border-dashed border-base-300/70 bg-base-100/40 px-4 py-3 text-xs text-base-content/50"
         >
-          <Plus :size="26" class="mb-3 opacity-50" />
-          <p class="text-sm font-medium text-base-content/65">{{ t('tools.moreComing') }}</p>
-          <p class="mt-1 max-w-56 text-xs">{{ t('tools.moreComingDescription') }}</p>
+          <Plus :size="15" class="shrink-0 text-base-content/40" />
+          <span class="font-medium text-base-content/65">{{ t('tools.moreComing') }}</span>
+          <span class="text-base-content/35">·</span>
+          <span>{{ t('tools.moreComingDescription') }}</span>
         </div>
       </div>
     </div>

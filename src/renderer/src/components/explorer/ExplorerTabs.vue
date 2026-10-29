@@ -173,16 +173,17 @@ async function onTabDrop(e: DragEvent, idx: number) {
 <template>
   <div
     v-if="explorer.tabs.length > 0"
-    class="flex items-center gap-1 px-2 pt-1.5 pb-1 bg-base-100 border-b border-base-300 overflow-x-auto shrink-0"
+    class="flex items-center gap-1 px-2.5 py-1.5 bg-base-100 border-b border-base-300/80 overflow-x-auto shrink-0"
   >
     <button
       v-for="(tab, idx) in explorer.tabs"
       :key="tab.id"
       draggable="true"
-      class="fx-noise group flex items-center gap-1.5 px-2.5 h-7 text-xs fx-depth rounded-field transition-colors shrink-0 min-w-0 max-w-44 border"
+      class="fx-noise group flex items-center gap-1.5 px-2.5 h-7 text-xs rounded-field transition-colors shrink-0 min-w-0 max-w-44 border"
       :class="{
-        'bg-primary text-primary-content border-transparent': explorer.activeTabIndex === idx,
-        'bg-base-200/(--glass-alpha) text-base-content/70 border-transparent hover:text-base-content hover:bg-base-content/10':
+        'bg-primary/16 text-base-content border-primary/30 font-medium':
+          explorer.activeTabIndex === idx,
+        'bg-base-200/60 text-base-content/65 border-transparent hover:text-base-content hover:bg-base-content/8':
           explorer.activeTabIndex !== idx,
         'ring-2 ring-primary': tabDropTargetIdx === idx
       }"
@@ -196,19 +197,14 @@ async function onTabDrop(e: DragEvent, idx: number) {
       @dragleave="onTabDragLeave"
       @drop="onTabDrop($event, idx)"
     >
-      <component
-        :is="tabIcon(tab)"
-        :size="12"
-        class="shrink-0"
-        :class="explorer.activeTabIndex === idx ? 'text-neutral-content/80' : 'text-primary-text'"
-      />
+      <component :is="tabIcon(tab)" :size="12" class="shrink-0 text-primary-text" />
       <span class="truncate flex-1">{{ tab.label || $t('explorer.thisComputer') }}</span>
       <span
         v-activate
-        class="shrink-0 p-0.5 rounded-field cursor-pointer hover:bg-neutral/20 transition-opacity"
+        class="shrink-0 p-0.5 rounded-field cursor-pointer transition-opacity"
         :class="
           explorer.activeTabIndex === idx
-            ? 'text-primary-content/80 hover:text-primary-content opacity-100'
+            ? 'text-base-content/60 hover:text-base-content hover:bg-base-content/10 opacity-100'
             : 'text-base-content/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-base-content/10 hover:text-base-content'
         "
         @click.stop="explorer.closeTab(idx)"
@@ -216,7 +212,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
       /></span>
     </button>
     <button
-      class="fx-noise shrink-0 p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+      class="fx-noise shrink-0 p-1 rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="$t('nav.newTab')"
       @click="explorer.addTab(explorer.currentPath || '')"
     >

@@ -151,7 +151,7 @@ function togglePlay() {
     v-else
     data-testid="player-bar"
     :data-playing="audio.isPlaying.value ? 'true' : 'false'"
-    class="h-18 bg-base-200/(--glass-alpha) border border-t border-base-content/20 flex items-center px-4 shrink-0 relative"
+    class="h-18 bg-base-200/(--glass-alpha) border-t border-base-300/80 flex items-center px-4 shrink-0 relative"
   >
     <div
       v-if="!isLive"
@@ -245,11 +245,11 @@ function togglePlay() {
       </div>
     </div>
 
-    <div class="flex items-center gap-1.5 justify-end w-64 shrink-0 max-lg:w-auto">
+    <div class="flex items-center gap-1 justify-end w-64 shrink-0 max-lg:w-auto">
       <AbRepeatButton :current-time="audio.currentTime.value" />
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary-text!': fx.equalizerVisible }"
+        class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
+        :class="{ 'bg-primary/15 text-primary-text!': fx.equalizerVisible }"
         data-eq-toggle
         data-testid="player-eq"
         :aria-label="$t('common.equalizer')"
@@ -258,8 +258,8 @@ function togglePlay() {
         <SlidersHorizontal :size="15" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :class="{ 'text-primary-text!': player.queueVisible }"
+        class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
+        :class="{ 'bg-primary/15 text-primary-text!': player.queueVisible }"
         data-testid="player-queue"
         :aria-label="$t('common.queue')"
         @click="player.toggleQueue"
@@ -267,7 +267,7 @@ function togglePlay() {
         <ListMusic :size="15" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :aria-label="$t('common.mute')"
         @click="player.toggleMute"
       >
@@ -283,7 +283,7 @@ function togglePlay() {
         />
       </button>
       <div
-        class="w-30 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height] max-md:hidden"
+        class="w-28 h-1 bg-border-default/60 rounded-full cursor-pointer hover:h-1.5 transition-[height] max-md:hidden mx-1"
         role="slider"
         tabindex="0"
         :aria-label="$t('playerView.volume')"
@@ -299,7 +299,7 @@ function togglePlay() {
         />
       </div>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
+        class="p-1.5 rounded-field text-base-content/55 hover:text-primary-text hover:bg-base-content/8 transition-colors"
         :title="$t('common.audioView')"
         :aria-label="$t('common.audioView')"
         @click="router.push('/audio')"
@@ -307,7 +307,7 @@ function togglePlay() {
         <Disc3 :size="15" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :title="$t('common.miniPlayer')"
         :aria-label="$t('common.miniPlayer')"
         @click="isMini = true"

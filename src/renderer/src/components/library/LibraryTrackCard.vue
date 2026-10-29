@@ -78,11 +78,11 @@ function onHoverLeave() {
     tabindex="0"
     :aria-pressed="selected"
     :aria-label="track.metadata?.title || track.name"
-    class="flex-1 flex flex-col fx-depth rounded-box fx-noise border transition-all overflow-hidden group text-left min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+    class="flex-1 flex flex-col fx-depth rounded-box border transition-all overflow-hidden group text-left min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
     :class="
       selected
-        ? 'bg-primary/10 border-primary/50'
-        : 'bg-base-100 border-base-300 hover:bg-base-content/10 hover:border-primary/30'
+        ? 'bg-primary/12 border-primary/50'
+        : 'bg-base-100 border-base-300/80 hover:bg-base-100 hover:border-primary/35'
     "
     draggable="true"
     @click="emit('select', $event, false)"
@@ -95,23 +95,34 @@ function onHoverLeave() {
     @mouseleave="onHoverLeave"
   >
     <div
-      class="w-full aspect-4/3 bg-neutral flex items-center justify-center relative overflow-hidden"
+      class="w-full aspect-square bg-base-200 flex items-center justify-center relative overflow-hidden"
     >
       <!-- Jawny checkbox: zaznaczanie pojedynczego utworu działa na kartach
            niezależnie od kliknięcia/odtwarzania (spójnie z widokiem listy). -->
       <input
         type="checkbox"
-        class="checkbox checkbox-xs absolute top-1.5 left-1.5 z-10"
+        class="checkbox checkbox-xs absolute top-2 left-2 z-10 transition-opacity"
+        :class="
+          selected
+            ? 'opacity-100'
+            : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+        "
         :checked="selected"
         :aria-label="track.metadata?.title || track.name"
         data-testid="library-track-select"
         @click.stop="onCheckboxClick"
       />
-      <MediaCover :path="props.track.path" :size="40" :autoplay="hovered" fallback="play" />
+      <MediaCover
+        :path="props.track.path"
+        :size="160"
+        :autoplay="hovered"
+        fallback="play"
+        class="w-full h-full transition-transform duration-300 ease-out group-hover:scale-105"
+      />
       <!-- Klik w okładkę tylko ZAZNACZA (spójnie z wierszem); odtwarzanie przez
            przycisk play lub dwuklik. -->
       <div
-        class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/20 transition-colors"
+        class="absolute inset-0 bg-gradient-to-t from-base-300/80 via-base-300/10 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         role="presentation"
         aria-hidden="true"
         @click.stop="emit('select', $event, false)"
@@ -119,11 +130,11 @@ function onHoverLeave() {
         <button
           type="button"
           data-testid="library-track-play"
-          class="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-lg"
+          class="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 transition-all shadow-lg"
           :aria-label="$t('common.play')"
           @click.stop="playNow"
         >
-          <Play :size="22" class="text-primary-content ml-0.5" />
+          <Play :size="18" class="ml-0.5" />
         </button>
       </div>
 
@@ -133,52 +144,52 @@ function onHoverLeave() {
         @click.stop
       >
         <button
-          class="fx-noise p-1.5 fx-depth rounded-field bg-neutral/40 backdrop-blur-sm transition-colors"
+          class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm transition-colors"
           :class="
             player.isFavorite(track.path)
               ? 'text-error hover:text-error/90'
-              : 'text-neutral-content/80 hover:text-neutral-content hover:bg-neutral/60'
+              : 'text-base-content/80 hover:text-base-content hover:bg-base-300'
           "
           :title="player.isFavorite(track.path) ? $t('common.removeFav') : $t('common.addFav')"
           @click.stop="player.toggleFavorite(track.path)"
         >
-          <Heart :size="15" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
+          <Heart :size="14" :fill="player.isFavorite(track.path) ? 'currentColor' : 'none'" />
         </button>
         <PlaylistAddMenu
           v-if="showPlaylist"
           :tracks="[track]"
-          :icon-size="15"
-          button-class="fx-noise p-1.5 fx-depth rounded-field bg-neutral/40 backdrop-blur-sm text-neutral-content/80 hover:text-neutral-content hover:bg-neutral/60 transition-colors"
+          :icon-size="14"
+          button-class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/80 hover:text-base-content hover:bg-base-300 transition-colors"
         />
         <button
-          class="fx-noise p-1.5 fx-depth rounded-field bg-neutral/40 backdrop-blur-sm text-neutral-content/80 hover:text-neutral-content hover:bg-neutral/60 transition-colors"
+          class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/80 hover:text-base-content hover:bg-base-300 transition-colors"
           :title="$t('common.editTags')"
           @click="emit('edit', track)"
         >
-          <Edit3 :size="15" />
+          <Edit3 :size="14" />
         </button>
         <button
           v-if="playlistId"
-          class="fx-noise p-1.5 fx-depth rounded-field bg-neutral/40 backdrop-blur-sm text-error hover:text-error/80 hover:bg-neutral/60 transition-colors"
+          class="p-1.5 rounded-field bg-base-300/80 backdrop-blur-sm text-error hover:text-error/80 hover:bg-base-300 transition-colors"
           :aria-label="$t('library.removeFromPlaylist')"
           @click="removeFromPlaylist"
         >
-          <Trash2 :size="15" />
+          <Trash2 :size="14" />
         </button>
       </div>
 
       <div
         v-if="track.duration"
-        class="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[11px] font-medium"
+        class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content text-[10px] font-mono tabular-nums"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>
     </div>
-    <div class="p-3">
-      <div class="text-sm font-medium truncate leading-snug">
+    <div class="p-2.5">
+      <div class="text-[13px] font-medium truncate leading-snug">
         {{ track.metadata?.title || track.name }}
       </div>
-      <div class="text-xs text-base-content/50 mt-1 truncate">
+      <div class="text-xs text-base-content/50 mt-0.5 truncate">
         {{ track.metadata?.artist || t('common.unknown')
         }}{{ track.metadata?.album ? ` · ${track.metadata.album}` : '' }}
       </div>

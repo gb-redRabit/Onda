@@ -183,59 +183,63 @@ const trackCount = computed(() => saved.tracks.length);
                 <div
                   v-for="s in row.tracks"
                   :key="s.id"
-                  class="group rounded-box bg-base-100 border border-base-300 p-3 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300"
+                  class="group rounded-box bg-base-100 border border-base-300/80 p-2.5 transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-base-content/20"
                 >
-                  <div class="relative overflow-hidden rounded-box bg-base-100 aspect-video">
+                  <div class="relative overflow-hidden rounded-field bg-base-200 aspect-video">
                     <img
                       v-if="s.thumbnail"
                       :src="s.thumbnail"
                       :alt="s.title"
                       loading="lazy"
-                      class="absolute inset-0 w-full h-full object-cover"
+                      class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
                     <div
-                      class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 bg-neutral/30 transition-opacity"
+                      class="absolute inset-0 bg-linear-to-t from-black/65 via-black/15 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                     >
+                      <div class="absolute top-2 right-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          class="grid h-7 w-7 place-items-center rounded-field bg-black/55 text-white/90 backdrop-blur-sm hover:bg-black/75 transition-colors"
+                          :title="$t('saved.addToQueue')"
+                          :aria-label="$t('saved.addToQueue')"
+                          @click="queueTrack(s)"
+                        >
+                          <Plus :size="14" />
+                        </button>
+                        <button
+                          type="button"
+                          class="grid h-7 w-7 place-items-center rounded-field bg-black/55 text-white/90 backdrop-blur-sm hover:bg-error hover:text-error-content transition-colors"
+                          :title="$t('common.delete')"
+                          :aria-label="$t('common.delete')"
+                          @click="removeTrack(s.id)"
+                        >
+                          <Trash2 :size="13" />
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        class="p-2 rounded-full bg-neutral-content/20 text-neutral-content hover:bg-neutral-content/35 transition-colors"
+                        class="absolute right-2 bottom-2 grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-content shadow-md transition-transform hover:scale-105 active:scale-95"
                         :title="$t('youtube.playStream')"
                         :aria-label="$t('youtube.playStream')"
                         @click="playTrack(s)"
                       >
-                        <Play :size="20" fill="currentColor" />
-                      </button>
-                      <button
-                        type="button"
-                        class="p-2 rounded-full bg-neutral-content/20 text-neutral-content hover:bg-neutral-content/35 transition-colors"
-                        :title="$t('saved.addToQueue')"
-                        :aria-label="$t('saved.addToQueue')"
-                        @click="queueTrack(s)"
-                      >
-                        <Plus :size="20" />
-                      </button>
-                      <button
-                        type="button"
-                        class="p-2 rounded-full bg-error/60 text-error-content hover:bg-error transition-colors fx-depth"
-                        :title="$t('common.delete')"
-                        :aria-label="$t('common.delete')"
-                        @click="removeTrack(s.id)"
-                      >
-                        <Trash2 :size="18" />
+                        <Play :size="16" fill="currentColor" class="ml-0.5" />
                       </button>
                     </div>
                     <span
                       v-if="s.duration"
-                      class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[11px] px-1.5 py-0.5 rounded-field"
+                      class="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-field backdrop-blur-xs"
                     >
                       {{ s.duration }}
                     </span>
                   </div>
-                  <div class="mt-2">
-                    <h3 class="text-sm font-semibold text-base-content line-clamp-2">
+                  <div class="mt-2 px-0.5">
+                    <h3 class="text-xs font-medium text-base-content line-clamp-2 leading-snug">
                       {{ s.title }}
                     </h3>
-                    <p class="text-xs text-base-content/70 mt-0.5 truncate">{{ s.channelTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 mt-0.5 truncate">
+                      {{ s.channelTitle }}
+                    </p>
                   </div>
                 </div>
               </div>

@@ -64,32 +64,37 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="mb-8" data-testid="home-shelf">
-    <div class="flex items-center justify-between gap-3 mb-3">
-      <h2 class="text-base font-semibold flex items-center gap-2 min-w-0">
-        <component :is="icon" :size="16" class="text-primary-text shrink-0" />
+  <section data-testid="home-shelf">
+    <div class="flex items-center justify-between gap-3 mb-2.5">
+      <h2
+        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-2 min-w-0"
+      >
+        <component :is="icon" :size="14" class="text-primary-text shrink-0" />
         <span class="truncate">{{ title }}</span>
       </h2>
-      <div class="flex items-center gap-1.5 shrink-0">
+      <div class="flex items-center gap-1 shrink-0">
         <button
           v-if="canScrollLeft"
-          class="grid h-7 w-7 place-items-center rounded-full border border-base-300 bg-base-100/(--glass-alpha) text-base-content/60 shadow-sm backdrop-blur transition-colors hover:bg-base-content/10 hover:text-base-content"
+          type="button"
+          class="grid h-6 w-6 place-items-center rounded-field border border-base-300/80 bg-base-100 text-base-content/60 transition-colors hover:bg-base-content/8 hover:text-base-content"
           :aria-label="$t('home.scrollLeft')"
           @click="scrollBy(-1)"
         >
-          <ChevronLeft :size="15" />
+          <ChevronLeft :size="13" />
         </button>
         <button
           v-if="canScrollRight"
-          class="grid h-7 w-7 place-items-center rounded-full border border-base-300 bg-base-100/(--glass-alpha) text-base-content/60 shadow-sm backdrop-blur transition-colors hover:bg-base-content/10 hover:text-base-content"
+          type="button"
+          class="grid h-6 w-6 place-items-center rounded-field border border-base-300/80 bg-base-100 text-base-content/60 transition-colors hover:bg-base-content/8 hover:text-base-content"
           :aria-label="$t('home.scrollRight')"
           @click="scrollBy(1)"
         >
-          <ChevronRight :size="15" />
+          <ChevronRight :size="13" />
         </button>
         <button
           v-if="seeAllLabel"
-          class="ml-1 text-xs font-medium text-primary-text transition-colors hover:text-primary-text/80"
+          type="button"
+          class="ml-1.5 text-xs font-medium text-primary-text transition-colors hover:text-primary-text/80"
           @click="emit('seeAll')"
         >
           {{ seeAllLabel }}

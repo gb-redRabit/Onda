@@ -24,14 +24,17 @@ defineEmits<{ click: [e: MouseEvent] }>();
 <template>
   <button
     type="button"
-    class="fx-noise p-1.5 fx-depth rounded-field transition-colors duration-150"
-    :class="
+    class="inline-flex items-center justify-center p-1.5 rounded-field transition-colors duration-150 disabled:opacity-40"
+    :class="[
+      pressed ? 'bg-primary/15 text-primary-text' : 'hover:bg-base-content/8',
       variant === 'danger'
-        ? 'text-error hover:text-error/80'
+        ? 'text-error hover:text-error hover:bg-error/10'
         : variant === 'primary'
-          ? 'text-primary-text hover:text-primary-text/80'
-          : 'text-base-content/50 hover:text-base-content'
-    "
+          ? 'text-primary-text hover:bg-primary/15'
+          : pressed
+            ? ''
+            : 'text-base-content/55 hover:text-base-content'
+    ]"
     :title="title ?? label"
     :aria-label="label"
     :aria-pressed="pressed"

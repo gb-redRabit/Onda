@@ -39,9 +39,9 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
 
 <template>
   <div
-    class="ui-page-toolbar flex flex-wrap items-center justify-between gap-3 border border-b border-base-300"
+    class="ui-page-toolbar flex flex-wrap items-center justify-between gap-3 border-b border-base-300/80 bg-base-100/60 px-5 py-2.5"
   >
-    <div class="flex gap-1 -mb-px" role="tablist" :aria-label="t('nav.online')">
+    <div class="ui-segmented" role="tablist" :aria-label="t('nav.online')">
       <button
         v-for="(tab, i) in tabs"
         :key="tab.key"
@@ -50,16 +50,11 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         :data-testid="'online-tab-' + tab.key"
         :aria-selected="modelValue === tab.key"
         :tabindex="modelValue === tab.key ? 0 : -1"
-        class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors border-b-(--border)"
-        :class="
-          modelValue === tab.key
-            ? 'border-primary text-base-content'
-            : 'border-transparent text-base-content/50 hover:text-base-content/70'
-        "
+        class="flex items-center gap-1.5 text-xs font-medium"
         @click="emit('update:modelValue', tab.key)"
         @keydown="onTabKeydown($event, i)"
       >
-        <component :is="tab.icon" v-if="tab.icon" :size="14" />
+        <component :is="tab.icon" v-if="tab.icon" :size="13" />
         {{ tab.label }}
         <OnlineBadge
           v-if="tab.key === 'subscriptions' && subscriptionCount"
@@ -70,7 +65,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         </OnlineBadge>
       </button>
     </div>
-    <div class="pb-1">
+    <div class="flex items-center gap-2">
       <slot />
     </div>
   </div>

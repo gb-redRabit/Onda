@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Play } from '@lucide/vue';
+import { Clock, Play } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import type { HomeQuickPick } from '@renderer/composables/useHomeView';
 import type { MediaFile } from '@renderer/types/media';
@@ -20,13 +20,17 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section class="mb-8" data-testid="home-quick-picks">
-    <div class="mb-3 flex items-center justify-between gap-3">
-      <h2 class="flex min-w-0 items-center gap-2 text-base font-semibold">
+  <section data-testid="home-quick-picks">
+    <div class="mb-2.5 flex items-center justify-between gap-3">
+      <h2
+        class="flex min-w-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/60"
+      >
+        <Clock :size="14" class="shrink-0 text-primary-text" />
         <span class="truncate">{{ title }}</span>
       </h2>
       <button
         v-if="seeAllLabel"
+        type="button"
         class="shrink-0 text-xs font-medium text-primary-text transition-colors hover:text-primary-text/80"
         @click="emit('seeAll')"
       >
@@ -34,35 +38,37 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+    <div class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
       <div
         v-for="pick in items"
         :key="pick.track.path"
         v-activate
-        class="group flex h-14 min-w-0 cursor-pointer items-center gap-2.5 rounded-field border border-base-300 bg-base-100/60 p-1.5 pr-2 text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
+        class="group flex min-w-0 cursor-pointer items-center gap-3 rounded-box border border-base-300/75 bg-base-100 p-2 pr-3 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/4"
         :aria-label="`${$t('common.play')}: ${pick.title}`"
         @click="emit('play', pick.track)"
         @contextmenu="emit('contextmenu', $event, pick.track)"
       >
-        <span class="h-11 w-11 shrink-0 overflow-hidden rounded-field bg-base-200">
+        <span class="h-10 w-10 shrink-0 overflow-hidden rounded-field bg-base-200">
           <MediaCover
             :path="pick.track.path"
-            :size="44"
+            :size="40"
             :fallback="pick.track.type === 'video' ? 'film' : 'music'"
-            class="h-full w-full"
+            class="h-full w-full transition-transform duration-300 group-hover:scale-105"
           />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate text-[13px] font-medium" :title="pick.title">
+          <span class="block truncate text-xs font-medium text-base-content" :title="pick.title">
             {{ pick.title }}
           </span>
-          <span class="block truncate text-[11px] text-base-content/50">{{ pick.subtitle }}</span>
+          <span class="mt-0.5 block truncate text-[11px] text-base-content/50">{{
+            pick.subtitle
+          }}</span>
         </span>
         <span
-          class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-primary-content opacity-0 transition-all duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+          class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-primary-content opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
           aria-hidden="true"
         >
-          <Play :size="14" class="ml-0.5" />
+          <Play :size="12" fill="currentColor" class="ml-0.5" />
         </span>
       </div>
     </div>

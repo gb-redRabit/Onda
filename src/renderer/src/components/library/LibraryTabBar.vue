@@ -87,8 +87,12 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
 </script>
 
 <template>
-  <div class="relative -mx-1" role="tablist" :aria-label="$t('library.title')">
-    <div ref="tabRow" class="flex gap-1 sm:gap-1.5 px-1 pb-1 overflow-hidden" :data-mode="tabMode">
+  <div class="relative" role="tablist" :aria-label="$t('library.title')">
+    <div
+      ref="tabRow"
+      class="flex gap-1 rounded-box border border-base-300/70 bg-base-200/75 p-1 overflow-hidden"
+      :data-mode="tabMode"
+    >
       <button
         v-for="(tabItem, i) in props.tabs"
         :key="tabItem.id"
@@ -98,11 +102,11 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         :aria-selected="props.modelValue === tabItem.id"
         :tabindex="props.modelValue === tabItem.id ? 0 : -1"
         :aria-label="tabItem.label"
-        class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 rounded-field text-xs font-medium transition-all duration-150 border fx-depth hover:border-primary/30"
+        class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 rounded-field text-xs font-medium transition-all duration-150"
         :class="
           props.modelValue === tabItem.id
-            ? 'bg-primary text-primary-content border-primary fx-depth shadow-primary/20 flex-[1.2] backdrop-blur-sm'
-            : 'bg-base-100/(--glass-alpha) text-base-content/70 border-base-300 hover:bg-base-100/(--glass-alpha) hover:text-base-content backdrop-blur-sm'
+            ? 'bg-primary/18 text-base-content shadow-xs ring-1 ring-primary/30 flex-[1.2]'
+            : 'text-base-content/65 hover:bg-base-content/7 hover:text-base-content'
         "
         :title="tabItem.label + ' (' + tabItem.count + ')'"
         @click="emit('update:modelValue', tabItem.id)"
@@ -114,18 +118,18 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
           class="shrink-0"
           :class="
             props.modelValue === tabItem.id
-              ? 'opacity-90'
-              : 'opacity-60 group-hover:opacity-100 group-focus-within:opacity-100'
+              ? 'text-primary-text'
+              : 'opacity-65 group-hover:opacity-100 group-focus-within:opacity-100'
           "
         />
         <span data-tab-label class="truncate">{{ tabItem.label }}</span>
         <span
           data-tab-count
-          class="ml-0.5 px-1 sm:px-1.5 py-0.5 rounded-selector text-[11px] font-bold leading-none shrink-0 border"
+          class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none tabular-nums shrink-0"
           :class="
             props.modelValue === tabItem.id
-              ? 'bg-primary-content/20 text-primary-content border-primary-content/20'
-              : 'bg-base-300 text-base-content/60 border-base-300'
+              ? 'bg-primary/20 text-primary-text'
+              : 'bg-base-300/80 text-base-content/55'
           "
           >{{ tabItem.count }}</span
         >

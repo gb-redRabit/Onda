@@ -207,8 +207,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       :show="showViewActions"
       :label="viewLabel"
       :searchable="viewSearchable"
-      @open-file="openFile"
-      @open-folder="openFolder"
       @search="toggleViewSearch"
     />
 

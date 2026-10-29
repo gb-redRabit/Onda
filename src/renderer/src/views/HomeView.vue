@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Disc3, Heart, ListMusic, Mic2, Music2, TrendingUp } from '@lucide/vue';
+import { Disc3, Heart, Home, ListMusic, Mic2, Music2, TrendingUp } from '@lucide/vue';
 import { playTrackList } from '@renderer/utils/playTracks';
 import HomeShelf from '@renderer/components/home/HomeShelf.vue';
 import HomeMediaCard from '@renderer/components/home/HomeMediaCard.vue';
@@ -68,181 +68,188 @@ async function onPlayFromStart(): Promise<void> {
 <template>
   <div
     data-testid="home-view"
-    class="p-6 max-w-7xl mx-auto"
+    class="flex flex-col h-full"
     @contextmenu="homeContextMenu.showHomeMenu($event)"
   >
-    <PageHeader :title="t('home.welcome')" :subtitle="t('home.subtitle')" class="mb-6">
+    <PageHeader :title="t('home.welcome')" :subtitle="t('home.subtitle')" :icon="Home" sticky>
       <template #actions>
-        <button
-          v-for="a in actions"
-          :key="a.labelKey"
-          :data-testid="'home-action-' + a.id"
-          class="inline-flex items-center gap-1.5 rounded-full border border-base-300 bg-base-100/(--glass-alpha) px-3 py-1.5 text-xs font-medium text-base-content/75 backdrop-blur transition-colors hover:border-primary/40 hover:bg-base-content/10 hover:text-base-content"
-          :title="$t(a.labelKey)"
-          :aria-label="$t(a.labelKey)"
-          @click="a.route()"
-        >
-          <component :is="a.icon" :size="15" class="shrink-0 text-primary-text" />
-          <span class="hidden md:inline">{{ $t(a.labelKey) }}</span>
-        </button>
+        <div class="flex items-center gap-1">
+          <button
+            v-for="a in actions"
+            :key="a.labelKey"
+            :data-testid="'home-action-' + a.id"
+            class="inline-flex h-8 items-center gap-1.5 rounded-field border border-transparent px-2.5 text-xs font-medium text-base-content/70 transition-colors hover:border-base-300/80 hover:bg-base-content/6 hover:text-base-content"
+            :title="$t(a.labelKey)"
+            :aria-label="$t(a.labelKey)"
+            @click="a.route()"
+          >
+            <component :is="a.icon" :size="14" class="shrink-0 text-primary-text" />
+            <span class="hidden md:inline">{{ $t(a.labelKey) }}</span>
+          </button>
+        </div>
       </template>
     </PageHeader>
 
-    <!-- Bento: hero (2/3) + liczby biblioteki (1/3). -->
-    <div class="grid grid-cols-1 gap-4 mb-8 xl:grid-cols-3">
-      <HomeContinueCard
-        v-if="has('continue') && continueTrack"
-        class="xl:col-span-2"
-        :track="continueTrack"
-        :position="continuePosition"
-        @play="playContinue"
-        @play-from-start="onPlayFromStart"
-      />
-      <HomeWelcomeCard
-        v-else
-        class="xl:col-span-2"
-        :can-shuffle="library.totalCount > 0"
-        @shuffle="playRandom"
-        @open-files="openFile"
-        @open-folder="openFolder"
-      />
+    <div class="flex-1 overflow-y-auto">
+      <div class="px-5 py-5 space-y-6">
+        <!-- Bento: hero (8/12) + liczby biblioteki (4/12). -->
+        <div class="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
+          <HomeContinueCard
+            v-if="has('continue') && continueTrack"
+            class="lg:col-span-7 xl:col-span-8"
+            :track="continueTrack"
+            :position="continuePosition"
+            @play="playContinue"
+            @play-from-start="onPlayFromStart"
+          />
+          <HomeWelcomeCard
+            v-else
+            class="lg:col-span-7 xl:col-span-8"
+            :can-shuffle="library.totalCount > 0"
+            @shuffle="playRandom"
+            @open-files="openFile"
+            @open-folder="openFolder"
+          />
 
-      <HomeStatsPanel
-        class="xl:col-span-1"
-        :items="counters"
-        :loading="library.isLoading || !library.isLoaded"
-        @open="openLibrary"
-      />
+          <HomeStatsPanel
+            class="lg:col-span-5 xl:col-span-4"
+            :items="counters"
+            :loading="library.isLoading || !library.isLoaded"
+            @open="openLibrary"
+          />
+        </div>
+
+        <!-- Szybki powrót: ostatnio grane jako mini-karty, bez szukania na półce. -->
+        <HomeQuickPicks
+          v-if="has('recent') && quickPicks.length"
+          :items="quickPicks"
+          :title="$t('home.quickPicks')"
+          :see-all-label="$t('home.showAll')"
+          @see-all="openLibrary('tracks')"
+          @play="player.setTrack($event)"
+          @contextmenu="homeContextMenu.showRecentMenu"
+        />
+
+        <EmptyState
+          v-else-if="has('recent') && library.isLoaded && !has('continue') && !continueTrack"
+          :title="$t('home.noTracks')"
+          :description="$t('home.openFileToStart')"
+          :icon="Music2"
+          compact
+          class="bg-base-100/60"
+        />
+
+        <HomeShelf
+          v-if="has('mostPlayed') && mostPlayed.length"
+          :title="$t('home.mostPlayed')"
+          :icon="TrendingUp"
+          :item-count="mostPlayed.length"
+          :see-all-label="$t('home.showAll')"
+          @see-all="openLibrary('tracks')"
+        >
+          <HomeMediaCard
+            v-for="item in mostPlayed"
+            :key="item.path"
+            :title="trackTitle(item)"
+            :subtitle="trackSubtitle(item)"
+            :cover-path="item.path"
+            :cover-size="132"
+            :badge="`${item.playCount}×`"
+            @play="player.setTrack(item)"
+            @contextmenu="homeContextMenu.showRecentMenu($event, item)"
+          />
+        </HomeShelf>
+
+        <HomeShelf
+          v-if="has('favorites') && favoriteTracks.length"
+          :title="$t('home.favorites')"
+          :icon="Heart"
+          :item-count="favoriteTracks.length"
+          :see-all-label="$t('home.showAll')"
+          @see-all="openLibrary('tracks')"
+        >
+          <HomeMediaCard
+            v-for="item in favoriteTracks"
+            :key="item.path"
+            :title="trackTitle(item)"
+            :subtitle="trackSubtitle(item)"
+            :cover-path="item.path"
+            :cover-size="132"
+            @play="player.setTrack(item)"
+            @contextmenu="homeContextMenu.showRecentMenu($event, item)"
+          />
+        </HomeShelf>
+
+        <HomeShelf
+          v-if="has('playlists') && playlists.length"
+          :title="$t('library.playlists')"
+          :icon="ListMusic"
+          :item-count="playlists.length"
+          :see-all-label="$t('home.showAll')"
+          @see-all="openLibrary('playlists')"
+        >
+          <HomeMediaCard
+            v-for="pl in playlists"
+            :key="pl.id"
+            :title="pl.name"
+            :subtitle="trackCountLabel(pl.tracks.length)"
+            :cover-path="pl.coverUrl || pl.tracks[0]?.path"
+            :cover-size="132"
+            fallback="play"
+            stacked
+            :open-label="$t('home.openInLibrary')"
+            @play="playTrackList(pl.tracks)"
+            @open="openLibrary('playlists')"
+          />
+        </HomeShelf>
+
+        <HomeShelf
+          v-if="has('albums') && albums.length"
+          :title="$t('library.albums')"
+          :icon="Disc3"
+          :item-count="albums.length"
+          :see-all-label="$t('home.showAll')"
+          @see-all="openLibrary('albums')"
+        >
+          <HomeMediaCard
+            v-for="[name, tracks] in albums"
+            :key="name"
+            :title="name"
+            :subtitle="trackCountLabel(tracks.length)"
+            :cover-path="tracks[0]?.path"
+            :cover-size="132"
+            fallback="disc"
+            stacked
+            :open-label="$t('home.openInLibrary')"
+            @play="playTrackList(tracks)"
+            @open="openLibrary('albums')"
+          />
+        </HomeShelf>
+
+        <HomeShelf
+          v-if="has('artists') && artists.length"
+          :title="$t('library.artists')"
+          :icon="Mic2"
+          :item-count="artists.length"
+          :see-all-label="$t('home.showAll')"
+          @see-all="openLibrary('artists')"
+        >
+          <HomeMediaCard
+            v-for="[name, tracks] in artists"
+            :key="name"
+            :title="name"
+            :subtitle="trackCountLabel(tracks.length)"
+            :cover-path="tracks[0]?.path"
+            :cover-size="132"
+            fallback="disc"
+            round
+            :open-label="$t('home.openInLibrary')"
+            @play="playTrackList(tracks)"
+            @open="openLibrary('artists')"
+          />
+        </HomeShelf>
+      </div>
     </div>
-
-    <!-- Szybki powrót: ostatnio grane jako mini-karty, bez szukania na półce. -->
-    <HomeQuickPicks
-      v-if="has('recent') && quickPicks.length"
-      :items="quickPicks"
-      :title="$t('home.quickPicks')"
-      :see-all-label="$t('home.showAll')"
-      @see-all="openLibrary('tracks')"
-      @play="player.setTrack($event)"
-      @contextmenu="homeContextMenu.showRecentMenu"
-    />
-
-    <EmptyState
-      v-else-if="has('recent') && library.isLoaded"
-      :title="$t('home.noTracks')"
-      :description="$t('home.openFileToStart')"
-      :icon="Music2"
-      class="mb-8 bg-base-100"
-    />
-
-    <HomeShelf
-      v-if="has('mostPlayed') && mostPlayed.length"
-      :title="$t('home.mostPlayed')"
-      :icon="TrendingUp"
-      :item-count="mostPlayed.length"
-      :see-all-label="$t('home.showAll')"
-      @see-all="openLibrary('tracks')"
-    >
-      <HomeMediaCard
-        v-for="item in mostPlayed"
-        :key="item.path"
-        :title="trackTitle(item)"
-        :subtitle="trackSubtitle(item)"
-        :cover-path="item.path"
-        :cover-size="132"
-        :badge="`${item.playCount}×`"
-        @play="player.setTrack(item)"
-        @contextmenu="homeContextMenu.showRecentMenu($event, item)"
-      />
-    </HomeShelf>
-
-    <HomeShelf
-      v-if="has('favorites') && favoriteTracks.length"
-      :title="$t('home.favorites')"
-      :icon="Heart"
-      :item-count="favoriteTracks.length"
-      :see-all-label="$t('home.showAll')"
-      @see-all="openLibrary('tracks')"
-    >
-      <HomeMediaCard
-        v-for="item in favoriteTracks"
-        :key="item.path"
-        :title="trackTitle(item)"
-        :subtitle="trackSubtitle(item)"
-        :cover-path="item.path"
-        :cover-size="132"
-        @play="player.setTrack(item)"
-        @contextmenu="homeContextMenu.showRecentMenu($event, item)"
-      />
-    </HomeShelf>
-
-    <HomeShelf
-      v-if="has('playlists') && playlists.length"
-      :title="$t('library.playlists')"
-      :icon="ListMusic"
-      :item-count="playlists.length"
-      :see-all-label="$t('home.showAll')"
-      @see-all="openLibrary('playlists')"
-    >
-      <HomeMediaCard
-        v-for="pl in playlists"
-        :key="pl.id"
-        :title="pl.name"
-        :subtitle="trackCountLabel(pl.tracks.length)"
-        :cover-path="pl.coverUrl || pl.tracks[0]?.path"
-        :cover-size="132"
-        fallback="play"
-        stacked
-        :open-label="$t('home.openInLibrary')"
-        @play="playTrackList(pl.tracks)"
-        @open="openLibrary('playlists')"
-      />
-    </HomeShelf>
-
-    <HomeShelf
-      v-if="has('albums') && albums.length"
-      :title="$t('library.albums')"
-      :icon="Disc3"
-      :item-count="albums.length"
-      :see-all-label="$t('home.showAll')"
-      @see-all="openLibrary('albums')"
-    >
-      <HomeMediaCard
-        v-for="[name, tracks] in albums"
-        :key="name"
-        :title="name"
-        :subtitle="trackCountLabel(tracks.length)"
-        :cover-path="tracks[0]?.path"
-        :cover-size="132"
-        fallback="disc"
-        stacked
-        :open-label="$t('home.openInLibrary')"
-        @play="playTrackList(tracks)"
-        @open="openLibrary('albums')"
-      />
-    </HomeShelf>
-
-    <HomeShelf
-      v-if="has('artists') && artists.length"
-      :title="$t('library.artists')"
-      :icon="Mic2"
-      :item-count="artists.length"
-      :see-all-label="$t('home.showAll')"
-      @see-all="openLibrary('artists')"
-    >
-      <HomeMediaCard
-        v-for="[name, tracks] in artists"
-        :key="name"
-        :title="name"
-        :subtitle="trackCountLabel(tracks.length)"
-        :cover-path="tracks[0]?.path"
-        :cover-size="132"
-        fallback="disc"
-        round
-        :open-label="$t('home.openInLibrary')"
-        @play="playTrackList(tracks)"
-        @open="openLibrary('artists')"
-      />
-    </HomeShelf>
 
     <ExplorerPromptDialog
       v-if="promptVisible"
