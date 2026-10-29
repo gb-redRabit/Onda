@@ -10,8 +10,10 @@ import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import { Plus, Play, Trash2 } from '@lucide/vue';
 import LibraryTrackRow from './LibraryTrackRow.vue';
 import ExplorerPromptDialog from '../explorer/ExplorerPromptDialog.vue';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 
 const { t } = useI18n();
+const { trackCount } = useCountLabel();
 
 const library = useLibraryStore();
 const player = usePlayerStore();
@@ -210,7 +212,7 @@ const playlistVirtualizer = useVirtualList({
         <div>
           <h2 class="text-sm font-bold">{{ selectedPlaylist.name }}</h2>
           <p class="text-xs text-base-content/50">
-            {{ selectedPlaylist.tracks.length }} {{ $t('library.tracksCount') }}
+            {{ trackCount(selectedPlaylist.tracks.length) }}
           </p>
         </div>
         <div class="flex items-center gap-2">

@@ -4,9 +4,12 @@ import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Disc3, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import { usePlayerStore } from '@renderer/stores/player';
+
+const { trackCount } = useCountLabel();
 
 const props = defineProps<{
   albums: Array<[string, MediaFile[]]>;
@@ -162,7 +165,7 @@ onUnmounted(() => grid.destroy());
                 <div class="text-sm font-medium truncate">{{ sortedAlbums[v.index][0] }}</div>
                 <div class="text-xs text-base-content/50 truncate">
                   {{ sortedAlbums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} ·
-                  {{ sortedAlbums[v.index][1].length }} {{ $t('library.tracksCount') }}
+                  {{ trackCount(sortedAlbums[v.index][1].length) }}
                 </div>
               </div>
             </div>

@@ -135,11 +135,8 @@ function folderIcon(type: string): string {
   </div>
 
   <div v-if="library.totalCount > 0" class="text-xs text-base-content/50">
-    {{ $t('settings.libTotal') }} {{ library.totalCount }} {{ $t('library.files') }} ({{
-      library.audioCount
-    }}
-    {{ $t('settings.libAudio').toLowerCase() }}, {{ library.videoCount }}
-    {{ $t('settings.libVideo').toLowerCase() }})
+    {{ $t('home.statFiles') }}: {{ library.totalCount }} ({{ $t('home.statAudio') }}:
+    {{ library.audioCount }}, {{ $t('home.statVideo') }}: {{ library.videoCount }})
   </div>
 
   <SettingsGroup

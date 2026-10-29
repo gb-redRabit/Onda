@@ -4,6 +4,7 @@ import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Film, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 import LibraryVideoRow from '@renderer/components/library/LibraryVideoRow.vue';
 import VideoCard from '@renderer/components/library/VideoCard.vue';
 
@@ -27,6 +28,7 @@ const videoListVirtualizer = useVirtualList({
 
 const videoGridRef = ref<HTMLElement | null>(null);
 const grid = useVirtualGrid(videoGridRef, 210, 6);
+const { fileCount } = useCountLabel();
 
 const videoRowVirtualizer = useVirtualList({
   count: () => Math.ceil(props.tracks.length / grid.cols.value),
@@ -65,9 +67,7 @@ onUnmounted(() => grid.destroy());
   </div>
   <template v-else>
     <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
-      <span class="text-xs text-base-content/50"
-        >{{ tracks.length }} {{ $t('library.files') }}</span
-      >
+      <span class="text-xs text-base-content/50">{{ fileCount(tracks.length) }}</span>
       <div class="flex items-center gap-2">
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"

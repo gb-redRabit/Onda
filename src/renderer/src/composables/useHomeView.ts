@@ -105,35 +105,35 @@ export function useHomeView() {
   const counters = computed<HomeCounter[]>(() => [
     {
       value: library.totalCount,
-      key: 'home.totalTracks',
+      key: 'home.statFiles',
       color: 'text-base-content',
       tab: 'overview',
       icon: LibraryBig
     },
     {
       value: library.audioCount,
-      key: 'home.audioFiles',
+      key: 'home.statAudio',
       color: 'text-primary-text',
       tab: 'tracks',
       icon: Music2
     },
     {
       value: library.videoCount,
-      key: 'home.videoFiles',
+      key: 'home.statVideo',
       color: 'text-success',
       tab: 'video',
       icon: Film
     },
     {
       value: library.imageCount,
-      key: 'home.imageFiles',
+      key: 'home.statImages',
       color: 'text-secondary',
       tab: 'images',
       icon: Image
     },
     {
       value: library.playlists.length,
-      key: 'library.playlists',
+      key: 'home.statPlaylists',
       color: 'text-warning',
       tab: 'playlists',
       icon: ListMusic

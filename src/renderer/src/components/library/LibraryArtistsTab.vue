@@ -4,6 +4,9 @@ import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Mic2, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
+
+const { trackCount } = useCountLabel();
 
 const props = defineProps<{
   artists: Array<[string, MediaFile[]]>;
@@ -79,7 +82,7 @@ onUnmounted(() => grid.destroy());
           v-model="sortKey"
           class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-none"
         >
-          <option value="name">{{ $t('library.sortArtist') }} A→Z</option>
+          <option value="name">{{ $t('library.sortArtist') }} Aâ†’Z</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
         </select>
         <button
@@ -143,7 +146,7 @@ onUnmounted(() => grid.destroy());
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate">{{ sortedArtists[v.index][0] }}</div>
                 <div class="text-xs text-base-content/50">
-                  {{ sortedArtists[v.index][1].length }} {{ $t('library.tracksCount') }}
+                  {{ trackCount(sortedArtists[v.index][1].length) }}
                 </div>
               </div>
             </div>
@@ -181,7 +184,7 @@ onUnmounted(() => grid.destroy());
               </div>
               <div class="text-sm font-medium truncate w-full">{{ name }}</div>
               <div class="text-xs text-base-content/50 mt-0.5">
-                {{ tracks.length }} {{ $t('library.tracksCount') }}
+                {{ trackCount(tracks.length) }}
               </div>
             </button>
           </div>

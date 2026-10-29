@@ -207,7 +207,7 @@ function openContextMenu(e: MouseEvent) {
       <div class="h-3 w-px bg-base-300" />
     </template>
     <template v-if="hasSection('viewCounts') && viewCounts.length">
-      <span v-for="s in viewCounts" :key="s.label">{{ s.count }} {{ s.label }}</span>
+      <span v-for="s in viewCounts" :key="s.label">{{ s.label }}: {{ s.count }}</span>
     </template>
     <template v-if="hasSection('viewCounts') && viewContext.length">
       <span v-for="c in viewContext" :key="c" class="text-base-content/60">{{ c }}</span>

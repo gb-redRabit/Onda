@@ -10,6 +10,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import LibraryTrackRow from '@renderer/components/library/LibraryTrackRow.vue';
 import LibraryTrackCard from '@renderer/components/library/LibraryTrackCard.vue';
 import LibraryTracksBulkBar from '@renderer/components/library/LibraryTracksBulkBar.vue';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 import LibraryTracksEmpty from '@renderer/components/library/LibraryTracksEmpty.vue';
 
 const props = withDefaults(
@@ -32,6 +33,7 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 const player = usePlayerStore();
+const { trackCount } = useCountLabel();
 // Zaznaczenie w store (współdzielone z menu kontekstowym).
 const selection = useLibrarySelectionStore();
 const selectedCount = computed(() => selection.count);
@@ -142,9 +144,7 @@ onUnmounted(() => {
     <div
       class="flex items-center justify-between px-4 py-2.5 bg-base-100/50 backdrop-blur border-b border-base-300 shrink-0 sticky top-0 z-[1]"
     >
-      <span class="text-xs font-medium text-base-content/60"
-        >{{ tracks.length }} {{ $t('library.tracksCount') }}</span
-      >
+      <span class="text-xs font-medium text-base-content/60">{{ trackCount(tracks.length) }}</span>
       <div class="flex items-center gap-1.5">
         <button
           data-testid="library-view-list"

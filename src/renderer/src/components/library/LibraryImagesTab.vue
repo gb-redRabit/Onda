@@ -5,6 +5,7 @@ import { Images } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import { useThumbnails } from '@renderer/composables/useThumbnails';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 
 const props = defineProps<{
   images: MediaFile[];
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 
 const { showImageMenu } = useLibraryContextMenu();
 const { request, getThumb } = useThumbnails(320);
+const { fileCount } = useCountLabel();
 
 function onImageContext(e: MouseEvent, img: MediaFile) {
   // znajdź index w oryginalnej liście dla viewera
@@ -99,9 +101,7 @@ onUnmounted(() => {
   </div>
   <template v-else>
     <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
-      <span class="text-xs text-base-content/50"
-        >{{ images.length }} {{ $t('library.files') }}</span
-      >
+      <span class="text-xs text-base-content/50">{{ fileCount(images.length) }}</span>
     </div>
     <div ref="imageGridRef" class="flex-1 overflow-auto p-4">
       <div :style="{ height: imageRowVirtualizer.getTotalSize() + 'px', position: 'relative' }">

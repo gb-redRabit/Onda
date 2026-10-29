@@ -8,8 +8,10 @@ import { Heart, Clock, Flame, Sparkles, Shuffle, Play } from '@lucide/vue';
 import LibraryTrackCard from './LibraryTrackCard.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import { shuffled } from '@renderer/utils/shuffle';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 
 const { t } = useI18n();
+const { trackCount } = useCountLabel();
 const library = useLibraryStore();
 const player = usePlayerStore();
 
@@ -137,9 +139,7 @@ const sections = computed(() => [
   <!-- Tryb wyników wyszukiwania -->
   <div v-if="hasQuery" class="flex-1 flex flex-col min-h-0">
     <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
-      <span class="text-xs text-base-content/50"
-        >{{ filteredAll.length }} {{ $t('library.tracksCount') }}</span
-      >
+      <span class="text-xs text-base-content/50">{{ trackCount(filteredAll.length) }}</span>
       <button
         v-if="filteredAll.length > 0"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
@@ -272,11 +272,11 @@ const sections = computed(() => [
       <div
         class="flex items-center gap-2 text-[11px] text-base-content/60 pt-4 border-t border-base-300"
       >
-        <span>{{ library.totalCount }} {{ $t('common.files') }}</span>
+        <span>{{ $t('home.statFiles') }}: {{ library.totalCount }}</span>
         <span>·</span>
-        <span>{{ library.audioCount }} {{ $t('home.audioFiles') }}</span>
+        <span>{{ $t('home.statAudio') }}: {{ library.audioCount }}</span>
         <span>·</span>
-        <span>{{ library.playlists.length }} {{ $t('library.playlists') }}</span>
+        <span>{{ $t('home.statPlaylists') }}: {{ library.playlists.length }}</span>
       </div>
     </div>
   </div>

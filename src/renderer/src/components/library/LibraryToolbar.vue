@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n';
 import { ArrowUpDown, ChevronDown, Disc3, Search, X } from '@lucide/vue';
 import type { ChipId, SortDir, SortKey } from '@renderer/utils/libraryView';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 
 defineProps<{ tab: string; chips: Array<{ id: ChipId; label: string }>; count: number }>();
 const emit = defineEmits<{ openMusicbrainz: [] }>();
@@ -12,6 +13,7 @@ const sortDir = defineModel<SortDir>('sortDir', { required: true });
 const chip = defineModel<ChipId>('chip', { required: true });
 
 const { t } = useI18n();
+const { trackCount } = useCountLabel();
 </script>
 
 <template>
@@ -99,8 +101,9 @@ const { t } = useI18n();
     >
       {{ c.label }}
     </button>
-    <span class="ml-auto text-[11px] text-base-content/55 self-center hidden sm:inline tabular-nums"
-      >{{ count }} {{ t('library.tracksCount') }}</span
+    <span
+      class="ml-auto text-[11px] text-base-content/55 self-center hidden sm:inline tabular-nums"
+      >{{ trackCount(count) }}</span
     >
   </div>
 </template>

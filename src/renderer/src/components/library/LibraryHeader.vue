@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { Disc3, RefreshCw, Shuffle } from '@lucide/vue';
+import { useCountLabel } from '@renderer/composables/useCountLabel';
 
 defineProps<{ totalCount: number; isScanning: boolean; showShuffle: boolean }>();
 const emit = defineEmits<{ shuffle: []; rescan: [] }>();
 
 const { t } = useI18n();
+const { fileCount } = useCountLabel();
 </script>
 
 <template>
@@ -22,7 +24,7 @@ const { t } = useI18n();
       >
         <span v-if="isScanning" class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
         <span v-else class="w-1.5 h-1.5 rounded-full bg-primary/60"></span>
-        {{ totalCount }} {{ t('library.files') }}
+        {{ fileCount(totalCount) }}
       </span>
     </div>
     <div class="flex items-center gap-1.5 shrink-0">
