@@ -36,6 +36,19 @@
   /* Semantic extras used by existing components (tokens were previously undefined). */
   --color-border-default: color-mix(in srgb, var(--color-base-content) 22%, transparent);
   --color-elevated: var(--color-base-100);
+
+  /* Skale typografii i ruchu (P3): jedna wartość dla drobnych etykiet i wspólne
+     czasy/easingi, żeby komponenty nie dobierały 120/140/150 ms po kolei. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --duration-fast: 120ms;
+  --duration-base: 160ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Cień wyprowadzony z tokenu neutralnego, więc motywy (midnight/black/custom)
+     dostają cień w swoim odcieniu zamiast czystej czerni. */
+  --shadow-color: color-mix(in oklab, var(--color-neutral) 55%, transparent);
 }
 
 :root {
@@ -98,8 +111,8 @@ textarea {
   box-shadow: inset 0 0 0 max(0px, calc(1px - var(--border)))
     color-mix(in oklab, var(--color-base-content) 14%, transparent);
   transition:
-    box-shadow 120ms ease,
-    border-color 120ms ease;
+    box-shadow var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']):focus,
 select:focus,
@@ -194,9 +207,9 @@ input:not([type='range']):focus-visible {
   font-size: 0.75rem;
   font-weight: 500;
   transition:
-    color 140ms ease,
-    background-color 140ms ease,
-    box-shadow 140ms ease;
+    color var(--duration-base) var(--ease-standard),
+    background-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
 }
 .ui-segmented > button[aria-selected='true'],
 .ui-segmented > button[aria-pressed='true'] {
@@ -204,7 +217,7 @@ input:not([type='range']):focus-visible {
   background: color-mix(in oklab, var(--color-primary) 18%, var(--color-base-100));
   box-shadow:
     inset 0 0 0 1px color-mix(in oklab, var(--color-primary) 32%, transparent),
-    0 1px 2px rgb(0 0 0 / 0.16);
+    0 1px 2px color-mix(in oklab, var(--color-neutral) 22%, transparent);
 }
 .ui-segmented > button:hover:not([aria-selected='true']):not([aria-pressed='true']) {
   color: var(--color-base-content);
@@ -267,7 +280,7 @@ input[type='range']::-webkit-slider-thumb {
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--color-base-100);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--color-neutral) 35%, transparent);
 }
 input[type='range']:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--color-primary) 55%, transparent);
@@ -316,8 +329,10 @@ input[type='range']:focus-visible {
 
 .fx-depth {
   box-shadow:
-    0 calc(var(--depth) * 1px) calc(var(--depth) * 2px) rgb(0 0 0 / calc(var(--depth) * 0.18)),
-    0 calc(var(--depth) * 1px) calc(var(--depth) * 1px) rgb(0 0 0 / calc(var(--depth) * 0.12));
+    0 calc(var(--depth) * 1px) calc(var(--depth) * 2px)
+      color-mix(in oklab, var(--color-neutral) calc(var(--depth) * 22%), transparent),
+    0 calc(var(--depth) * 1px) calc(var(--depth) * 1px)
+      color-mix(in oklab, var(--color-neutral) calc(var(--depth) * 15%), transparent);
 }
 
 .fx-noise {

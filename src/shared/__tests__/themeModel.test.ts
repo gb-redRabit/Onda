@@ -46,6 +46,18 @@ describe('sanitizeGeometry', () => {
   });
 });
 
+describe('default geometry', () => {
+  it('uses the 12/8/8 radius scale for new themes', () => {
+    expect(DEFAULT_GEOMETRY.radiusBox).toBe(12);
+    expect(DEFAULT_GEOMETRY.radiusField).toBe(8);
+    expect(DEFAULT_GEOMETRY.radiusSelector).toBe(8);
+  });
+
+  it('keeps the default radii inside the sanitizer range', () => {
+    expect(sanitizeGeometry(DEFAULT_GEOMETRY)).toEqual(DEFAULT_GEOMETRY);
+  });
+});
+
 describe('builtin themes registry', () => {
   it('exposes builtin themes with a complete color set', () => {
     expect(BUILTIN_THEME_NAMES).toContain('dark');

@@ -43,8 +43,8 @@ export const FIELD_SIZE_PRESETS = ['2rem', '2.25rem', '2.5rem', '2.75rem', '3rem
 export const SELECTOR_SIZE_PRESETS = ['14px', '16px', '18px', '20px', '22px'] as const;
 
 export const DEFAULT_GEOMETRY: ThemeGeometry = {
-  radiusBox: 8,
-  radiusField: 4,
+  radiusBox: 12,
+  radiusField: 8,
   radiusSelector: 8,
   sizeField: 2,
   sizeSelector: 2,
