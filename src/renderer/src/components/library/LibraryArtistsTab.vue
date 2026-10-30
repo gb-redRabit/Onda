@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { Mic2, LayoutList, LayoutGrid } from '@lucide/vue';
 import type { MediaFile } from '@renderer/types/media';
 import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import { useCountLabel } from '@renderer/composables/useCountLabel';
+import { groupLabel } from '@renderer/utils/libraryLabels';
 
+const { t } = useI18n();
 const { trackCount } = useCountLabel();
 
 const props = defineProps<{
@@ -182,7 +185,7 @@ onUnmounted(() => grid.destroy());
               >
                 <Mic2 :size="24" class="text-primary-text" />
               </div>
-              <div class="text-sm font-medium truncate w-full">{{ name }}</div>
+              <div class="text-sm font-medium truncate w-full">{{ groupLabel(name, t) }}</div>
               <div class="text-xs text-base-content/50 mt-0.5">
                 {{ trackCount(tracks.length) }}
               </div>

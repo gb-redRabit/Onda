@@ -5,6 +5,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { playTrackList } from '@renderer/utils/playTracks';
+import { groupLabel } from '@renderer/utils/libraryLabels';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import type { MediaFile } from '@renderer/types/media';
 
@@ -125,7 +126,9 @@ function addFrom(album: AlbumEntry, index: number): void {
               <span class="block aspect-square rounded-md overflow-hidden bg-base-300">
                 <MediaCover :path="cell.album[1][0]?.path" :size="160" fallback="disc" />
               </span>
-              <span class="block mt-1.5 text-[12px] font-medium truncate">{{ cell.album[0] }}</span>
+              <span class="block mt-1.5 text-[12px] font-medium truncate">{{
+                groupLabel(cell.album[0], $t)
+              }}</span>
               <span class="block text-[10px] text-base-content/50 truncate">
                 {{
                   cell.album[1][0]?.metadata?.albumArtist ||
@@ -155,7 +158,9 @@ function addFrom(album: AlbumEntry, index: number): void {
           <MediaCover :path="selected[1][0]?.path" :size="80" fallback="disc" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold truncate">{{ selected[0] }}</span>
+          <span class="block text-sm font-semibold truncate">{{
+            groupLabel(selected[0], $t)
+          }}</span>
           <span class="block text-[11px] text-base-content/55 truncate">
             {{ selected[1][0]?.metadata?.albumArtist || selected[1][0]?.metadata?.artist || '—' }}
           </span>

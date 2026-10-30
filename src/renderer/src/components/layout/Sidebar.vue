@@ -22,6 +22,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SidebarPlaylists from './SidebarPlaylists.vue';
 import SidebarQueuePreview from './SidebarQueuePreview.vue';
+import { groupLabel } from '@renderer/utils/libraryLabels';
 
 const router = useRouter();
 const route = useRoute();
@@ -158,7 +159,7 @@ function onResizeStart(e: MouseEvent) {
                 @click="router.push('/library?album=' + encodeURIComponent(album))"
               >
                 <Disc3 :size="13" class="shrink-0 text-primary-text/70" />
-                <span class="truncate flex-1">{{ album }}</span>
+                <span class="truncate flex-1">{{ groupLabel(album, $t) }}</span>
                 <span class="text-[11px] text-base-content/50">{{ tracks.length }}</span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useLibraryStore } from '../library';
+import { UNKNOWN_ARTIST } from '@renderer/utils/libraryLabels';
 import type { MediaFile } from '@renderer/types/media';
 
 function makeTrack(id: string, overrides: Partial<MediaFile> = {}): MediaFile {
@@ -109,10 +110,10 @@ describe('artists / albums', () => {
     expect(result[1][1]).toHaveLength(2);
   });
 
-  it('artists uses Unknown Artist for missing metadata', () => {
+  it('artists uses the unknown sentinel for missing metadata', () => {
     const store = useLibraryStore();
     store.tracks = [makeTrack('1')];
-    expect(store.artists[0][0]).toBe('Unknown Artist');
+    expect(store.artists[0][0]).toBe(UNKNOWN_ARTIST);
   });
 
   it('albums groups tracks by metadata.album', () => {

@@ -8,6 +8,7 @@ import { useCountLabel } from '@renderer/composables/useCountLabel';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import { usePlayerStore } from '@renderer/stores/player';
+import { groupLabel } from '@renderer/utils/libraryLabels';
 
 const { trackCount } = useCountLabel();
 
@@ -162,7 +163,9 @@ onUnmounted(() => grid.destroy());
                 />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ sortedAlbums[v.index][0] }}</div>
+                <div class="text-sm font-medium truncate">
+                  {{ groupLabel(sortedAlbums[v.index][0], $t) }}
+                </div>
                 <div class="text-xs text-base-content/50 truncate">
                   {{ sortedAlbums[v.index][1][0]?.metadata?.artist || $t('common.unknown') }} ·
                   {{ trackCount(sortedAlbums[v.index][1].length) }}

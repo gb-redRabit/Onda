@@ -12,6 +12,7 @@ import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import { useHomeView } from '@renderer/composables/useHomeView';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import { groupLabel } from '@renderer/utils/libraryLabels';
 
 const {
   t,
@@ -215,7 +216,7 @@ async function onPlayFromStart(): Promise<void> {
           <HomeMediaCard
             v-for="[name, tracks] in albums"
             :key="name"
-            :title="name"
+            :title="groupLabel(name, $t)"
             :subtitle="trackCountLabel(tracks.length)"
             :cover-path="tracks[0]?.path"
             :cover-size="132"
@@ -238,7 +239,7 @@ async function onPlayFromStart(): Promise<void> {
           <HomeMediaCard
             v-for="[name, tracks] in artists"
             :key="name"
-            :title="name"
+            :title="groupLabel(name, $t)"
             :subtitle="trackCountLabel(tracks.length)"
             :cover-path="tracks[0]?.path"
             :cover-size="132"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ref } from 'vue';
 import { useLibraryDerivations } from '../library-derivations';
+import { UNKNOWN_ALBUM, UNKNOWN_ARTIST } from '@renderer/utils/libraryLabels';
 import type { MediaFile } from '@renderer/types/media';
 
 function track(path: string, artist: string, album: string): MediaFile {
@@ -63,8 +64,8 @@ describe('library derivations follow metadata edits, not just the track count', 
   it('still groups by the real tag, not the fallback, across a rescan', () => {
     const tracks = ref<MediaFile[]>([track('/a.mp3', '', ''), track('/b.mp3', '', '')]);
     const d = useLibraryDerivations(tracks);
-    expect(d.artists.value.map(([n]) => n)).toEqual(['Unknown Artist']);
-    expect(d.albums.value.map(([n]) => n)).toEqual(['Unknown Album']);
+    expect(d.artists.value.map(([n]) => n)).toEqual([UNKNOWN_ARTIST]);
+    expect(d.albums.value.map(([n]) => n)).toEqual([UNKNOWN_ALBUM]);
 
     tracks.value = [track('/a.mp3', 'Alpha', 'One'), track('/b.mp3', 'Alpha', 'One')];
     expect(d.artists.value).toHaveLength(1);

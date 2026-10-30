@@ -7,6 +7,7 @@ import { Music2 } from '@lucide/vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import PlaylistAddMenu from './PlaylistAddMenu.vue';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
+import { groupLabel } from '@renderer/utils/libraryLabels';
 
 const { t } = useI18n();
 
@@ -102,7 +103,7 @@ function onDragStart(e: DragEvent) {
       </div>
     </div>
     <div class="p-2.5">
-      <div class="text-sm font-medium truncate">{{ name }}</div>
+      <div class="text-sm font-medium truncate">{{ groupLabel(name, t) }}</div>
       <div class="text-xs text-base-content/50 mt-0.5 truncate">
         {{ artist }} · {{ count }} {{ $t('common.tracks') }} <span v-if="year">· {{ year }}</span>
       </div>

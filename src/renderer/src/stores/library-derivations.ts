@@ -2,6 +2,7 @@ import { computed, ref } from 'vue';
 import type { Ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { topN } from '@renderer/utils/topN';
+import { UNKNOWN_ALBUM, UNKNOWN_ARTIST } from '@renderer/utils/libraryLabels';
 
 // `tracks` to `shallowRef`: edycje metadanych utworu muszą być sygnalizowane przez
 // wywołującego przez `triggerRef`. Statystyki odtwarzania (playCount / lastPlayed) żyją na
@@ -85,7 +86,7 @@ export function useLibraryDerivations(
   // wcześniejsze `if (type !== 'audio') continue` marnowało cykle przy każdym
   // odświeżeniu (dla 50k plików to tysiące odrzuceń na każdy widok).
   const artists = computed(() =>
-    groupAudioByMetadataKey(audioTracks.value, 'artist', 'Unknown Artist')
+    groupAudioByMetadataKey(audioTracks.value, 'artist', UNKNOWN_ARTIST)
   );
 
   // Albumy grupujemy po nazwie ORAZ wykonawcy albumu (`albumArtist`, w razie braku
@@ -96,8 +97,8 @@ export function useLibraryDerivations(
   const albums = computed(() => {
     const groups = new Map<string, { album: string; artist: string; tracks: MediaFile[] }>();
     for (const track of audioTracks.value) {
-      const album = track.metadata?.album || 'Unknown Album';
-      const artist = track.metadata?.albumArtist || track.metadata?.artist || 'Unknown Artist';
+      const album = track.metadata?.album || UNKNOWN_ALBUM;
+      const artist = track.metadata?.albumArtist || track.metadata?.artist || UNKNOWN_ARTIST;
       const key = `${album.toLowerCase()}\u0000${artist.toLowerCase()}`;
       const bucket = groups.get(key);
       if (bucket) bucket.tracks.push(track);
