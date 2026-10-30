@@ -196,7 +196,11 @@ function onHoverLeave() {
         </div>
         <div class="text-xs text-base-content/50 mt-0.5 truncate">
           {{ track.metadata?.artist || t('common.unknown')
-          }}{{ track.metadata?.album ? ` · ${track.metadata.album}` : '' }}
+          }}{{
+            track.metadata?.album && track.metadata.album !== track.metadata?.artist
+              ? ` · ${track.metadata.album}`
+              : ''
+          }}
         </div>
       </div>
     </div>

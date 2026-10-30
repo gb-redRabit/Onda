@@ -144,9 +144,13 @@ function onDragStart(e: DragEvent) {
           :text="track.metadata?.artist || $t('common.unknown')"
           :query="query"
         />
-        <span v-if="track.metadata?.album" class="opacity-40">·</span>
+        <span
+          v-if="track.metadata?.album && track.metadata.album !== track.metadata?.artist"
+          class="opacity-40"
+          >·</span
+        >
         <HighlightText
-          v-if="track.metadata?.album"
+          v-if="track.metadata?.album && track.metadata.album !== track.metadata?.artist"
           class="truncate opacity-80"
           :text="track.metadata.album"
           :query="query"
