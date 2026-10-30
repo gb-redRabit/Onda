@@ -840,6 +840,7 @@ export default {
   },
   settings: {
     title: 'Ustawienia',
+    subtitle: 'Wszystkie ustawienia pogrupowane według obszarów',
     back: 'Wstecz',
     openSection: 'Otwórz sekcję',
     appearance: 'Układ i gęstość',
@@ -893,7 +894,7 @@ export default {
     midnight: 'Midnight',
     spotify: 'Spotify',
     luxury: 'Luksusowy',
-    cyberpunk: 'Cyberpunk',
+    cyberpunk: 'Cyberpunk (jasny)',
     aqua: 'Aqua',
     black: 'Czarny',
     lemonade: 'Lemoniada',

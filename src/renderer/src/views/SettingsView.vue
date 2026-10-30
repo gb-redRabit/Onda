@@ -9,7 +9,8 @@ import {
   RotateCcw,
   FileDown,
   FileUp,
-  CornerDownLeft
+  CornerDownLeft,
+  ChevronRight
 } from '@lucide/vue';
 import { logger } from '@shared/logger';
 import { useSettingsStore } from '@renderer/stores/settings';
@@ -41,7 +42,8 @@ const {
   promptCancel
 } = usePromptDialog();
 
-const { activeSection, activeTab, search, selectTab } = useSettingsNav();
+const { activeSection, activeTab, search, selectTab, goHome, goBackToSection, activeSectionItem } =
+  useSettingsNav();
 
 const searchInput = ref<HTMLInputElement | null>(null);
 const menuOpen = ref(false);
@@ -257,6 +259,7 @@ onBeforeUnmount(() => {
     <!-- Nagłówek: tytuł + wyszukiwanie + rzadkie akcje pod ⋯ -->
     <PageHeader
       :title="t('settings.title')"
+      :subtitle="t('settings.subtitle')"
       :icon="Settings"
       compact
       class="shrink-0 relative z-30"
@@ -388,12 +391,19 @@ onBeforeUnmount(() => {
         <!-- Przegląd: ekran startowy ze wszystkimi sekcjami i zakładkami -->
         <div v-else-if="!activeTab" class="px-6 py-6 space-y-8" data-testid="settings-overview">
           <section v-for="section in SETTINGS_SECTIONS" :key="section.id">
-            <h3
-              class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/60 mb-3"
+            <button
+              type="button"
+              class="group mb-3 flex items-center gap-2 rounded-field text-[11px] font-semibold uppercase tracking-wider text-base-content/60 transition-colors hover:text-base-content"
+              :data-testid="`settings-section-header-${section.id}`"
+              @click="tabsOfSection(section.id)[0] && openTab(tabsOfSection(section.id)[0]!.id)"
             >
               <component :is="section.icon" :size="15" class="text-primary-text" />
               {{ t(section.labelKey) }}
-            </h3>
+              <ChevronRight
+                :size="12"
+                class="text-base-content/30 transition-colors group-hover:text-base-content/60"
+              />
+            </button>
             <div class="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
               <button
                 v-for="tab in tabsOfSection(section.id)"
@@ -415,6 +425,33 @@ onBeforeUnmount(() => {
 
         <!-- Aktywna zakładka -->
         <div v-else :key="'tab-' + activeTab" class="px-6 py-6">
+          <!-- Powrót: przegląd → sekcja → zakładka. Wcześniej z otwartej zakładki
+               nie było drogi do przeglądu poza ponownym klikaniem w rail. -->
+          <nav
+            class="mb-4 flex items-center gap-1 text-[11px] text-base-content/50"
+            :aria-label="t('settings.title')"
+          >
+            <button
+              type="button"
+              class="rounded-field px-1 py-0.5 transition-colors hover:bg-base-content/8 hover:text-base-content"
+              data-testid="settings-breadcrumb-home"
+              @click="goHome"
+            >
+              {{ t('settings.overview') }}
+            </button>
+            <template v-if="activeSectionItem">
+              <ChevronRight :size="11" class="shrink-0" />
+              <button
+                type="button"
+                class="rounded-field px-1 py-0.5 transition-colors hover:bg-base-content/8 hover:text-base-content"
+                @click="goBackToSection"
+              >
+                {{ t(activeSectionItem.labelKey) }}
+              </button>
+            </template>
+            <ChevronRight :size="11" class="shrink-0" />
+            <span class="truncate px-1 text-base-content/70">{{ activeTabLabel }}</span>
+          </nav>
           <header class="mb-6 flex items-start gap-3">
             <span
               v-if="activeTabMeta"

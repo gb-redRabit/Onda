@@ -836,6 +836,7 @@ export default {
   },
   settings: {
     title: 'Settings',
+    subtitle: 'All settings grouped by area',
     back: 'Back',
     openSection: 'Open section',
     appearance: 'Layout & density',
@@ -889,7 +890,7 @@ export default {
     midnight: 'Midnight',
     spotify: 'Spotify',
     luxury: 'Luxury',
-    cyberpunk: 'Cyberpunk',
+    cyberpunk: 'Cyberpunk (light)',
     aqua: 'Aqua',
     black: 'Black',
     lemonade: 'Lemonade',
