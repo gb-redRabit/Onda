@@ -2,9 +2,9 @@
 import { useI18n } from 'vue-i18n';
 import { ArrowUpDown, ChevronDown, Disc3, Search, X } from '@lucide/vue';
 import type { ChipId, SortDir, SortKey } from '@renderer/utils/libraryView';
-import { useCountLabel } from '@renderer/composables/useCountLabel';
+import Input from '@renderer/components/ui/Input.vue';
 
-defineProps<{ tab: string; chips: Array<{ id: ChipId; label: string }>; count: number }>();
+defineProps<{ tab: string; chips: Array<{ id: ChipId; label: string }> }>();
 const emit = defineEmits<{ openMusicbrainz: [] }>();
 
 const query = defineModel<string>('query', { required: true });
@@ -13,7 +13,6 @@ const sortDir = defineModel<SortDir>('sortDir', { required: true });
 const chip = defineModel<ChipId>('chip', { required: true });
 
 const { t } = useI18n();
-const { trackCount } = useCountLabel();
 </script>
 
 <template>
@@ -24,10 +23,10 @@ const { trackCount } = useCountLabel();
         :size="14"
         class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 group-focus-within:text-primary-text transition-colors pointer-events-none"
       />
-      <input
+      <Input
         v-model="query"
+        class="pl-9 pr-8"
         :placeholder="tab === 'overview' ? t('library.searchPlaceholder') : t('library.search')"
-        class="w-full h-9 pl-9 pr-8 rounded-field bg-base-200/70 border border-base-300/80 text-[13px] focus:border-primary/50 focus:outline-hidden focus:ring-2 focus:ring-primary/10 placeholder:text-base-content/50 transition-all"
       />
       <button
         v-if="query"
@@ -101,9 +100,5 @@ const { trackCount } = useCountLabel();
     >
       {{ c.label }}
     </button>
-    <span
-      class="ml-auto text-[11px] text-base-content/55 self-center hidden sm:inline tabular-nums"
-      >{{ trackCount(count) }}</span
-    >
   </div>
 </template>

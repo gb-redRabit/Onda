@@ -326,7 +326,6 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
           v-model:chip="chip"
           :tab="tab"
           :chips="chips"
-          :count="sortedFilteredTracks.length"
           @open-musicbrainz="showingMBLookup = true"
         />
       </div>
