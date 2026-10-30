@@ -5,6 +5,7 @@ import { logger } from '@shared/logger';
 import { detectPlatform } from '@shared/platform';
 import { buildYouTubeWatchUrl } from '@shared/provider';
 import { formatNumber } from '@renderer/utils/formatters';
+import { stripUrls } from '@renderer/utils/stripUrls';
 import { useOnlineStore } from '@renderer/stores/online';
 import { observeIntersection } from '@renderer/utils/sharedIntersection';
 import { channelPageUrl } from '@renderer/utils/onlineHelpers';
@@ -224,7 +225,7 @@ onBeforeUnmount(() => {
           v-if="showDescription && (video as YouTubeVideo).description"
           class="text-xs text-base-content/50 mt-1 line-clamp-2"
         >
-          {{ (video as YouTubeVideo).description }}
+          {{ stripUrls((video as YouTubeVideo).description || '') }}
         </p>
       </div>
 

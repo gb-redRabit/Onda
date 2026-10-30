@@ -249,12 +249,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           </OnlineButton>
         </template>
         <template v-else>
-          <OnlineButton
-            v-if="yt.resolved || yt.searchResults.length"
-            variant="secondary"
-            size="sm"
-            @click="clearResolved"
-          >
+          <OnlineButton v-if="yt.resolved" variant="secondary" size="sm" @click="clearResolved">
             <X :size="12" />
             {{ $t('youtube.clear') }}
           </OnlineButton>

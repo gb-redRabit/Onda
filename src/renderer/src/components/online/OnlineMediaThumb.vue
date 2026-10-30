@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Play, Download, Check, RefreshCw, Radio, Bookmark, SlidersHorizontal } from '@lucide/vue';
+import { Play, Download, Check, RefreshCw, Radio, Bookmark, MoreHorizontal } from '@lucide/vue';
 import { logger } from '@shared/logger';
 import { detectPlatform } from '@shared/platform';
 import { useSavedStore } from '@renderer/stores/saved';
@@ -165,26 +165,10 @@ function onExpand(e?: MouseEvent) {
       >
         <Bookmark :size="11" :fill="isSaved ? 'currentColor' : 'none'" />
       </OnlineIconButton>
-      <OnlineIconButton
-        :disabled="state !== null"
-        :title="$t('youtube.addToQueue')"
-        variant="primary"
-        size="sm"
-        @click="onQueue"
-      >
-        <RefreshCw
-          v-if="state === 'queuing' || state === 'downloading'"
-          :size="11"
-          class="animate-spin"
-        />
-        <Check v-else-if="state === 'done'" :size="11" />
-        <Download v-else :size="11" />
-      </OnlineIconButton>
     </div>
 
-    <!-- Prawy dolny róg: czas trwania + pobieranie z pełną kontrolą (otwiera dialog konfiguracji).
-         Zawsze widoczne, aby opcje per plik były odkrywalne, w przeciwieństwie do
-         szybkich akcji widocznych tylko przy najechaniu. -->
+    <!-- Prawy dolny róg: czas trwania, zawsze widoczne „Pobierz” (szybkie dodanie
+         do kolejki) i `⋯` z pełną konfiguracją pojawiające się przy najechaniu. -->
     <div class="online-card-actions absolute bottom-1.5 right-1.5 z-20 flex items-center gap-1">
       <div
         v-if="video.duration"
@@ -195,12 +179,30 @@ function onExpand(e?: MouseEvent) {
       <button
         v-if="layout !== 'list' && !hideQuickActions"
         type="button"
-        class="fx-noise inline-flex items-center justify-center rounded-field bg-neutral/80 text-neutral-content hover:bg-neutral hover:text-base-content transition-colors"
+        data-testid="online-quick-queue"
+        class="fx-noise inline-flex items-center justify-center rounded-field bg-neutral/80 p-1 text-neutral-content transition-colors hover:bg-primary hover:text-primary-content disabled:opacity-60"
+        :disabled="state !== null"
+        :title="$t('youtube.addToQueue')"
+        :aria-label="$t('youtube.addToQueue')"
+        @click.stop="onQueue"
+      >
+        <RefreshCw
+          v-if="state === 'queuing' || state === 'downloading'"
+          :size="12"
+          class="animate-spin"
+        />
+        <Check v-else-if="state === 'done'" :size="12" />
+        <Download v-else :size="12" />
+      </button>
+      <button
+        v-if="layout !== 'list' && !hideQuickActions"
+        type="button"
+        class="fx-noise inline-flex items-center justify-center rounded-field bg-neutral/80 p-1 text-neutral-content opacity-0 transition-[opacity,background-color,color] hover:bg-neutral hover:text-base-content group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
         :title="$t('youtube.downloadOptions')"
         :aria-label="$t('youtube.downloadOptions')"
         @click.stop="onOptions"
       >
-        <SlidersHorizontal :size="12" />
+        <MoreHorizontal :size="12" />
       </button>
     </div>
   </div>
