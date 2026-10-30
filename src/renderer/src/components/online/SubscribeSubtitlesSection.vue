@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import FormField from '@renderer/components/ui/FormField.vue';
+import Input from '@renderer/components/ui/Input.vue';
+import Select from '@renderer/components/ui/Select.vue';
+import Switch from '@renderer/components/ui/Switch.vue';
 
 defineProps<{ isSc: boolean }>();
 const subsEnabled = defineModel<boolean>('subsEnabled', { required: true });
@@ -13,45 +17,43 @@ const { t } = useI18n();
 
 <template>
   <section v-if="!isSc">
-    <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
+    <p class="mb-2 text-xs font-medium uppercase tracking-wider text-base-content/50">
       {{ t('youtube.subsSection') }}
     </p>
-    <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-      <input v-model="subsEnabled" type="checkbox" />
-      {{ t('youtube.subsDownload') }}
-    </label>
+    <div class="flex items-center gap-2 text-sm">
+      <Switch v-model="subsEnabled" size="sm" :label="t('youtube.subsDownload')" />
+      <span>{{ t('youtube.subsDownload') }}</span>
+    </div>
     <div v-if="subsEnabled" class="mt-2 space-y-2">
-      <input
-        v-model="subsLangs"
-        class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        :placeholder="t('youtube.subsLangsPlaceholder')"
-      />
+      <FormField :label="t('youtube.subsLangsLabel')">
+        <template #default="{ id }">
+          <Input :id="id" v-model="subsLangs" :placeholder="t('youtube.subsLangsPlaceholder')" />
+        </template>
+      </FormField>
       <div class="grid grid-cols-2 gap-2">
-        <select
-          v-model="subsMode"
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        >
-          <option value="best">{{ t('youtube.subsModeBest') }}</option>
-          <option value="manual">{{ t('youtube.subsModeManual') }}</option>
-          <option value="auto">{{ t('youtube.subsModeAuto') }}</option>
-        </select>
-        <select
-          v-model="subsFormat"
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        >
-          <option value="srt">SRT</option>
-          <option value="vtt">VTT</option>
-          <option value="ass">ASS</option>
-        </select>
+        <FormField :label="t('youtube.subsModeLabel')">
+          <template #default="{ id }">
+            <Select :id="id" v-model="subsMode">
+              <option value="best">{{ t('youtube.subsModeBest') }}</option>
+              <option value="manual">{{ t('youtube.subsModeManual') }}</option>
+              <option value="auto">{{ t('youtube.subsModeAuto') }}</option>
+            </Select>
+          </template>
+        </FormField>
+        <FormField :label="t('youtube.subsFormatLabel')">
+          <template #default="{ id }">
+            <Select :id="id" v-model="subsFormat">
+              <option value="srt">SRT</option>
+              <option value="vtt">VTT</option>
+              <option value="ass">ASS</option>
+            </Select>
+          </template>
+        </FormField>
       </div>
-      <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
-        <input
-          v-model="subsFolder"
-          type="checkbox"
-          class="w-3.5 h-3.5 fx-depth rounded-field accent-primary"
-        />
-        {{ t('youtube.subsFolder') }}
-      </label>
+      <div class="flex items-center gap-2 text-xs text-base-content/70">
+        <Switch v-model="subsFolder" size="sm" :label="t('youtube.subsFolder')" />
+        <span>{{ t('youtube.subsFolder') }}</span>
+      </div>
     </div>
   </section>
 </template>
