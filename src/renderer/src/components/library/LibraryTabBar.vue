@@ -47,7 +47,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         :aria-selected="props.modelValue === tabItem.id"
         :tabindex="props.modelValue === tabItem.id ? 0 : -1"
         :aria-label="tabItem.label"
-        class="group flex flex-1 min-w-0 items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 rounded-field text-xs font-medium transition-all duration-150"
+        class="group flex flex-1 min-w-max items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 rounded-field text-xs font-medium transition-all duration-150"
         :class="
           props.modelValue === tabItem.id
             ? 'bg-primary/18 text-base-content shadow-xs ring-1 ring-primary/30 flex-[1.2]'
@@ -100,8 +100,10 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
 
 /* Priorytet: pełny pasek → bez liczników → bez ikon → same ikony.
    `display: none` (a nie `visibility`) jest konieczne: ukryty element musi
-   oddać miejsce, inaczej etykiety nadal się ucinały. */
-@container (max-width: 1050px) {
+   oddać miejsce, inaczej etykiety nadal się ucinały. Progi są dobrane pod
+   najdłuższe polskie etykiety, a `min-w-max` na zakładce gwarantuje, że przy
+   szerszym kroju pisma pasek przewinie się zamiast ucinać tekst. */
+@container (max-width: 1100px) {
   [data-tab-count] {
     display: none;
   }
@@ -113,13 +115,14 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
   }
 }
 
-@container (max-width: 660px) {
+@container (max-width: 700px) {
   [data-tab-label] {
     display: none;
   }
 
   [data-tab] {
     flex: 0 0 2.5rem;
+    min-width: 0;
   }
 }
 </style>
