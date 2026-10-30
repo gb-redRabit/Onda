@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FolderOpen } from '@lucide/vue';
+import FormField from '@renderer/components/ui/FormField.vue';
+import Input from '@renderer/components/ui/Input.vue';
+import Select from '@renderer/components/ui/Select.vue';
+import Button from '@renderer/components/ui/Button.vue';
 
 // Współdzielony wybór folderu wyjściowego używany przez dialogi konfiguracji
 // pobierania i subskrypcji. Opcja kanału pokazuje się tylko, gdy dostępny jest tytuł
 // kanału, a opcja playlisty tylko dla zadań pobierania, które niosą playlistę.
-defineProps<{
+const props = defineProps<{
   channelFolder: string;
   playlistFolder?: string;
   channelTitle?: string;
@@ -22,56 +27,57 @@ async function pickOutputDir() {
 }
 
 const { t } = useI18n();
+
+// Podpowiedź pokazuje, gdzie ostatecznie trafi plik — bez osobnej linijki pod polem.
+const hint = computed(() => {
+  if (folderMode.value === 'channel') {
+    return t('youtube.prefOutputDirChannelHint', { folder: props.channelFolder });
+  }
+  if (folderMode.value === 'playlist') {
+    return props.playlistFolder
+      ? t('youtube.folderModePlaylistHint', { folder: props.playlistFolder })
+      : '';
+  }
+  return '';
+});
 </script>
 
 <template>
   <section>
-    <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
-      {{ t('youtube.prefOutputDir') }}
-    </p>
-    <div class="flex items-center gap-2">
-      <select
-        v-model="folderMode"
-        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-      >
-        <option value="global">{{ t('youtube.prefOutputDirGlobal') }}</option>
-        <option v-if="channelTitle" value="channel">
-          {{ t('youtube.prefOutputDirChannel') }}
-        </option>
-        <option v-if="playlistTitle" value="playlist">
-          {{ t('youtube.folderModePlaylist') }}
-        </option>
-        <option value="custom">{{ t('youtube.prefOutputDirCustom') }}</option>
-      </select>
-      <button
-        v-if="folderMode === 'custom'"
-        class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
-        :aria-label="$t('sources.chooseFolder')"
+    <FormField :label="t('youtube.prefOutputDir')" :hint="hint">
+      <template #default="{ id }">
+        <div class="flex items-center gap-2">
+          <Select :id="id" v-model="folderMode">
+            <option value="global">{{ t('youtube.prefOutputDirGlobal') }}</option>
+            <option v-if="channelTitle" value="channel">
+              {{ t('youtube.prefOutputDirChannel') }}
+            </option>
+            <option v-if="playlistTitle" value="playlist">
+              {{ t('youtube.folderModePlaylist') }}
+            </option>
+            <option value="custom">{{ t('youtube.prefOutputDirCustom') }}</option>
+          </Select>
+        </div>
+      </template>
+    </FormField>
+    <div v-if="folderMode === 'custom'" class="mt-1.5 flex items-center gap-2">
+      <Input
+        v-model="outputDir"
+        readonly
+        :placeholder="t('youtube.prefOutputDirPlaceholder')"
+        class="min-w-0 flex-1"
+        :aria-label="t('youtube.prefOutputDirCustom')"
+      />
+      <Button
+        variant="outline"
+        size="icon"
+        class="shrink-0"
+        :label="t('sources.chooseFolder')"
+        :title="t('sources.chooseFolder')"
         @click="pickOutputDir"
       >
         <FolderOpen :size="14" />
-      </button>
+      </Button>
     </div>
-    <p
-      v-if="folderMode === 'channel'"
-      class="mt-1 truncate text-[11px] text-base-content/50"
-      :title="channelFolder"
-    >
-      {{ t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
-    </p>
-    <p
-      v-else-if="folderMode === 'playlist'"
-      class="mt-1 truncate text-[11px] text-base-content/50"
-      :title="playlistFolder"
-    >
-      {{ t('youtube.folderModePlaylistHint', { folder: playlistFolder }) }}
-    </p>
-    <input
-      v-else-if="folderMode === 'custom'"
-      v-model="outputDir"
-      readonly
-      class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-      :placeholder="t('youtube.prefOutputDirPlaceholder')"
-    />
   </section>
 </template>

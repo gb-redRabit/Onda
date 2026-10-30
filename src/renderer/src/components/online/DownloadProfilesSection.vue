@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Save, Trash2 } from '@lucide/vue';
+import Input from '@renderer/components/ui/Input.vue';
+import Select from '@renderer/components/ui/Select.vue';
+import Button from '@renderer/components/ui/Button.vue';
 
-defineProps<{
+const props = defineProps<{
   isSc: boolean;
   profiles: Array<{ id: string; name: string }>;
   selectedId: string;
@@ -10,50 +14,53 @@ defineProps<{
 const emit = defineEmits<{ select: [string]; save: []; delete: [] }>();
 const profileName = defineModel<string>('profileName', { required: true });
 
-function onChange(e: Event) {
-  emit('select', (e.target as HTMLSelectElement).value);
-}
+const selected = computed({
+  get: () => props.selectedId,
+  set: (id: string) => emit('select', id)
+});
 
 const { t } = useI18n();
 </script>
 
 <template>
   <section v-if="!isSc">
-    <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
+    <p class="mb-2 text-xs font-medium uppercase tracking-wider text-base-content/50">
       {{ t('youtube.profilesSection') }}
     </p>
     <div class="flex items-center gap-2">
-      <select
-        :value="selectedId"
-        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        @change="onChange"
-      >
+      <Select v-model="selected" class="min-w-0 flex-1" :aria-label="t('youtube.profilesSection')">
         <option value="">{{ t('youtube.profileNone') }}</option>
         <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-      </select>
-      <button
+      </Select>
+      <Button
         v-if="selectedId"
-        class="fx-noise p-2 fx-depth rounded-field border border-base-300 text-base-content/70 hover:text-error hover:bg-base-content/10 transition-colors shrink-0"
+        variant="ghost"
+        size="icon"
+        class="shrink-0 hover:text-error"
+        :label="t('youtube.profileDelete')"
         :title="t('youtube.profileDelete')"
         @click="emit('delete')"
       >
         <Trash2 :size="14" />
-      </button>
+      </Button>
     </div>
-    <div class="flex items-center gap-2 mt-2">
-      <input
+    <div class="mt-1.5 flex items-center gap-2">
+      <Input
         v-model="profileName"
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+        class="min-w-0 flex-1"
         :placeholder="t('youtube.profileNamePlaceholder')"
+        :aria-label="t('youtube.profileNamePlaceholder')"
       />
-      <button
-        class="fx-noise flex items-center gap-1 px-3 py-2 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors shrink-0"
+      <Button
+        variant="outline"
+        size="md"
+        class="shrink-0"
         :disabled="!profileName.trim()"
         @click="emit('save')"
       >
         <Save :size="13" />
         {{ t('youtube.profileSave') }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>

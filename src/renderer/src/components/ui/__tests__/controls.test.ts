@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils';
 import Switch from '../Switch.vue';
 import Input from '../Input.vue';
 import FormField from '../FormField.vue';
+import Select from '../Select.vue';
+import TimeInput from '../TimeInput.vue';
 
 describe('Switch', () => {
   it('is a switch with a checked state and a label', () => {
@@ -69,5 +71,70 @@ describe('FormField', () => {
     expect(wrapper.text()).toContain('Must be a number');
     expect(wrapper.text()).not.toContain('Optional');
     expect(input.attributes('aria-describedby')).toBe(`${input.attributes('id')}-error`);
+  });
+});
+
+describe('Select', () => {
+  it('renders options in the native control and forwards the model', async () => {
+    const wrapper = mount(Select, {
+      props: { modelValue: 'b' },
+      slots: { default: '<option value="a">A</option><option value="b">B</option>' }
+    });
+    const select = wrapper.get('select');
+    expect((select.element as HTMLSelectElement).value).toBe('b');
+    await select.setValue('a');
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['a']);
+  });
+});
+
+describe('TimeInput', () => {
+  it('formats seconds as mm:ss and hours as h:mm:ss', () => {
+    expect(mount(TimeInput, { props: { modelValue: 300 } }).get('input').element.value).toBe(
+      '05:00'
+    );
+    expect(mount(TimeInput, { props: { modelValue: 3725 } }).get('input').element.value).toBe(
+      '1:02:05'
+    );
+  });
+
+  it('parses mm:ss, h:mm:ss and plain seconds', async () => {
+    const wrapper = mount(TimeInput, { props: { modelValue: null } });
+    const input = wrapper.get('input');
+
+    await input.setValue('1:30');
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([90]);
+
+    await input.setValue('1:02:05');
+    expect(wrapper.emitted('update:modelValue')?.[1]).toEqual([3725]);
+
+    await input.setValue('42');
+    expect(wrapper.emitted('update:modelValue')?.[2]).toEqual([42]);
+  });
+
+  it('emits null for an empty field', async () => {
+    const wrapper = mount(TimeInput, { props: { modelValue: 60 } });
+    await wrapper.get('input').setValue('');
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([null]);
+  });
+
+  it('flags invalid text without overwriting the model, then restores on blur', async () => {
+    const wrapper = mount(TimeInput, { props: { modelValue: 60 } });
+    const input = wrapper.get('input');
+
+    await input.setValue('abc');
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+    expect(input.attributes('aria-invalid')).toBe('true');
+
+    await input.trigger('blur');
+    expect(input.element.value).toBe('01:00');
+    expect(input.attributes('aria-invalid')).toBeUndefined();
+  });
+
+  it('normalizes plain seconds on blur', async () => {
+    const wrapper = mount(TimeInput, { props: { modelValue: null } });
+    const input = wrapper.get('input');
+    await input.setValue('5');
+    await input.trigger('blur');
+    expect(input.element.value).toBe('00:05');
   });
 });

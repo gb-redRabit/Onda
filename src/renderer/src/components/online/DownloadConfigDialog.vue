@@ -7,6 +7,7 @@ import { useUIStore } from '@renderer/stores/ui';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadConfigForm } from '@renderer/composables/useDownloadConfigForm';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
+import Button from '@renderer/components/ui/Button.vue';
 import DownloadPreviewCard from './DownloadPreviewCard.vue';
 import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import DownloadFormatSection from './DownloadFormatSection.vue';
@@ -147,20 +148,24 @@ function confirm() {
         </h3>
         <p class="text-xs text-base-content/50 truncate">
           <span v-if="props.channelTitle">{{ props.channelTitle }}</span>
-          <span v-if="props.channelTitle && props.playlistTitle"> · </span>
-          <span v-if="props.playlistTitle">{{ props.playlistTitle }}</span>
+          <span v-if="props.channelTitle && props.playlistTitle !== props.channelTitle"> · </span>
+          <span v-if="props.playlistTitle && props.playlistTitle !== props.channelTitle">{{
+            props.playlistTitle
+          }}</span>
         </p>
         <p v-if="isGeneric" class="mt-1 text-[11px] text-info">
           {{ $t('youtube.genericExtractorHint') }}
         </p>
       </div>
-      <button
-        class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-        :aria-label="$t('common.close')"
+      <Button
+        variant="ghost"
+        size="icon"
+        :label="$t('common.close')"
+        :title="$t('common.close')"
         @click="close"
       >
         <X :size="16" />
-      </button>
+      </Button>
     </div>
 
     <!-- Treść -->
@@ -240,20 +245,14 @@ function confirm() {
     </div>
 
     <!-- Stopka -->
-    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300 shrink-0">
-      <button
-        class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
-        @click="close"
-      >
+    <div class="flex shrink-0 items-center justify-end gap-2 border-t border-base-300 px-5 py-4">
+      <Button variant="outline" size="md" @click="close">
         {{ $t('youtube.cancel') }}
-      </button>
-      <button
-        class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
-        @click="confirm"
-      >
+      </Button>
+      <Button variant="solid" size="md" @click="confirm">
         <Download :size="14" />
         {{ $t('youtube.addToQueue') }}
-      </button>
+      </Button>
     </div>
   </ModalShell>
 </template>

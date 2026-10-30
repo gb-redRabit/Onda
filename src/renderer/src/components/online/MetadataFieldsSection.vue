@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import FormField from '@renderer/components/ui/FormField.vue';
+import Input from '@renderer/components/ui/Input.vue';
 
 withDefaults(defineProps<{ gridClass?: string }>(), { gridClass: 'grid-cols-3 gap-3' });
 const artist = defineModel<string>('artist', { required: true });
@@ -11,29 +13,26 @@ const { t } = useI18n();
 
 <template>
   <section>
-    <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-1">
+    <p class="mb-1 text-xs font-medium uppercase tracking-wider text-base-content/50">
       {{ t('youtube.metaSection') }}
     </p>
-    <p class="text-[11px] text-base-content/50 mb-2">{{ t('youtube.metaHint') }}</p>
+    <p class="mb-2 text-[11px] text-base-content/50">{{ t('youtube.metaHint') }}</p>
     <div class="grid" :class="gridClass">
-      <input
-        v-model="artist"
-        class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        :placeholder="t('youtube.metaArtist')"
-        :aria-label="t('youtube.metaArtist')"
-      />
-      <input
-        v-model="album"
-        class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        :placeholder="t('youtube.metaAlbum')"
-        :aria-label="t('youtube.metaAlbum')"
-      />
-      <input
-        v-model="year"
-        class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
-        :placeholder="t('youtube.metaYear')"
-        :aria-label="t('youtube.metaYear')"
-      />
+      <FormField :label="t('youtube.metaArtist')">
+        <template #default="{ id }">
+          <Input :id="id" v-model="artist" />
+        </template>
+      </FormField>
+      <FormField :label="t('youtube.metaAlbum')">
+        <template #default="{ id }">
+          <Input :id="id" v-model="album" />
+        </template>
+      </FormField>
+      <FormField :label="t('youtube.metaYear')">
+        <template #default="{ id }">
+          <Input :id="id" v-model="year" inputmode="numeric" />
+        </template>
+      </FormField>
     </div>
   </section>
 </template>
