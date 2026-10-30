@@ -1,10 +1,8 @@
 /**
- * Nazwa wyświetlana dla ścieżki folderu: ostatni niepusty segment, albo `fallback`
- * gdy nie ma ścieżki (widok dysków "Ten komputer"). Dzielone po obu separatorach,
- * więc ścieżka przechwycona na jednej platformie nadal nazywa się na innej.
+ * Tytuł okna eksploratora: pełna ścieżka bieżącego folderu, a dla widoku dysków
+ * (`path` puste) `fallback`. Pełna ścieżka pozwala odróżnić w pasku zadań kilka
+ * okien otwartych w folderach o tej samej nazwie (np. `Music` na dwóch dyskach).
  */
 export function explorerWindowTitle(path: string | null | undefined, fallback: string): string {
-  if (!path) return fallback;
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts[parts.length - 1] || path;
+  return path ? path : fallback;
 }
