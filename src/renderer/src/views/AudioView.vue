@@ -13,6 +13,7 @@ import PluginUiSlot from '@renderer/components/explorer/plugins/PluginUiSlot.vue
 import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
+import Button from '@renderer/components/ui/Button.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
@@ -45,10 +46,17 @@ const showVizSettings = ref(false);
 const showLayoutEditor = ref(false);
 // Nakładka edytora układu jest modalna: pułapka focusu + powrót fokusu (WCAG 2.4.3).
 const layoutEditorRef = ref<HTMLElement | null>(null);
+const layoutEditorComponent = ref<{ cancel: () => void } | null>(null);
+
+// „Anuluj” w nagłówku nakładki: przywraca migawkę sprzed edycji i zamyka edytor.
+function cancelLayoutEditor(): void {
+  layoutEditorComponent.value?.cancel();
+  showLayoutEditor.value = false;
+}
 useDialogFocus(layoutEditorRef, {
   closeOnEscape: true,
   onEscape: () => {
-    showLayoutEditor.value = false;
+    cancelLayoutEditor();
   }
 });
 const { setViewEl, showUI, isFullscreen, onMouseMove, toggleFullscreen } = useAudioImmersive({
@@ -125,16 +133,21 @@ const {
         class="mb-4 rounded-box border border-base-300"
       >
         <template #actions>
-          <button
-            class="fx-noise rounded-field bg-primary px-3 py-1.5 text-xs font-medium text-primary-content fx-depth transition-colors hover:bg-primary/90"
-            @click="showLayoutEditor = false"
+          <Button
+            variant="outline"
+            size="md"
+            data-testid="layout-editor-cancel"
+            @click="cancelLayoutEditor"
           >
+            {{ $t('common.cancel') }}
+          </Button>
+          <Button variant="solid" size="md" @click="showLayoutEditor = false">
             {{ $t('audioView.layoutDone') }}
-          </button>
+          </Button>
         </template>
       </PageHeader>
       <div class="flex-1 min-h-0">
-        <AudioLayoutEditor />
+        <AudioLayoutEditor ref="layoutEditorComponent" />
       </div>
     </div>
 

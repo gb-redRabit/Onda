@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { RotateCcw } from '@lucide/vue';
+import { RotateCcw, Undo2 } from '@lucide/vue';
 import { ELEMENT_META } from '@renderer/utils/audioLayoutEditorMeta';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { clonePlain } from '@renderer/utils/clone';
 import {
   PREVIEW_H,
   PREVIEW_W,
@@ -39,7 +40,29 @@ const elements = computed({
 const selected = computed(() => elements.value.find((e) => e.id === selectedId.value));
 const currentPreset = computed(() => settings.appearance.audioLayout?.preset ?? 'full');
 
+// Historia zmian w obrębie otwartego edytora (Ctrl+Z) + migawka z chwili
+// otwarcia, więc „Anuluj” przywraca stan sprzed edycji bez ruszania innych
+// ustawień wyglądu.
+const history = ref<AudioLayoutElement[][]>([]);
+let initialSnapshot: AudioLayoutElement[] | null = null;
+
+function pushHistory(): void {
+  history.value.push(clonePlain(elements.value));
+  if (history.value.length > 50) history.value.shift();
+}
+
+function undo(): void {
+  const previous = history.value.pop();
+  if (previous) elements.value = previous;
+}
+
+function cancel(): void {
+  if (initialSnapshot) elements.value = clonePlain(initialSnapshot);
+  history.value = [];
+}
+
 function applyPreset(preset: AudioLayoutPreset) {
+  pushHistory();
   settings.applyAudioLayoutPreset(preset);
 }
 
@@ -53,6 +76,7 @@ function layoutStyle(el: AudioLayoutElement) {
 }
 
 function updateElement(id: AudioLayoutElementId, patch: Partial<AudioLayoutElement>) {
+  pushHistory();
   elements.value = elements.value.map((e) =>
     e.id === id ? sanitizeElement({ ...e, ...patch }) : e
   );
@@ -105,6 +129,11 @@ function onDragEnd() {
 }
 
 function onKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    undo();
+    return;
+  }
   if (!selected.value) return;
   const el = selected.value;
   const step = e.shiftKey ? 5 : 1;
@@ -130,12 +159,18 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onKeydown));
+onMounted(() => {
+  initialSnapshot = clonePlain(elements.value);
+  document.addEventListener('keydown', onKeydown);
+});
 onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 
 function resetLayout() {
+  pushHistory();
   settings.resetAudioLayoutPreset();
 }
+
+defineExpose({ cancel });
 
 const sortedElements = computed(() => {
   return [...elements.value].sort((a, b) => a.layer - b.layer);
@@ -158,13 +193,24 @@ const readout = computed(() => {
     <div class="flex-1 flex flex-col min-w-0">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-sm font-semibold text-base-content">{{ t('audioView.layoutPreview') }}</h3>
-        <button
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-field text-2xs text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-          @click="resetLayout"
-        >
-          <RotateCcw :size="12" />
-          {{ t('audioView.resetLayout') }}
-        </button>
+        <div class="flex items-center gap-1">
+          <button
+            class="flex items-center gap-1.5 rounded-field px-2.5 py-1 text-2xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+            :disabled="!history.length"
+            :title="$t('common.undo') + ' (Ctrl+Z)'"
+            @click="undo"
+          >
+            <Undo2 :size="12" />
+            {{ t('common.undo') }}
+          </button>
+          <button
+            class="flex items-center gap-1.5 rounded-field px-2.5 py-1 text-2xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
+            @click="resetLayout"
+          >
+            <RotateCcw :size="12" />
+            {{ t('audioView.resetLayout') }}
+          </button>
+        </div>
       </div>
       <div
         id="audio-layout-preview"
@@ -235,6 +281,7 @@ const readout = computed(() => {
 
       <!-- Odczyt: pozycja/rozmiar aktywnego elementu -->
       <div
+        data-testid="layout-readout"
         class="mt-2 flex items-center justify-between px-1 text-2xs font-mono text-base-content/50 tabular-nums"
       >
         <span class="flex items-center gap-1.5">

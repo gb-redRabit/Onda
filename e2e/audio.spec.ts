@@ -128,4 +128,38 @@ test.describe('audio playback and audio view', () => {
       await onda.dispose();
     }
   });
+
+  test('layout editor undoes changes and cancels back to the original layout', async () => {
+    const onda = await launchOnda();
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/audio';
+      });
+      await page.getByTestId('audio-layout-editor').click();
+      const dialog = page.getByRole('dialog').first();
+      await expect(dialog).toBeVisible();
+
+      const readout = page.getByTestId('layout-readout');
+      const initial = await readout.textContent();
+
+      await page.keyboard.press('ArrowRight');
+      await expect(readout).not.toHaveText(initial ?? '');
+
+      await page.keyboard.press('Control+z');
+      await expect(readout).toHaveText(initial ?? '');
+
+      await page.keyboard.press('ArrowRight');
+      await expect(readout).not.toHaveText(initial ?? '');
+      await page.getByTestId('layout-editor-cancel').click();
+      await expect(dialog).toHaveCount(0);
+
+      await page.getByTestId('audio-layout-editor').click();
+      await expect(page.getByTestId('layout-readout')).toHaveText(initial ?? '');
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });
