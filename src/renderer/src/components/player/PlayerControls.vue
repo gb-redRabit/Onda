@@ -136,7 +136,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
 <template>
   <div
     data-wheel-ignore
-    class="absolute bottom-0 left-0 right-0 z-20 bg-linear-to-t from-neutral/80 via-neutral/30 to-transparent pt-12 pb-6 px-6 transition-opacity"
+    class="scrim absolute bottom-0 left-0 right-0 z-20 pt-12 pb-6 px-6 drop-shadow-md transition-opacity"
     :class="{ 'opacity-0': !showControls }"
   >
     <!-- pasek przewijania -->
@@ -229,7 +229,9 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </button>
 
         <!-- czas -->
-        <div class="flex items-center gap-2 text-neutral-content/50 text-xs font-mono tabular-nums">
+        <div
+          class="flex items-center gap-2 font-mono text-[11px] tabular-nums text-neutral-content/70"
+        >
           <span>{{ formatDuration(player.currentTime) }}</span>
           <span class="text-neutral-content/55">/</span>
           <span>{{ formatDuration(player.duration) }}</span>
@@ -303,9 +305,11 @@ function onVolumeKeydown(e: KeyboardEvent) {
           role="slider"
           tabindex="0"
           :aria-label="$t('playerView.volume')"
+          :title="`${$t('playerView.volume')}: ${Math.round(player.volume * 100)}%`"
           :aria-valuemin="0"
           :aria-valuemax="100"
           :aria-valuenow="Math.round(player.volume * 100)"
+          :aria-valuetext="`${Math.round(player.volume * 100)}%`"
           @click="onVolumeClick"
           @keydown="onVolumeKeydown"
         >

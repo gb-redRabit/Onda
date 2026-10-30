@@ -2676,7 +2676,10 @@ api.registerCommand({
     variant_lyrics_gradient: 'Gradient',
     variantVizHint: 'Visualization mode is set globally in the visualization panel.',
     coverAspectLocked: '16:9 aspect ratio — height derives from width.',
-    vizQuality: 'Viz quality'
+    vizQuality: 'Viz quality',
+    vizQualityLow: 'Low',
+    vizQualityMedium: 'Medium',
+    vizQualityHigh: 'High'
   },
   playerView: {
     noVideo: 'No video to play',

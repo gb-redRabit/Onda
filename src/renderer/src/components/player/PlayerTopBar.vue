@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-linear-to-b from-neutral/80 to-transparent transition-opacity"
+    class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-linear-to-b from-neutral/80 to-transparent drop-shadow-md transition-opacity"
     :class="{ 'opacity-0': !showControls }"
   >
     <button
@@ -32,7 +32,7 @@ const emit = defineEmits<{
       <p class="text-neutral-content text-sm font-medium truncate">
         {{ track?.metadata?.title || track?.name || $t('playerView.noVideo') }}
       </p>
-      <p class="text-neutral-content/50 text-xs">{{ track?.metadata?.artist || '' }}</p>
+      <p class="text-neutral-content/70 text-[11px]">{{ track?.metadata?.artist || '' }}</p>
     </div>
     <button
       data-testid="player-always-on-top"
