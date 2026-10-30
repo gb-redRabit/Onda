@@ -57,9 +57,22 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
   />
 
   <div v-else-if="yt.searchResults.length" class="space-y-4">
-    <p class="text-xs text-base-content/50 px-1">
-      {{ t('youtube.resultsCount', { count: yt.searchResults.length }) }}
-    </p>
+    <div class="flex items-center justify-between gap-2 px-1">
+      <p class="min-w-0 truncate text-xs text-base-content/50">
+        {{ t('youtube.resultsLabel') }}: {{ yt.searchResults.length }}
+        <template v-if="yt.searchQuery.trim()">
+          · {{ t('youtube.resultsFor', { query: yt.searchQuery.trim() }) }}
+        </template>
+      </p>
+      <button
+        type="button"
+        data-testid="online-clear-results"
+        class="shrink-0 text-xs text-base-content/60 transition-colors hover:text-base-content"
+        @click="yt.clearSearch()"
+      >
+        {{ t('common.clear') }}
+      </button>
+    </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <OnlineMediaCard
         v-for="v in yt.pagedResults"
@@ -88,6 +101,8 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
         variant="secondary"
         size="sm"
         :disabled="!yt.hasPrevPage"
+        :aria-label="t('common.previous')"
+        :title="t('common.previous')"
         @click="yt.prevSearchPage"
       >
         <ChevronLeft :size="16" />
@@ -99,6 +114,8 @@ function itemDownloadState(videoId: string): 'queuing' | 'downloading' | 'done' 
         variant="secondary"
         size="sm"
         :disabled="!yt.hasNextPage"
+        :aria-label="t('common.next')"
+        :title="t('common.next')"
         @click="yt.nextSearchPage"
       >
         <ChevronRight :size="16" />

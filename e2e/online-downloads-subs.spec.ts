@@ -81,6 +81,16 @@ test.describe('online downloads and subscriptions', () => {
       await expect(card).toHaveCount(1, { timeout: 15_000 });
       await expect(card).toContainText('E2E Sub Channel');
 
+      // Odobserwowanie z menu karty i cofnięcie z toastu przywraca ten sam wpis.
+      await card.getByTestId('subscription-actions').click();
+      await page.getByRole('menuitem', { name: /usuń subskrypcję/i }).click();
+      await page.getByRole('button', { name: /^usuń$/i }).click();
+      await expect(card).toHaveCount(0);
+      const undoToast = page.getByTestId('toast').filter({ hasText: /odobserwowano/i });
+      await expect(undoToast).toBeVisible();
+      await undoToast.getByRole('button', { name: /cofnij/i }).click();
+      await expect(card).toHaveCount(1, { timeout: 15_000 });
+
       await page.evaluate(async (id) => {
         const api = (window as unknown as { api: OndaTestApi }).api;
         await api.invoke('yt:subs:remove', id);

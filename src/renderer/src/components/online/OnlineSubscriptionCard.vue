@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Tv2, Download, RefreshCw, SlidersHorizontal, X } from '@lucide/vue';
+import { Tv2, Download, RefreshCw, MoreHorizontal } from '@lucide/vue';
 import OnlineButton from './OnlineButton.vue';
 import OnlineIconButton from './OnlineIconButton.vue';
 import OnlineBadge from './OnlineBadge.vue';
+import Switch from '@renderer/components/ui/Switch.vue';
 import { useContextMenu, type ContextMenuAction } from '@renderer/composables/useContextMenu';
 import { useRemoteImage } from '@renderer/composables/useRemoteImage';
+import { relativeTime } from '@renderer/utils/relativeTime';
 import { buildSoundcloudProfileUrl, buildYouTubeChannelUrl } from '@shared/provider';
 import type { Subscription } from '@renderer/types/online';
 
@@ -25,8 +27,8 @@ const emit = defineEmits<{
   unfollow: [channelId: string];
 }>();
 
-const { t } = useI18n();
-const { open } = useContextMenu();
+const { t, locale } = useI18n();
+const { open, openAt } = useContextMenu();
 
 const channelUrl = computed(() =>
   props.sub.platform === 'soundcloud'
@@ -38,8 +40,8 @@ function copyChannelUrl() {
   void window.api?.invoke('fs:copyPath', channelUrl.value);
 }
 
-function openMenu(e: MouseEvent) {
-  const defs: ContextMenuAction<Subscription>[] = [
+function menuDefs(): ContextMenuAction<Subscription>[] {
+  return [
     {
       label: t('ctx.online.openChannel'),
       action: (s) => emit('openChannel', s.channelId)
@@ -73,7 +75,14 @@ function openMenu(e: MouseEvent) {
       action: (s) => emit('unfollow', s.channelId)
     }
   ];
-  open(e, defs, props.sub);
+}
+
+function openMenu(e: MouseEvent) {
+  open(e, menuDefs(), props.sub);
+}
+
+function openActions(e: MouseEvent) {
+  openAt(e.currentTarget as HTMLElement, menuDefs(), props.sub);
 }
 
 const avatarFailed = ref(false);
@@ -87,8 +96,13 @@ watch(
 );
 
 function lastCheckedLabel(ts?: number): string {
-  return ts ? new Date(ts).toLocaleString() : '';
+  return ts ? relativeTime(ts, locale.value) : t('youtube.notCheckedYet');
 }
+
+const autoDownload = computed({
+  get: () => props.sub.autoDownload,
+  set: (enabled: boolean) => emit('toggleAutoDownload', props.sub.channelId, enabled)
+});
 </script>
 
 <template>
@@ -120,12 +134,9 @@ function lastCheckedLabel(ts?: number): string {
           >
             {{ sub.channelTitle }}
           </button>
-          <OnlineBadge v-if="sub.platform === 'soundcloud'" variant="amber" size="sm"
-            >SC</OnlineBadge
-          >
-          <OnlineBadge v-else-if="sub.platform === 'youtube'" variant="accent" size="sm"
-            >YT</OnlineBadge
-          >
+          <OnlineBadge variant="default" size="sm">{{
+            sub.platform === 'soundcloud' ? 'SC' : 'YT'
+          }}</OnlineBadge>
           <OnlineBadge v-if="sub.pendingCount" variant="green" size="sm">
             {{ $t('youtube.remainingCount', { count: sub.pendingCount }) }}
           </OnlineBadge>
@@ -142,50 +153,44 @@ function lastCheckedLabel(ts?: number): string {
       </div>
     </div>
 
-    <div class="mt-auto pt-3 flex items-center gap-2 flex-wrap">
-      <label
-        class="flex items-center gap-1.5 text-xs text-base-content/70 cursor-pointer select-none"
-        :title="$t('youtube.autoDownloadTitle')"
-      >
-        <input
-          type="checkbox"
-          class="accent-primary"
-          :checked="sub.autoDownload"
-          @change="
-            emit('toggleAutoDownload', sub.channelId, ($event.target as HTMLInputElement).checked)
-          "
+    <div class="mt-auto space-y-2 pt-3">
+      <div class="flex items-center gap-1.5 text-xs text-base-content/70">
+        <Switch
+          v-model="autoDownload"
+          size="sm"
+          :label="$t('youtube.autoDownload')"
+          :title="$t('youtube.autoDownloadTitle')"
         />
         <span>{{ $t('youtube.autoDownload') }}</span>
-      </label>
-      <div class="flex-1" />
-      <OnlineButton
-        variant="primary"
-        size="sm"
-        :disabled="isQueuing?.(sub.channelId) ?? false"
-        :title="$t('youtube.downloadAllTitle')"
-        @click="emit('downloadAll', sub)"
-      >
-        <RefreshCw v-if="isQueuing?.(sub.channelId)" :size="12" class="animate-spin" />
-        <Download v-else :size="12" />
-        {{ isQueuing?.(sub.channelId) ? $t('youtube.downloading') : $t('youtube.downloadAll') }}
-      </OnlineButton>
-      <OnlineIconButton
-        :disabled="loadingChannelId === sub.channelId"
-        :title="$t('youtube.checkChannelNow')"
-        @click="emit('checkNow', sub.channelId)"
-      >
-        <RefreshCw :size="14" :class="loadingChannelId === sub.channelId ? 'animate-spin' : ''" />
-      </OnlineIconButton>
-      <OnlineIconButton :title="$t('youtube.downloadPrefs')" @click="emit('openPrefs', sub)">
-        <SlidersHorizontal :size="14" />
-      </OnlineIconButton>
-      <OnlineIconButton
-        variant="danger"
-        :title="$t('youtube.unsubscribeChannel')"
-        @click="emit('unfollow', sub.channelId)"
-      >
-        <X :size="14" />
-      </OnlineIconButton>
+      </div>
+      <div class="flex items-center gap-2">
+        <OnlineButton
+          variant="primary"
+          size="sm"
+          :disabled="isQueuing?.(sub.channelId) ?? false"
+          :title="$t('youtube.downloadAllTitle')"
+          @click="emit('downloadAll', sub)"
+        >
+          <RefreshCw v-if="isQueuing?.(sub.channelId)" :size="12" class="animate-spin" />
+          <Download v-else :size="12" />
+          {{ isQueuing?.(sub.channelId) ? $t('youtube.downloading') : $t('youtube.downloadAll') }}
+        </OnlineButton>
+        <div class="flex-1" />
+        <OnlineIconButton
+          :disabled="loadingChannelId === sub.channelId"
+          :title="$t('youtube.checkChannelNow')"
+          @click="emit('checkNow', sub.channelId)"
+        >
+          <RefreshCw :size="14" :class="loadingChannelId === sub.channelId ? 'animate-spin' : ''" />
+        </OnlineIconButton>
+        <OnlineIconButton
+          data-testid="subscription-actions"
+          :title="$t('common.moreActions')"
+          @click="openActions"
+        >
+          <MoreHorizontal :size="14" />
+        </OnlineIconButton>
+      </div>
     </div>
   </div>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Bell, Link2 } from '@lucide/vue';
+import { Bell, Compass, Link2 } from '@lucide/vue';
 import OnlineBadge from './OnlineBadge.vue';
 
 defineProps<{
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const tabs = computed(() => [
-  { key: 'discover' as const, label: t('youtube.discoverTab') },
+  { key: 'discover' as const, label: t('youtube.discoverTab'), icon: Compass },
   { key: 'subscriptions' as const, label: t('youtube.subscriptionsTab'), icon: Bell },
   { key: 'links' as const, label: t('providers.tab'), icon: Link2 }
 ]);

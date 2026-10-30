@@ -48,7 +48,8 @@ export const useOnlineStore = defineStore('online', () => {
     loadMoreSearch,
     setResults,
     nextSearchPage,
-    prevSearchPage
+    prevSearchPage,
+    clearSearch
   } = createOnlineSearch();
   const currentVideo = ref<YouTubeVideo | null>(null);
   const {
@@ -150,6 +151,7 @@ export const useOnlineStore = defineStore('online', () => {
   } = createOnlineSubscriptionActions({
     addSubscription,
     removeSubscription,
+    getSubscription,
     loadSubscriptions,
     queueChannelVideos
   });
@@ -306,6 +308,7 @@ export const useOnlineStore = defineStore('online', () => {
     setResults,
     nextSearchPage,
     prevSearchPage,
+    clearSearch,
     setResolved,
     queueFromResolved,
     queueVideo,

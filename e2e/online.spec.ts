@@ -73,4 +73,31 @@ test.describe('online search and download queue', () => {
       await onda.dispose();
     }
   });
+
+  test('search results header names the query and clears the list', async () => {
+    const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/online';
+      });
+
+      const input = page.getByTestId('online-search-input');
+      await input.fill('monster');
+      await input.press('Enter');
+      await expect(page.getByTestId('online-media-card')).toHaveCount(3);
+
+      const clear = page.getByTestId('online-clear-results');
+      await expect(clear).toBeVisible();
+      await expect(clear.locator('..')).toContainText('monster');
+
+      await clear.click();
+      await expect(page.getByTestId('online-media-card')).toHaveCount(0);
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });

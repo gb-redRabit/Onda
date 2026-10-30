@@ -38,6 +38,20 @@ const showDownloadAll = ref(false);
 const pendingFolder = ref<RemoteItem | null>(null);
 const bulkMessage = ref('');
 
+// Serwisy z listy obsługiwanych; pokazywane w pustym stanie, żeby użytkownik
+// wiedział, co wkleić, zamiast zgadywać z jednego przykładu.
+const SUPPORTED_PROVIDERS = [
+  'pikpak',
+  'mega',
+  'gdrive',
+  'terabox',
+  '123pan',
+  'dropbox',
+  'yandex',
+  'archive',
+  'direct'
+] as const;
+
 // Provider wymagający logowania (cookie) — np. 115/Quark/Baidu/189/Xunlei — lub z opcjonalnym
 // logowaniem (Google Drive dla plików prywatnych).
 const needsCred = computed(
@@ -167,9 +181,20 @@ async function confirmDownloadFolder(): Promise<void> {
       v-if="!store.detected"
       variant="plain"
       :icon="Link2"
-      :title="t('providers.hint')"
+      :title="t('providers.hintTitle')"
+      :description="t('providers.hint')"
       data-testid="providers-hint"
-    />
+    >
+      <div class="mt-5 flex max-w-lg flex-wrap justify-center gap-1.5">
+        <span
+          v-for="id in SUPPORTED_PROVIDERS"
+          :key="id"
+          class="rounded-full bg-base-content/6 px-2 py-0.5 text-[11px] text-base-content/60"
+        >
+          {{ providerLabel(id, id, t) }}
+        </span>
+      </div>
+    </EmptyState>
 
     <template v-if="store.detected">
       <div class="flex flex-wrap items-center gap-2">

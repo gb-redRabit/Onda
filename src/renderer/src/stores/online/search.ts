@@ -122,6 +122,19 @@ export function createOnlineSearch() {
     if (hasPrevPage.value) searchPage.value--;
   }
 
+  // Wyczyszczenie wyników wraca do stanu startowego (bez zapytania i paginacji),
+  // więc kolejne wyszukiwanie nie dokleja się do poprzedniego.
+  function clearSearch() {
+    searchSeq++;
+    searchResults.value = [];
+    searchQuery.value = '';
+    searchPage.value = 0;
+    searchScOffset.value = 0;
+    hasMoreSc.value = false;
+    nextToken.value = null;
+    prevToken.value = null;
+  }
+
   return {
     searchResults,
     searchQuery,
@@ -138,6 +151,7 @@ export function createOnlineSearch() {
     loadMoreSearch,
     setResults,
     nextSearchPage,
-    prevSearchPage
+    prevSearchPage,
+    clearSearch
   };
 }

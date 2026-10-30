@@ -7,6 +7,7 @@ import OnlineIconButton from '../OnlineIconButton.vue';
 import OnlineBadge from '../OnlineBadge.vue';
 import ProviderIcon from './ProviderIcon.vue';
 import { providerLabel } from '@renderer/utils/providerLabels';
+import { relativeTime } from '@renderer/utils/relativeTime';
 import type { RemoteSubscription } from '@shared/types/providers';
 
 // Karta subskrypcji LINKU — wizualnie spójna z kartą kanału (OnlineSubscriptionCard).
@@ -23,7 +24,7 @@ const emit = defineEmits<{
   replace: [url: string];
 }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const editing = ref(false);
 const editUrl = ref('');
 
@@ -47,7 +48,7 @@ const statusLabel = computed(() =>
 );
 const lastCheckedLabel = computed(() =>
   props.sub.lastCheckedAt
-    ? `${t('youtube.lastChecked')} ${new Date(props.sub.lastCheckedAt).toLocaleString()}`
+    ? `${t('youtube.lastChecked')} ${relativeTime(props.sub.lastCheckedAt, locale.value)}`
     : t('youtube.notCheckedYet')
 );
 
@@ -82,7 +83,7 @@ function saveReplace(): void {
           >
             {{ sub.title }}
           </button>
-          <OnlineBadge variant="accent" size="sm">
+          <OnlineBadge variant="default" size="sm">
             {{ providerLabel(sub.providerId, sub.providerId, t) }}
           </OnlineBadge>
           <OnlineBadge :variant="statusVariant" size="sm">{{ statusLabel }}</OnlineBadge>

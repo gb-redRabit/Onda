@@ -283,6 +283,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
           @toggle-auto-download="yt.setAutoDownload"
           @open-prefs="togglePrefs"
           @unfollow="confirmUnfollow"
+          @discover="activeSection = 'discover'"
         />
         <ProviderSubscriptionsPanel class="mt-4" @open="openProviderSub" />
       </div>

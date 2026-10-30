@@ -21,6 +21,8 @@ export interface Notification {
   title: string;
   message?: string;
   duration?: number;
+  /** Akcja w toaście (np. „Cofnij”); toast znika po jej uruchomieniu. */
+  action?: { label: string; run: () => void };
 }
 
 export const useUIStore = defineStore('ui', () => {
@@ -66,9 +68,15 @@ export const useUIStore = defineStore('ui', () => {
     contextMenu.value = null;
   }
 
-  function notify(type: Notification['type'], title: string, message?: string, duration = 5000) {
+  function notify(
+    type: Notification['type'],
+    title: string,
+    message?: string,
+    duration = 5000,
+    action?: Notification['action']
+  ) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    notifications.value.push({ id, type, title, message, duration });
+    notifications.value.push({ id, type, title, message, duration, action });
     if (duration > 0) {
       setTimeout(() => {
         try {

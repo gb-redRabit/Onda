@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { createOnlineSubscriptionActions } from '../subscriptionActions';
+import { useUIStore } from '@renderer/stores/ui';
 import type { Subscription } from '@renderer/types/online';
 
 // Siatka regresyjna dla akcji subskrypcji renderera: obserwowanie/odobserwowanie,
@@ -7,6 +9,7 @@ import type { Subscription } from '@renderer/types/online';
 
 const invoke = vi.fn();
 beforeEach(() => {
+  setActivePinia(createPinia());
   invoke.mockReset();
   (window as unknown as { api: unknown }).api = { invoke };
 });
@@ -15,6 +18,7 @@ function makeDeps() {
   return {
     addSubscription: vi.fn(),
     removeSubscription: vi.fn(),
+    getSubscription: vi.fn(),
     loadSubscriptions: vi.fn(async () => {}),
     queueChannelVideos: vi.fn(async () => {})
   };
@@ -80,6 +84,28 @@ describe('unfollowChannel', () => {
     await actions.unfollowChannel('UC1');
     expect(invoke).toHaveBeenCalledWith('yt:subs:remove', 'UC1');
     expect(deps.removeSubscription).toHaveBeenCalledWith('UC1');
+  });
+
+  it('offers an undo toast that restores the same subscription without reseeding', async () => {
+    const deps = makeDeps();
+    deps.getSubscription.mockReturnValue(SUB);
+    invoke.mockResolvedValueOnce(true);
+    const actions = createOnlineSubscriptionActions(deps);
+    await actions.unfollowChannel('UC1');
+
+    const toast = useUIStore().notifications[0];
+    expect(toast?.action?.label).toBeTruthy();
+
+    invoke.mockResolvedValueOnce(SUB);
+    toast!.action!.run();
+    await vi.waitFor(() => expect(deps.addSubscription).toHaveBeenCalledWith(SUB));
+
+    const restoreInput = invoke.mock.calls.find((c) => c[0] === 'yt:subs:add')?.[1] as {
+      channelId: string;
+      seedBaseline: boolean;
+    };
+    expect(restoreInput.channelId).toBe('UC1');
+    expect(restoreInput.seedBaseline).toBe(false);
   });
 });
 

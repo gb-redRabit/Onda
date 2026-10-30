@@ -70,6 +70,17 @@ function color(type: string) {
       <div class="flex-1 min-w-0">
         <div class="text-xs font-medium text-base-content">{{ n.title }}</div>
         <div v-if="n.message" class="text-[11px] text-base-content/50 mt-0.5">{{ n.message }}</div>
+        <button
+          v-if="n.action"
+          type="button"
+          class="mt-1 text-[11px] font-medium text-primary-text hover:underline"
+          @click="
+            n.action.run();
+            ui.removeNotification(n.id);
+          "
+        >
+          {{ n.action.label }}
+        </button>
       </div>
       <button
         class="p-0.5 shrink-0 text-base-content/50 hover:text-base-content transition-colors"

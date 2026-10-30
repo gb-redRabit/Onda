@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { Bell } from '@lucide/vue';
+import { Bell, Compass } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import Button from '@renderer/components/ui/Button.vue';
 import OnlineSubscriptionCard from './OnlineSubscriptionCard.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import type { Subscription } from '@renderer/types/online';
@@ -19,6 +20,7 @@ const emit = defineEmits<{
   toggleAutoDownload: [string, boolean];
   openPrefs: [Subscription];
   unfollow: [string];
+  discover: [];
 }>();
 
 const { t } = useI18n();
@@ -33,8 +35,13 @@ const { t } = useI18n();
       variant="plain"
       :icon="Bell"
       :title="t('youtube.noSubscriptions')"
-    />
-
+      :description="t('youtube.noSubscriptionsHint')"
+    >
+      <Button variant="soft" size="md" class="mt-4" @click="emit('discover')">
+        <Compass :size="14" />
+        {{ t('youtube.discoverTab') }}
+      </Button>
+    </EmptyState>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <OnlineSubscriptionCard
         v-for="sub in subscriptions"

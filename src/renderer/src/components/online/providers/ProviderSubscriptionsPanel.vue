@@ -6,6 +6,7 @@ import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import Loader from '@renderer/components/layout/Loader.vue';
 import OnlineButton from '../OnlineButton.vue';
 import ProviderSubscriptionCard from './ProviderSubscriptionCard.vue';
+import Switch from '@renderer/components/ui/Switch.vue';
 import { useProviderSubsStore } from '@renderer/stores/providerSubs';
 import { useSettingsStore } from '@renderer/stores/settings';
 
@@ -16,10 +17,10 @@ const { t } = useI18n();
 const store = useProviderSubsStore();
 const settings = useSettingsStore();
 
-const autoCheck = computed(() => settings.download.autoCheckLinkSubscriptions);
-function toggleAutoCheck(): void {
-  settings.updateDownload({ autoCheckLinkSubscriptions: !autoCheck.value });
-}
+const autoCheck = computed({
+  get: () => settings.download.autoCheckLinkSubscriptions,
+  set: (enabled: boolean) => settings.updateDownload({ autoCheckLinkSubscriptions: enabled })
+});
 
 onMounted(() => {
   if (!store.loaded) void store.load();
@@ -31,17 +32,10 @@ onMounted(() => {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h3 class="text-sm font-semibold text-base-content/80">{{ t('providers.subsTitle') }}</h3>
       <div class="flex flex-wrap items-center gap-3">
-        <label
-          class="flex items-center gap-1.5 text-xs text-base-content/70 cursor-pointer select-none"
-        >
-          <input
-            type="checkbox"
-            class="accent-primary"
-            :checked="autoCheck"
-            @change="toggleAutoCheck"
-          />
+        <div class="flex items-center gap-1.5 text-xs text-base-content/70">
+          <Switch v-model="autoCheck" size="sm" :label="t('providers.autoCheck')" />
           <span>{{ t('providers.autoCheck') }}</span>
-        </label>
+        </div>
         <OnlineButton
           variant="secondary"
           size="sm"
