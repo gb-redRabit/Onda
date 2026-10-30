@@ -120,15 +120,9 @@ defineExpose({ reveal });
           "
           class="fx-noise w-full flex items-center gap-2 px-2 py-1 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-left text-xs group relative h-full"
           :class="{
-            'bg-primary/10 ring-1 ring-primary': explorer.selectedFiles.has(
-              files[virtualRow.index].path
-            ),
-            'bg-primary/15 ring-1 ring-primary/30': !files[virtualRow.index].isDirectory
-              ? false
-              : isLibraryFolder(files[virtualRow.index].path) &&
-                !explorer.selectedFiles.has(files[virtualRow.index].path),
-            'ring-2 ring-primary bg-primary/50':
-              hoveredFolderPath && hoveredFolderPath === files[virtualRow.index].path,
+            'bg-primary/12 ring-2 ring-primary':
+              explorer.selectedFiles.has(files[virtualRow.index].path) ||
+              (hoveredFolderPath && hoveredFolderPath === files[virtualRow.index].path),
             'opacity-40': fileClipboard.isCut(files[virtualRow.index].path)
           }"
           :data-testid="`explorer-item-${files[virtualRow.index].name}`"
@@ -168,12 +162,9 @@ defineExpose({ reveal });
             :size="12"
             class="text-base-content/50 shrink-0"
           />
-          <span class="truncate flex-1">{{ files[virtualRow.index].name }}</span>
-          <span
-            v-if="isLibraryFolder(files[virtualRow.index].path) && !explorer.isDriveList"
-            class="text-[8px] px-1 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40"
-            >LIB</span
-          >
+          <span class="truncate flex-1" :title="files[virtualRow.index].name">{{
+            files[virtualRow.index].name
+          }}</span>
         </button>
       </div>
     </div>
@@ -244,11 +235,6 @@ defineExpose({ reveal });
             :item="files[virtualRow.index]"
             :is-selected="explorer.selectedFiles.has(files[virtualRow.index].path)"
             :is-drive-list="explorer.isDriveList"
-            :is-library-folder="
-              !files[virtualRow.index].isDirectory
-                ? false
-                : isLibraryFolder(files[virtualRow.index].path)
-            "
             :hovered-folder-path="hoveredFolderPath"
             :is-cut="fileClipboard.isCut(files[virtualRow.index].path)"
             @select="(path: string, e: MouseEvent) => onItemClick(e, path, virtualRow.index)"

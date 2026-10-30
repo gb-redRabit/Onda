@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
-import { HardDrive, FolderOpen } from '@lucide/vue';
+import { HardDrive, FolderOpen, Music } from '@lucide/vue';
 import { getFileTypeInfo } from '@renderer/utils/fileTypes';
 import { fileTypeIcon as categoryIcon } from '@renderer/utils/fileTypeIcons';
 import { formatFileSize } from '@renderer/utils/formatters';
@@ -36,6 +36,9 @@ if (import.meta.env.DEV) {
 }
 
 const typeIcon = computed(() => categoryIcon(props.item.extension));
+const audioFile = computed(
+  () => !props.item.isDirectory && getFileTypeInfo(props.item.extension || '').category === 'audio'
+);
 
 const size = computed(() => {
   switch (props.viewMode) {
@@ -62,10 +65,8 @@ const size = computed(() => {
     :data-folder-path="item.isDirectory ? item.path : undefined"
     class="flex flex-col items-center fx-depth rounded-box fx-noise hover:bg-base-content/10 transition-colors text-center group relative w-full"
     :class="{
-      'bg-primary/10 ring-1 ring-primary': isSelected,
-      'bg-primary/15 ring-1 ring-primary/30': isLibraryFolder && !isSelected,
-      'ring-2 ring-primary bg-primary/50':
-        hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
+      'bg-primary/12 ring-2 ring-primary':
+        isSelected || (hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path),
       'opacity-40': isCut
     }"
     :style="{ padding: `${size.pad}px` }"
@@ -84,8 +85,8 @@ const size = computed(() => {
     "
   >
     <div
-      class="rounded-field flex items-center justify-center overflow-hidden shrink-0"
-      :class="isDriveList ? 'bg-primary/10' : isLibraryFolder ? 'bg-primary/30' : 'bg-neutral'"
+      class="relative rounded-field flex items-center justify-center overflow-hidden shrink-0"
+      :class="isDriveList || isLibraryFolder ? 'bg-primary/10' : 'bg-base-200/70'"
       :style="{
         width: `${size.icon}px`,
         height: `${size.icon}px`,
@@ -103,6 +104,11 @@ const size = computed(() => {
         class="text-primary-text"
       />
       <img v-else-if="mediaThumb" alt="" :src="mediaThumb" class="w-full h-full object-cover" />
+      <Music
+        v-else-if="audioFile && !systemIcon"
+        :size="Math.round(size.icon * 0.45)"
+        class="text-primary-text/70"
+      />
       <img
         v-else-if="systemIcon"
         alt=""
@@ -119,8 +125,15 @@ const size = computed(() => {
         :size="Math.round(size.icon * 0.45)"
         :style="{ color: getFileTypeInfo(item.extension || '').color }"
       />
+      <span
+        v-if="!isDriveList && !item.isDirectory && item.extension"
+        class="absolute bottom-0.5 right-0.5 rounded-field bg-neutral/80 px-1 py-0.5 text-[8px] font-semibold uppercase leading-none text-neutral-content"
+        >{{ item.extension }}</span
+      >
     </div>
-    <span :class="`truncate w-full leading-tight font-medium ${size.fs}`">{{ item.name }}</span>
+    <span :class="`line-clamp-2 w-full leading-tight font-medium ${size.fs}`" :title="item.name">{{
+      item.name
+    }}</span>
     <span
       v-if="isDriveList && item.size > 0"
       :class="`text-[11px] text-base-content/50 ${size.fs}`"

@@ -11,7 +11,6 @@ const props = defineProps<{
   item: FileItem;
   isSelected: boolean;
   isDriveList: boolean;
-  isLibraryFolder?: boolean;
   hoveredFolderPath?: string | null;
   isCut?: boolean;
 }>();
@@ -48,10 +47,8 @@ function iconComponent() {
     :data-folder-path="item.isDirectory ? item.path : undefined"
     class="fx-noise w-full grid grid-cols-[1fr_120px_100px_100px] gap-2 px-3 py-2 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-left items-center text-sm group relative"
     :class="{
-      'bg-primary/10 ring-1 ring-primary': isSelected,
-      'bg-primary/15 ring-1 ring-primary/30': isLibraryFolder && !isSelected,
-      'ring-2 ring-primary bg-primary/50':
-        hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path,
+      'bg-primary/12 ring-2 ring-primary':
+        isSelected || (hoveredFolderPath && item.isDirectory && hoveredFolderPath === item.path),
       'opacity-40': isCut
     }"
     @click="(e: MouseEvent) => emit('select', item.path, e)"
@@ -87,12 +84,7 @@ function iconComponent() {
         :size="14"
         :class="isDriveList || item.isDirectory ? 'text-primary-text shrink-0' : 'shrink-0'"
       />
-      <span class="truncate">{{ item.name }}</span>
-      <span
-        v-if="isLibraryFolder && !isDriveList"
-        class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
-        >LIB</span
-      >
+      <span class="truncate" :title="item.name">{{ item.name }}</span>
     </div>
     <span class="text-base-content/50 text-xs font-mono">
       {{
