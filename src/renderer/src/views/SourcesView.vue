@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import {
   RefreshCw,
   Loader2,
@@ -16,6 +16,7 @@ import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
 import SourcesBulkBar from '@renderer/components/sources/SourcesBulkBar.vue';
 import SourcesQueryBuilder from '@renderer/components/sources/SourcesQueryBuilder.vue';
+import SourcesQueryParamsDialog from '@renderer/components/sources/SourcesQueryParamsDialog.vue';
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
 import SourceHealthBar from '@renderer/components/sources/SourceHealthBar.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
@@ -99,6 +100,17 @@ const {
 void scrollRef;
 
 const settings = useSettingsStore();
+const showParams = ref(false);
+
+// Skrót parametrów w pasku: liczba niepustych linii, żeby badge nie kłamał
+// przy pustych wierszach.
+const queryLineCount = computed(
+  () => queryText.value.split(/\r?\n/).filter((line) => line.trim()).length
+);
+
+function applyParams(): void {
+  refresh();
+}
 
 // Ad-blocker działa tylko w osadzonych playerach Źródeł; przełącznik trzyma ustawienie.
 function togglePreviewAdblock(): void {
@@ -170,13 +182,27 @@ onMounted(() => {
             </span>
             <span class="text-primary-text font-medium">{{ activeEndpoint?.name }}</span>
           </div>
-          <input
-            v-model="queryText"
-            type="text"
+          <button
+            type="button"
+            data-testid="sources-query-params"
+            class="flex min-w-0 flex-1 items-center gap-2 rounded-field border border-base-300 bg-base-100 px-2.5 py-1.5 text-left fx-depth transition-colors hover:border-base-content/30"
+            :title="queryText || $t('sources.queryParams')"
             :aria-label="$t('sources.queryParams')"
-            :placeholder="$t('sources.queryParams')"
-            class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
-          />
+            aria-haspopup="dialog"
+            @click="showParams = true"
+          >
+            <span
+              class="min-w-0 flex-1 truncate font-mono text-xs"
+              :class="queryText ? 'text-base-content' : 'text-base-content/50'"
+            >
+              {{ queryText || $t('sources.queryParams') }}
+            </span>
+            <span
+              v-if="queryLineCount"
+              class="shrink-0 rounded-full bg-primary/12 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-text"
+              >{{ queryLineCount }}</span
+            >
+          </button>
           <div v-if="sources.paginationMode === 'page'" class="flex items-center gap-1 shrink-0">
             <IconButton
               :icon="ChevronLeft"
@@ -267,13 +293,14 @@ onMounted(() => {
           @play="onBulkPlay"
           @clear="clearSelection"
         />
-        <p
-          v-if="currentUrl"
-          class="px-4 py-1 text-[11px] font-mono text-base-content/50 truncate border-b border-base-300"
-          :title="currentUrl"
-        >
-          {{ currentUrl }}
-        </p>
+        <details v-if="currentUrl" class="border-b border-base-300 px-4 py-1">
+          <summary class="cursor-pointer text-[11px] text-base-content/50">
+            {{ $t('sources.requestDetails') }}
+          </summary>
+          <p class="break-all pb-1 font-mono text-[11px] text-base-content/70" :title="currentUrl">
+            {{ currentUrl }}
+          </p>
+        </details>
 
         <div ref="scrollRef" class="flex-1 min-h-0 overflow-y-auto">
           <SourcesContent
@@ -336,6 +363,13 @@ onMounted(() => {
       @queue="onAddToQueue"
     />
     <SourceGuideModal v-if="showGuide" @close="showGuide = false" />
+    <SourcesQueryParamsDialog
+      v-model="queryText"
+      :open="showParams"
+      :request-url="currentUrl"
+      @apply="applyParams"
+      @close="showParams = false"
+    />
 
     <ExplorerPromptDialog
       :visible="prompt.promptVisible.value"

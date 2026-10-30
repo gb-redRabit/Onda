@@ -12,6 +12,8 @@ defineProps<{
   /** Tryb zaznaczania zbiorczego — klik zaznacza zamiast otwierać podgląd. */
   selectable?: boolean;
   selected?: boolean;
+  /** Pokazuj typ elementu tylko przy mieszanej liście. */
+  showType?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -52,24 +54,25 @@ const typeIcon = {
 
     <!-- Badge typu (lewy-górny) i czasu (prawy-górny) -->
     <span
-      class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[11px] font-medium uppercase"
+      v-if="showType !== false"
+      class="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-1.5 py-0.5 text-[11px] font-medium uppercase text-neutral-content ring-1 ring-inset ring-neutral-content/10"
     >
       <component :is="typeIcon[item.type]" :size="10" />
       {{ item.type }}
     </span>
     <span
       v-if="item.duration && !selectable"
-      class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-field bg-black/60 text-white text-[11px] font-mono"
+      class="absolute top-1.5 right-1.5 rounded-field bg-neutral/80 px-1.5 py-0.5 font-mono text-[11px] text-neutral-content ring-1 ring-inset ring-neutral-content/10"
     >
       {{ item.duration }}
     </span>
     <span
       v-if="selectable"
-      class="absolute top-1.5 right-1.5 w-5 h-5 rounded-field flex items-center justify-center border"
+      class="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-field border"
       :class="
         selected
-          ? 'bg-primary border-primary text-primary-content'
-          : 'bg-black/60 border-white/40 text-transparent'
+          ? 'border-primary bg-primary text-primary-content'
+          : 'border-neutral-content/40 bg-neutral/70 text-transparent'
       "
       aria-hidden="true"
     >
@@ -77,33 +80,35 @@ const typeIcon = {
     </span>
 
     <!-- Tytuł na gradiencie -->
-    <div class="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/75 to-transparent">
-      <p class="text-xs font-medium text-white line-clamp-1">
+    <div class="scrim absolute inset-x-0 bottom-0 p-2">
+      <p class="line-clamp-1 text-xs font-medium text-neutral-content">
         {{ item.title || $t('sources.untitled') }}
       </p>
-      <p v-if="item.subtitle" class="text-[11px] text-white/70 line-clamp-1">{{ item.subtitle }}</p>
+      <p v-if="item.subtitle" class="line-clamp-1 text-[11px] text-neutral-content/70">
+        {{ item.subtitle }}
+      </p>
     </div>
 
     <!-- Hover: wskaźnik podglądu + pobieranie -->
     <div
-      class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+      class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
     >
       <span
-        class="flex items-center justify-center w-9 h-9 rounded-full bg-black/50 text-white backdrop-blur-sm"
+        class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral/70 text-neutral-content backdrop-blur-sm"
       >
         <Play :size="16" />
       </span>
     </div>
     <span
       v-if="downloaded"
-      class="absolute bottom-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[11px] font-medium"
+      class="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-success px-1.5 py-0.5 text-[11px] font-medium text-success-content"
       :title="$t('sources.downloaded')"
     >
       <Check :size="10" />
     </span>
     <button
       v-else-if="downloadable && (item.mediaUrl || item.playerUrl)"
-      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-black/60 text-white text-[11px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity disabled:opacity-60"
+      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-2 py-1 text-[11px] text-neutral-content opacity-0 fx-depth ring-1 ring-inset ring-neutral-content/10 transition-opacity hover:bg-neutral group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60"
       :title="$t('sources.download')"
       :aria-label="$t('sources.download')"
       :disabled="downloading"

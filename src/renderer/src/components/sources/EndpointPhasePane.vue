@@ -53,7 +53,11 @@ function buildPreview(): string {
 <template>
   <div class="space-y-3">
     <div class="flex items-center gap-2">
-      <div class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs">
+      <div
+        class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs"
+        role="group"
+        :aria-label="t('sources.level')"
+      >
         <button
           class="px-2.5 py-1.5 font-medium transition-colors"
           :class="
@@ -61,6 +65,7 @@ function buildPreview(): string {
               ? 'bg-primary text-primary-content'
               : 'text-base-content/70 hover:bg-base-content/10'
           "
+          :aria-pressed="model.type === 'list'"
           @click="model.type = 'list'"
         >
           {{ t('sources.typeList') }}
@@ -72,6 +77,7 @@ function buildPreview(): string {
               ? 'bg-primary text-primary-content'
               : 'text-base-content/70 hover:bg-base-content/10'
           "
+          :aria-pressed="model.type === 'page'"
           @click="model.type = 'page'"
         >
           {{ t('sources.typePage') }}

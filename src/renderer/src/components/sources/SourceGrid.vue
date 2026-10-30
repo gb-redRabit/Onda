@@ -25,6 +25,10 @@ const props = defineProps<{
   selectable?: boolean;
   selectedIds?: Set<string>;
 }>();
+
+// Typ elementu (IMAGE/WIDEO…) jest potrzebny tylko w mieszanej liście — przy
+// samych obrazach badge tylko zaśmieca każdy kafelek.
+const showType = computed(() => new Set(props.items.map((item) => item.type)).size > 1);
 const emit = defineEmits<{
   preview: [SourceItem];
   download: [SourceItem];
@@ -103,6 +107,7 @@ function onSelect(item: SourceItem, event: MouseEvent): void {
           :downloaded="!!item.id && downloadedIds.has(item.id)"
           :selectable="selectable"
           :selected="!!item.id && !!selectedIds?.has(item.id)"
+          :show-type="showType"
           @preview="emit('preview', $event)"
           @activate="emit('activate', $event)"
           @download="emit('download', $event)"

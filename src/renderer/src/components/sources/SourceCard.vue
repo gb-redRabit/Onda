@@ -12,6 +12,8 @@ defineProps<{
   /** Tryb zaznaczania zbiorczego — klik w kartę zaznacza zamiast otwierać podgląd. */
   selectable?: boolean;
   selected?: boolean;
+  /** Pokazuj typ elementu tylko przy mieszanej liście (obrazy + wideo + audio). */
+  showType?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -49,6 +51,7 @@ const typeIcon = {
         </div>
       </div>
       <div
+        v-if="showType !== false"
         class="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-neutral/70 text-neutral-content text-[11px] font-medium uppercase"
       >
         <component :is="typeIcon[item.type]" :size="10" />

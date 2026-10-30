@@ -14,6 +14,7 @@ import {
 import type { MediaSource } from '@renderer/types/sources';
 import { moveItem } from '@renderer/utils/sourcesView';
 import IconButton from '@renderer/components/ui/IconButton.vue';
+import { pluralCategory } from '@renderer/utils/plural';
 
 // Prezentacyjna lista źródeł (plan 6.3): wszystkie akcje są emitowane, widok
 // zarządza store'em, dialogami i toastem. Kolejność zmienia się przeciąganiem
@@ -37,7 +38,20 @@ const emit = defineEmits<{
 }>();
 
 const dragIndex = ref(-1);
-const { t } = useI18n();
+const { t, locale } = useI18n();
+
+// Odmiana „punkt końcowy” — trzy formy wybiera `pluralCategory`, a klucze są
+// literałami, więc audyt i18n widzi je jako używane.
+function endpointCount(count: number): string {
+  const category = pluralCategory(locale.value, count);
+  const key =
+    category === 'one'
+      ? 'sources.endpointCountOne'
+      : category === 'few'
+        ? 'sources.endpointCountFew'
+        : 'sources.endpointCountMany';
+  return t(key, { count });
+}
 
 /** Etykieta statusu źródła (kolor jest tylko wzmocnieniem, nie nośnikiem informacji). */
 function statusLabel(id: string): string {
@@ -143,7 +157,7 @@ function move(index: number, dir: -1 | 1): void {
         <div class="flex-1 min-w-0">
           <p class="text-sm truncate">{{ s.name }}</p>
           <p class="text-[11px] text-base-content/50 truncate">
-            {{ $t('sources.endpointCount', { n: s.endpoints.length }) }}
+            {{ endpointCount(s.endpoints.length) }}
           </p>
         </div>
         <div
