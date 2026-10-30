@@ -12,6 +12,7 @@ import AudioCanvasElements from '@renderer/components/audio/AudioCanvasElements.
 import PluginUiSlot from '@renderer/components/explorer/plugins/PluginUiSlot.vue';
 import AudioHudToolbar from '@renderer/components/audio/AudioHudToolbar.vue';
 import AudioVizSettings from '@renderer/components/audio/AudioVizSettings.vue';
+import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import { nextVizMode } from '@renderer/utils/audioVisualizer';
 import { useAudioElementDrag } from '@renderer/composables/useAudioElementDrag';
 import { useAudioImmersive } from '@renderer/composables/useAudioImmersive';
@@ -118,15 +119,20 @@ const {
       tabindex="-1"
       class="absolute inset-0 z-90 bg-base-100/95 backdrop-blur-sm p-6 flex flex-col outline-hidden"
     >
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-base font-bold">{{ $t('audioView.layoutEditor') }}</h2>
-        <button
-          class="px-3 py-1.5 rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors fx-depth fx-noise"
-          @click="showLayoutEditor = false"
-        >
-          {{ $t('audioView.layoutDone') }}
-        </button>
-      </div>
+      <PageHeader
+        :title="$t('audioView.layoutEditor')"
+        compact
+        class="mb-4 rounded-box border border-base-300"
+      >
+        <template #actions>
+          <button
+            class="fx-noise rounded-field bg-primary px-3 py-1.5 text-xs font-medium text-primary-content fx-depth transition-colors hover:bg-primary/90"
+            @click="showLayoutEditor = false"
+          >
+            {{ $t('audioView.layoutDone') }}
+          </button>
+        </template>
+      </PageHeader>
       <div class="flex-1 min-h-0">
         <AudioLayoutEditor />
       </div>

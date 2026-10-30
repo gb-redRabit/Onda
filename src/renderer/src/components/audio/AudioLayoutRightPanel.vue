@@ -50,23 +50,24 @@ const decorationOptions = computed(() =>
     <!-- Presety -->
     <div>
       <div class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-2">
-        {{ t('audioView.layoutEditor') }}
+        {{ t('audioView.layoutPresets') }}
       </div>
-      <div class="flex gap-1">
+      <div class="grid grid-cols-2 gap-1">
         <button
           v-for="key in PRESET_KEYS"
           :key="key"
-          class="fx-noise flex-1 flex flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-[11px] font-medium transition-all border"
+          class="fx-noise flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-[11px] font-medium transition-all border"
           :class="
             props.currentPreset === key
               ? 'bg-primary/15 text-primary-text border-primary/30'
               : 'bg-base-300/60 text-base-content/60 border-transparent hover:bg-base-content/10 hover:text-base-content'
           "
           :title="t(`audioView.preset${key.charAt(0).toUpperCase() + key.slice(1)}`)"
+          :aria-pressed="props.currentPreset === key"
           @click="emit('applyPreset', key)"
         >
           <component :is="PRESET_ICONS[key]" :size="14" />
-          <span class="truncate w-full text-center">{{
+          <span class="w-full truncate text-center">{{
             t(`audioView.preset${key.charAt(0).toUpperCase() + key.slice(1)}`)
           }}</span>
         </button>
@@ -84,6 +85,7 @@ const decorationOptions = computed(() =>
             ? 'bg-primary/15 text-primary-text'
             : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
         "
+        :aria-pressed="rightTab === tab"
         @click="rightTab = tab"
       >
         {{ t('audioView.' + SUBTAB_KEYS[tab]) }}
@@ -98,19 +100,26 @@ const decorationOptions = computed(() =>
           :key="el.id"
           v-activate
           class="flex items-center gap-2 px-2.5 py-2 rounded-field text-left transition-all text-xs cursor-pointer"
-          :class="
+          :class="[
             el.id === props.selectedId
               ? 'bg-primary/10 text-primary-text border border-primary/20'
-              : 'text-base-content/70 hover:bg-base-content/10 border border-transparent'
-          "
+              : 'text-base-content/70 hover:bg-base-content/10 border border-transparent',
+            el.visible ? '' : 'opacity-50'
+          ]"
           @click="emit('select', el.id)"
         >
           <GripVertical :size="12" class="opacity-30 shrink-0" />
           <component :is="ELEMENT_META[el.id].icon" :size="14" class="shrink-0" />
           <span class="flex-1 truncate">{{ t(ELEMENT_META[el.id].labelKey) }}</span>
+          <span
+            class="shrink-0 rounded-full bg-base-content/6 px-1.5 text-[10px] font-semibold tabular-nums text-base-content/50"
+            :title="t('audioView.layerLabel', { layer: el.layer })"
+            >L{{ el.layer }}</span
+          >
           <button
             class="p-0.5 rounded hover:bg-base-content/10 transition-colors"
             :title="el.visible ? t('audioView.hideElement') : t('audioView.showElement')"
+            :aria-pressed="!el.visible"
             @click.stop="emit('update', el.id, { visible: !el.visible })"
           >
             <EyeOff v-if="el.visible" :size="12" class="text-base-content/50" />
@@ -133,6 +142,9 @@ const decorationOptions = computed(() =>
               (props.selected.variant ?? VARIANT_DEFAULT[props.selected.id]) === v.value
                 ? 'bg-primary/15 text-primary-text border-primary/40'
                 : 'bg-base-300/60 text-base-content/60 border-transparent hover:bg-base-content/10 hover:text-base-content'
+            "
+            :aria-pressed="
+              (props.selected.variant ?? VARIANT_DEFAULT[props.selected.id]) === v.value
             "
             @click="emit('update', props.selected.id, { variant: v.value })"
           >
@@ -161,6 +173,7 @@ const decorationOptions = computed(() =>
                   ? 'bg-primary/15 text-primary-text border-primary/40'
                   : 'bg-base-300/60 text-base-content/60 border-transparent hover:bg-base-content/10 hover:text-base-content'
               "
+              :aria-pressed="(props.selected.decoration ?? 'none') === opt.value"
               @click="emit('update', props.selected.id, { decoration: opt.value })"
             >
               {{ opt.label }}<template v-if="opt.plugin"> · {{ opt.plugin }}</template>

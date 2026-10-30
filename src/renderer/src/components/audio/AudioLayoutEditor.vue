@@ -147,7 +147,8 @@ const readout = computed(() => {
   if (!el) return '';
   const x = dragPreview.value?.x ?? el.x;
   const y = dragPreview.value?.y ?? el.y;
-  return `${Math.round(x)}%, ${Math.round(y)}% · ${el.width}×${el.height} · L${el.layer}`;
+  // Wszystkie liczby zaokrąglone — ułamki po przeciąganiu tylko szumiały w odczycie.
+  return `${Math.round(x)}%, ${Math.round(y)}% · ${Math.round(el.width)}×${Math.round(el.height)} · L${el.layer}`;
 });
 </script>
 

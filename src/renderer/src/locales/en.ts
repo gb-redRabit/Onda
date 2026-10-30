@@ -2625,6 +2625,8 @@ api.registerCommand({
     vizSmoothing: 'Smoothing',
     vizFpsCap: 'FPS cap',
     layoutEditor: 'Layout editor',
+    layoutPresets: 'Presets',
+    layerLabel: 'Layer {layer}',
     layoutDone: 'Done',
     layoutPreview: 'Preview',
     resetLayout: 'Reset',
