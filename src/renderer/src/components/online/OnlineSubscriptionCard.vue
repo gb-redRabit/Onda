@@ -144,7 +144,7 @@ const autoDownload = computed({
             {{ $t('youtube.newCount', { count: sub.newArrivals }) }}
           </OnlineBadge>
         </div>
-        <p class="text-[11px] text-base-content/50 mt-0.5">
+        <p class="text-2xs text-base-content/50 mt-0.5">
           <template v-if="sub.lastChecked">
             {{ $t('youtube.lastChecked') }} {{ lastCheckedLabel(sub.lastChecked) }}
           </template>

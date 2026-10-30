@@ -129,7 +129,7 @@ function addFrom(album: AlbumEntry, index: number): void {
               <span class="block mt-1.5 text-[12px] font-medium truncate">{{
                 groupLabel(cell.album[0], $t)
               }}</span>
-              <span class="block text-[10px] text-base-content/50 truncate">
+              <span class="block text-3xs text-base-content/50 truncate">
                 {{
                   cell.album[1][0]?.metadata?.albumArtist ||
                   cell.album[1][0]?.metadata?.artist ||
@@ -145,7 +145,7 @@ function addFrom(album: AlbumEntry, index: number): void {
     <template v-else>
       <div class="flex items-center gap-2 px-2 py-2 shrink-0">
         <button
-          class="flex items-center gap-1 text-[11px] text-base-content/60 hover:text-base-content"
+          class="flex items-center gap-1 text-2xs text-base-content/60 hover:text-base-content"
           data-testid="compact-album-back"
           @click="selectedKey = null"
         >
@@ -161,11 +161,11 @@ function addFrom(album: AlbumEntry, index: number): void {
           <span class="block text-sm font-semibold truncate">{{
             groupLabel(selected[0], $t)
           }}</span>
-          <span class="block text-[11px] text-base-content/55 truncate">
+          <span class="block text-2xs text-base-content/55 truncate">
             {{ selected[1][0]?.metadata?.albumArtist || selected[1][0]?.metadata?.artist || '—' }}
           </span>
           <button
-            class="mt-2 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field bg-primary text-primary-content text-[11px] font-medium hover:brightness-110"
+            class="mt-2 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field bg-primary text-primary-content text-2xs font-medium hover:brightness-110"
             data-testid="compact-play-album"
             @click="playAlbum(selected)"
           >
@@ -198,7 +198,7 @@ function addFrom(album: AlbumEntry, index: number): void {
               :data-testid="`compact-album-track-${row.index}`"
               @click="playFrom(selected, row.index)"
             >
-              <span class="w-5 text-[10px] text-base-content/35 tabular-nums">{{
+              <span class="w-5 text-3xs text-base-content/35 tabular-nums">{{
                 row.index + 1
               }}</span>
               <span class="min-w-0 flex-1">

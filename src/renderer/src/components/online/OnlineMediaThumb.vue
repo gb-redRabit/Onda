@@ -99,7 +99,7 @@ function onExpand(e?: MouseEvent) {
     <!-- Plakietka pobranego -->
     <div
       v-if="downloaded && coverStatus !== 'fetching'"
-      class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[11px] font-medium"
+      class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-success text-success-content text-2xs font-medium"
     >
       <Check :size="10" />
     </div>
@@ -107,7 +107,7 @@ function onExpand(e?: MouseEvent) {
     <!-- Tag platformy (scalone wieloplatformowe siatki) -->
     <span
       v-if="platformTag"
-      class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded-field bg-neutral/70 text-[10px] font-bold pointer-events-none"
+      class="absolute top-1.5 right-1.5 px-1 py-0.5 rounded-field bg-neutral/70 text-3xs font-bold pointer-events-none"
       :class="platformTag === 'SC' ? 'text-warning' : 'text-error'"
     >
       {{ platformTag }}
@@ -116,7 +116,7 @@ function onExpand(e?: MouseEvent) {
     <!-- Plakietka pobierania okładki -->
     <div
       v-if="coverStatus === 'fetching'"
-      class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-warning text-warning-content text-[11px] font-medium"
+      class="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-field bg-warning text-warning-content text-2xs font-medium"
     >
       <RefreshCw :size="10" class="animate-spin" />
     </div>
@@ -172,7 +172,7 @@ function onExpand(e?: MouseEvent) {
     <div class="online-card-actions absolute bottom-1.5 right-1.5 z-20 flex items-center gap-1">
       <div
         v-if="video.duration"
-        class="bg-neutral/80 text-neutral-content text-[11px] px-1.5 py-0.5 rounded-field"
+        class="bg-neutral/80 text-neutral-content text-2xs px-1.5 py-0.5 rounded-field"
       >
         {{ video.duration }}
       </div>

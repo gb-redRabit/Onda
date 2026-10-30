@@ -228,7 +228,7 @@ const trackCount = computed(() => saved.tracks.length);
                     </div>
                     <span
                       v-if="s.duration"
-                      class="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-field backdrop-blur-xs"
+                      class="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-3xs font-mono px-1.5 py-0.5 rounded-field backdrop-blur-xs"
                     >
                       {{ s.duration }}
                     </span>
@@ -237,7 +237,7 @@ const trackCount = computed(() => saved.tracks.length);
                     <h3 class="text-xs font-medium text-base-content line-clamp-2 leading-snug">
                       {{ s.title }}
                     </h3>
-                    <p class="text-[11px] text-base-content/55 mt-0.5 truncate">
+                    <p class="text-2xs text-base-content/55 mt-0.5 truncate">
                       {{ s.channelTitle }}
                     </p>
                   </div>

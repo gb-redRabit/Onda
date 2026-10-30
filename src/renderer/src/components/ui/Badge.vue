@@ -23,7 +23,7 @@ const toneClasses: Record<BadgeTone, string> = {
 const classes = computed(() =>
   cn(
     'inline-flex items-center gap-1 rounded-full font-semibold leading-none tabular-nums',
-    props.size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]',
+    props.size === 'sm' ? 'px-1.5 py-0.5 text-3xs' : 'px-2 py-1 text-2xs',
     toneClasses[props.tone]
   )
 );

@@ -187,17 +187,15 @@ const noMatch = computed(
 
         <div class="flex-1 min-w-0 text-left">
           <div class="flex items-center gap-2">
-            <span class="text-[11px]">{{ folderTypeIcon(meta.type) }}</span>
+            <span class="text-2xs">{{ folderTypeIcon(meta.type) }}</span>
             <span class="text-sm font-semibold truncate">{{ meta.name }}</span>
             <span
-              class="hidden sm:inline text-[11px] px-1.5 py-0.5 rounded-full bg-base-200 border border-base-300 text-base-content/60"
+              class="hidden sm:inline text-2xs px-1.5 py-0.5 rounded-full bg-base-200 border border-base-300 text-base-content/60"
               >{{ meta.count }} {{ $t('library.folderFiles') }}</span
             >
-            <span
-              v-if="meta.duration > 0"
-              class="hidden md:inline text-[11px] text-base-content/60"
-              >{{ formatDuration(meta.duration, '') }}</span
-            >
+            <span v-if="meta.duration > 0" class="hidden md:inline text-2xs text-base-content/60">{{
+              formatDuration(meta.duration, '')
+            }}</span>
           </div>
           <div class="text-xs text-base-content/50 truncate hidden sm:block">{{ meta.path }}</div>
           <div class="text-xs text-base-content/50 sm:hidden">

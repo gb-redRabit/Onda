@@ -28,7 +28,7 @@ function openUpdates(): void {
             : $t('settings.updateToastAvailableTitle')
         }}
       </div>
-      <div class="text-[11px] text-base-content/70">
+      <div class="text-2xs text-base-content/70">
         <template v-if="status === 'downloading'">
           {{ $t('settings.downloading') }} {{ Math.round(progress) }}%
         </template>

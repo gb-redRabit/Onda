@@ -235,13 +235,13 @@ function togglePlay() {
       />
       <div
         v-if="isLive"
-        class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-error"
+        class="flex items-center gap-2 text-2xs font-bold tracking-widest text-error"
       >
         <span>{{ $t('player.live') }}</span>
       </div>
       <div
         v-else
-        class="flex items-center gap-2 text-[11px] text-base-content/50 font-mono tabular-nums"
+        class="flex items-center gap-2 text-2xs text-base-content/50 font-mono tabular-nums"
       >
         <span>{{ formatDuration(audio.currentTime.value) }}</span>
         <span>/</span>

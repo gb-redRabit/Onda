@@ -70,7 +70,7 @@ const bufferedClass = computed(() =>
     : 'absolute inset-y-0 left-0 bg-primary/50 rounded-full'
 );
 
-const timeClass = computed(() => (isThin.value ? 'text-[11px]' : 'text-xs'));
+const timeClass = computed(() => (isThin.value ? 'text-2xs' : 'text-xs'));
 
 function onDragSeek(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();

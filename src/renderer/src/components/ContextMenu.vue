@@ -309,7 +309,7 @@ function setSubRef(i: number) {
             >
               <ChevronRight :size="12" />
             </span>
-            <span v-else-if="item.shortcut" class="text-[11px] text-base-content/60 font-mono">{{
+            <span v-else-if="item.shortcut" class="text-2xs text-base-content/60 font-mono">{{
               item.shortcut
             }}</span>
           </button>
@@ -344,7 +344,7 @@ function setSubRef(i: number) {
                   </span>
                   <span class="flex-1 truncate">{{ child.label }}</span>
                   <span v-if="child.checked" class="shrink-0 text-primary-text">✓</span>
-                  <span v-if="child.shortcut" class="text-[11px] text-base-content/60 font-mono">{{
+                  <span v-if="child.shortcut" class="text-2xs text-base-content/60 font-mono">{{
                     child.shortcut
                   }}</span>
                 </button>

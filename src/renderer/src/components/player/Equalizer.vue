@@ -180,7 +180,7 @@ const {
 
     <!-- preamp -->
     <div class="flex items-center gap-2 mb-3">
-      <span class="text-[11px] text-base-content/50 shrink-0">{{ $t('equalizer.preamp') }}</span>
+      <span class="text-2xs text-base-content/50 shrink-0">{{ $t('equalizer.preamp') }}</span>
       <input
         type="range"
         min="-12"
@@ -192,7 +192,7 @@ const {
         class="flex-1 h-1 cursor-pointer accent-primary"
         @input="audio.setEqPreamp(Number(($event.target as HTMLInputElement).value))"
       />
-      <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
+      <span class="w-14 text-right text-2xs font-mono tabular-nums text-base-content/70"
         >{{ fx.equalizerPreamp > 0 ? '+' : '' }}{{ fx.equalizerPreamp }}
         {{ $t('equalizer.db') }}</span
       >
@@ -200,9 +200,7 @@ const {
 
     <!-- opóźnienie dźwięku (kompensacja lip-sync) -->
     <div class="flex items-center gap-2 mb-3">
-      <span class="text-[11px] text-base-content/50 shrink-0">{{
-        $t('equalizer.audioDelay')
-      }}</span>
+      <span class="text-2xs text-base-content/50 shrink-0">{{ $t('equalizer.audioDelay') }}</span>
       <input
         type="range"
         min="0"
@@ -214,7 +212,7 @@ const {
         class="flex-1 h-1 cursor-pointer accent-primary"
         @input="audio.setAudioDelay(Number(($event.target as HTMLInputElement).value))"
       />
-      <span class="w-14 text-right text-[11px] font-mono tabular-nums text-base-content/70"
+      <span class="w-14 text-right text-2xs font-mono tabular-nums text-base-content/70"
         >{{ fx.audioDelayMs }} {{ $t('equalizer.ms') }}</span
       >
     </div>
@@ -225,7 +223,7 @@ const {
         v-for="(_, name) in EQUALIZER_PRESETS"
         :key="name"
         :data-testid="'eq-preset-' + name"
-        class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field text-2xs font-medium transition-colors"
         :class="
           activePreset === name
             ? 'bg-primary text-primary-content'
@@ -239,7 +237,7 @@ const {
         v-for="(_, name) in userPresets"
         :key="'u-' + name"
         :data-testid="'eq-user-preset-' + name"
-        class="fx-noise px-2.5 py-1 fx-depth rounded-field text-[11px] font-medium transition-colors border border-primary/40"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field text-2xs font-medium transition-colors border border-primary/40"
         :class="
           activePreset === name
             ? 'bg-primary text-primary-content'
@@ -253,12 +251,12 @@ const {
       <span
         v-if="activePreset === 'custom'"
         data-testid="eq-preset-custom"
-        class="px-2.5 py-1 rounded-field text-[11px] font-medium bg-primary/15 text-primary-text border border-primary/40"
+        class="px-2.5 py-1 rounded-field text-2xs font-medium bg-primary/15 text-primary-text border border-primary/40"
       >
         {{ $t('equalizer.custom') }}
       </span>
       <button
-        class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/60 hover:text-base-content transition-colors"
+        class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-save-preset"
         :title="$t('equalizer.savePreset')"
         @click="savePreset"
@@ -266,7 +264,7 @@ const {
         <Save :size="12" />
       </button>
       <button
-        class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/60 hover:text-base-content transition-colors"
+        class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-export"
         :title="$t('equalizer.export')"
         @click="exportEq"
@@ -274,7 +272,7 @@ const {
         <Download :size="12" />
       </button>
       <button
-        class="fx-noise px-2 py-1 fx-depth rounded-field text-[11px] text-base-content/60 hover:text-base-content transition-colors"
+        class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-import"
         :title="$t('equalizer.import')"
         @click="importEq"
@@ -301,7 +299,7 @@ const {
       />
       <button
         type="button"
-        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-primary text-primary-content text-[11px] font-medium transition-colors disabled:opacity-40"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-primary text-primary-content text-2xs font-medium transition-colors disabled:opacity-40"
         :disabled="!canSavePreset"
         data-testid="eq-preset-name-confirm"
         @click="confirmSavePreset"
@@ -310,7 +308,7 @@ const {
       </button>
       <button
         type="button"
-        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-base-300 text-base-content/70 text-[11px] font-medium transition-colors"
+        class="fx-noise px-2.5 py-1 fx-depth rounded-field bg-base-300 text-base-content/70 text-2xs font-medium transition-colors"
         data-testid="eq-preset-name-cancel"
         @click="naming = false"
       >
@@ -376,12 +374,12 @@ const {
       </svg>
 
       <!-- etykiety siatki -->
-      <span class="absolute left-1 top-0.5 text-[10px] text-base-content/55">+18</span>
-      <span class="absolute left-1 bottom-0.5 text-[10px] text-base-content/55">-18</span>
+      <span class="absolute left-1 top-0.5 text-3xs text-base-content/55">+18</span>
+      <span class="absolute left-1 bottom-0.5 text-3xs text-base-content/55">-18</span>
       <span
         v-for="f in GRID_FREQS"
         :key="'lf' + f"
-        class="absolute bottom-0.5 text-[10px] text-base-content/55 -translate-x-1/2"
+        class="absolute bottom-0.5 text-3xs text-base-content/55 -translate-x-1/2"
         :style="{ left: freqToRatio(f, CURVE.minFreq, CURVE.maxFreq) * 100 + '%' }"
         >{{ f >= 1000 ? f / 1000 + 'k' : f }}</span
       >
@@ -391,7 +389,7 @@ const {
         v-for="(band, i) in bands"
         :key="'m' + i"
         type="button"
-        class="absolute w-5 h-5 flex items-center justify-center text-[10px] font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
+        class="absolute w-5 h-5 flex items-center justify-center text-3xs font-bold text-base-100 shadow cursor-grab active:cursor-grabbing"
         :style="{
           left: bandX(band.frequency) + '%',
           top: bandY(band.gain + fx.equalizerPreamp) + '%',
@@ -418,7 +416,7 @@ const {
       <!-- menu kontekstowe kropki -->
       <div
         v-if="menuBand !== null"
-        class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-[11px]"
+        class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-2xs"
         :style="{
           left: bandX(bands[menuBand].frequency) + '%',
           top: bandY(bands[menuBand].gain + fx.equalizerPreamp) + '%',

@@ -175,7 +175,7 @@ function browserUrl(item: SourceItem | null): string {
           <span class="block text-xs font-medium line-clamp-1">{{
             item.title || $t('sources.untitled')
           }}</span>
-          <span v-if="item.subtitle" class="block text-[11px] text-base-content/50 truncate">{{
+          <span v-if="item.subtitle" class="block text-2xs text-base-content/50 truncate">{{
             item.subtitle
           }}</span>
         </span>

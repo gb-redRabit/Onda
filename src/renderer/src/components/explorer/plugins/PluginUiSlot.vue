@@ -42,7 +42,7 @@ const groups = computed(() =>
       <span
         v-for="(item, index) in group.items"
         :key="`${group.pluginId}-${index}`"
-        class="flex items-baseline gap-2 text-[11px] leading-tight"
+        class="flex items-baseline gap-2 text-2xs leading-tight"
         :data-testid="`plugin-slot-item-${group.pluginId}`"
       >
         <span v-if="item.label" class="shrink-0 text-base-content/60">{{ item.label }}</span>

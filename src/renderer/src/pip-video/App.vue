@@ -123,9 +123,9 @@ onMounted(() => {
       <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
         <div class="min-w-0">
           <p class="text-sm font-semibold text-white drop-shadow">{{ t('previewTitle') }}</p>
-          <p class="mt-0.5 text-[11px] text-white/70">{{ t('previewDescription') }}</p>
+          <p class="mt-0.5 text-2xs text-white/70">{{ t('previewDescription') }}</p>
         </div>
-        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-[11px] font-mono text-white">
+        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-2xs font-mono text-white">
           1080p
         </span>
       </div>
@@ -147,7 +147,7 @@ onMounted(() => {
     >
       <button
         data-testid="pip-video-settings"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs top-btn"
         :title="t('settings')"
         @click="settingsOpen = !settingsOpen"
       >
@@ -156,7 +156,7 @@ onMounted(() => {
       <button
         v-if="!preview"
         data-testid="pip-video-maximize"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] top-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs top-btn"
         :title="t('maximize')"
         @click="sendMaximize"
       >
@@ -165,7 +165,7 @@ onMounted(() => {
       <button
         v-if="preview"
         data-testid="pip-video-preview-close"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs close-btn"
         :title="t('close')"
         :aria-label="t('close')"
         @click="api?.send('pip:hidden')"
@@ -175,7 +175,7 @@ onMounted(() => {
       <button
         v-else
         data-testid="pip-video-close"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-[11px] close-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs close-btn"
         :title="t('close')"
         @click="api?.send('pip:hidden')"
       >
@@ -194,7 +194,7 @@ onMounted(() => {
       }"
     >
       <div class="flex items-center justify-between mb-2">
-        <span class="text-[11px]" :style="{ color: 'var(--color-base-content)' }">{{
+        <span class="text-2xs" :style="{ color: 'var(--color-base-content)' }">{{
           t('subtitles')
         }}</span>
         <button
@@ -219,7 +219,7 @@ onMounted(() => {
       </div>
       <div class="mb-1.5">
         <span
-          class="text-[11px]"
+          class="text-2xs"
           :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('brightness') }} {{ brightness }}%</span
         >
@@ -237,7 +237,7 @@ onMounted(() => {
       </div>
       <div>
         <span
-          class="text-[11px]"
+          class="text-2xs"
           :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
           >{{ t('contrast') }} {{ contrast }}%</span
         >
@@ -256,14 +256,14 @@ onMounted(() => {
     </div>
 
     <div
-      class="absolute bottom-2 left-2 text-[11px] font-mono pointer-events-none"
+      class="absolute bottom-2 left-2 text-2xs font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ preview ? '0:42' : currentTime }}
     </div>
 
     <div
-      class="absolute bottom-2 right-2 text-[11px] font-mono pointer-events-none"
+      class="absolute bottom-2 right-2 text-2xs font-mono pointer-events-none"
       :style="{ color: 'color-mix(in srgb, var(--color-base-content) 50%, transparent)' }"
     >
       {{ preview ? '12:08' : duration }}
@@ -306,13 +306,13 @@ onMounted(() => {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[10px] text-neutral-content/50"
+            class="w-full h-full flex items-center justify-center text-3xs text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
         </div>
         <span
-          class="mt-1 text-[11px] text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
+          class="mt-1 text-2xs text-neutral-content/80 tabular-nums bg-neutral/60 px-1 rounded-field"
         >
           {{ previewTimeLabel() }}
         </span>

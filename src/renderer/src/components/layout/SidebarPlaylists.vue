@@ -63,7 +63,7 @@ function playPlaylist(playlistId: string) {
 <template>
   <div class="pt-3">
     <button
-      class="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
+      class="w-full flex items-center gap-2 px-3 py-1.5 text-2xs font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
       @click="expanded = !expanded"
     >
       <ChevronDown v-if="expanded" :size="12" />
@@ -86,7 +86,7 @@ function playPlaylist(playlistId: string) {
       >
         <ListMusic :size="13" class="shrink-0 text-primary-text/70" />
         <span class="truncate flex-1">{{ playlist.name }}</span>
-        <span class="text-[11px] text-base-content/50">{{ playlist.tracks.length }}</span>
+        <span class="text-2xs text-base-content/50">{{ playlist.tracks.length }}</span>
         <button
           class="fx-noise p-0.5 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition-all"
           :aria-label="$t('common.delete')"

@@ -87,7 +87,7 @@ watch(format, (value) => {
 
       <div class="space-y-3 rounded-box border border-base-300 bg-base-100/70 p-4">
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.historyExportFormat') }}
           </span>
           <select
@@ -102,7 +102,7 @@ watch(format, (value) => {
         </label>
 
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.historyExportType') }}
           </span>
           <select
@@ -118,7 +118,7 @@ watch(format, (value) => {
         </label>
 
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.historyExportSort') }}
           </span>
           <select
@@ -144,7 +144,7 @@ watch(format, (value) => {
         </label>
 
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.historyExportOutput') }}
           </span>
           <div class="mt-1 flex items-center gap-1.5">
@@ -182,7 +182,7 @@ watch(format, (value) => {
       <p
         v-if="result?.success"
         data-testid="history-export-result"
-        class="mt-3 flex items-center gap-1.5 text-[11px] text-success"
+        class="mt-3 flex items-center gap-1.5 text-2xs text-success"
       >
         <CheckCircle2 :size="13" />
         {{
@@ -198,7 +198,7 @@ watch(format, (value) => {
           {{ t('tools.openOutput') }}
         </button>
       </p>
-      <p v-if="errorMsg" class="mt-3 flex items-center gap-1.5 text-[11px] text-error">
+      <p v-if="errorMsg" class="mt-3 flex items-center gap-1.5 text-2xs text-error">
         <AlertCircle :size="13" />
         {{ errorMsg }}
       </p>

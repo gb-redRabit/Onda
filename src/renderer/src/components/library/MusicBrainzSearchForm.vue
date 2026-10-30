@@ -28,7 +28,7 @@ const canSearch = computed(
   <div class="p-4 border-b border-base-300 shrink-0 space-y-2">
     <div class="grid grid-cols-2 gap-2">
       <label class="flex flex-col gap-1">
-        <span class="text-[11px] text-base-content/60">{{ $t('musicbrainz.fieldArtist') }}</span>
+        <span class="text-2xs text-base-content/60">{{ $t('musicbrainz.fieldArtist') }}</span>
         <input
           v-model="artist"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Skillet'"
@@ -37,7 +37,7 @@ const canSearch = computed(
         />
       </label>
       <label class="flex flex-col gap-1">
-        <span class="text-[11px] text-base-content/60">{{ $t('musicbrainz.fieldTitle') }}</span>
+        <span class="text-2xs text-base-content/60">{{ $t('musicbrainz.fieldTitle') }}</span>
         <input
           v-model="title"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Monster'"
@@ -46,7 +46,7 @@ const canSearch = computed(
         />
       </label>
       <label class="flex flex-col gap-1">
-        <span class="text-[11px] text-base-content/60">{{ $t('musicbrainz.fieldAlbum') }}</span>
+        <span class="text-2xs text-base-content/60">{{ $t('musicbrainz.fieldAlbum') }}</span>
         <input
           v-model="album"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Awake'"
@@ -55,7 +55,7 @@ const canSearch = computed(
         />
       </label>
       <label class="flex flex-col gap-1">
-        <span class="text-[11px] text-base-content/60">{{ $t('musicbrainz.fieldYear') }}</span>
+        <span class="text-2xs text-base-content/60">{{ $t('musicbrainz.fieldYear') }}</span>
         <input
           v-model="year"
           :placeholder="$t('musicbrainz.examplePrefix') + '2009'"
@@ -65,7 +65,7 @@ const canSearch = computed(
       </label>
     </div>
     <div class="flex gap-2">
-      <div class="flex-1 text-[11px] text-base-content/60 self-center truncate">
+      <div class="flex-1 text-2xs text-base-content/60 self-center truncate">
         {{ $t('musicbrainz.emptyFieldsHint') }}
       </div>
       <button

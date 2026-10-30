@@ -106,10 +106,10 @@ function onSeekKeydown(e: KeyboardEvent): void {
         <SkipForward :size="14" fill="currentColor" />
       </button>
     </div>
-    <span v-if="isLive" class="text-[11px] font-bold tracking-widest text-error shrink-0">{{
+    <span v-if="isLive" class="text-2xs font-bold tracking-widest text-error shrink-0">{{
       $t('player.live')
     }}</span>
-    <span v-else class="text-[11px] text-base-content/50 font-mono tabular-nums">{{
+    <span v-else class="text-2xs text-base-content/50 font-mono tabular-nums">{{
       formatDuration(audio.currentTime.value)
     }}</span>
     <button

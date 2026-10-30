@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import type { Component } from 'vue';
 
 defineProps<{
@@ -19,7 +19,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
         <button
           v-for="opt in options"
           :key="opt.id"
-          class="fx-depth rounded-box fx-noise text-[11px] font-medium transition-all border flex flex-col items-center justify-center gap-1 min-h-16"
+          class="fx-depth rounded-box fx-noise text-2xs font-medium transition-all border flex flex-col items-center justify-center gap-1 min-h-16"
           :class="
             modelValue === opt.id
               ? 'border-primary bg-primary/10 text-primary-text shadow-primary/20'
@@ -35,7 +35,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
         <div class="w-5 h-5 rounded-field border border-dashed border-base-content/20" />
       </div>
     </div>
-    <p v-if="selectedLabel" class="text-[11px] text-base-content/50 mt-2">
+    <p v-if="selectedLabel" class="text-2xs text-base-content/50 mt-2">
       {{ $t('settings.selected') }}
       <span class="text-base-content font-medium">{{ selectedLabel }}</span>
     </p>

@@ -116,7 +116,7 @@ function onGainDrag(e: MouseEvent): void {
   >
     <div class="flex items-center gap-2">
       <span
-        class="shrink-0 w-4 h-4 flex items-center justify-center text-[10px] font-bold text-base-100"
+        class="shrink-0 w-4 h-4 flex items-center justify-center text-3xs font-bold text-base-100"
         :style="{ backgroundColor: color, borderRadius: markerRadius(band.type) }"
         aria-hidden="true"
         >{{ index + 1 }}</span
@@ -125,7 +125,7 @@ function onGainDrag(e: MouseEvent): void {
         :value="band.type"
         :data-testid="'eq-type-' + index"
         :aria-label="$t('equalizer.type')"
-        class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-100 border border-base-300 text-[11px] focus:border-primary focus:outline-hidden"
+        class="shrink-0 w-28 px-1.5 py-1 rounded-field bg-base-100 border border-base-300 text-2xs focus:border-primary focus:outline-hidden"
         @change="emit('patch', { type: ($event.target as HTMLSelectElement).value as EqBandType })"
       >
         <option v-for="tp in bandTypes" :key="tp" :value="tp">{{ typeLabel(tp) }}</option>
@@ -148,7 +148,7 @@ function onGainDrag(e: MouseEvent): void {
       </button>
       <button
         type="button"
-        class="shrink-0 px-1.5 py-1 rounded-field text-[11px] font-bold transition-colors"
+        class="shrink-0 px-1.5 py-1 rounded-field text-2xs font-bold transition-colors"
         :class="
           soloed
             ? 'bg-primary text-primary-content'
@@ -175,7 +175,7 @@ function onGainDrag(e: MouseEvent): void {
     </div>
 
     <div class="flex items-center gap-2 mt-1.5 pl-6">
-      <span class="w-3 text-[11px] text-base-content/50">F</span>
+      <span class="w-3 text-2xs text-base-content/50">F</span>
       <input
         type="range"
         :min="0"
@@ -201,13 +201,13 @@ function onGainDrag(e: MouseEvent): void {
           })
         "
       />
-      <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60"
+      <span class="w-18 text-right text-2xs font-mono tabular-nums text-base-content/60"
         >{{ band.frequency }} {{ $t('equalizer.hz') }}</span
       >
     </div>
 
     <div v-if="band.type === 'peaking'" class="flex items-center gap-2 mt-1 pl-6">
-      <span class="w-3 text-[11px] text-base-content/50">Q</span>
+      <span class="w-3 text-2xs text-base-content/50">Q</span>
       <input
         type="range"
         :min="limits.minQ"
@@ -225,13 +225,13 @@ function onGainDrag(e: MouseEvent): void {
           })
         "
       />
-      <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60">{{
+      <span class="w-18 text-right text-2xs font-mono tabular-nums text-base-content/60">{{
         band.q
       }}</span>
     </div>
 
     <div v-if="band.type !== 'peaking'" class="flex items-center gap-2 mt-1 pl-6">
-      <span class="w-3 text-[11px] text-base-content/50">S</span>
+      <span class="w-3 text-2xs text-base-content/50">S</span>
       <input
         type="range"
         min="0.3"
@@ -246,13 +246,13 @@ function onGainDrag(e: MouseEvent): void {
           emit('patch', { slope: clamp(Number(($event.target as HTMLInputElement).value), 0.3, 2) })
         "
       />
-      <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60">{{
+      <span class="w-18 text-right text-2xs font-mono tabular-nums text-base-content/60">{{
         band.slope ?? 1
       }}</span>
     </div>
 
     <div class="flex items-center gap-2 mt-1 pl-6">
-      <span class="w-3 text-[11px] text-base-content/50">G</span>
+      <span class="w-3 text-2xs text-base-content/50">G</span>
       <div
         :data-testid="'eq-band-' + index"
         class="flex-1 relative h-4 cursor-pointer flex items-center"
@@ -288,7 +288,7 @@ function onGainDrag(e: MouseEvent): void {
           }"
         />
       </div>
-      <span class="w-18 text-right text-[11px] font-mono tabular-nums text-base-content/60"
+      <span class="w-18 text-right text-2xs font-mono tabular-nums text-base-content/60"
         >{{ band.gain > 0 ? '+' : '' }}{{ band.gain }} {{ $t('equalizer.db') }}</span
       >
     </div>

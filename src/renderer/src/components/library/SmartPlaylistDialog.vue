@@ -184,7 +184,7 @@ function close(): void {
     <div class="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-3">
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('library.smartPlaylists.name') }}
           </span>
           <input
@@ -196,7 +196,7 @@ function close(): void {
           />
         </label>
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('library.smartPlaylists.match') }}
           </span>
           <select
@@ -210,13 +210,13 @@ function close(): void {
       </div>
 
       <div class="flex flex-wrap items-center gap-1.5">
-        <span class="text-[11px] font-medium text-base-content/60 mr-1">
+        <span class="text-2xs font-medium text-base-content/60 mr-1">
           {{ t('library.smartPlaylists.templatesLabel') }}
         </span>
         <button
           v-for="template in SMART_PLAYLIST_TEMPLATES"
           :key="template.key"
-          class="fx-noise px-2 py-1 fx-depth rounded-field border border-base-300 text-[11px] text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
+          class="fx-noise px-2 py-1 fx-depth rounded-field border border-base-300 text-2xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           @click="applyTemplate(template)"
         >
           {{ t(template.labelKey) }}
@@ -225,12 +225,12 @@ function close(): void {
 
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('library.smartPlaylists.rules') }}
           </span>
           <button
             data-testid="smart-playlist-add-rule"
-            class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field border border-base-300 text-[11px] text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
+            class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field border border-base-300 text-2xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             @click="addRule"
           >
             <Plus :size="11" />
@@ -296,7 +296,7 @@ function close(): void {
               />
               <span
                 v-if="valueKind(rule) === 'days'"
-                class="shrink-0 text-[11px] text-base-content/40"
+                class="shrink-0 text-2xs text-base-content/40"
               >
                 {{ t('library.smartPlaylists.days') }}
               </span>
@@ -309,7 +309,7 @@ function close(): void {
                 :aria-label="t('library.smartPlaylists.value')"
                 @input="setNumberValue(index, ($event.target as HTMLInputElement).value, 0)"
               />
-              <span class="text-[11px] text-base-content/40">–</span>
+              <span class="text-2xs text-base-content/40">–</span>
               <input
                 :value="Array.isArray(rule.value) ? rule.value[1] : 0"
                 type="number"
@@ -318,7 +318,7 @@ function close(): void {
                 @input="setNumberValue(index, ($event.target as HTMLInputElement).value, 1)"
               />
             </div>
-            <span v-else class="text-[11px] text-base-content/40">—</span>
+            <span v-else class="text-2xs text-base-content/40">—</span>
           </div>
 
           <button
@@ -334,7 +334,7 @@ function close(): void {
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('library.smartPlaylists.sort') }}
           </span>
           <select
@@ -348,7 +348,7 @@ function close(): void {
           </select>
         </label>
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('library.smartPlaylists.sortDir') }}
           </span>
           <select
@@ -360,7 +360,7 @@ function close(): void {
           </select>
         </label>
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('library.smartPlaylists.limit') }}
           </span>
           <select

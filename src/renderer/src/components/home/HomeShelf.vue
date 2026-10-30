@@ -67,7 +67,7 @@ onUnmounted(() => {
   <section data-testid="home-shelf">
     <div class="flex items-center justify-between gap-3 mb-2.5">
       <h2
-        class="text-[11px] font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-2 min-w-0"
+        class="text-2xs font-semibold uppercase tracking-wider text-base-content/60 flex items-center gap-2 min-w-0"
       >
         <component :is="icon" :size="14" class="text-primary-text shrink-0" />
         <span class="truncate">{{ title }}</span>

@@ -87,7 +87,7 @@ const emit = defineEmits<{
 
         <span
           v-if="badge"
-          class="absolute left-1.5 top-1.5 rounded-field bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white backdrop-blur-xs"
+          class="absolute left-1.5 top-1.5 rounded-field bg-black/65 px-1.5 py-0.5 text-3xs font-semibold tabular-nums text-white backdrop-blur-xs"
         >
           {{ badge }}
         </span>
@@ -136,7 +136,7 @@ const emit = defineEmits<{
       <div class="truncate text-xs font-medium text-base-content" :title="title">
         {{ title }}
       </div>
-      <div v-if="subtitle" class="mt-0.5 truncate text-[11px] text-base-content/50">
+      <div v-if="subtitle" class="mt-0.5 truncate text-2xs text-base-content/50">
         {{ subtitle }}
       </div>
     </div>

@@ -261,7 +261,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </button>
 
         <template v-if="embeddedTracks.length">
-          <div class="px-4 pt-3 pb-1 text-[11px] text-base-content/60 uppercase tracking-wider">
+          <div class="px-4 pt-3 pb-1 text-2xs text-base-content/60 uppercase tracking-wider">
             {{ $t('subtitles.embedded') }}
           </div>
           <button
@@ -278,7 +278,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </template>
 
         <template v-if="externalTracks.length">
-          <div class="px-4 pt-3 pb-1 text-[11px] text-base-content/60 uppercase tracking-wider">
+          <div class="px-4 pt-3 pb-1 text-2xs text-base-content/60 uppercase tracking-wider">
             {{ $t('subtitles.fromFolder') }}
           </div>
           <button
@@ -295,7 +295,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </template>
 
         <template v-if="customTracks.length">
-          <div class="px-4 pt-3 pb-1 text-[11px] text-base-content/60 uppercase tracking-wider">
+          <div class="px-4 pt-3 pb-1 text-2xs text-base-content/60 uppercase tracking-wider">
             {{ $t('subtitles.custom') }}
           </div>
           <button
@@ -321,7 +321,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
       </div>
 
       <div class="border-t border-base-300 px-4 py-3">
-        <div class="text-[11px] text-base-content/50 font-medium uppercase tracking-wider mb-2">
+        <div class="text-2xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
           {{ $t('subtitles.delay') }}
         </div>
         <div class="flex items-center gap-2">
@@ -356,7 +356,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
       </div>
 
       <div class="border-t border-base-300 px-4 py-3">
-        <div class="text-[11px] text-base-content/50 font-medium uppercase tracking-wider mb-2">
+        <div class="text-2xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
           {{ $t('subtitles.onlineTitle') }}
         </div>
         <input
@@ -384,7 +384,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             {{ $t('subtitles.onlineSearch') }}
           </button>
         </div>
-        <p v-if="searchErrorText" class="mt-2 text-[11px] text-error">{{ searchErrorText }}</p>
+        <p v-if="searchErrorText" class="mt-2 text-2xs text-error">{{ searchErrorText }}</p>
         <div v-if="results.length" class="mt-2 flex max-h-64 flex-col overflow-y-auto">
           <button
             v-for="result in results"
@@ -394,7 +394,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             @click="downloadResult(result)"
           >
             <span
-              class="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+              class="shrink-0 rounded px-1 py-0.5 text-3xs font-semibold uppercase tracking-wide"
               :class="
                 result.source === 'os'
                   ? 'bg-base-content/10 text-base-content/60'
@@ -405,16 +405,16 @@ async function downloadResult(result: PanelResult): Promise<void> {
               {{ sourceBadge(result.source) }}
             </span>
             <span class="min-w-0 flex-1 truncate">{{ result.release }}</span>
-            <span class="shrink-0 text-[11px] text-base-content/50">
+            <span class="shrink-0 text-2xs text-base-content/50">
               {{ result.language.toUpperCase()
               }}<template v-if="result.source === 'os'"> · {{ result.downloads }}</template>
             </span>
           </button>
         </div>
-        <p v-if="!results.length && searching" class="mt-2 text-[11px] text-base-content/50">
+        <p v-if="!results.length && searching" class="mt-2 text-2xs text-base-content/50">
           {{ $t('subtitles.onlineSearching') }}
         </p>
-        <p v-else-if="!results.length && searched" class="mt-2 text-[11px] text-base-content/50">
+        <p v-else-if="!results.length && searched" class="mt-2 text-2xs text-base-content/50">
           {{ $t('subtitles.onlineNoResults') }}
         </p>
       </div>

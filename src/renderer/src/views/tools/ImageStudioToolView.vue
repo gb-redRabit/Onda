@@ -1010,7 +1010,7 @@ onBeforeUnmount(() => {
               />
             </div>
             <div
-              class="flex items-center gap-3 border-t border-base-300 px-3 py-2 text-[11px] text-base-content/60"
+              class="flex items-center gap-3 border-t border-base-300 px-3 py-2 text-2xs text-base-content/60"
             >
               <span class="truncate" :title="sourcePath">{{ fileName(sourcePath) }}</span>
               <span>{{ sourceWidth }}×{{ sourceHeight }} · {{ sourceFormat }}</span>
@@ -1031,7 +1031,7 @@ onBeforeUnmount(() => {
                   v-for="item in ASPECTS"
                   :key="item.id"
                   :data-testid="`image-studio-aspect-${item.id}`"
-                  class="rounded-field border px-2 py-1 text-[11px] transition-colors"
+                  class="rounded-field border px-2 py-1 text-2xs transition-colors"
                   :class="
                     aspect === item.id
                       ? 'border-primary bg-primary/10 text-primary-text'
@@ -1045,7 +1045,7 @@ onBeforeUnmount(() => {
                   {{ t(`tools.${item.key}`) }}
                 </button>
               </div>
-              <p class="text-[10px] text-base-content/50">
+              <p class="text-3xs text-base-content/50">
                 {{ t('tools.imageStudioCropHint') }}
               </p>
               <div class="flex gap-1">
@@ -1091,7 +1091,7 @@ onBeforeUnmount(() => {
             <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioAdjust') }}</div>
               <label v-for="field in ADJUST_FIELDS" :key="field.id" class="block">
-                <span class="flex justify-between text-[11px] text-base-content/60">
+                <span class="flex justify-between text-2xs text-base-content/60">
                   <span>{{ t(`tools.${field.label}`) }}</span>
                   <span>{{ adjust[field.id] }}</span>
                 </span>
@@ -1112,7 +1112,7 @@ onBeforeUnmount(() => {
                   v-for="item in TOOLS"
                   :key="item.id"
                   :data-testid="`image-studio-tool-${item.id}`"
-                  class="flex flex-col items-center gap-1 rounded-field border px-1 py-1.5 text-[10px] transition-colors"
+                  class="flex flex-col items-center gap-1 rounded-field border px-1 py-1.5 text-3xs transition-colors"
                   :class="
                     tool === item.id
                       ? 'border-primary bg-primary/10 text-primary-text'
@@ -1131,7 +1131,7 @@ onBeforeUnmount(() => {
                   :placeholder="t('tools.imageStudioTextPlaceholder')"
                   class="w-full rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
                 />
-                <p class="text-[10px] text-base-content/50">{{ t('tools.imageStudioTextHint') }}</p>
+                <p class="text-3xs text-base-content/50">{{ t('tools.imageStudioTextHint') }}</p>
               </div>
               <div class="flex items-center gap-2">
                 <input
@@ -1139,7 +1139,7 @@ onBeforeUnmount(() => {
                   type="color"
                   class="h-7 w-9 rounded border border-base-300 bg-base-100"
                 />
-                <label class="flex flex-1 items-center gap-2 text-[11px] text-base-content/60">
+                <label class="flex flex-1 items-center gap-2 text-2xs text-base-content/60">
                   <span class="shrink-0"
                     >{{ t('tools.imageStudioStroke') }}: {{ strokeWidth }}</span
                   >
@@ -1153,12 +1153,12 @@ onBeforeUnmount(() => {
                   />
                 </label>
               </div>
-              <p class="text-[10px] text-base-content/50">
+              <p class="text-3xs text-base-content/50">
                 {{ t('tools.imageStudioAnnotationHint') }}
               </p>
               <div class="flex gap-1">
                 <button
-                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-[11px] hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="undoAnnotation"
                 >
@@ -1166,14 +1166,14 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="image-studio-delete"
-                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-[11px] hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="!selectedId"
                   @click="deleteSelected"
                 >
                   <Trash2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioDelete') }}
                 </button>
                 <button
-                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-[11px] hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="clearAnnotations"
                 >
@@ -1185,7 +1185,7 @@ onBeforeUnmount(() => {
             <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioOutput') }}</div>
               <label class="block">
-                <span class="text-[11px] text-base-content/60">{{
+                <span class="text-2xs text-base-content/60">{{
                   t('tools.imageStudioFormat')
                 }}</span>
                 <select
@@ -1199,7 +1199,7 @@ onBeforeUnmount(() => {
                 </select>
               </label>
               <label v-if="outputFormat !== 'png'" class="block">
-                <span class="flex justify-between text-[11px] text-base-content/60">
+                <span class="flex justify-between text-2xs text-base-content/60">
                   <span>{{ t('tools.imageStudioQuality') }}</span>
                   <span>{{ quality }}</span>
                 </span>
@@ -1212,9 +1212,7 @@ onBeforeUnmount(() => {
                 />
               </label>
               <label class="block">
-                <span class="text-[11px] text-base-content/60">{{
-                  t('tools.imageStudioWidth')
-                }}</span>
+                <span class="text-2xs text-base-content/60">{{ t('tools.imageStudioWidth') }}</span>
                 <div class="mt-1 flex items-center gap-2">
                   <input
                     v-model.number="outputWidth"
@@ -1224,10 +1222,10 @@ onBeforeUnmount(() => {
                     :max="MAX_OUTPUT_DIMENSION"
                     class="w-24 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
                   />
-                  <span class="text-[11px] text-base-content/50">→ {{ outputHeight }} px</span>
+                  <span class="text-2xs text-base-content/50">→ {{ outputHeight }} px</span>
                 </div>
               </label>
-              <div class="flex items-center justify-between text-[11px] text-base-content/60">
+              <div class="flex items-center justify-between text-2xs text-base-content/60">
                 <span
                   >{{ t('tools.imageStudioEstimated') }}:
                   {{ estimating ? '…' : formatBytes(estimatedBytes) }}</span
@@ -1242,9 +1240,7 @@ onBeforeUnmount(() => {
                 </button>
               </div>
               <label class="block">
-                <span class="text-[11px] text-base-content/60">{{
-                  t('tools.imageStudioPath')
-                }}</span>
+                <span class="text-2xs text-base-content/60">{{ t('tools.imageStudioPath') }}</span>
                 <div class="mt-1 flex items-center gap-1.5">
                   <input
                     v-model="outputPath"
@@ -1274,12 +1270,12 @@ onBeforeUnmount(() => {
               <p
                 v-if="savedPath"
                 data-testid="image-studio-saved"
-                class="flex items-center gap-1 text-[11px] text-success"
+                class="flex items-center gap-1 text-2xs text-success"
               >
                 <Check :size="12" />
                 {{ t('tools.imageStudioSaved', { size: formatBytes(savedBytes) }) }}
               </p>
-              <p v-if="errorMsg" class="text-[11px] text-error">{{ errorMsg }}</p>
+              <p v-if="errorMsg" class="text-2xs text-error">{{ errorMsg }}</p>
             </section>
 
             <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
@@ -1310,7 +1306,7 @@ onBeforeUnmount(() => {
               </button>
               <p
                 v-if="coverStatus"
-                class="text-[11px]"
+                class="text-2xs"
                 :class="coverOk ? 'text-success' : 'text-error'"
               >
                 {{ coverStatus }}

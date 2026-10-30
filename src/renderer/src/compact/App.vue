@@ -296,7 +296,7 @@ function dismissError(): void {
         <span class="w-1.5 h-1.5 rounded-full bg-primary" />
         {{ $t('compact.appName') }}
       </span>
-      <span class="text-[10px] text-base-content/40 truncate hidden min-[400px]:inline">{{
+      <span class="text-3xs text-base-content/40 truncate hidden min-[400px]:inline">{{
         $t('compact.focusMode')
       }}</span>
       <span class="flex-1" />
@@ -332,7 +332,7 @@ function dismissError(): void {
 
     <div
       v-if="playbackError"
-      class="mx-3 mt-2 flex items-center gap-2 px-2.5 py-2 rounded-field border border-error/40 bg-error/10 text-[11px] text-error"
+      class="mx-3 mt-2 flex items-center gap-2 px-2.5 py-2 rounded-field border border-error/40 bg-error/10 text-2xs text-error"
       role="alert"
       data-testid="compact-playback-error"
     >
@@ -360,8 +360,8 @@ function dismissError(): void {
           <h1 class="text-sm font-semibold truncate" data-testid="compact-title" aria-live="polite">
             {{ title }}
           </h1>
-          <p class="text-[11px] text-base-content/55 truncate mt-0.5">{{ artist || '—' }}</p>
-          <div class="flex items-center gap-1.5 mt-1.5 text-[10px] text-base-content/45">
+          <p class="text-2xs text-base-content/55 truncate mt-0.5">{{ artist || '—' }}</p>
+          <div class="flex items-center gap-1.5 mt-1.5 text-3xs text-base-content/45">
             <span>{{ formatTime(audio.currentTime.value) }}</span>
             <span>·</span>
             <span>{{ formatTime(duration) }}</span>

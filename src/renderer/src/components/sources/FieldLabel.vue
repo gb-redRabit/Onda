@@ -9,7 +9,7 @@ withDefaults(defineProps<{ text: string; htmlFor?: string; tight?: boolean; uppe
 <template>
   <label
     :for="htmlFor"
-    class="block text-[11px] font-medium text-base-content/50 tracking-wider"
+    class="block text-2xs font-medium text-base-content/50 tracking-wider"
     :class="[upper ? 'uppercase' : '', tight ? 'mb-0.5' : 'mb-1']"
   >
     {{ text }}

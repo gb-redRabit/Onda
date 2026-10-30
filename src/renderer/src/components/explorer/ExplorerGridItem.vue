@@ -43,15 +43,15 @@ const audioFile = computed(
 const size = computed(() => {
   switch (props.viewMode) {
     case 'small':
-      return { icon: 36, pad: 6, fs: 'text-[11px]', mb: 1 };
+      return { icon: 36, pad: 6, fs: 'text-2xs', mb: 1 };
     case 'medium':
-      return { icon: 48, pad: 10, fs: 'text-[11px]', mb: 1.5 };
+      return { icon: 48, pad: 10, fs: 'text-2xs', mb: 1.5 };
     case 'large':
       return { icon: 64, pad: 14, fs: 'text-[12px]', mb: 2 };
     case 'extraLarge':
       return { icon: 80, pad: 18, fs: 'text-[13px]', mb: 2.5 };
     default:
-      return { icon: 48, pad: 10, fs: 'text-[11px]', mb: 1.5 };
+      return { icon: 48, pad: 10, fs: 'text-2xs', mb: 1.5 };
   }
 });
 </script>
@@ -134,11 +134,9 @@ const size = computed(() => {
     <span :class="`line-clamp-2 w-full leading-tight font-medium ${size.fs}`" :title="item.name">{{
       item.name
     }}</span>
-    <span
-      v-if="isDriveList && item.size > 0"
-      :class="`text-[11px] text-base-content/50 ${size.fs}`"
-      >{{ formatFileSize(item.size) }}</span
-    >
+    <span v-if="isDriveList && item.size > 0" :class="`text-2xs text-base-content/50 ${size.fs}`">{{
+      formatFileSize(item.size)
+    }}</span>
     <span
       v-if="isLibraryFolder && !isDriveList"
       class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"

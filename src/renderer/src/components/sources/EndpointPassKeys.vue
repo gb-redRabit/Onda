@@ -29,7 +29,7 @@ const { t } = useI18n();
       <FieldLabel :text="t('sources.passKeys')" tight />
       <button
         type="button"
-        class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary-text text-[11px] font-medium hover:bg-primary/10 transition-colors"
+        class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary-text text-2xs font-medium hover:bg-primary/10 transition-colors"
         @click="addPassKey"
       >
         <Plus :size="10" />

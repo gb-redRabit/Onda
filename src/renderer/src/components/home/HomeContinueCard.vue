@@ -44,7 +44,7 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
 
       <div class="min-w-0 flex-1">
         <div
-          class="mb-1 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-base-content/50"
+          class="mb-1 flex flex-wrap items-center gap-1.5 text-2xs font-medium text-base-content/50"
         >
           <span class="font-semibold uppercase tracking-wider text-primary-text">
             {{ $t('home.continueTitle') }}
@@ -56,7 +56,7 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
           </span>
           <template v-if="formatLabel">
             <span aria-hidden="true">·</span>
-            <span class="font-mono text-[10px] text-base-content/50">{{ formatLabel }}</span>
+            <span class="font-mono text-3xs text-base-content/50">{{ formatLabel }}</span>
           </template>
         </div>
 
@@ -82,7 +82,7 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
           >
             <div class="h-full bg-primary rounded-full" :style="{ width: percent + '%' }" />
           </div>
-          <div class="flex items-center gap-2 font-mono text-[11px] text-base-content/50 shrink-0">
+          <div class="flex items-center gap-2 font-mono text-2xs text-base-content/50 shrink-0">
             <span>
               {{ formatDuration(position)
               }}<span v-if="duration > 0"> / {{ formatDuration(duration) }}</span>
@@ -92,7 +92,7 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
             >
           </div>
         </div>
-        <div v-else-if="duration" class="mt-1.5 font-mono text-[11px] text-base-content/50">
+        <div v-else-if="duration" class="mt-1.5 font-mono text-2xs text-base-content/50">
           {{ formatDuration(duration) }}
         </div>
       </div>

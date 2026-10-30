@@ -369,16 +369,13 @@ onBeforeUnmount(() => {
               >
                 <span class="min-w-0 flex-1">
                   <span class="block text-[13px] text-base-content truncate">{{ hit.label }}</span>
-                  <span
-                    v-if="hit.description"
-                    class="block text-[11px] text-base-content/60 truncate"
-                  >
+                  <span v-if="hit.description" class="block text-2xs text-base-content/60 truncate">
                     {{ hit.description }}
                   </span>
                 </span>
                 <span
                   v-if="hit.kind === 'field'"
-                  class="shrink-0 text-[11px] uppercase tracking-wider text-base-content/60"
+                  class="shrink-0 text-2xs uppercase tracking-wider text-base-content/60"
                 >
                   {{ t('settings.searchField') }}
                 </span>
@@ -393,7 +390,7 @@ onBeforeUnmount(() => {
           <section v-for="section in SETTINGS_SECTIONS" :key="section.id">
             <button
               type="button"
-              class="group mb-3 flex items-center gap-2 rounded-field text-[11px] font-semibold uppercase tracking-wider text-base-content/60 transition-colors hover:text-base-content"
+              class="group mb-3 flex items-center gap-2 rounded-field text-2xs font-semibold uppercase tracking-wider text-base-content/60 transition-colors hover:text-base-content"
               :data-testid="`settings-section-header-${section.id}`"
               @click="tabsOfSection(section.id)[0] && openTab(tabsOfSection(section.id)[0]!.id)"
             >
@@ -428,7 +425,7 @@ onBeforeUnmount(() => {
           <!-- Powrót: przegląd → sekcja → zakładka. Wcześniej z otwartej zakładki
                nie było drogi do przeglądu poza ponownym klikaniem w rail. -->
           <nav
-            class="mb-4 flex items-center gap-1 text-[11px] text-base-content/50"
+            class="mb-4 flex items-center gap-1 text-2xs text-base-content/50"
             :aria-label="t('settings.title')"
           >
             <button

@@ -96,13 +96,13 @@ const cells = computed(() =>
             </div>
             <div
               v-if="cell.item.duration"
-              class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-[11px] px-1.5 py-0.5 rounded-field"
+              class="absolute bottom-1.5 right-1.5 bg-neutral/80 text-neutral-content text-2xs px-1.5 py-0.5 rounded-field"
             >
               {{ cell.item.duration }}
             </div>
             <div
               v-if="cell.item.id && downloadedIds?.has(cell.item.id)"
-              class="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-[11px]"
+              class="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-field bg-success text-success-content text-2xs"
               :title="$t('sources.downloaded')"
             >
               <Check :size="10" />
@@ -124,13 +124,13 @@ const cells = computed(() =>
             <p class="text-xs font-medium line-clamp-2">
               {{ cell.item.title || $t('sources.untitled') }}
             </p>
-            <p v-if="cell.item.subtitle" class="text-[11px] text-base-content/50 truncate mt-0.5">
+            <p v-if="cell.item.subtitle" class="text-2xs text-base-content/50 truncate mt-0.5">
               {{ cell.item.subtitle }}
             </p>
           </div>
           <button
             v-if="downloadable && (cell.item.mediaUrl || cell.item.playerUrl)"
-            class="fx-noise m-2 flex items-center justify-center gap-1 py-1 fx-depth rounded-field text-[11px] text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-60"
+            class="fx-noise m-2 flex items-center justify-center gap-1 py-1 fx-depth rounded-field text-2xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-60"
             :disabled="
               !!(cell.item.id && downloadedIds?.has(cell.item.id)) || downloadingItem === cell.item
             "

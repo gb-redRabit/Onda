@@ -48,7 +48,7 @@ const usePlaylist = computed({
       {{ t('youtube.prefOutputDir') }}
     </p>
     <div class="space-y-2 text-xs text-base-content/70">
-      <p v-if="folderMode === 'global'" class="text-[11px] text-base-content/50">
+      <p v-if="folderMode === 'global'" class="text-2xs text-base-content/50">
         {{ t('youtube.prefOutputDirGlobal') }}
       </p>
 
@@ -59,7 +59,7 @@ const usePlaylist = computed({
         </div>
         <p
           v-if="folderMode === 'channel'"
-          class="truncate pl-11 text-[11px] text-base-content/50"
+          class="truncate pl-11 text-2xs text-base-content/50"
           :title="channelFolder"
         >
           {{ t('youtube.prefOutputDirChannelHint', { folder: channelFolder }) }}
@@ -73,7 +73,7 @@ const usePlaylist = computed({
         </div>
         <p
           v-if="folderMode === 'playlist' && playlistFolder"
-          class="truncate pl-11 text-[11px] text-base-content/50"
+          class="truncate pl-11 text-2xs text-base-content/50"
           :title="playlistFolder"
         >
           {{ t('youtube.folderModePlaylistHint', { folder: playlistFolder }) }}

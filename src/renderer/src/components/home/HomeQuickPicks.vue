@@ -23,7 +23,7 @@ const emit = defineEmits<{
   <section data-testid="home-quick-picks">
     <div class="mb-2.5 flex items-center justify-between gap-3">
       <h2
-        class="flex min-w-0 items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-base-content/60"
+        class="flex min-w-0 items-center gap-2 text-2xs font-semibold uppercase tracking-wider text-base-content/60"
       >
         <Clock :size="14" class="shrink-0 text-primary-text" />
         <span class="truncate">{{ title }}</span>
@@ -60,7 +60,7 @@ const emit = defineEmits<{
           <span class="block truncate text-xs font-medium text-base-content" :title="pick.title">
             {{ pick.title }}
           </span>
-          <span class="mt-0.5 block truncate text-[11px] text-base-content/50">{{
+          <span class="mt-0.5 block truncate text-2xs text-base-content/50">{{
             pick.subtitle
           }}</span>
         </span>

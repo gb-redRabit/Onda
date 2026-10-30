@@ -54,7 +54,7 @@ function setFilter(filter: (typeof videoFilters)[0]) {
         class="absolute bottom-full right-0 mb-3 w-44 bg-neutral/60 backdrop-blur-xl border border-white/10 rounded-box shadow-2xl shadow-black/60 py-1.5 z-50"
       >
         <div
-          class="px-3 py-1.5 text-[11px] text-neutral-content/60 font-medium uppercase tracking-wider"
+          class="px-3 py-1.5 text-2xs text-neutral-content/60 font-medium uppercase tracking-wider"
         >
           {{ $t('videoFilters.title') }}
         </div>

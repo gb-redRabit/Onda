@@ -21,7 +21,7 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
   <div
     role="menu"
     data-menu="view"
-    class="absolute top-full left-0 mt-1 bg-base-100 border border-base-300 rounded-xl shadow-2xl shadow-black/40 py-2 min-w-56 z-[70]"
+    class="absolute top-full left-0 mt-1 bg-base-100 border border-base-300 rounded-xl shadow-2xl shadow-black/40 py-2 min-w-56 z-70"
   >
     <AppMenuItem
       v-for="r in ROUTES"

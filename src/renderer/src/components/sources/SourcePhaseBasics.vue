@@ -58,7 +58,7 @@ const { t } = useI18n();
           <span class="block text-xs font-medium text-base-content">
             {{ t('sources.trustPrivateNetwork') }}
           </span>
-          <span class="block mt-0.5 text-[11px] text-base-content/55">
+          <span class="block mt-0.5 text-2xs text-base-content/55">
             {{ t('sources.trustPrivateNetworkDescription') }}
           </span>
         </span>

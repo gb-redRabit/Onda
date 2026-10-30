@@ -86,7 +86,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
     </div>
 
     <footer
-      class="flex shrink-0 items-center justify-center gap-1 border-t px-2 py-1 text-[11px] text-base-content/50 transition-opacity"
+      class="flex shrink-0 items-center justify-center gap-1 border-t px-2 py-1 text-2xs text-base-content/50 transition-opacity"
       :class="props.variant === 'minimal' ? 'border-transparent' : 'border-base-300/60'"
     >
       <button

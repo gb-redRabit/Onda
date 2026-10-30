@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
           <aside class="space-y-4">
             <section class="rounded-box border border-base-300 bg-base-100/70 p-4 space-y-3">
               <label v-if="kind === 'audio'" class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.audioFormat') }}
                 </span>
                 <select
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label v-if="kind === 'audio'" class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.bitrate') }}
                 </span>
                 <select
@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label v-if="kind === 'video'" class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.videoFormat') }}
                 </span>
                 <select
@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label v-if="kind === 'video'" class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.quality') }}
                 </span>
                 <select
@@ -390,7 +390,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.outputFolder') }}
                 </span>
                 <div class="mt-1 flex items-center gap-1.5">
@@ -460,7 +460,7 @@ onBeforeUnmount(() => {
               />
               <Clock v-else :size="14" class="shrink-0 text-primary-text" />
               <span class="min-w-0 flex-1 truncate text-xs">{{ job.name }}</span>
-              <span class="shrink-0 text-[11px] text-base-content/50">
+              <span class="shrink-0 text-2xs text-base-content/50">
                 {{ statusLabel(job.status) }}
                 <template v-if="job.status === 'converting'">
                   {{ t('tools.progress', { percent: Math.round(job.progress) }) }}
@@ -486,7 +486,7 @@ onBeforeUnmount(() => {
                 :style="{ width: `${Math.max(2, Math.min(100, job.progress))}%` }"
               />
             </div>
-            <p v-if="job.error" class="mt-1 text-[11px] text-error line-clamp-2" :title="job.error">
+            <p v-if="job.error" class="mt-1 text-2xs text-error line-clamp-2" :title="job.error">
               {{ job.error }}
             </p>
           </div>

@@ -100,7 +100,7 @@ async function openTool(id: ToolId): Promise<void> {
               {{ card.description }}
             </p>
             <span
-              class="mt-2.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary-text/80 group-hover:text-primary-text"
+              class="mt-2.5 inline-flex items-center gap-1 text-2xs font-medium text-primary-text/80 group-hover:text-primary-text"
             >
               {{ t('tools.openInNewWindow') }}
             </span>

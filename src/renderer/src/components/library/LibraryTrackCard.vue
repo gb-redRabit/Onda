@@ -185,7 +185,7 @@ function onHoverLeave() {
 
         <div
           v-if="track.duration"
-          class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content text-[10px] font-mono tabular-nums"
+          class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-field bg-base-300/80 backdrop-blur-sm text-base-content text-3xs font-mono tabular-nums"
         >
           {{ formatDuration(track.duration, '—') }}
         </div>

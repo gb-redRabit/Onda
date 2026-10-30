@@ -106,7 +106,7 @@ async function pasteThemeJson() {
             }"
             :title="`${tokenLabel(id)} ${resolved.colors[id]}`"
           />
-          <span class="text-[11px] font-mono text-base-content/50">{{ resolved.colors[id] }}</span>
+          <span class="text-2xs font-mono text-base-content/50">{{ resolved.colors[id] }}</span>
         </div>
       </div>
 

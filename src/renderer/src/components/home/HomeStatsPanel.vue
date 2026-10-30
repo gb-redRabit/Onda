@@ -35,12 +35,12 @@ const emit = defineEmits<{ (e: 'open', tab: TabId): void }>();
       :title="$t('home.openInLibrary')"
       @click="emit('open', items[0].tab)"
     >
-      <span class="text-[11px] font-semibold uppercase tracking-wider text-base-content/55">
+      <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/55">
         {{ $t('home.libraryStats') }}
       </span>
       <span class="inline-flex items-center gap-1.5 text-xs text-base-content/65">
         <span class="font-semibold tabular-nums text-base-content">{{ items[0].value }}</span>
-        <span class="text-[11px] text-base-content/50">{{ $t(items[0].key) }}</span>
+        <span class="text-2xs text-base-content/50">{{ $t(items[0].key) }}</span>
         <ArrowUpRight
           :size="13"
           class="text-base-content/35 transition-colors group-hover:text-primary-text"
@@ -81,7 +81,7 @@ const emit = defineEmits<{ (e: 'open', tab: TabId): void }>();
           <span class="block text-sm font-semibold leading-none tabular-nums text-base-content">
             {{ item.value }}
           </span>
-          <span class="mt-0.5 block truncate text-[11px] text-base-content/50">
+          <span class="mt-0.5 block truncate text-2xs text-base-content/50">
             {{ $t(item.key) }}
           </span>
         </span>

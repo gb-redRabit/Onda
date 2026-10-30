@@ -45,7 +45,7 @@ const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
           })
         "
       />
-      <div class="flex justify-between text-[11px] text-base-content/60">
+      <div class="flex justify-between text-2xs text-base-content/60">
         <span>1 MB</span><span>100 MB</span>
       </div>
     </div>

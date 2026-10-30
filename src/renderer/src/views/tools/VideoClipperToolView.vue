@@ -878,12 +878,12 @@ onBeforeUnmount(() => {
               </span>
             </button>
             <div
-              class="pointer-events-none absolute bottom-2 left-2 rounded bg-black/65 px-2 py-1 font-mono text-[11px] text-white/90"
+              class="pointer-events-none absolute bottom-2 left-2 rounded bg-black/65 px-2 py-1 font-mono text-2xs text-white/90"
             >
               {{ formatTimecode(currentTime) }} / {{ formatTimecode(duration) }}
             </div>
             <button
-              class="absolute right-2 top-2 flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-[11px] text-white/80 transition-colors hover:bg-black/80"
+              class="absolute right-2 top-2 flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-2xs text-white/80 transition-colors hover:bg-black/80"
               :disabled="busy"
               @click="clearVideo"
             >
@@ -1004,7 +1004,7 @@ onBeforeUnmount(() => {
                 {{ t('tools.clipAddToList') }}
               </button>
               <div class="ml-auto flex items-center gap-1">
-                <span class="mr-1 font-mono text-[10px] text-base-content/40">
+                <span class="mr-1 font-mono text-3xs text-base-content/40">
                   {{ t('tools.clipFps', { fps: fpsLabel }) }}
                 </span>
                 <button
@@ -1044,7 +1044,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="clip-fit-second"
-                  class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2 py-1.5 text-[11px] text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                  class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2 py-1.5 text-2xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                   :disabled="busy || duration <= 0"
                   :title="t('tools.clipFitSecond')"
                   :aria-label="t('tools.clipFitSecond')"
@@ -1065,7 +1065,7 @@ onBeforeUnmount(() => {
                 </button>
                 <span
                   data-testid="clip-zoom-label"
-                  class="w-12 text-center text-[10px] text-base-content/50"
+                  class="w-12 text-center text-3xs text-base-content/50"
                 >
                   {{ zoomLabel }}×
                 </span>
@@ -1090,9 +1090,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <div
-              class="mt-3 flex items-center justify-between gap-2 text-[11px] text-base-content/55"
-            >
+            <div class="mt-3 flex items-center justify-between gap-2 text-2xs text-base-content/55">
               <span data-testid="clip-start-label" class="font-mono">{{
                 formatTimecode(startSec)
               }}</span>
@@ -1161,7 +1159,7 @@ onBeforeUnmount(() => {
                   </div>
                   <div
                     v-else
-                    class="flex h-full items-center justify-center px-2 text-center text-[10px] text-base-content/45"
+                    class="flex h-full items-center justify-center px-2 text-center text-3xs text-base-content/45"
                     :title="thumbsError"
                   >
                     {{ t('tools.clipThumbnailsUnavailable') }}
@@ -1252,7 +1250,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
 
-            <p class="mt-2 text-[11px] leading-relaxed text-base-content/45">
+            <p class="mt-2 text-2xs leading-relaxed text-base-content/45">
               {{
                 clipFormat === 'gif'
                   ? t('tools.clipGifHint')
@@ -1273,7 +1271,7 @@ onBeforeUnmount(() => {
                 {{ t('tools.clipList', { count: clips.length }) }}
               </span>
               <button
-                class="fx-noise rounded-field px-2 py-1 text-[11px] text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                class="fx-noise rounded-field px-2 py-1 text-2xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                 :disabled="busy"
                 @click="clearClips"
               >
@@ -1286,13 +1284,13 @@ onBeforeUnmount(() => {
                 :key="clip.id"
                 class="flex items-center gap-2 rounded-field border border-base-300/60 bg-base-200/40 px-2 py-1.5"
               >
-                <span class="w-5 text-center font-mono text-[10px] text-base-content/45">
+                <span class="w-5 text-center font-mono text-3xs text-base-content/45">
                   {{ index + 1 }}
                 </span>
-                <span class="min-w-0 flex-1 font-mono text-[11px]">
+                <span class="min-w-0 flex-1 font-mono text-2xs">
                   {{ formatTimecode(clip.startSec) }} – {{ formatTimecode(clip.endSec) }}
                 </span>
-                <span class="shrink-0 text-[10px] text-base-content/45">
+                <span class="shrink-0 text-3xs text-base-content/45">
                   {{
                     clip.status === 'exporting'
                       ? t('tools.clipExporting')
@@ -1325,7 +1323,7 @@ onBeforeUnmount(() => {
           <section class="rounded-box border border-base-300 bg-base-100/70 p-4 lg:row-span-2">
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipFormat') }}
                 </span>
                 <select
@@ -1340,7 +1338,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipMode') }}
                 </span>
                 <select
@@ -1355,7 +1353,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipContainer') }}
                 </span>
                 <select
@@ -1371,7 +1369,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipAudio') }}
                 </span>
                 <select
@@ -1387,7 +1385,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipRotation') }}
                 </span>
                 <select
@@ -1404,7 +1402,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipTargetSize') }}
                 </span>
                 <select
@@ -1420,7 +1418,7 @@ onBeforeUnmount(() => {
               </label>
 
               <label class="block sm:col-span-2">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.outputFolder') }}
                 </span>
                 <div class="mt-1 flex items-center gap-1.5">
@@ -1491,7 +1489,7 @@ onBeforeUnmount(() => {
               />
               <Clock v-else :size="14" class="shrink-0 text-primary-text" />
               <span class="min-w-0 flex-1 truncate text-xs">{{ t('tools.clipJob') }}</span>
-              <span class="shrink-0 text-[11px] text-base-content/50">
+              <span class="shrink-0 text-2xs text-base-content/50">
                 {{ status === 'exporting' ? t('tools.clipExporting') : t(`tools.${status}`) }}
                 <template v-if="status === 'exporting'">
                   {{ t('tools.progress', { percent: Math.round(progress) }) }}
@@ -1517,7 +1515,7 @@ onBeforeUnmount(() => {
                 :style="{ width: `${Math.max(2, Math.min(100, progress))}%` }"
               />
             </div>
-            <p v-if="error" class="mt-1 text-[11px] text-error line-clamp-2" :title="error">
+            <p v-if="error" class="mt-1 text-2xs text-error line-clamp-2" :title="error">
               {{ error }}
             </p>
           </section>

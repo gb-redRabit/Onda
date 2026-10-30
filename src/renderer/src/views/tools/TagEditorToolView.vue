@@ -317,7 +317,7 @@ function fieldLabel(field: AudioTagField): string {
           {{ t('tools.clear') }}
         </button>
 
-        <span class="text-[11px] text-base-content/50">
+        <span class="text-2xs text-base-content/50">
           {{ t('tools.tagEditorSelected', { selected: selectedCount, total: files.length }) }}
         </span>
 
@@ -353,7 +353,7 @@ function fieldLabel(field: AudioTagField): string {
       </div>
 
       <div class="flex flex-wrap items-center gap-2 border-b border-base-300 px-3 py-2">
-        <span class="text-[11px] font-medium text-base-content/60">
+        <span class="text-2xs font-medium text-base-content/60">
           {{ t('tools.tagEditorCover') }}
         </span>
         <input
@@ -382,7 +382,7 @@ function fieldLabel(field: AudioTagField): string {
         </button>
         <span
           v-if="coverSummary"
-          class="text-[11px]"
+          class="text-2xs"
           :class="coverSummary.failed === 0 ? 'text-success' : 'text-error'"
         >
           {{
@@ -394,15 +394,15 @@ function fieldLabel(field: AudioTagField): string {
                 })
           }}
         </span>
-        <span v-if="coverError" class="text-[11px] text-error">{{ coverError }}</span>
-        <span class="w-full text-[10px] text-base-content/45">
+        <span v-if="coverError" class="text-2xs text-error">{{ coverError }}</span>
+        <span class="w-full text-3xs text-base-content/45">
           {{ t('tools.tagEditorCoverHint') }}
         </span>
       </div>
 
       <p
         v-if="loadError"
-        class="border-b border-error/30 bg-error/10 px-3 py-2 text-[11px] text-error"
+        class="border-b border-error/30 bg-error/10 px-3 py-2 text-2xs text-error"
       >
         {{ loadError }}
       </p>
@@ -422,7 +422,7 @@ function fieldLabel(field: AudioTagField): string {
 
         <table v-else class="w-full min-w-[980px] border-separate border-spacing-0 text-xs">
           <thead class="sticky top-0 z-10">
-            <tr class="text-left text-[11px] uppercase tracking-wider text-base-content/50">
+            <tr class="text-left text-2xs uppercase tracking-wider text-base-content/50">
               <th class="w-8 border-b border-base-300 bg-base-100 px-2 py-2">
                 <input
                   type="checkbox"
@@ -475,13 +475,13 @@ function fieldLabel(field: AudioTagField): string {
                     {{ t('tools.tagEditorChanged') }}
                   </span>
                 </div>
-                <p v-if="row.error" class="mt-0.5 text-[10px] text-error line-clamp-1">
+                <p v-if="row.error" class="mt-0.5 text-3xs text-error line-clamp-1">
                   {{ row.error }}
                 </p>
-                <p v-else-if="row.writeError" class="mt-0.5 text-[10px] text-error line-clamp-1">
+                <p v-else-if="row.writeError" class="mt-0.5 text-3xs text-error line-clamp-1">
                   {{ row.writeError }}
                 </p>
-                <p v-else-if="row.coverError" class="mt-0.5 text-[10px] text-error line-clamp-1">
+                <p v-else-if="row.coverError" class="mt-0.5 text-3xs text-error line-clamp-1">
                   {{ row.coverError }}
                 </p>
               </td>
@@ -516,7 +516,7 @@ function fieldLabel(field: AudioTagField): string {
       </div>
 
       <div class="flex items-center gap-3 border-t border-base-300 px-3 py-2">
-        <p v-if="lastSave" class="flex items-center gap-1.5 text-[11px]">
+        <p v-if="lastSave" class="flex items-center gap-1.5 text-2xs">
           <CheckCircle2 v-if="lastSave.failed === 0" :size="13" class="text-success" />
           <AlertCircle v-else :size="13" class="text-error" />
           <span :class="lastSave.failed === 0 ? 'text-success' : 'text-error'">
@@ -530,7 +530,7 @@ function fieldLabel(field: AudioTagField): string {
             }}
           </span>
         </p>
-        <span v-else class="text-[11px] text-base-content/45">
+        <span v-else class="text-2xs text-base-content/45">
           {{ loading ? t('tools.tagEditorLoading') : t('tools.tagEditorHint') }}
         </span>
         <button

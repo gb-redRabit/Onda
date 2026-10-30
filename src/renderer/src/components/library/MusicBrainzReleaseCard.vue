@@ -23,7 +23,7 @@ const emit = defineEmits<{ select: [] }>();
       <div class="text-xs text-base-content/70 truncate">
         {{ rel['artist-credit']?.[0]?.name || rel['artist-credit']?.[0]?.artist?.name || '?' }}
       </div>
-      <div class="flex gap-3 mt-1 text-[11px] text-base-content/50">
+      <div class="flex gap-3 mt-1 text-2xs text-base-content/50">
         <span class="flex items-center gap-1"><Calendar :size="10" />{{ rel.date || '?' }}</span>
         <span class="flex items-center gap-1"
           ><Hash :size="10" />{{ rel['track-count'] || '?' }}</span

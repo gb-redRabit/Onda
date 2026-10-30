@@ -48,13 +48,13 @@ function onKeydown(e: KeyboardEvent, index: number): void {
       @keydown.space.prevent="emit('select', i)"
     >
       <span
-        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-mono"
+        class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-2xs font-mono"
         :class="i === active ? 'bg-primary text-primary-content' : 'bg-base-content/10'"
         >{{ i }}</span
       >
       <span class="min-w-0 flex-1">
         <span class="block truncate font-medium">{{ p.label }}</span>
-        <span class="block text-[11px] text-base-content/50 truncate">
+        <span class="block text-2xs text-base-content/50 truncate">
           {{
             p.kind === 'source'
               ? t('sources.phaseSource')

@@ -27,7 +27,7 @@ const emit = defineEmits<{
       <span class="truncate">{{ $t('menu.search') }}</span>
       <kbd
         v-if="shortcut"
-        class="ml-auto shrink-0 rounded border border-base-300/70 px-1 font-mono text-[10px] text-base-content/45"
+        class="ml-auto shrink-0 rounded border border-base-300/70 px-1 font-mono text-3xs text-base-content/45"
         >{{ shortcut }}</kbd
       >
     </button>

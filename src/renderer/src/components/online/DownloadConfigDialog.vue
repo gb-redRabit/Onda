@@ -153,7 +153,7 @@ function confirm() {
             props.playlistTitle
           }}</span>
         </p>
-        <p v-if="isGeneric" class="mt-1 text-[11px] text-info">
+        <p v-if="isGeneric" class="mt-1 text-2xs text-info">
           {{ $t('youtube.genericExtractorHint') }}
         </p>
       </div>

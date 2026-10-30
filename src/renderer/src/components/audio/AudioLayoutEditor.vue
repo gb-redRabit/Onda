@@ -159,7 +159,7 @@ const readout = computed(() => {
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-sm font-semibold text-base-content">{{ t('audioView.layoutPreview') }}</h3>
         <button
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-field text-[11px] text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-field text-2xs text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           @click="resetLayout"
         >
           <RotateCcw :size="12" />
@@ -218,7 +218,7 @@ const readout = computed(() => {
           v-show="el.visible"
           :key="el.id"
           v-activate
-          class="absolute flex items-center justify-center text-[11px] font-medium rounded-field border-2 cursor-move"
+          class="absolute flex items-center justify-center text-2xs font-medium rounded-field border-2 cursor-move"
           :class="[
             el.id === selectedId
               ? 'border-primary bg-primary/15 text-primary-text'
@@ -235,7 +235,7 @@ const readout = computed(() => {
 
       <!-- Odczyt: pozycja/rozmiar aktywnego elementu -->
       <div
-        class="mt-2 flex items-center justify-between px-1 text-[11px] font-mono text-base-content/50 tabular-nums"
+        class="mt-2 flex items-center justify-between px-1 text-2xs font-mono text-base-content/50 tabular-nums"
       >
         <span class="flex items-center gap-1.5">
           <component :is="ELEMENT_META[selectedId].icon" :size="11" class="opacity-50" />

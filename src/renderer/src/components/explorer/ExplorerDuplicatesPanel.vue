@@ -141,7 +141,7 @@ function revealDupFile(path: string) {
     </div>
 
     <div v-else class="flex-1 overflow-y-auto p-2 space-y-2">
-      <p class="text-[11px] text-base-content/70 px-1">
+      <p class="text-2xs text-base-content/70 px-1">
         {{ $t('explorer.duplicatesFound', { n: dupGroups.length }) }}
       </p>
       <div
@@ -161,7 +161,7 @@ function revealDupFile(path: string) {
             basenameOf(group.original)
           }}</span>
           <span
-            class="text-[11px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-semibold shrink-0"
+            class="text-2xs px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-semibold shrink-0"
             >{{ $t('explorer.duplicatesOriginal') }}</span
           >
         </div>
@@ -192,14 +192,14 @@ function revealDupFile(path: string) {
     >
       <button
         data-testid="explorer-duplicates-select-all"
-        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
+        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         @click="selectAllDuplicates"
       >
         {{ $t('explorer.duplicatesSelectAll') }}
       </button>
       <button
         data-testid="explorer-duplicates-delete"
-        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-[11px] bg-error/15 text-error hover:bg-error/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
+        class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-2xs bg-error/15 text-error hover:bg-error/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
         :disabled="dupSelected.size === 0"
         @click="deleteSelectedDuplicates"
       >

@@ -9,7 +9,7 @@ describe('Badge', () => {
     const wrapper = mount(Badge, { props: { tone: 'error', size: 'md' }, slots: { default: '3' } });
     expect(wrapper.text()).toBe('3');
     expect(wrapper.classes()).toContain('text-error');
-    expect(wrapper.classes()).toContain('text-[11px]');
+    expect(wrapper.classes()).toContain('text-2xs');
   });
 });
 

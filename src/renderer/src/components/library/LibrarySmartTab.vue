@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import type { SmartPlaylist } from '@shared/types/smart-playlist';
@@ -140,7 +140,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
         <component :is="folder.icon" :size="14" class="shrink-0 opacity-80" />
         <span class="truncate flex-1">{{ $t(folder.labelKey) }}</span>
         <span
-          class="px-1.5 py-0.5 rounded-selector text-[11px] font-bold leading-none border shrink-0"
+          class="px-1.5 py-0.5 rounded-selector text-2xs font-bold leading-none border shrink-0"
           :class="
             selected === folder.id
               ? 'bg-primary-content/20 border-primary-content/20'
@@ -152,14 +152,14 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
 
       <div class="mt-3 pt-3 border-t border-base-300/70">
         <div
-          class="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-base-content/40"
+          class="px-2.5 pb-1 text-3xs font-semibold uppercase tracking-wider text-base-content/40"
         >
           {{ t('library.smartPlaylists.title') }}
         </div>
 
         <p
           v-if="smartItems.length === 0"
-          class="px-2.5 py-1.5 text-[11px] leading-relaxed text-base-content/40"
+          class="px-2.5 py-1.5 text-2xs leading-relaxed text-base-content/40"
         >
           {{ t('library.smartPlaylists.empty') }}
         </p>
@@ -184,7 +184,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
             <Sparkles :size="14" class="shrink-0 opacity-80" />
             <span class="truncate flex-1">{{ item.name }}</span>
             <span
-              class="px-1.5 py-0.5 rounded-selector text-[11px] font-bold leading-none border shrink-0"
+              class="px-1.5 py-0.5 rounded-selector text-2xs font-bold leading-none border shrink-0"
               :class="
                 selected === item.id
                   ? 'bg-primary-content/20 border-primary-content/20'

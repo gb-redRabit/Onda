@@ -25,7 +25,7 @@ function isActive(item: FlatItem): boolean {
   <div class="max-h-80 overflow-y-auto py-1">
     <template v-for="group in groups" :key="group.key">
       <div
-        class="px-3 pt-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-base-content/60"
+        class="px-3 pt-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider text-base-content/60"
       >
         {{ group.label }}
       </div>
@@ -46,7 +46,7 @@ function isActive(item: FlatItem): boolean {
             class="shrink-0 text-base-content/50"
           />
           <span class="truncate flex-1">{{ item.label }}</span>
-          <span class="text-[11px] text-base-content/50 shrink-0 truncate max-w-30">{{
+          <span class="text-2xs text-base-content/50 shrink-0 truncate max-w-30">{{
             item.sub
           }}</span>
         </div>
@@ -66,7 +66,7 @@ function isActive(item: FlatItem): boolean {
             class="shrink-0 text-base-content/50"
           />
           <span>{{ item.label }}</span>
-          <span v-if="item.type === 'playlist'" class="text-[11px] text-base-content/50 shrink-0">{{
+          <span v-if="item.type === 'playlist'" class="text-2xs text-base-content/50 shrink-0">{{
             item.sub
           }}</span>
           <ArrowRight :size="12" class="ml-auto text-base-content/50" />

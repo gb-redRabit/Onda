@@ -52,7 +52,7 @@ function fileCountLabel(count: number): string {
     >
       <LibraryFolderTile :tracks="folderTracksFor(sub, meta)" />
       <span class="text-xs font-medium truncate w-full">{{ sub }}</span>
-      <span class="text-[11px] text-base-content/50">{{
+      <span class="text-2xs text-base-content/50">{{
         fileCountLabel(meta[sub]?.audioCount ?? 0)
       }}</span>
     </button>
@@ -80,7 +80,7 @@ function fileCountLabel(count: number): string {
       </div>
       <div class="p-2">
         <div class="text-xs font-medium truncate">{{ tr.metadata?.title || tr.name }}</div>
-        <div class="text-[11px] text-base-content/50 truncate">
+        <div class="text-2xs text-base-content/50 truncate">
           {{ tr.type === 'image' ? tr.extension : tr.metadata?.artist || '' }}
         </div>
       </div>

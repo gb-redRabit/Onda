@@ -96,9 +96,7 @@ async function onNavDrop(e: DragEvent, path: string) {
   >
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- szybkie linki -->
-      <div
-        class="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50"
-      >
+      <div class="px-2 py-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
         {{ t('explorer.quickAccess') }}
       </div>
       <button
@@ -122,7 +120,7 @@ async function onNavDrop(e: DragEvent, path: string) {
 
       <!-- dyski -->
       <div
-        class="mt-3 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50"
+        class="mt-3 px-2 py-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.drives') }}
       </div>
@@ -146,7 +144,7 @@ async function onNavDrop(e: DragEvent, path: string) {
 
       <!-- foldery biblioteki -->
       <div
-        class="mt-3 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50"
+        class="mt-3 px-2 py-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50"
       >
         {{ t('explorer.libraryFolders') }}
       </div>

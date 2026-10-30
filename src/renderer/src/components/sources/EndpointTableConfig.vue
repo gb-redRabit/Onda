@@ -73,7 +73,7 @@ const tableViews = [
     </div>
     <template v-if="model.tableEnabled">
       <div class="flex items-center gap-2">
-        <span class="text-[11px] text-base-content/50 uppercase tracking-wider shrink-0">{{
+        <span class="text-2xs text-base-content/50 uppercase tracking-wider shrink-0">{{
           t('sources.viewLabel')
         }}</span>
         <div
@@ -101,7 +101,7 @@ const tableViews = [
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[11px] text-base-content/50 uppercase tracking-wider shrink-0">{{
+        <span class="text-2xs text-base-content/50 uppercase tracking-wider shrink-0">{{
           t('sources.tableSource')
         }}</span>
         <select
@@ -112,7 +112,7 @@ const tableViews = [
           <option value="endpoint">{{ t('sources.tableSourceEndpoint') }}</option>
           <option value="field">{{ t('sources.tableSourceField') }}</option>
         </select>
-        <span class="text-[11px] text-base-content/50">{{
+        <span class="text-2xs text-base-content/50">{{
           t(`sources.tableModeHint.${model.tableMode}`)
         }}</span>
       </div>
@@ -154,7 +154,7 @@ const tableViews = [
           <FieldLabel :text="t('sources.tableRowKeys')" tight />
           <button
             type="button"
-            class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary-text text-[11px] font-medium hover:bg-primary/10 transition-colors"
+            class="fx-noise flex items-center gap-1 px-1.5 py-0.5 fx-depth rounded-field text-primary-text text-2xs font-medium hover:bg-primary/10 transition-colors"
             @click="addPassKey(model.tablePassKeys)"
           >
             <Plus :size="10" />

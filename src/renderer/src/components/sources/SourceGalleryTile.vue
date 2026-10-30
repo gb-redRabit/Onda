@@ -55,14 +55,14 @@ const typeIcon = {
     <!-- Badge typu (lewy-górny) i czasu (prawy-górny) -->
     <span
       v-if="showType !== false"
-      class="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-1.5 py-0.5 text-[11px] font-medium uppercase text-neutral-content ring-1 ring-inset ring-neutral-content/10"
+      class="absolute top-1.5 left-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-1.5 py-0.5 text-2xs font-medium uppercase text-neutral-content ring-1 ring-inset ring-neutral-content/10"
     >
       <component :is="typeIcon[item.type]" :size="10" />
       {{ item.type }}
     </span>
     <span
       v-if="item.duration && !selectable"
-      class="absolute top-1.5 right-1.5 rounded-field bg-neutral/80 px-1.5 py-0.5 font-mono text-[11px] text-neutral-content ring-1 ring-inset ring-neutral-content/10"
+      class="absolute top-1.5 right-1.5 rounded-field bg-neutral/80 px-1.5 py-0.5 font-mono text-2xs text-neutral-content ring-1 ring-inset ring-neutral-content/10"
     >
       {{ item.duration }}
     </span>
@@ -84,7 +84,7 @@ const typeIcon = {
       <p class="line-clamp-1 text-xs font-medium text-neutral-content">
         {{ item.title || $t('sources.untitled') }}
       </p>
-      <p v-if="item.subtitle" class="line-clamp-1 text-[11px] text-neutral-content/70">
+      <p v-if="item.subtitle" class="line-clamp-1 text-2xs text-neutral-content/70">
         {{ item.subtitle }}
       </p>
     </div>
@@ -101,14 +101,14 @@ const typeIcon = {
     </div>
     <span
       v-if="downloaded"
-      class="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-success px-1.5 py-0.5 text-[11px] font-medium text-success-content"
+      class="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-success px-1.5 py-0.5 text-2xs font-medium text-success-content"
       :title="$t('sources.downloaded')"
     >
       <Check :size="10" />
     </span>
     <button
       v-else-if="downloadable && (item.mediaUrl || item.playerUrl)"
-      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-2 py-1 text-[11px] text-neutral-content opacity-0 fx-depth ring-1 ring-inset ring-neutral-content/10 transition-opacity hover:bg-neutral group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60"
+      class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-2 py-1 text-2xs text-neutral-content opacity-0 fx-depth ring-1 ring-inset ring-neutral-content/10 transition-opacity hover:bg-neutral group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60"
       :title="$t('sources.download')"
       :aria-label="$t('sources.download')"
       :disabled="downloading"

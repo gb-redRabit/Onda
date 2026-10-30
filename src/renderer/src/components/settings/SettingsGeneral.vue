@@ -139,7 +139,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
       anchor="setting-compact-startup"
     >
       <button
-        class="px-2.5 h-7 rounded-field text-[11px] font-medium border border-primary/40 text-primary-text hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+        class="px-2.5 h-7 rounded-field text-2xs font-medium border border-primary/40 text-primary-text hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
         :disabled="switchingToCompact"
         :title="$t('settings.compactSwitchNowHint')"
         data-testid="settings-compact-switch-now"

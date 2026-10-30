@@ -13,7 +13,7 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
 
 <template>
   <div class="border border-base-300 rounded-field overflow-hidden">
-    <div class="bg-base-300/50 px-2 py-1 text-[11px] font-medium">
+    <div class="bg-base-300/50 px-2 py-1 text-2xs font-medium">
       {{ $t('musicbrainz.previewChanges') }}
     </div>
     <div
@@ -33,7 +33,7 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
       <span class="flex-1 truncate font-medium">{{ row.now }}</span>
       <span
         v-if="applyResult"
-        class="text-[11px] shrink-0"
+        class="text-2xs shrink-0"
         :class="
           applyResult[row.key] === true
             ? 'text-success'

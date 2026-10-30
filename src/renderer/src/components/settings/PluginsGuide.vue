@@ -114,7 +114,7 @@ function clearSearch(): void {
         </button>
       </div>
       <span
-        class="shrink-0 text-[11px] text-base-content/50 tabular-nums"
+        class="shrink-0 text-2xs text-base-content/50 tabular-nums"
         data-testid="plugins-guide-count"
       >
         {{ sections.length }} / {{ allSections.length }}
@@ -166,7 +166,7 @@ function clearSearch(): void {
             class="relative group"
           >
             <pre
-              class="p-3 pe-12 rounded-field bg-base-200 text-[11px] leading-relaxed text-base-content/70 overflow-auto whitespace-pre-wrap break-all"
+              class="p-3 pe-12 rounded-field bg-base-200 text-2xs leading-relaxed text-base-content/70 overflow-auto whitespace-pre-wrap break-all"
             ><code>{{ braces(code) }}</code></pre>
             <button
               class="absolute top-1.5 right-1.5 p-1 fx-depth rounded-field text-base-content/50 opacity-60 hover:opacity-100 hover:text-base-content hover:bg-base-content/10 transition-colors focus:opacity-100"

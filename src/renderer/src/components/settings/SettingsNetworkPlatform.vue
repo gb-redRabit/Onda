@@ -187,7 +187,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
     </div>
 
     <p v-if="errorMsg" class="text-xs text-error">{{ errorMsg }}</p>
-    <p v-if="settings.youtube.method !== 'none'" class="text-[11px] text-warning">
+    <p v-if="settings.youtube.method !== 'none'" class="text-2xs text-warning">
       {{ $t('settings.cookiesSecurityHint') }}
     </p>
   </SettingsGroup>

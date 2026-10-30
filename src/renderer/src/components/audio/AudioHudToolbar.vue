@@ -99,7 +99,7 @@ const vizModeLabel = computed(() => {
       >
         <div class="flex items-center gap-1">
           <BarChart3 :size="12" />
-          <span class="text-[10px] uppercase font-medium">{{ vizModeLabel }}</span>
+          <span class="text-3xs uppercase font-medium">{{ vizModeLabel }}</span>
         </div>
       </button>
       <button

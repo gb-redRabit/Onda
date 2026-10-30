@@ -75,11 +75,11 @@ const {
       >
         <template v-if="has('trackInfo')">
           <span class="truncate text-[12px] font-semibold text-base-content">{{ trackName }}</span>
-          <span v-if="artist" class="truncate text-[11px] text-base-content/50">{{ artist }}</span>
+          <span v-if="artist" class="truncate text-2xs text-base-content/50">{{ artist }}</span>
         </template>
         <span
           v-if="has('nextTrack') && nextTrackName"
-          class="truncate text-[11px] text-base-content/60"
+          class="truncate text-2xs text-base-content/60"
         >
           &#x21B3; {{ nextTrackName }}{{ nextTrackArtist ? ' — ' + nextTrackArtist : '' }}
         </span>
@@ -96,7 +96,7 @@ const {
 
       <div
         v-if="has('progress')"
-        class="shrink-0 whitespace-nowrap tabular-nums text-[11px] text-base-content/50"
+        class="shrink-0 whitespace-nowrap tabular-nums text-2xs text-base-content/50"
       >
         {{ fmt(currentTime) }} / {{ fmt(duration) }}
       </div>

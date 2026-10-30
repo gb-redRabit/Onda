@@ -72,7 +72,7 @@ function onDragStart(e: DragEvent) {
       </button>
       <div
         v-if="track.duration"
-        class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-[10px] font-medium leading-none"
+        class="absolute bottom-0.5 right-0.5 px-1 py-0.5 rounded-field bg-neutral/60 text-neutral-content text-3xs font-medium leading-none"
       >
         {{ formatDuration(track.duration, '—') }}
       </div>

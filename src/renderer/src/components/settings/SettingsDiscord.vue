@@ -96,10 +96,10 @@ watch(
         <p class="text-[13px] font-medium" data-testid="settings-discord-status">
           {{ statusLabel }}
         </p>
-        <p v-if="statusDetail" class="text-[11px] text-base-content/60 mt-0.5 break-words">
+        <p v-if="statusDetail" class="text-2xs text-base-content/60 mt-0.5 break-words">
           {{ statusDetail }}
         </p>
-        <p v-else class="text-[11px] text-base-content/60 mt-0.5">
+        <p v-else class="text-2xs text-base-content/60 mt-0.5">
           {{ $t('settings.discordStatusHint') }}
         </p>
       </div>
@@ -178,7 +178,7 @@ watch(
 
   <SettingsGroup :title="$t('settings.discordSetup')">
     <div class="py-3 space-y-3 text-[13px] text-base-content/80">
-      <p class="text-[11px] text-base-content/60">{{ $t('settings.discordSetupIntro') }}</p>
+      <p class="text-2xs text-base-content/60">{{ $t('settings.discordSetupIntro') }}</p>
       <ol class="space-y-2.5 list-decimal pl-5">
         <li>
           {{ $t('settings.discordStepPortal') }}

@@ -84,7 +84,7 @@ onUnmounted(() => grid.destroy());
   </div>
   <template v-else>
     <div
-      class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-[1]"
+      class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-1"
     >
       <span class="text-xs font-medium text-base-content/60">
         {{ albums.length }} {{ $t('library.albumsCount') }}</span

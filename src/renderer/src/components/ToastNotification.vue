@@ -69,11 +69,11 @@ function color(type: string) {
       <component :is="icon(n.type)" :size="16" class="shrink-0 mt-0.5" :class="color(n.type)" />
       <div class="flex-1 min-w-0">
         <div class="text-xs font-medium text-base-content">{{ n.title }}</div>
-        <div v-if="n.message" class="text-[11px] text-base-content/50 mt-0.5">{{ n.message }}</div>
+        <div v-if="n.message" class="text-2xs text-base-content/50 mt-0.5">{{ n.message }}</div>
         <button
           v-if="n.action"
           type="button"
-          class="mt-1 text-[11px] font-medium text-primary-text hover:underline"
+          class="mt-1 text-2xs font-medium text-primary-text hover:underline"
           @click="
             n.action.run();
             ui.removeNotification(n.id);

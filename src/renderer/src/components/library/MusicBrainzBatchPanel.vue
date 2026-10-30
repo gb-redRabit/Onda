@@ -32,7 +32,7 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
           >{{ r.status === 'ok' ? '✓' : r.status === 'error' ? '✗' : '…' }}</span
         >
         <span class="truncate flex-1">{{ r.name }}</span>
-        <span class="text-base-content/50 truncate text-[11px]">{{ r.msg || '' }}</span>
+        <span class="text-base-content/50 truncate text-2xs">{{ r.msg || '' }}</span>
       </div>
     </div>
     <div class="flex gap-2">

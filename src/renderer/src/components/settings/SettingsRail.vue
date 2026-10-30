@@ -51,7 +51,7 @@ const activeSectionId = computed(
         @click="emit('select-section', section.id)"
       >
         <component :is="section.icon" :size="15" class="shrink-0" />
-        <span class="hidden lg:inline text-[11px] font-semibold uppercase tracking-wider truncate">
+        <span class="hidden lg:inline text-2xs font-semibold uppercase tracking-wider truncate">
           {{ $t(section.labelKey) }}
         </span>
       </button>

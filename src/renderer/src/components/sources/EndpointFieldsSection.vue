@@ -26,7 +26,7 @@ const { t } = useI18n();
     <datalist :id="fieldId('path')">
       <option v-for="k in availableKeys" :key="k" :value="`{${k}}`" />
     </datalist>
-    <p v-if="availableKeys.length" class="text-[11px] text-base-content/50 mt-1">
+    <p v-if="availableKeys.length" class="text-2xs text-base-content/50 mt-1">
       {{ t('sources.availableKeys') }}:
       <code class="font-mono">{{ availableKeys.map((k) => '{' + k + '}').join(' ') }}</code>
     </p>

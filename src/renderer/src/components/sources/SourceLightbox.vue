@@ -176,7 +176,7 @@ function onKeydown(event: KeyboardEvent): void {
             />
             <span
               v-else
-              class="w-full h-full flex items-center justify-center bg-white/10 text-white/60 text-[11px]"
+              class="w-full h-full flex items-center justify-center bg-white/10 text-white/60 text-2xs"
             >
               {{ i + 1 }}
             </span>

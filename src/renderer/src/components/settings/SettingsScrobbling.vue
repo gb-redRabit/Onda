@@ -202,7 +202,7 @@ onMounted(refresh);
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-sm font-medium">{{ $t('settings.lastfm') }}</p>
-            <p class="text-[11px] text-base-content/50">
+            <p class="text-2xs text-base-content/50">
               {{
                 status?.lastfm.username
                   ? $t('settings.scrobblingConnectedAs', { user: status.lastfm.username })
@@ -266,7 +266,7 @@ onMounted(refresh);
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-sm font-medium">{{ $t('settings.listenbrainz') }}</p>
-            <p class="text-[11px] text-base-content/50">
+            <p class="text-2xs text-base-content/50">
               {{
                 status?.listenbrainz.username
                   ? $t('settings.scrobblingConnectedAs', { user: status.listenbrainz.username })

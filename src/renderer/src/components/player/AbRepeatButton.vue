@@ -45,7 +45,7 @@ function onClick() {
     type="button"
     data-testid="ab-repeat-button"
     :data-state="state"
-    class="flex items-center gap-1 px-1.5 py-1 rounded-field text-[11px] font-medium transition-colors"
+    class="flex items-center gap-1 px-1.5 py-1 rounded-field text-2xs font-medium transition-colors"
     :class="
       state === 'ab'
         ? 'text-primary-text'

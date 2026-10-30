@@ -270,7 +270,7 @@ const sections = computed(() => [
 
       <!-- Minimalna stopka statystyk -->
       <div
-        class="flex items-center gap-2 text-[11px] text-base-content/60 pt-4 border-t border-base-300"
+        class="flex items-center gap-2 text-2xs text-base-content/60 pt-4 border-t border-base-300"
       >
         <span>{{ $t('home.statFiles') }}: {{ library.totalCount }}</span>
         <span>·</span>

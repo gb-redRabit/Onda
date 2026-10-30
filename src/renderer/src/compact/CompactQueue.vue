@@ -97,13 +97,13 @@ function onDragOver(event: DragEvent): void {
 <template>
   <div class="h-full flex flex-col min-h-0" data-testid="compact-queue">
     <div class="flex items-center gap-2 px-3 py-2 shrink-0">
-      <span class="text-[11px] uppercase tracking-wider text-base-content/50">
+      <span class="text-2xs uppercase tracking-wider text-base-content/50">
         {{ $t('compact.nowPlaying') }}
       </span>
       <span class="flex-1" />
       <button
         v-if="items.length"
-        class="text-[11px] text-base-content/50 hover:text-error transition-colors"
+        class="text-2xs text-base-content/50 hover:text-error transition-colors"
         data-testid="compact-clear-queue"
         @click="player.clearQueue()"
       >
@@ -118,15 +118,15 @@ function onDragOver(event: DragEvent): void {
         </span>
         <span class="min-w-0 flex-1">
           <span class="block text-[12px] truncate font-medium">{{ trackTitle(current) }}</span>
-          <span class="block text-[10px] text-base-content/55 truncate">
+          <span class="block text-3xs text-base-content/55 truncate">
             {{ trackArtist(current) }}
           </span>
         </span>
-        <span class="text-[10px] text-primary-text">{{ $t('compact.playing') }}</span>
+        <span class="text-3xs text-primary-text">{{ $t('compact.playing') }}</span>
       </div>
     </div>
 
-    <div class="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider text-base-content/50 shrink-0">
+    <div class="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-base-content/50 shrink-0">
       {{ $t('compact.upNext') }}
     </div>
 
@@ -181,7 +181,7 @@ function onDragOver(event: DragEvent): void {
             <span class="block text-[12px] truncate">
               {{ trackTitle(items[row.index]?.track) }}
             </span>
-            <span class="block text-[10px] text-base-content/50 truncate">
+            <span class="block text-3xs text-base-content/50 truncate">
               {{ trackArtist(items[row.index]?.track) }}
             </span>
           </button>

@@ -50,7 +50,7 @@ const { t } = useI18n();
       />
       <span>{{ t('youtube.addToLibraryPref') }}</span>
     </div>
-    <p class="mt-1 text-[11px] text-base-content/50">
+    <p class="mt-1 text-2xs text-base-content/50">
       {{ t('youtube.addToLibraryPrefDesc') }}
     </p>
   </section>

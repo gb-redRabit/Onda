@@ -98,7 +98,7 @@ async function applyProperties() {
     </div>
     <div class="p-4 space-y-3">
       <div>
-        <label class="text-[11px] text-base-content/50 uppercase tracking-wider">{{
+        <label class="text-2xs text-base-content/50 uppercase tracking-wider">{{
           $t('explorer.name')
         }}</label>
         <input

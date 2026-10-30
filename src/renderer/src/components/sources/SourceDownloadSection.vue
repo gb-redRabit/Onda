@@ -35,7 +35,7 @@ async function pickDownloadDir() {
           {{ t('sources.chooseFolder') }}
         </button>
       </div>
-      <p class="text-[11px] text-base-content/50 mt-1">
+      <p class="text-2xs text-base-content/50 mt-1">
         {{ t('sources.downloadDefaultHint', { path: defaultDir }) }}
       </p>
     </div>
@@ -45,7 +45,7 @@ async function pickDownloadDir() {
         t('sources.downloadFolder')
       }}</span>
     </div>
-    <p class="text-[11px] text-base-content/50">
+    <p class="text-2xs text-base-content/50">
       {{ t('sources.downloadFolderHint') }}
     </p>
   </div>

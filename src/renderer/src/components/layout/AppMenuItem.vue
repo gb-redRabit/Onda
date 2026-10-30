@@ -22,7 +22,7 @@ defineProps<{ icon?: unknown; label?: string }>();
     <slot />
     <span
       v-if="$slots.hint"
-      class="ml-auto rounded-md bg-base-content/5 px-1.5 py-0.5 text-[10px] font-mono text-base-content/45 group-hover:bg-primary/10 group-hover:text-primary-text/80"
+      class="ml-auto rounded-md bg-base-content/5 px-1.5 py-0.5 text-3xs font-mono text-base-content/45 group-hover:bg-primary/10 group-hover:text-primary-text/80"
     >
       <slot name="hint" />
     </span>

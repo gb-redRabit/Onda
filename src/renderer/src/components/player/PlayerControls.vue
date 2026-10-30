@@ -187,13 +187,13 @@ function onVolumeKeydown(e: KeyboardEvent) {
           />
           <div
             v-else
-            class="w-full h-full flex items-center justify-center text-[11px] text-neutral-content/50"
+            class="w-full h-full flex items-center justify-center text-2xs text-neutral-content/50"
           >
             {{ previewTimeLabel() }}
           </div>
         </div>
         <span
-          class="mt-1 px-1.5 py-0.5 rounded-field text-[11px] font-mono tabular-nums bg-neutral/70 text-neutral-content"
+          class="mt-1 px-1.5 py-0.5 rounded-field text-2xs font-mono tabular-nums bg-neutral/70 text-neutral-content"
         >
           {{ previewTimeLabel() }}
         </span>
@@ -230,7 +230,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
 
         <!-- czas -->
         <div
-          class="flex items-center gap-2 font-mono text-[11px] tabular-nums text-neutral-content/70"
+          class="flex items-center gap-2 font-mono text-2xs tabular-nums text-neutral-content/70"
         >
           <span>{{ formatDuration(player.currentTime) }}</span>
           <span class="text-neutral-content/55">/</span>

@@ -70,10 +70,10 @@ function clear(): void {
       </FormField>
 
       <details v-if="requestUrl" class="rounded-field border border-base-300 bg-base-100/60">
-        <summary class="cursor-pointer px-3 py-2 text-[11px] font-medium text-base-content/60">
+        <summary class="cursor-pointer px-3 py-2 text-2xs font-medium text-base-content/60">
           {{ t('sources.requestDetails') }}
         </summary>
-        <p class="break-all px-3 pb-3 font-mono text-[11px] text-base-content/70">
+        <p class="break-all px-3 pb-3 font-mono text-2xs text-base-content/70">
           {{ requestUrl }}
         </p>
       </details>

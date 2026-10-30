@@ -44,7 +44,7 @@ const valueLabel = computed(() => {
           :title="$t('settings.modified')"
         />
       </div>
-      <div v-if="description" class="mt-0.5 text-[11px] text-base-content/60">
+      <div v-if="description" class="mt-0.5 text-2xs text-base-content/60">
         {{ description }}
       </div>
     </div>

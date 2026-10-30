@@ -90,7 +90,7 @@ const toggles = [
         <option value="album">{{ $t('settings.replayGainAlbum') }}</option>
       </select>
     </SettingsRow>
-    <p class="text-[11px] text-base-content/50 mt-2 px-1">
+    <p class="text-2xs text-base-content/50 mt-2 px-1">
       {{ $t('settings.replayGainModeHint') }}
     </p>
 
@@ -111,7 +111,7 @@ const toggles = [
       >
         {{ $t('common.cancel') }}
       </button>
-      <span v-if="loudnessRunning" class="text-[11px] text-base-content/60 font-mono tabular-nums">
+      <span v-if="loudnessRunning" class="text-2xs text-base-content/60 font-mono tabular-nums">
         {{ loudnessCurrent }} / {{ loudnessTotal }}
       </span>
     </div>
@@ -127,20 +127,20 @@ const toggles = [
       />
     </div>
 
-    <p class="text-[11px] text-base-content/50 mt-2 px-1">
+    <p class="text-2xs text-base-content/50 mt-2 px-1">
       {{ $t('settings.analyzeLoudnessHint') }}
     </p>
     <p
       v-if="loudnessError"
       data-testid="loudness-error"
-      class="text-[11px] text-error mt-1 px-1 break-words"
+      class="text-2xs text-error mt-1 px-1 break-words"
     >
       {{ $t('settings.analyzeLoudnessError', { error: loudnessError }) }}
     </p>
     <p
       v-else-if="loudnessResult && !loudnessRunning"
       data-testid="loudness-done"
-      class="text-[11px] text-base-content/60 mt-1 px-1"
+      class="text-2xs text-base-content/60 mt-1 px-1"
     >
       {{
         $t('settings.analyzeLoudnessDone', {
@@ -153,7 +153,7 @@ const toggles = [
     <p
       v-if="loudnessInterrupted && !loudnessRunning"
       data-testid="loudness-limited"
-      class="text-[11px] text-warning mt-1 px-1"
+      class="text-2xs text-warning mt-1 px-1"
     >
       {{ $t('settings.analyzeLoudnessLimited') }}
     </p>
@@ -188,7 +188,7 @@ const toggles = [
         })
       "
     />
-    <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.cursorHideHint') }}</p>
+    <p class="text-2xs text-base-content/50 mt-2">{{ $t('settings.cursorHideHint') }}</p>
   </SettingsGroup>
 
   <SettingsGroup
@@ -209,7 +209,7 @@ const toggles = [
         })
       "
     />
-    <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.resumePromptHint') }}</p>
+    <p class="text-2xs text-base-content/50 mt-2">{{ $t('settings.resumePromptHint') }}</p>
   </SettingsGroup>
 
   <SettingsGroup>

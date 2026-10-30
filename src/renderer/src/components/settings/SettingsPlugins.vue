@@ -197,7 +197,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium truncate">{{ ex.name }}</span>
-            <span class="text-[11px] text-base-content/50 shrink-0">{{ ex.version }}</span>
+            <span class="text-2xs text-base-content/50 shrink-0">{{ ex.version }}</span>
           </div>
           <div class="text-xs text-base-content/50 mt-0.5">
             {{ ex.author ? `${ex.author} · ` : '' }}{{ ex.description || ex.id }}
@@ -206,13 +206,13 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <span
               v-for="capability in capabilityLabels(ex.permissions)"
               :key="capability"
-              class="inline-flex items-center px-1.5 py-0.5 rounded-selector bg-base-content/10 text-base-content/60 text-[11px] font-medium"
+              class="inline-flex items-center px-1.5 py-0.5 rounded-selector bg-base-content/10 text-base-content/60 text-2xs font-medium"
               >{{ capability }}</span
             >
           </div>
           <div
             v-if="ex.permissions.network?.allow.length"
-            class="mt-1 text-[11px] text-base-content/50 break-all"
+            class="mt-1 text-2xs text-base-content/50 break-all"
           >
             {{ t('plugins.networkAllowlist') }}
             <code v-for="pattern in ex.permissions.network.allow" :key="pattern" class="ml-1">
@@ -223,11 +223,11 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <code
               v-for="hook in ex.hooks"
               :key="hook"
-              class="rounded-field bg-base-200 px-1.5 py-0.5 text-[11px] text-base-content/60"
+              class="rounded-field bg-base-200 px-1.5 py-0.5 text-2xs text-base-content/60"
               >{{ hook }}</code
             >
           </div>
-          <div v-if="ex.layoutElements?.length" class="mt-1 text-[11px] text-base-content/50">
+          <div v-if="ex.layoutElements?.length" class="mt-1 text-2xs text-base-content/50">
             {{ t('plugins.requestedVisualSlots') }}:
             <span
               v-for="(layout, index) in ex.layoutElements"
@@ -280,7 +280,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             </div>
             <div class="flex items-center gap-2 mt-2">
               <span
-                class="inline-flex items-center px-2 py-0.5 rounded-selector text-[11px] font-medium"
+                class="inline-flex items-center px-2 py-0.5 rounded-selector text-2xs font-medium"
                 :class="statusClass(p.status)"
               >
                 {{ statusLabel(p.status) }}
@@ -294,7 +294,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               </span>
               <span
                 v-if="p.permissionReviewRequired"
-                class="inline-flex items-center px-2 py-0.5 rounded-selector text-[11px] font-medium bg-warning/15 text-warning"
+                class="inline-flex items-center px-2 py-0.5 rounded-selector text-2xs font-medium bg-warning/15 text-warning"
                 >{{ t('plugins.permissionReviewRequired') }}</span
               >
             </div>
@@ -400,7 +400,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         </button>
         <pre
           v-if="openLogs.has(p.id)"
-          class="mt-2 p-2 rounded-field bg-base-200 text-[11px] leading-relaxed text-base-content/70 overflow-auto max-h-48 whitespace-pre-wrap break-all"
+          class="mt-2 p-2 rounded-field bg-base-200 text-2xs leading-relaxed text-base-content/70 overflow-auto max-h-48 whitespace-pre-wrap break-all"
           >{{ logsFor(p.id).join('\n') || t('plugins.noLogs') }}</pre>
       </div>
     </SettingsGroup>

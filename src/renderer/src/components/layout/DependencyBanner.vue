@@ -43,14 +43,14 @@ function openDependencies(): void {
     <AlertTriangle :size="16" class="mt-0.5 shrink-0 text-warning" />
     <div class="min-w-0 flex-1">
       <div class="text-xs font-medium">{{ $t('deps.title') }}</div>
-      <div class="text-[11px] text-base-content/70">
+      <div class="text-2xs text-base-content/70">
         {{ $t('deps.message', { tools: toolNames }) }}
       </div>
       <div class="mt-1.5 flex flex-wrap gap-1">
         <span
           v-for="issue in issues"
           :key="issue.tool"
-          class="text-[11px] px-1.5 py-0.5 rounded-field font-medium"
+          class="text-2xs px-1.5 py-0.5 rounded-field font-medium"
           :class="
             issue.required ? 'bg-error/15 text-error' : 'bg-base-content/10 text-base-content/60'
           "

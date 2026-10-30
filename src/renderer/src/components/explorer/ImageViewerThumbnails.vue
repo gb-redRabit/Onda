@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
               draggable="false"
               loading="lazy"
             />
-            <span v-else class="text-[11px] text-base-content/50">{{ item.idx + 1 }}</span>
+            <span v-else class="text-2xs text-base-content/50">{{ item.idx + 1 }}</span>
           </div>
         </template>
       </div>

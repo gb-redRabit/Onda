@@ -21,7 +21,7 @@ const variants: Record<string, string> = {
 };
 
 const sizes: Record<string, string> = {
-  sm: 'px-1.5 h-[calc(var(--size-selector)+4px)] text-[11px]',
+  sm: 'px-1.5 h-[calc(var(--size-selector)+4px)] text-2xs',
   md: 'px-2 h-[calc(var(--size-selector)+6px)] text-xs'
 };
 

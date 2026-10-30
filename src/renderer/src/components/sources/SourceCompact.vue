@@ -67,16 +67,16 @@ const typeIcon = {
         <span class="block text-xs font-medium truncate">{{
           item.title || $t('sources.untitled')
         }}</span>
-        <span v-if="item.subtitle" class="block text-[11px] text-base-content/50 truncate">{{
+        <span v-if="item.subtitle" class="block text-2xs text-base-content/50 truncate">{{
           item.subtitle
         }}</span>
       </span>
-      <span v-if="item.duration" class="shrink-0 text-[11px] font-mono text-base-content/50">{{
+      <span v-if="item.duration" class="shrink-0 text-2xs font-mono text-base-content/50">{{
         item.duration
       }}</span>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
-        class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-[11px] transition-colors disabled:opacity-60"
+        class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-2xs transition-colors disabled:opacity-60"
         :class="
           item.id && downloadedIds?.has(item.id)
             ? 'bg-success text-success-content'

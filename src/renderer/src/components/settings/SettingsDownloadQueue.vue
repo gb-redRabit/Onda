@@ -23,7 +23,7 @@ const settings = useSettingsStore();
         })
       "
     />
-    <p v-if="settings.download.maxConcurrent > 3" class="text-[11px] text-warning mt-1">
+    <p v-if="settings.download.maxConcurrent > 3" class="text-2xs text-warning mt-1">
       {{ $t('settings.maxConcurrentWarning') }}
     </p>
   </SettingsGroup>
@@ -44,7 +44,7 @@ const settings = useSettingsStore();
         })
       "
     />
-    <div class="flex justify-between text-[11px] text-base-content/60 mt-1">
+    <div class="flex justify-between text-2xs text-base-content/60 mt-1">
       <span>0 ({{ $t('common.none') }})</span><span>5</span>
     </div>
   </SettingsGroup>

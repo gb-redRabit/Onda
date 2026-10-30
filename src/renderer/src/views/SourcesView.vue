@@ -199,7 +199,7 @@ onMounted(() => {
             </span>
             <span
               v-if="queryLineCount"
-              class="shrink-0 rounded-full bg-primary/12 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-text"
+              class="shrink-0 rounded-full bg-primary/12 px-1.5 py-0.5 text-3xs font-semibold tabular-nums text-primary-text"
               >{{ queryLineCount }}</span
             >
           </button>
@@ -294,10 +294,10 @@ onMounted(() => {
           @clear="clearSelection"
         />
         <details v-if="currentUrl" class="border-b border-base-300 px-4 py-1">
-          <summary class="cursor-pointer text-[11px] text-base-content/50">
+          <summary class="cursor-pointer text-2xs text-base-content/50">
             {{ $t('sources.requestDetails') }}
           </summary>
-          <p class="break-all pb-1 font-mono text-[11px] text-base-content/70" :title="currentUrl">
+          <p class="break-all pb-1 font-mono text-2xs text-base-content/70" :title="currentUrl">
             {{ currentUrl }}
           </p>
         </details>

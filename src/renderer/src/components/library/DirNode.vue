@@ -222,13 +222,13 @@ function openImageViewerForChild(childName: string, imagePath: string) {
             >{{ sub }}</span
           >
           <span
-            class="ml-auto text-[11px] px-1.5 py-0.5 rounded-full bg-base-100 border border-base-300 text-base-content/60 shrink-0"
+            class="ml-auto text-2xs px-1.5 py-0.5 rounded-full bg-base-100 border border-base-300 text-base-content/60 shrink-0"
           >
             {{ metaFor(sub).audioCount }}
           </span>
           <span
             v-if="metaFor(sub).duration > 0"
-            class="text-[11px] text-base-content/60 hidden sm:inline"
+            class="text-2xs text-base-content/60 hidden sm:inline"
           >
             {{ formatDuration(metaFor(sub).duration, '') }}
           </span>

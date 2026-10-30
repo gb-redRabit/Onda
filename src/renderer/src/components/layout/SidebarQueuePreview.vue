@@ -11,7 +11,7 @@ const player = usePlayerStore();
     class="mx-2 mb-1 p-3 rounded-box fx-noise bg-base-200 border border-base-content/20"
   >
     <div
-      class="flex items-center gap-2 text-[11px] text-base-content/50 mb-2 font-medium uppercase tracking-wider"
+      class="flex items-center gap-2 text-2xs text-base-content/50 mb-2 font-medium uppercase tracking-wider"
     >
       <ListMusic :size="12" />
       <span>{{ $t('nav.queue') }}</span>

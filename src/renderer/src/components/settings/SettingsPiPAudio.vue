@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
                 v-else
                 class="w-11 h-11 rounded-field bg-base-content/5 flex items-center justify-center"
               >
-                <span class="text-[11px] text-base-content/60 text-center leading-tight">
+                <span class="text-2xs text-base-content/60 text-center leading-tight">
                   {{ sizeHint }}
                 </span>
               </div>

@@ -51,7 +51,7 @@ onBeforeUnmount(clearTimer);
     <span
       v-if="visible"
       role="tooltip"
-      class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-field border border-base-300 bg-base-100 px-2 py-1 text-[11px] text-base-content shadow-md"
+      class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-field border border-base-300 bg-base-100 px-2 py-1 text-2xs text-base-content shadow-md"
     >
       {{ text }}
     </span>

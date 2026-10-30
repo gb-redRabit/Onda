@@ -88,7 +88,7 @@ const audioTitleClass = computed(() => {
 });
 const audioArtistClass = computed(() => {
   if (props.artistSize) return props.artistSize;
-  if (density.value === 'tight') return 'text-[11px]';
+  if (density.value === 'tight') return 'text-2xs';
   return isLarge.value && density.value === 'roomy' ? 'text-base' : 'text-sm';
 });
 const showAudioArtist = computed(() => !isMinimal.value && density.value !== 'tight');

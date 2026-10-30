@@ -46,17 +46,17 @@ const decorationOptions = computed(() =>
 </script>
 
 <template>
-  <div class="w-64 shrink-0 flex flex-col gap-3 relative z-[60]">
+  <div class="w-64 shrink-0 flex flex-col gap-3 relative z-60">
     <!-- Presety -->
     <div>
-      <div class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50 mb-2">
+      <div class="text-2xs font-semibold uppercase tracking-wider text-base-content/50 mb-2">
         {{ t('audioView.layoutPresets') }}
       </div>
       <div class="grid grid-cols-2 gap-1">
         <button
           v-for="key in PRESET_KEYS"
           :key="key"
-          class="fx-noise flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-[11px] font-medium transition-all border"
+          class="fx-noise flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-2xs font-medium transition-all border"
           :class="
             props.currentPreset === key
               ? 'bg-primary/15 text-primary-text border-primary/30'
@@ -79,7 +79,7 @@ const decorationOptions = computed(() =>
       <button
         v-for="tab in TABS"
         :key="tab"
-        class="flex-1 px-2 py-1.5 rounded-field text-[11px] font-semibold uppercase tracking-wider transition-colors"
+        class="flex-1 px-2 py-1.5 rounded-field text-2xs font-semibold uppercase tracking-wider transition-colors"
         :class="
           rightTab === tab
             ? 'bg-primary/15 text-primary-text'
@@ -112,7 +112,7 @@ const decorationOptions = computed(() =>
           <component :is="ELEMENT_META[el.id].icon" :size="14" class="shrink-0" />
           <span class="flex-1 truncate">{{ t(ELEMENT_META[el.id].labelKey) }}</span>
           <span
-            class="shrink-0 rounded-full bg-base-content/6 px-1.5 text-[10px] font-semibold tabular-nums text-base-content/50"
+            class="shrink-0 rounded-full bg-base-content/6 px-1.5 text-3xs font-semibold tabular-nums text-base-content/50"
             :title="t('audioView.layerLabel', { layer: el.layer })"
             >L{{ el.layer }}</span
           >
@@ -130,14 +130,14 @@ const decorationOptions = computed(() =>
 
       <!-- Zakładka wariantu -->
       <div v-else-if="rightTab === 'variant' && props.selected" class="flex flex-col gap-2">
-        <div class="text-[11px] font-semibold text-base-content/70 uppercase tracking-wider">
+        <div class="text-2xs font-semibold text-base-content/70 uppercase tracking-wider">
           {{ t(ELEMENT_META[props.selected.id].labelKey) }}
         </div>
         <div class="flex flex-wrap gap-1.5">
           <button
             v-for="v in VARIANT_KEYS[props.selected.id]"
             :key="v.value"
-            class="px-2.5 py-1.5 rounded-field text-[11px] font-medium border transition-colors"
+            class="px-2.5 py-1.5 rounded-field text-2xs font-medium border transition-colors"
             :class="
               (props.selected.variant ?? VARIANT_DEFAULT[props.selected.id]) === v.value
                 ? 'bg-primary/15 text-primary-text border-primary/40'
@@ -153,21 +153,21 @@ const decorationOptions = computed(() =>
         </div>
         <p
           v-if="props.selected.id === 'visualization'"
-          class="text-[11px] text-base-content/60 leading-relaxed"
+          class="text-2xs text-base-content/60 leading-relaxed"
         >
           {{ t('audioView.variantVizHint') }}
         </p>
 
         <!-- Dekoracje (tylko z wtyczek) -->
         <div v-if="decorationOptions.length" class="mt-3 pt-3 border-t border-base-300/60">
-          <div class="text-[11px] font-semibold text-base-content/70 uppercase tracking-wider mb-2">
+          <div class="text-2xs font-semibold text-base-content/70 uppercase tracking-wider mb-2">
             {{ t('audioView.decorationLabel') }}
           </div>
           <div class="flex flex-wrap gap-1.5">
             <button
               v-for="opt in decorationOptions"
               :key="opt.value"
-              class="px-2.5 py-1.5 rounded-field text-[11px] font-medium border transition-colors"
+              class="px-2.5 py-1.5 rounded-field text-2xs font-medium border transition-colors"
               :class="
                 (props.selected.decoration ?? 'none') === opt.value
                   ? 'bg-primary/15 text-primary-text border-primary/40'
@@ -179,7 +179,7 @@ const decorationOptions = computed(() =>
               {{ opt.label }}<template v-if="opt.plugin"> · {{ opt.plugin }}</template>
             </button>
           </div>
-          <p class="text-[11px] text-base-content/60 leading-relaxed">
+          <p class="text-2xs text-base-content/60 leading-relaxed">
             {{ t('audioView.decorationHint') }}
           </p>
         </div>

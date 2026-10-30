@@ -157,10 +157,10 @@ function folderIcon(type: string): string {
         })
       "
     />
-    <div class="flex justify-between text-[11px] text-base-content/60 mt-1">
+    <div class="flex justify-between text-2xs text-base-content/60 mt-1">
       <span>500</span><span>10 000</span>
     </div>
-    <p class="text-[11px] text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
+    <p class="text-2xs text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
     <button
       class="fx-noise mt-3 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="clearCoverCache"

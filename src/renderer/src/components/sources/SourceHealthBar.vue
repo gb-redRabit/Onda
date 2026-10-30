@@ -23,7 +23,7 @@ const time = computed(() => (props.at ? new Date(props.at).toLocaleTimeString() 
   <div
     role="status"
     aria-live="polite"
-    class="flex items-center gap-3 px-4 py-1 text-[11px] border-b border-base-300 text-base-content/60"
+    class="flex items-center gap-3 px-4 py-1 text-2xs border-b border-base-300 text-base-content/60"
     data-testid="source-health"
   >
     <span v-if="state === 'checking'" class="flex items-center gap-1 text-warning">

@@ -91,10 +91,10 @@ function saveReplace(): void {
             {{ t('providers.newItems', { count: sub.newCount }) }}
           </OnlineBadge>
         </div>
-        <p class="text-[11px] text-base-content/50 mt-0.5 truncate" :title="sub.url">
+        <p class="text-2xs text-base-content/50 mt-0.5 truncate" :title="sub.url">
           {{ sub.url }}
         </p>
-        <p class="text-[11px] text-base-content/50">{{ lastCheckedLabel }}</p>
+        <p class="text-2xs text-base-content/50">{{ lastCheckedLabel }}</p>
       </div>
     </div>
 

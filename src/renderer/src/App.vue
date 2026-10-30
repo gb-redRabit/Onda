@@ -507,7 +507,7 @@ function onWindowBlur() {
     <div
       v-if="externalDropActive && !isStandaloneWindow"
       data-testid="external-drop-overlay"
-      class="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center bg-primary/10 backdrop-blur-sm"
+      class="pointer-events-none fixed inset-0 z-200 flex items-center justify-center bg-primary/10 backdrop-blur-sm"
     >
       <div
         class="rounded-box border-2 border-dashed border-primary bg-base-100/85 px-8 py-6 text-center shadow-2xl"

@@ -93,7 +93,7 @@ function buildPreview(): string {
     </div>
 
     <div v-if="!isPage" class="flex items-center gap-2">
-      <span class="text-[11px] text-base-content/50 uppercase tracking-wider">{{
+      <span class="text-2xs text-base-content/50 uppercase tracking-wider">{{
         t('sources.viewLabel')
       }}</span>
       <div
@@ -160,7 +160,7 @@ function buildPreview(): string {
       </button>
       <span
         v-if="buildPreview()"
-        class="text-[11px] font-mono text-base-content/50 truncate flex-1 min-w-0"
+        class="text-2xs font-mono text-base-content/50 truncate flex-1 min-w-0"
         >{{ buildPreview() }}</span
       >
     </div>

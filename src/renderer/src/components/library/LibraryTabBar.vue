@@ -71,7 +71,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         <span data-tab-label class="truncate">{{ tabItem.label }}</span>
         <span
           data-tab-count
-          class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold leading-none tabular-nums shrink-0"
+          class="ml-0.5 px-1.5 py-0.5 rounded-full text-3xs font-semibold leading-none tabular-nums shrink-0"
           :class="
             props.modelValue === tabItem.id
               ? 'bg-primary/20 text-primary-text'

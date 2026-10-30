@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
 
         <span
           v-if="explorer.selectedCount > 0"
-          class="text-[11px] text-base-content/70 whitespace-nowrap"
+          class="text-2xs text-base-content/70 whitespace-nowrap"
           >{{ t('explorer.nItems', { n: explorer.selectedCount }) }}</span
         >
       </div>

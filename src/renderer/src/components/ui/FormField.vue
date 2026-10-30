@@ -31,7 +31,7 @@ const describedBy = computed(() => {
       {{ label }}
     </label>
     <slot :id="fieldId" :describedby="describedBy" />
-    <p v-if="error" :id="errorId" class="text-[11px] text-error">{{ error }}</p>
-    <p v-else-if="hint" :id="hintId" class="text-[11px] text-base-content/50">{{ hint }}</p>
+    <p v-if="error" :id="errorId" class="text-2xs text-error">{{ error }}</p>
+    <p v-else-if="hint" :id="hintId" class="text-2xs text-base-content/50">{{ hint }}</p>
   </div>
 </template>

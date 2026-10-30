@@ -143,7 +143,7 @@ function onResizeStart(e: MouseEvent) {
           <!-- sekcja albumów -->
           <div v-if="settings.appearance.showAlbums" class="pt-1">
             <button
-              class="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
+              class="w-full flex items-center gap-2 px-3 py-1.5 text-2xs font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
               @click="albumsExpanded = !albumsExpanded"
             >
               <ChevronDown v-if="albumsExpanded" :size="12" />
@@ -161,7 +161,7 @@ function onResizeStart(e: MouseEvent) {
               >
                 <Disc3 :size="13" class="shrink-0 text-primary-text/70" />
                 <span class="truncate flex-1">{{ groupLabel(album, $t) }}</span>
-                <span class="text-[11px] text-base-content/50">{{ tracks.length }}</span>
+                <span class="text-2xs text-base-content/50">{{ tracks.length }}</span>
               </div>
             </div>
           </div>

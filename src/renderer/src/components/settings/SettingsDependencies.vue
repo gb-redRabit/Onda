@@ -32,19 +32,19 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
               {{ dep.name }}
               <span
                 v-if="dep.source === 'bundled' && dep.installed"
-                class="text-[11px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-medium"
+                class="text-2xs px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-medium"
               >
                 {{ $t('settings.depBundled') }}
               </span>
               <span
                 v-else-if="dep.source === 'managed' && dep.installed"
-                class="text-[11px] px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-medium"
+                class="text-2xs px-1.5 py-0.5 rounded-field bg-primary/15 text-primary-text font-medium"
               >
                 {{ $t('settings.depManaged') }}
               </span>
               <span
                 v-else-if="dep.installed"
-                class="text-[11px] px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
+                class="text-2xs px-1.5 py-0.5 rounded-field bg-base-content/10 text-base-content/50 font-medium"
               >
                 {{ $t('settings.depSystem') }}
               </span>
@@ -109,7 +109,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
           </template>
         </div>
       </div>
-      <div v-if="dep.path" class="mt-2 text-[11px] text-base-content/50 font-mono truncate">
+      <div v-if="dep.path" class="mt-2 text-2xs text-base-content/50 font-mono truncate">
         {{ dep.path }}
       </div>
       <div v-if="dep.installing" class="mt-3">

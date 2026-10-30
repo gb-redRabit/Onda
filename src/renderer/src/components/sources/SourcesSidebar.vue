@@ -156,7 +156,7 @@ function move(index: number, dir: -1 | 1): void {
         />
         <div class="flex-1 min-w-0">
           <p class="text-sm truncate">{{ s.name }}</p>
-          <p class="text-[11px] text-base-content/50 truncate">
+          <p class="text-2xs text-base-content/50 truncate">
             {{ endpointCount(s.endpoints.length) }}
           </p>
         </div>

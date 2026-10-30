@@ -89,7 +89,7 @@ export const DENSITY: Record<Exclude<LayoutMode, 'micro'>, ControlsDensity> = {
     volumeTrack: 'h-1',
     extrasRow: 'flex items-center justify-center gap-1',
     extrasButton:
-      'fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-[11px] font-medium transition-colors',
+      'fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-2xs font-medium transition-colors',
     gateTransportOnWidth: false,
     volume: 'whenNotCompact',
     extras: true
@@ -103,7 +103,7 @@ export const DENSITY: Record<Exclude<LayoutMode, 'micro'>, ControlsDensity> = {
     volumeTrack: 'h-1',
     extrasRow: 'flex items-center justify-center gap-1',
     extrasButton:
-      'fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-[11px] font-medium transition-colors',
+      'fx-noise flex items-center gap-1 px-2 py-0.5 fx-depth rounded-field text-2xs font-medium transition-colors',
     gateTransportOnWidth: false,
     volume: 'whenNotCompact',
     extras: true

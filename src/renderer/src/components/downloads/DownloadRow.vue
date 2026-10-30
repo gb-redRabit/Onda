@@ -150,7 +150,7 @@ const metaTitle = computed(() =>
         <div class="flex min-w-0 items-center gap-2">
           <span class="truncate text-sm" :title="task.title">{{ task.title }}</span>
           <span
-            class="shrink-0 rounded-full bg-base-content/6 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-base-content/45"
+            class="shrink-0 rounded-full bg-base-content/6 px-1.5 py-0.5 text-3xs uppercase tracking-wide text-base-content/45"
             >{{ task.format }}</span
           >
         </div>
@@ -188,7 +188,7 @@ const metaTitle = computed(() =>
             ? `${task.coverError} — ${t('downloads.coverRetry')}`
             : t('downloads.coverRetry')
         "
-        class="gap-1 px-1.5 text-[11px] text-warning"
+        class="gap-1 px-1.5 text-2xs text-warning"
         @click="emit('retryCover')"
       >
         <RotateCcw :size="10" />
@@ -200,7 +200,7 @@ const metaTitle = computed(() =>
         variant="soft"
         size="sm"
         :title="t('downloads.loginTitle')"
-        class="gap-1 text-[11px]"
+        class="gap-1 text-2xs"
         @click="login"
       >
         <LogIn :size="11" />

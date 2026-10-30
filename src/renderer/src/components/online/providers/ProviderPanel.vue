@@ -189,7 +189,7 @@ async function confirmDownloadFolder(): Promise<void> {
         <span
           v-for="id in SUPPORTED_PROVIDERS"
           :key="id"
-          class="rounded-full bg-base-content/6 px-2 py-0.5 text-[11px] text-base-content/60"
+          class="rounded-full bg-base-content/6 px-2 py-0.5 text-2xs text-base-content/60"
         >
           {{ providerLabel(id, id, t) }}
         </span>

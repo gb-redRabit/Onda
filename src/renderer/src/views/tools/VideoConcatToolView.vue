@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
             data-testid="concat-item"
             class="flex items-center gap-2 rounded-field border border-base-300/70 bg-base-200/40 px-2.5 py-2"
           >
-            <span class="w-5 shrink-0 text-center font-mono text-[11px] text-base-content/40">
+            <span class="w-5 shrink-0 text-center font-mono text-2xs text-base-content/40">
               {{ index + 1 }}
             </span>
             <span class="min-w-0 flex-1 truncate text-xs" :title="path">{{ fileName(path) }}</span>
@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
 
       <section class="grid gap-4 md:grid-cols-3">
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.clipContainer') }}
           </span>
           <select
@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
           </select>
         </label>
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.clipMode') }}
           </span>
           <select
@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
           </select>
         </label>
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.clipAudio') }}
           </span>
           <select
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
 
       <section class="rounded-box border border-base-300 bg-base-100/70 p-4">
         <label class="block">
-          <span class="text-[11px] font-medium text-base-content/60">
+          <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.outputFolder') }}
           </span>
           <div class="mt-1 flex items-center gap-1.5">
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </label>
-        <p class="mt-2 text-[11px] leading-relaxed text-base-content/45">{{ copyHint }}</p>
+        <p class="mt-2 text-2xs leading-relaxed text-base-content/45">{{ copyHint }}</p>
       </section>
 
       <section class="flex flex-wrap items-center gap-2">
@@ -373,7 +373,7 @@ onBeforeUnmount(() => {
           />
           <Clock v-else :size="14" class="shrink-0 text-primary-text" />
           <span class="min-w-0 flex-1 truncate text-xs">{{ t('tools.concatJob') }}</span>
-          <span class="shrink-0 text-[11px] text-base-content/50">
+          <span class="shrink-0 text-2xs text-base-content/50">
             {{ status === 'exporting' ? t('tools.concatExporting') : t(`tools.${status}`) }}
             <template v-if="status === 'exporting'">
               {{ t('tools.progress', { percent: Math.round(progress) }) }}
@@ -399,7 +399,7 @@ onBeforeUnmount(() => {
             :style="{ width: `${Math.max(2, Math.min(100, progress))}%` }"
           />
         </div>
-        <p v-if="error" class="mt-1 text-[11px] text-error line-clamp-2" :title="error">
+        <p v-if="error" class="mt-1 text-2xs text-error line-clamp-2" :title="error">
           {{ error }}
         </p>
       </section>

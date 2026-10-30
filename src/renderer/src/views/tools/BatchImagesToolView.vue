@@ -288,7 +288,7 @@ watch(
                 <span class="min-w-0 flex-1 truncate text-xs" :title="row.path">{{
                   row.name
                 }}</span>
-                <span class="shrink-0 text-[11px] text-base-content/50">
+                <span class="shrink-0 text-2xs text-base-content/50">
                   {{ statusLabel(row.status) }}
                   <template v-if="row.bytes"> · {{ formatBytes(row.bytes) }}</template>
                 </span>
@@ -311,11 +311,7 @@ watch(
                   <Trash2 :size="12" />
                 </button>
               </div>
-              <p
-                v-if="row.error"
-                class="mt-1 text-[11px] text-error line-clamp-2"
-                :title="row.error"
-              >
+              <p v-if="row.error" class="mt-1 text-2xs text-error line-clamp-2" :title="row.error">
                 {{ row.error }}
               </p>
             </div>
@@ -325,7 +321,7 @@ watch(
         <aside class="space-y-3">
           <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
             <label class="block">
-              <span class="text-[11px] font-medium text-base-content/60">
+              <span class="text-2xs font-medium text-base-content/60">
                 {{ t('tools.batchImagesFormat') }}
               </span>
               <select
@@ -341,7 +337,7 @@ watch(
             </label>
 
             <label v-if="format !== 'png'" class="block">
-              <span class="flex justify-between text-[11px] font-medium text-base-content/60">
+              <span class="flex justify-between text-2xs font-medium text-base-content/60">
                 <span>{{ t('tools.batchImagesQuality') }}</span>
                 <span>{{ quality }}</span>
               </span>
@@ -357,7 +353,7 @@ watch(
 
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.batchImagesWidth') }}
                 </span>
                 <input
@@ -370,7 +366,7 @@ watch(
                 />
               </label>
               <label class="block">
-                <span class="text-[11px] font-medium text-base-content/60">
+                <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.batchImagesHeight') }}
                 </span>
                 <input
@@ -383,10 +379,10 @@ watch(
                 />
               </label>
             </div>
-            <p class="text-[10px] text-base-content/50">{{ t('tools.batchImagesResizeHint') }}</p>
+            <p class="text-3xs text-base-content/50">{{ t('tools.batchImagesResizeHint') }}</p>
 
             <label class="block">
-              <span class="text-[11px] font-medium text-base-content/60">
+              <span class="text-2xs font-medium text-base-content/60">
                 {{ t('tools.outputFolder') }}
               </span>
               <div class="mt-1 flex items-center gap-1.5">
@@ -433,12 +429,12 @@ watch(
             <p
               v-if="busy || processed > 0"
               data-testid="batch-images-progress"
-              class="text-center text-[11px] text-base-content/50"
+              class="text-center text-2xs text-base-content/50"
             >
               {{ processed }}/{{ total }} ·
               {{ t('tools.batchImagesSummary', { done: doneRows, failed: failedRows }) }}
             </p>
-            <p v-if="errorMsg" class="text-[11px] text-error">{{ errorMsg }}</p>
+            <p v-if="errorMsg" class="text-2xs text-error">{{ errorMsg }}</p>
           </section>
         </aside>
       </div>

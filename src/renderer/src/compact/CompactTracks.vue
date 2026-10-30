@@ -99,7 +99,7 @@ defineExpose({ focusSearch });
 
     <div
       v-if="library.loadError"
-      class="mx-3 mb-2 flex items-center gap-2 px-2.5 py-2 rounded-field border border-error/40 bg-error/10 text-[11px] text-error"
+      class="mx-3 mb-2 flex items-center gap-2 px-2.5 py-2 rounded-field border border-error/40 bg-error/10 text-2xs text-error"
       role="alert"
       data-testid="compact-library-error"
     >
@@ -127,11 +127,11 @@ defineExpose({ focusSearch });
       <Music2 :size="20" />
       {{ query ? $t('compact.noResults') : $t('compact.emptyLibrary') }}
       <template v-if="!query">
-        <p class="mt-1 text-[11px] text-base-content/45">
+        <p class="mt-1 text-2xs text-base-content/45">
           {{ $t('compact.addLibraryHint') }}
         </p>
         <button
-          class="mt-1 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field border border-base-300 text-[11px] text-base-content/70 hover:text-base-content hover:bg-base-content/10"
+          class="mt-1 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field border border-base-300 text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10"
           data-testid="compact-empty-open-full"
           @click="openFullWindow"
         >
@@ -164,11 +164,11 @@ defineExpose({ focusSearch });
             </span>
             <span class="min-w-0 flex-1">
               <span class="block text-[12px] truncate">{{ trackTitle(results[row.index]) }}</span>
-              <span class="block text-[10px] text-base-content/50 truncate">
+              <span class="block text-3xs text-base-content/50 truncate">
                 {{ trackArtist(results[row.index]) }}
               </span>
             </span>
-            <span class="text-[10px] tabular-nums text-base-content/40 shrink-0">
+            <span class="text-3xs tabular-nums text-base-content/40 shrink-0">
               {{ formatDuration(results[row.index]?.duration) }}
             </span>
             <span

@@ -310,7 +310,7 @@ defineExpose({ style, cycleStyle });
       <span class="text-base-content/70 text-sm font-medium">{{
         $t('audioView.noTrackTitle')
       }}</span>
-      <span class="text-base-content/60 text-[11px]">{{ $t('audioView.noTrackHint') }}</span>
+      <span class="text-base-content/60 text-2xs">{{ $t('audioView.noTrackHint') }}</span>
     </div>
   </div>
 </template>

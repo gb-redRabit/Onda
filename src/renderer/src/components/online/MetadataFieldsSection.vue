@@ -16,7 +16,7 @@ const { t } = useI18n();
     <p class="mb-1 text-xs font-medium uppercase tracking-wider text-base-content/50">
       {{ t('youtube.metaSection') }}
     </p>
-    <p class="mb-2 text-[11px] text-base-content/50">{{ t('youtube.metaHint') }}</p>
+    <p class="mb-2 text-2xs text-base-content/50">{{ t('youtube.metaHint') }}</p>
     <div class="grid" :class="gridClass">
       <FormField :label="t('youtube.metaArtist')">
         <template #default="{ id }">

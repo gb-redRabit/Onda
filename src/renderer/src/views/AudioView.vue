@@ -105,7 +105,7 @@ const {
       <Music2 :size="48" class="text-base-content/15" aria-hidden="true" />
       <div class="text-center">
         <p class="text-base-content/50 text-sm font-medium">{{ $t('audioView.noTrackTitle') }}</p>
-        <p class="text-base-content/55 text-[11px]">{{ $t('audioView.noTrackHint') }}</p>
+        <p class="text-base-content/55 text-2xs">{{ $t('audioView.noTrackHint') }}</p>
       </div>
     </div>
 

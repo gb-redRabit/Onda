@@ -10,7 +10,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
 <template>
   <details class="rounded-box border border-base-300 bg-base-100">
     <summary
-      class="px-2.5 py-1.5 text-[11px] text-base-content/50 uppercase tracking-wider cursor-pointer select-none"
+      class="px-2.5 py-1.5 text-2xs text-base-content/50 uppercase tracking-wider cursor-pointer select-none"
     >
       {{ t('sources.advanced') }}
     </summary>

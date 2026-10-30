@@ -45,7 +45,7 @@ const emit = defineEmits<{
       {{ $t('imageViewer.ssSlideshow') }}
     </div>
 
-    <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
+    <div class="text-2xs text-base-content/70 mb-1 flex items-center gap-1">
       <Clock :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssInterval') }}
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
@@ -65,7 +65,7 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
+    <div class="text-2xs text-base-content/70 mb-1 flex items-center gap-1">
       <GripHorizontal :size="11" class="pointer-events-none" />
       {{ $t('imageViewer.ssTransition') }}
     </div>
@@ -86,7 +86,7 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[11px] text-base-content/70 mb-1 flex items-center gap-1">
+    <div class="text-2xs text-base-content/70 mb-1 flex items-center gap-1">
       <Clock :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssDuration') }}
     </div>
     <div class="flex flex-wrap gap-1 mb-2">
@@ -107,7 +107,7 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center justify-between mb-1">
-      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
+      <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Repeat :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssLoop') }}
       </div>
       <button
@@ -127,7 +127,7 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center justify-between mb-1">
-      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
+      <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Shuffle :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssShuffle') }}
       </div>
       <button
@@ -147,7 +147,7 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center justify-between mb-1">
-      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
+      <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssKenBurns') }}
       </div>
       <button
@@ -169,7 +169,7 @@ const emit = defineEmits<{
     <div class="border-t border-base-300/20 my-2" />
 
     <div class="flex items-center justify-between">
-      <div class="text-[11px] text-base-content/70 flex items-center gap-1">
+      <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssAutoHide') }}
       </div>
       <button
@@ -188,7 +188,7 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="text-[11px] text-base-content/60 mt-1.5 leading-relaxed">
+    <div class="text-2xs text-base-content/60 mt-1.5 leading-relaxed">
       <span class="text-base-content/80 font-semibold">H</span>
       {{ $t('imageViewer.ssToggleUi') }} &middot;
       <span class="text-base-content/80 font-semibold">Space</span>

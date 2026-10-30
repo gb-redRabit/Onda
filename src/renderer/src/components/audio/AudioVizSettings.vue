@@ -61,14 +61,14 @@ function updateLayout(partial: Record<string, unknown>) {
 <template>
   <div class="min-w-55 space-y-3 rounded-box border border-base-300 bg-base-100 p-3 shadow-xl">
     <div>
-      <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+      <p class="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
         {{ t('audioView.vizModeLabel') }}
       </p>
       <div class="flex flex-wrap gap-1">
         <button
           v-for="m in modes"
           :key="m.value"
-          class="fx-noise rounded-field px-2 py-1 text-[11px] font-medium fx-depth transition-colors"
+          class="fx-noise rounded-field px-2 py-1 text-2xs font-medium fx-depth transition-colors"
           :class="
             viz.mode === m.value
               ? 'bg-primary text-primary-content'
@@ -83,7 +83,7 @@ function updateLayout(partial: Record<string, unknown>) {
     </div>
 
     <div>
-      <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+      <p class="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
         {{ t('audioView.vizPrimaryColor') }}
       </p>
       <div class="flex items-center gap-2">
@@ -94,12 +94,12 @@ function updateLayout(partial: Record<string, unknown>) {
           :aria-label="t('audioView.vizPrimaryColor')"
           @input="(e: Event) => update({ primaryColor: (e.target as HTMLInputElement).value })"
         />
-        <span class="font-mono text-[11px] text-base-content/70">{{ viz.primaryColor }}</span>
+        <span class="font-mono text-2xs text-base-content/70">{{ viz.primaryColor }}</span>
       </div>
     </div>
 
     <div>
-      <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+      <p class="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
         {{ t('audioView.vizSecondaryColor') }}
       </p>
       <div class="flex items-center gap-2">
@@ -110,16 +110,16 @@ function updateLayout(partial: Record<string, unknown>) {
           :aria-label="t('audioView.vizSecondaryColor')"
           @input="(e: Event) => update({ secondaryColor: (e.target as HTMLInputElement).value })"
         />
-        <span class="font-mono text-[11px] text-base-content/70">{{ viz.secondaryColor }}</span>
+        <span class="font-mono text-2xs text-base-content/70">{{ viz.secondaryColor }}</span>
       </div>
     </div>
 
     <div>
       <div class="mb-1.5 flex items-baseline justify-between gap-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+        <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">
           {{ t('audioView.vizSensitivity') }}
         </span>
-        <span class="text-[11px] font-medium tabular-nums text-base-content/70"
+        <span class="text-2xs font-medium tabular-nums text-base-content/70"
           >{{ Math.round(viz.sensitivity * 100) }}%</span
         >
       </div>
@@ -139,10 +139,10 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <div class="mb-1.5 flex items-baseline justify-between gap-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+        <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">
           {{ t('audioView.vizSmoothing') }}
         </span>
-        <span class="text-[11px] font-medium tabular-nums text-base-content/70"
+        <span class="text-2xs font-medium tabular-nums text-base-content/70"
           >{{ Math.round(viz.smoothing * 100) }}%</span
         >
       </div>
@@ -162,18 +162,16 @@ function updateLayout(partial: Record<string, unknown>) {
 
     <div>
       <div class="mb-1.5 flex items-baseline justify-between gap-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+        <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">
           {{ t('audioView.vizFpsCap') }}
         </span>
-        <span class="text-[11px] font-medium tabular-nums text-base-content/70">{{
-          viz.fpsCap
-        }}</span>
+        <span class="text-2xs font-medium tabular-nums text-base-content/70">{{ viz.fpsCap }}</span>
       </div>
       <div class="flex flex-wrap gap-1">
         <button
           v-for="fps in fpsOptions"
           :key="fps"
-          class="fx-noise rounded-field px-2 py-1 text-[11px] font-medium tabular-nums fx-depth transition-colors"
+          class="fx-noise rounded-field px-2 py-1 text-2xs font-medium tabular-nums fx-depth transition-colors"
           :class="
             viz.fpsCap === fps
               ? 'bg-primary text-primary-content'
@@ -190,10 +188,10 @@ function updateLayout(partial: Record<string, unknown>) {
     <div class="space-y-3 border-t border-base-300 pt-3">
       <div>
         <div class="mb-1.5 flex items-baseline justify-between gap-2">
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+          <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">
             {{ t('audioView.hudOpacity') }}
           </span>
-          <span class="text-[11px] font-medium tabular-nums text-base-content/70"
+          <span class="text-2xs font-medium tabular-nums text-base-content/70"
             >{{ hudOpacityInput }}%</span
           >
         </div>
@@ -210,14 +208,14 @@ function updateLayout(partial: Record<string, unknown>) {
       </div>
 
       <div>
-        <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+        <p class="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
           {{ t('audioView.vizQuality') }}
         </p>
         <div class="flex gap-1">
           <button
             v-for="q in qualities"
             :key="q"
-            class="fx-noise rounded-field px-2 py-1 text-[11px] font-medium fx-depth transition-colors"
+            class="fx-noise rounded-field px-2 py-1 text-2xs font-medium fx-depth transition-colors"
             :class="
               vizQuality === q
                 ? 'bg-primary text-primary-content'
