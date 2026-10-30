@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ModalShell from '@renderer/components/ui/ModalShell.vue';
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { X, Download } from '@lucide/vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
@@ -8,7 +8,9 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { useDownloadConfigForm } from '@renderer/composables/useDownloadConfigForm';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 import Button from '@renderer/components/ui/Button.vue';
+import SegmentedControl from '@renderer/components/ui/SegmentedControl.vue';
 import DownloadPreviewCard from './DownloadPreviewCard.vue';
+import FilenameTemplateFields from './FilenameTemplateFields.vue';
 import MetadataFieldsSection from './MetadataFieldsSection.vue';
 import DownloadFormatSection from './DownloadFormatSection.vue';
 import CoverOptionsFields from './CoverOptionsFields.vue';
@@ -76,6 +78,36 @@ const {
 
 const selectedProfileId = ref('');
 const profileName = ref('');
+const tab = ref<'format' | 'files'>('format');
+
+const tabs = computed(() => [
+  { value: 'format', label: t('youtube.configTabFormat') },
+  { value: 'files', label: t('youtube.configTabFiles') }
+]);
+
+// Podgląd nazwy pliku: te same tokeny i ta sama sanityzacja znaków zakazanych,
+// co w main (`mapFilenameTemplate`), więc to, co widać, trafi do systemu plików.
+const templatePreview = computed(() => {
+  const sanitize = (value: string): string => value.replace(/\s*[\\/:*?"<>|]\s*/g, ' ');
+  const values: Record<string, string> = {
+    '{title}': props.title || 'Title',
+    '{artist}': artist.value || props.channelTitle || 'Artist',
+    '{album}': album.value || props.playlistTitle || 'Album',
+    '{year}': year.value || String(new Date().getFullYear()),
+    '{id}': 'abc123'
+  };
+  let out = sanitize(filenameTemplate.value || '{title}');
+  for (const [token, value] of Object.entries(values)) {
+    out = out.split(token).join(sanitize(value));
+  }
+  const extension =
+    kind.value === 'video'
+      ? (videoContainer.value ?? 'mp4')
+      : format.value === 'best'
+        ? 'mp3'
+        : format.value;
+  return `${out.trim() || 'title'}.${extension}`;
+});
 
 function onProfileSelect(id: string) {
   selectedProfileId.value = id;
@@ -174,72 +206,83 @@ function confirm() {
         <!-- Lewa: podgląd -->
         <DownloadPreviewCard :thumbnail="props.thumbnail" :title="props.title" />
 
-        <!-- Prawa: ustawienia -->
-        <div class="space-y-5">
-          <!-- Profile -->
-          <DownloadProfilesSection
-            v-model:profile-name="profileName"
-            :is-sc="isSc"
-            :profiles="profiles"
-            :selected-id="selectedProfileId"
-            @select="onProfileSelect"
-            @save="saveProfile"
-            @delete="deleteProfile"
-          />
+        <!-- Prawa: ustawienia w dwóch zakładkach -->
+        <div class="min-w-0 space-y-4">
+          <SegmentedControl v-model="tab" :options="tabs" :label="$t('youtube.configTabsLabel')" />
 
-          <!-- Format -->
-          <DownloadFormatSection
-            v-model:kind="kind"
-            v-model:format="format"
-            v-model:audio-quality="audioQuality"
-            v-model:quality="quality"
-            v-model:video-container="videoContainer"
-            v-model:audio-language="audioLanguage"
-            v-model:trim-start="trimStart"
-            v-model:trim-end="trimEnd"
-            v-model:filename-template="filenameTemplate"
-            v-model:sponsor-block="sponsorBlock"
-            :is-sc="isSc"
-          />
+          <div v-show="tab === 'format'" class="space-y-5">
+            <!-- Profile -->
+            <DownloadProfilesSection
+              v-model:profile-name="profileName"
+              :is-sc="isSc"
+              :profiles="profiles"
+              :selected-id="selectedProfileId"
+              @select="onProfileSelect"
+              @save="saveProfile"
+              @delete="deleteProfile"
+            />
 
-          <!-- Okładka (wideo: miniatura/brak) + Okładka (audio) -->
-          <CoverOptionsFields
-            v-model:cover-type="coverType"
-            v-model:custom-path="customPath"
-            v-model:frame-time="frameTime"
-            v-model:clip-start="clipStart"
-            v-model:clip-end="clipEnd"
-            v-model:clip-format="clipFormat"
-            :is-sc="isSc"
-            :kind="kind"
-          />
+            <!-- Format -->
+            <DownloadFormatSection
+              v-model:kind="kind"
+              v-model:format="format"
+              v-model:audio-quality="audioQuality"
+              v-model:quality="quality"
+              v-model:video-container="videoContainer"
+              v-model:audio-language="audioLanguage"
+              v-model:trim-start="trimStart"
+              v-model:trim-end="trimEnd"
+              v-model:sponsor-block="sponsorBlock"
+              :is-sc="isSc"
+            />
 
-          <!-- Metadane -->
-          <MetadataFieldsSection
-            v-model:artist="artist"
-            v-model:album="album"
-            v-model:year="year"
-          />
+            <!-- Okładka (wideo: miniatura/brak) + Okładka (audio) -->
+            <CoverOptionsFields
+              v-model:cover-type="coverType"
+              v-model:custom-path="customPath"
+              v-model:frame-time="frameTime"
+              v-model:clip-start="clipStart"
+              v-model:clip-end="clipEnd"
+              v-model:clip-format="clipFormat"
+              :is-sc="isSc"
+              :kind="kind"
+            />
 
-          <!-- Napisy -->
-          <SubscribeSubtitlesSection
-            v-model:subs-enabled="subsEnabled"
-            v-model:subs-langs="subsLangs"
-            v-model:subs-mode="subsMode"
-            v-model:subs-format="subsFormat"
-            v-model:subs-folder="subsFolder"
-            :is-sc="isSc"
-          />
+            <!-- Metadane -->
+            <MetadataFieldsSection
+              v-model:artist="artist"
+              v-model:album="album"
+              v-model:year="year"
+            />
+          </div>
 
-          <!-- Folder wyjściowy -->
-          <DownloadOutputSection
-            v-model:folder-mode="folderMode"
-            v-model:output-dir="outputDir"
-            :channel-title="props.channelTitle"
-            :playlist-title="props.playlistTitle"
-            :channel-folder="channelFolder"
-            :playlist-folder="playlistFolder"
-          />
+          <div v-show="tab === 'files'" class="space-y-5">
+            <!-- Nazwa pliku: szablon, tokeny, podgląd -->
+            <FilenameTemplateFields
+              v-model:filename-template="filenameTemplate"
+              :preview="templatePreview"
+            />
+
+            <!-- Folder wyjściowy -->
+            <DownloadOutputSection
+              v-model:folder-mode="folderMode"
+              v-model:output-dir="outputDir"
+              :channel-title="props.channelTitle"
+              :playlist-title="props.playlistTitle"
+              :channel-folder="channelFolder"
+              :playlist-folder="playlistFolder"
+            />
+
+            <!-- Napisy -->
+            <SubscribeSubtitlesSection
+              v-model:subs-enabled="subsEnabled"
+              v-model:subs-langs="subsLangs"
+              v-model:subs-mode="subsMode"
+              v-model:subs-format="subsFormat"
+              v-model:subs-folder="subsFolder"
+              :is-sc="isSc"
+            />
+          </div>
         </div>
       </div>
     </div>

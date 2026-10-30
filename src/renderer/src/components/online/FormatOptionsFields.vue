@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { AUDIO_FORMATS, VIDEO_CONTAINERS, VIDEO_QUALITIES } from '@shared/constants';
-import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
 import FormField from '@renderer/components/ui/FormField.vue';
 import Input from '@renderer/components/ui/Input.vue';
 import Select from '@renderer/components/ui/Select.vue';
@@ -17,9 +16,8 @@ withDefaults(
     isSc: boolean;
     audioQualities: readonly string[];
     showVideoContainer?: boolean;
-    showFilenameTemplate?: boolean;
   }>(),
-  { showVideoContainer: false, showFilenameTemplate: false }
+  { showVideoContainer: false }
 );
 
 const kind = defineModel<'audio' | 'video'>('kind', { required: true });
@@ -30,7 +28,6 @@ const videoContainer = defineModel<'mp4' | 'mkv' | 'webm'>('videoContainer');
 const audioLanguage = defineModel<string>('audioLanguage', { required: true });
 const trimStart = defineModel<number | null>('trimStart', { required: true });
 const trimEnd = defineModel<number | null>('trimEnd', { required: true });
-const filenameTemplate = defineModel<string>('filenameTemplate');
 const sponsorBlock = defineModel<'off' | 'mark' | 'remove'>('sponsorBlock', { required: true });
 
 const { t } = useI18n();
@@ -111,7 +108,6 @@ const trimError = computed(() => {
         />
       </template>
     </FormField>
-
     <div class="mt-3 grid grid-cols-2 gap-3">
       <FormField :label="t('youtube.trimStart')">
         <template #default="{ id }">
@@ -130,19 +126,6 @@ const trimError = computed(() => {
         </template>
       </FormField>
     </div>
-
-    <FormField v-if="showFilenameTemplate" class="mt-3" :label="t('youtube.prefTemplate')">
-      <template #default="{ id }">
-        <Input
-          :id="id"
-          v-model="filenameTemplate"
-          :placeholder="t('youtube.prefTemplatePlaceholder')"
-        />
-        <div class="mt-1.5">
-          <FilenameTemplatePresets @preset="(p) => (filenameTemplate = p)" />
-        </div>
-      </template>
-    </FormField>
 
     <FormField class="mt-3" :label="t('youtube.sponsorBlock')">
       <template #default="{ id }">

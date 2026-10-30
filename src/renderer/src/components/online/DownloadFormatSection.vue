@@ -11,7 +11,6 @@ const videoContainer = defineModel<'mp4' | 'mkv' | 'webm'>('videoContainer', { r
 const audioLanguage = defineModel<string>('audioLanguage', { required: true });
 const trimStart = defineModel<number | null>('trimStart', { required: true });
 const trimEnd = defineModel<number | null>('trimEnd', { required: true });
-const filenameTemplate = defineModel<string>('filenameTemplate', { required: true });
 const sponsorBlock = defineModel<'off' | 'mark' | 'remove'>('sponsorBlock', { required: true });
 </script>
 
@@ -25,11 +24,9 @@ const sponsorBlock = defineModel<'off' | 'mark' | 'remove'>('sponsorBlock', { re
     v-model:audio-language="audioLanguage"
     v-model:trim-start="trimStart"
     v-model:trim-end="trimEnd"
-    v-model:filename-template="filenameTemplate"
     v-model:sponsor-block="sponsorBlock"
     :is-sc="isSc"
     :audio-qualities="AUDIO_QUALITIES"
     show-video-container
-    show-filename-template
   />
 </template>

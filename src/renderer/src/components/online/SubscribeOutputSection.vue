@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import FilenameTemplatePresets from '@renderer/components/FilenameTemplatePresets.vue';
-import FormField from '@renderer/components/ui/FormField.vue';
-import Input from '@renderer/components/ui/Input.vue';
 import Switch from '@renderer/components/ui/Switch.vue';
+import FilenameTemplateFields from './FilenameTemplateFields.vue';
 import OutputFolderSection from './OutputFolderSection.vue';
 
 defineProps<{ channelFolder: string }>();
@@ -26,18 +24,7 @@ const { t } = useI18n();
   />
 
   <!-- Szablon nazwy pliku -->
-  <FormField :label="t('youtube.prefTemplate')">
-    <template #default="{ id }">
-      <Input
-        :id="id"
-        v-model="filenameTemplate"
-        :placeholder="t('youtube.prefTemplatePlaceholder')"
-      />
-      <div class="mt-1.5">
-        <FilenameTemplatePresets @preset="(p) => (filenameTemplate = p)" />
-      </div>
-    </template>
-  </FormField>
+  <FilenameTemplateFields v-model:filename-template="filenameTemplate" />
 
   <!-- Dodaj do biblioteki -->
   <section>
