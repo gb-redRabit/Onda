@@ -76,7 +76,7 @@ export const useExplorerStore = defineStore('explorer', () => {
   });
 
   async function loadFiles(path: string) {
-    await batchLoader.load(path);
+    await batchLoader.load(path, { showHidden: settings.explorer.showHidden });
   }
 
   function toggleSelect(path: string) {

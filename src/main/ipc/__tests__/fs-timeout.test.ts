@@ -8,7 +8,7 @@ const SRC = readFileSync(join(process.cwd(), 'src/main/ipc/fs/fs-handlers.ts'), 
 
 describe('fs handler timeouts', () => {
   it('bounds readdir and stat with withTimeout', () => {
-    expect(SRC).toMatch(/withTimeout\(readdir/);
+    expect(SRC).toMatch(/withTimeout\(\s*readdir/);
     expect(SRC).toMatch(/withTimeout\(stat/);
   });
 });

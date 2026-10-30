@@ -128,6 +128,12 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     keywords: []
   },
   {
+    id: 'setting-show-hidden',
+    labelKey: 'settings.showHidden',
+    tab: 'explorer',
+    keywords: ['ukryte', 'systemowe', 'dotfiles']
+  },
+  {
     id: 'setting-permanent-delete',
     labelKey: 'settings.permanentDelete',
     tab: 'explorer',

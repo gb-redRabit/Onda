@@ -2,8 +2,9 @@
 import { ref, computed, onMounted, onBeforeUnmount, provide } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Monitor, Plus, Pin, PinOff, Copy } from '@lucide/vue';
+import { Monitor, Plus, Pin, PinOff, Copy, Eye, EyeOff } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
+import { useSettingsStore } from '@renderer/stores/settings';
 import { clonePlain } from '@renderer/utils/clone';
 import { joinPath } from '@renderer/utils/path';
 import { useClipboardStore } from '@renderer/stores/clipboard';
@@ -29,6 +30,7 @@ import { useViewSearch } from '@renderer/composables/useViewSearch';
 import type { FileItem } from '@renderer/types/explorer';
 
 const explorer = useExplorerStore();
+const settings = useSettingsStore();
 const fileClipboard = useClipboardStore();
 const library = useLibraryStore();
 const player = usePlayerStore();
@@ -68,6 +70,13 @@ const filteredFiles = computed(() => {
 
 function toggleDuplicatesPanel() {
   dupPanelOpen.value = !dupPanelOpen.value;
+}
+
+// Przełącznik plików ukrytych/systemowych: zmiana ustawienia + przeładowanie
+// bieżącego folderu, żeby lista od razu odzwierciedlała wybór.
+async function toggleHiddenFiles(): Promise<void> {
+  settings.updateExplorer({ showHidden: !settings.explorer.showHidden });
+  await explorer.loadFiles(explorer.currentPath);
 }
 
 function revealDupFile(path: string) {
@@ -227,6 +236,23 @@ onBeforeUnmount(() => {
           @click="toggleDuplicatesPanel"
         >
           <Copy :size="14" class="pointer-events-none" />
+        </button>
+
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="
+            settings.explorer.showHidden
+              ? 'bg-primary/12 text-primary-text'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
+          data-testid="explorer-show-hidden"
+          :title="$t('settings.showHidden')"
+          :aria-label="$t('settings.showHidden')"
+          :aria-pressed="settings.explorer.showHidden"
+          @click="toggleHiddenFiles"
+        >
+          <Eye v-if="settings.explorer.showHidden" :size="14" class="pointer-events-none" />
+          <EyeOff v-else :size="14" class="pointer-events-none" />
         </button>
 
         <button

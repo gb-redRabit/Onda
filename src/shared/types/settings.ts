@@ -95,6 +95,8 @@ export interface ExplorerSettings {
   sortBy: 'name' | 'size' | 'type' | 'modified';
   sortOrder: 'asc' | 'desc';
   confirmBeforeMove: boolean;
+  /** Pokazuj pliki ukryte/systemowe (kropkowe i wpisy systemowe Windows). */
+  showHidden: boolean;
   /** Usuwa pliki trwale zamiast przenosić je do kosza systemowego. */
   permanentDelete: boolean;
 }

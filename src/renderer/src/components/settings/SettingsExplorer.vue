@@ -65,6 +65,12 @@ const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
   </SettingsGroup>
 
   <SettingsGroup>
+    <SettingsRow :label="$t('settings.showHidden')" :description="$t('settings.showHiddenDesc')">
+      <SettingsToggle
+        :model-value="settings.explorer.showHidden"
+        @update:model-value="settings.updateExplorer({ showHidden: $event })"
+      />
+    </SettingsRow>
     <SettingsRow
       :label="$t('settings.confirmBeforeMove')"
       :description="$t('settings.confirmBeforeMoveDesc')"

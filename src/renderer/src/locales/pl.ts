@@ -1302,6 +1302,8 @@ export default {
     sortOrder: 'Kolejność',
     sortAsc: 'Rosnąco',
     sortDesc: 'Malejąco',
+    showHidden: 'Pokazuj pliki ukryte i systemowe',
+    showHiddenDesc: 'Pliki kropkowe i wpisy systemowe Windows w Eksploratorze',
     confirmBeforeMove: 'Potwierdzaj przed przenoszeniem',
     confirmBeforeMoveDesc: 'Pokaż potwierdzenie przed przeniesieniem plików',
     permanentDelete: 'Usuwaj trwale (pomiń Kosz)',

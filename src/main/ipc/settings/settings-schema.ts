@@ -197,6 +197,7 @@ const EXPLORER_FIELDS: Record<string, Sanitizer> = {
   sortBy: enumOf(['name', 'size', 'type', 'modified']),
   sortOrder: enumOf(['asc', 'desc']),
   confirmBeforeMove: bool,
+  showHidden: bool,
   permanentDelete: bool
 };
 

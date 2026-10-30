@@ -3,7 +3,10 @@ import type { IpcFileItem, OpenFileOptions } from './media';
 // Kanały systemu plików, dialogów i powłoki (wydzielone z byłego `channels-system.ts`).
 export interface FsChannels {
   'fs:getDrives': { args: []; result: IpcFileItem[] };
-  'fs:readdir': { args: [dirPath: string]; result: void };
+  'fs:readdir': {
+    args: [dirPath: string, options?: { showHidden?: boolean }];
+    result: void;
+  };
   'fs:mkdir': { args: [dirPath: string]; result: boolean };
   'fs:delete': { args: [filePath: string]; result: void };
   'fs:move': { args: [paths: string[], destination: string]; result: void };

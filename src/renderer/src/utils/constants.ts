@@ -57,6 +57,7 @@ export const DEFAULT_EXPLORER: ExplorerSettings = {
   sortBy: 'name',
   sortOrder: 'asc',
   confirmBeforeMove: true,
+  showHidden: false,
   permanentDelete: false
 };
 

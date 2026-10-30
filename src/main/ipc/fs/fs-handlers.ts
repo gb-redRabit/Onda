@@ -7,6 +7,7 @@ import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import type { FileItem } from '../../../shared/types/explorer';
 import { getDrives, getFileItem } from './fs-utils';
+import { visibleEntries } from './fs-visible';
 import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath } from '../../utils/validate';
 import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../../utils/read-text-file';
@@ -102,55 +103,61 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:readdir', async (event, dirPath: unknown): Promise<void> => {
-    // Brak ścieżki oznacza widok dysków, a nie nieprawidłową ścieżkę — panel nawigacji
-    // explorera i breadcrumb wywołują navigateTo('') w znaczeniu "pokaż dyski". To
-    // sprawdzenie musi być przed walidacją, inaczej widok dysków po cichu wraca
-    // pusty zamiast je wylistować.
-    if (dirPath === '' || dirPath === undefined || dirPath === null || dirPath === '/') {
-      event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
-      return;
-    }
-    if (!isSafeAbsolutePath(dirPath)) {
-      logger.warn('fs', 'readdir rejected invalid path');
-      event.sender.send('fs:readdir:batch', { done: true, items: [] });
-      return;
-    }
-    if (/^[A-Z]:$/i.test(dirPath)) {
-      event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
-      return;
-    }
-    const resolvedPath = dirPath;
-    let entries;
-    try {
-      entries = await withTimeout(readdir(resolvedPath, { withFileTypes: true }), FS_OP_TIMEOUT_MS);
-    } catch (err) {
-      event.sender.send('fs:readdir:batch', {
-        done: true,
-        items: [],
-        error: errMsg(err)
-      });
-      return;
-    }
-    const filtered = entries.filter((entry) => !entry.name.startsWith('.'));
-    const BATCH = 200;
-    for (let i = 0; i < filtered.length; i += BATCH) {
-      const batch = filtered.slice(i, i + BATCH);
-      const results = await Promise.allSettled(
-        batch.map(async (entry) => {
-          const fullPath = join(resolvedPath, entry.name);
-          const stats = await withTimeout(stat(fullPath), FS_OP_TIMEOUT_MS);
-          return getFileItem(fullPath, stats, entry.name);
-        })
-      );
-      const items: FileItem[] = [];
-      for (const r of results) {
-        if (r.status === 'fulfilled') items.push(r.value);
+  ipcMain.handle(
+    'fs:readdir',
+    async (event, dirPath: unknown, options?: { showHidden?: boolean }): Promise<void> => {
+      // Brak ścieżki oznacza widok dysków, a nie nieprawidłową ścieżkę — panel nawigacji
+      // explorera i breadcrumb wywołują navigateTo('') w znaczeniu "pokaż dyski". To
+      // sprawdzenie musi być przed walidacją, inaczej widok dysków po cichu wraca
+      // pusty zamiast je wylistować.
+      if (dirPath === '' || dirPath === undefined || dirPath === null || dirPath === '/') {
+        event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+        return;
       }
-      event.sender.send('fs:readdir:batch', { done: false, items });
+      if (!isSafeAbsolutePath(dirPath)) {
+        logger.warn('fs', 'readdir rejected invalid path');
+        event.sender.send('fs:readdir:batch', { done: true, items: [] });
+        return;
+      }
+      if (/^[A-Z]:$/i.test(dirPath)) {
+        event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+        return;
+      }
+      const resolvedPath = dirPath;
+      let entries;
+      try {
+        entries = await withTimeout(
+          readdir(resolvedPath, { withFileTypes: true }),
+          FS_OP_TIMEOUT_MS
+        );
+      } catch (err) {
+        event.sender.send('fs:readdir:batch', {
+          done: true,
+          items: [],
+          error: errMsg(err)
+        });
+        return;
+      }
+      const filtered = visibleEntries(entries, options?.showHidden === true);
+      const BATCH = 200;
+      for (let i = 0; i < filtered.length; i += BATCH) {
+        const batch = filtered.slice(i, i + BATCH);
+        const results = await Promise.allSettled(
+          batch.map(async (entry) => {
+            const fullPath = join(resolvedPath, entry.name);
+            const stats = await withTimeout(stat(fullPath), FS_OP_TIMEOUT_MS);
+            return getFileItem(fullPath, stats, entry.name);
+          })
+        );
+        const items: FileItem[] = [];
+        for (const r of results) {
+          if (r.status === 'fulfilled') items.push(r.value);
+        }
+        event.sender.send('fs:readdir:batch', { done: false, items });
+      }
+      event.sender.send('fs:readdir:batch', { done: true, items: [] });
     }
-    event.sender.send('fs:readdir:batch', { done: true, items: [] });
-  });
+  );
 
   ipcMain.handle('fs:mkdir', async (_event, dirPath: unknown) => {
     if (!isSafeAbsolutePath(dirPath)) {

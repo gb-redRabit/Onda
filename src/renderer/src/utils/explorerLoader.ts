@@ -4,7 +4,7 @@ import { i18n } from '@renderer/i18n';
 import type { FileItem } from '@renderer/types/explorer';
 
 interface BatchLoader {
-  load: (path: string) => Promise<void>;
+  load: (path: string, options?: { showHidden?: boolean }) => Promise<void>;
   cancel: () => void;
 }
 
@@ -22,7 +22,7 @@ export function createBatchLoader(
     cleanup = null;
   }
 
-  async function load(path: string): Promise<void> {
+  async function load(path: string, options?: { showHidden?: boolean }): Promise<void> {
     const loadId = ++currentLoadId;
     files.value = [];
     isLoading.value = true;
@@ -72,7 +72,7 @@ export function createBatchLoader(
     }, 15_000);
 
     try {
-      await window.api.invoke('fs:readdir', path);
+      await window.api.invoke('fs:readdir', path, options);
     } catch (e) {
       if (loadId === currentLoadId) {
         files.value = [];

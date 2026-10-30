@@ -1294,6 +1294,8 @@ export default {
     sortOrder: 'Order',
     sortAsc: 'Ascending',
     sortDesc: 'Descending',
+    showHidden: 'Show hidden and system files',
+    showHiddenDesc: 'Dotfiles and Windows system entries in the Explorer',
     confirmBeforeMove: 'Confirm before moving',
     confirmBeforeMoveDesc: 'Show confirmation before moving files',
     permanentDelete: 'Delete permanently (skip Trash)',
