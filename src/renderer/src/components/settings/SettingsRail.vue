@@ -69,7 +69,6 @@ const activeSectionId = computed(
           :data-testid="`settings-tab-${tab.id}`"
           @click="emit('select-tab', tab.id)"
         >
-          <component :is="tab.icon" :size="14" class="shrink-0 opacity-80" />
           <span class="truncate">{{ $t(tab.labelKey) }}</span>
         </button>
       </div>

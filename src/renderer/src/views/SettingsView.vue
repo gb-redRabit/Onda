@@ -394,19 +394,14 @@ onBeforeUnmount(() => {
               <component :is="section.icon" :size="15" class="text-primary-text" />
               {{ t(section.labelKey) }}
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            <div class="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
               <button
                 v-for="tab in tabsOfSection(section.id)"
                 :key="tab.id"
-                class="flex items-start gap-3 p-4 fx-depth fx-noise rounded-box bg-base-100 border border-base-300 text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
+                class="flex items-start p-4 fx-depth fx-noise rounded-box bg-base-100 border border-base-300 text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
                 :data-testid="`settings-overview-${tab.id}`"
                 @click="openTab(tab.id)"
               >
-                <span
-                  class="grid place-items-center w-9 h-9 rounded-field bg-primary/10 text-primary-text shrink-0"
-                >
-                  <component :is="tab.icon" :size="17" />
-                </span>
                 <span class="min-w-0">
                   <span class="block text-sm font-medium truncate">{{ t(tab.labelKey) }}</span>
                   <span class="block text-xs text-base-content/55 line-clamp-2 mt-0.5">
