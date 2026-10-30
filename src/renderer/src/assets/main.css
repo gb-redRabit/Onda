@@ -28,6 +28,8 @@
   --radius-box: 0.5rem;
   --radius-field: 0.25rem;
   --radius-selector: 0.5rem;
+  /* Wartości zastępcze: `themeModel` nadpisuje je z ustawień motywu przy starcie
+     (rozmiary pól/selectorów), więc te liczby obowiązują tylko przed aplikacją motywu. */
   --size-field: 0.25rem;
   --size-selector: 0.25rem;
 

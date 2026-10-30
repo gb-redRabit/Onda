@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Search } from '@lucide/vue';
 
+// Jedno pole wyszukiwania w pasku tytułu: globalna paleta poleceń (Ctrl+K).
+// Wyszukiwanie w bieżącym widoku zostaje pod Ctrl+F i w paskach widoków.
 defineProps<{
   show: boolean;
-  label: string;
-  searchable: boolean;
+  shortcut: string;
 }>();
 
 const emit = defineEmits<{
@@ -13,20 +14,22 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="show" class="flex items-center gap-1.5 px-3 flex-1 min-w-0">
-    <span class="text-[12px] font-medium tracking-wide text-base-content/55 mr-1 truncate">
-      {{ label }}
-    </span>
-
+  <div v-if="show" class="flex min-w-0 flex-1 items-center justify-center px-3">
     <button
-      v-if="searchable"
-      class="h-7 w-7 grid place-items-center rounded-field hover:bg-base-content/8 transition-colors text-base-content/55 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+      class="flex h-7 w-full max-w-md items-center gap-2 rounded-field border border-base-300/70 bg-base-200/50 px-2.5 text-left text-[12px] text-base-content/55 transition-colors hover:border-base-content/25 hover:bg-base-content/8 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       style="-webkit-app-region: no-drag"
-      :title="$t('menu.viewSearch')"
-      :aria-label="$t('menu.viewSearch')"
+      data-testid="titlebar-search"
+      :title="$t('menu.search') + (shortcut ? ' (' + shortcut + ')' : '')"
+      :aria-label="$t('menu.search')"
       @click="emit('search')"
     >
-      <Search :size="14" />
+      <Search :size="13" class="shrink-0" />
+      <span class="truncate">{{ $t('menu.search') }}</span>
+      <kbd
+        v-if="shortcut"
+        class="ml-auto shrink-0 rounded border border-base-300/70 px-1 font-mono text-[10px] text-base-content/45"
+        >{{ shortcut }}</kbd
+      >
     </button>
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
+import { useUIStore } from '@renderer/stores/ui';
 import { useAppMenu } from '@renderer/composables/useAppMenu';
 import { onMounted, onBeforeUnmount, nextTick } from 'vue';
 import AppMenuFileDropdown from './AppMenuFileDropdown.vue';
@@ -13,13 +14,12 @@ import appIcon from '@renderer/assets/icon.png';
 
 const settings = useSettingsStore();
 const player = usePlayerStore();
+const ui = useUIStore();
 
 const {
   isMaximized,
   openDropdown,
-  viewLabel,
   showViewActions,
-  viewSearchable,
   openFile,
   openFolder,
   toggleDropdown,
@@ -29,7 +29,6 @@ const {
   closeWin,
   quitApp,
   navigateAndClose,
-  toggleViewSearch,
   navigateSettingsTab,
   actionClose
 } = useAppMenu();
@@ -205,9 +204,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
 
     <AppMenuViewActions
       :show="showViewActions"
-      :label="viewLabel"
-      :searchable="viewSearchable"
-      @search="toggleViewSearch"
+      :shortcut="shortcut('search')"
+      @search="ui.toggleGlobalSearch()"
     />
 
     <AppMenuWindowControls

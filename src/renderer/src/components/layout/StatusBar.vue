@@ -13,6 +13,7 @@ import { useContextMenu, type ContextMenuAction } from '@renderer/composables/us
 import type { AppInfo } from '@shared/types/ipc';
 import type { StatusBarSectionId } from '@renderer/types/settings';
 import { logger } from '@shared/logger';
+import { Download, Globe, TriangleAlert } from '@lucide/vue';
 import StatusBarPlaying from './StatusBarPlaying.vue';
 const { t, locale } = useI18n();
 
@@ -221,11 +222,11 @@ function openContextMenu(e: MouseEvent) {
         :aria-label="$t('status.openDownloads')"
         @click="goTo('/downloads')"
       >
-        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+        <Download :size="11" class="shrink-0 text-primary-text" />
         <!-- Nazwa pliku nie może rozszerzać paska przy wąskim oknie: przycina się
              (wielokropek) i maleje wraz z szerokością okna, a procent zostaje stały. -->
         <span class="truncate max-w-[32vw]">{{ activeDownload.title }}</span>
-        <span class="shrink-0 tabular-nums text-base-content/60"
+        <span v-if="activeDownload.progress > 0" class="shrink-0 tabular-nums text-base-content/60"
           >{{ activeDownload.progress }}%</span
         >
       </button>
@@ -238,9 +239,10 @@ function openContextMenu(e: MouseEvent) {
         :aria-label="$t('status.openOnline')"
         @click="goTo('/online')"
       >
-        <span
-          class="w-1.5 h-1.5 rounded-full"
-          :class="status.loggedIn ? 'bg-success' : 'bg-base-300'"
+        <Globe
+          :size="11"
+          class="shrink-0"
+          :class="status.loggedIn ? 'text-success' : 'text-base-content/40'"
         />
         {{ status.loggedIn ? $t('status.loggedIn') : $t('status.notLoggedIn') }}
       </button>
@@ -248,11 +250,12 @@ function openContextMenu(e: MouseEvent) {
     <template v-if="hasSection('dependencies') && depsText">
       <button
         type="button"
-        class="rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+        class="flex items-center gap-1 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openDependencies')"
         :aria-label="$t('status.openDependencies')"
         @click="goTo('/settings?tab=dependencies')"
       >
+        <TriangleAlert :size="11" class="shrink-0 text-warning" />
         {{ depsText }}
       </button>
     </template>

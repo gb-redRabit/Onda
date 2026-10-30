@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaFile } from '@renderer/types/media';
 import { usePlayerStore } from '@renderer/stores/player';
@@ -31,19 +31,8 @@ const artist = computed(
 const year = computed(() => firstAudio.value?.metadata?.year ?? props.tracks[0]?.metadata?.year);
 const count = computed(() => props.tracks.length);
 
-function ensureCover() {
-  // ładuj okładki dla pierwszych kilku utworów, wybierz pierwszą dostępną
-  for (const tr of props.tracks.slice(0, 5)) {
-    if (!player.getCover(tr.path).data) player.loadCover(tr.path);
-  }
-}
-
-function onHover() {
-  ensureCover();
-}
-onMounted(ensureCover);
-watch(() => props.tracks.map((t) => t.path).join('|'), ensureCover);
-
+// Okładki ładuje MediaCover przez wspólny IntersectionObserver — ręczne
+// `loadCover` na hover/mount było duplikatem i obciążało bibliotekę.
 const displayPath = computed(() => {
   for (const tr of props.tracks) {
     const c = player.getCover(tr.path);
@@ -70,7 +59,6 @@ function onDragStart(e: DragEvent) {
     @click="emit('play', tracks)"
     @contextmenu.prevent="onContextMenu"
     @dragstart="onDragStart"
-    @mouseenter="onHover"
   >
     <div
       class="w-full aspect-square bg-neutral flex items-center justify-center relative overflow-hidden"

@@ -155,7 +155,7 @@ function togglePlay() {
   >
     <div
       v-if="!isLive"
-      class="absolute top-0 left-0 right-0 h-1 bg-border-default/50 cursor-pointer hover:h-1.5 group transition-[height] z-10"
+      class="group absolute -top-1 left-0 right-0 z-10 h-3 cursor-pointer"
       role="slider"
       tabindex="0"
       :aria-label="$t('playerView.seek')"
@@ -167,13 +167,17 @@ function togglePlay() {
       @keydown="onSeekKeydown"
     >
       <div
-        class="absolute inset-y-0 left-0 h-full bg-primary/50 rounded-r-full"
-        :style="{ width: bufferedPct + '%' }"
-      />
-      <div
-        class="absolute inset-y-0 left-0 h-full bg-primary rounded-r-full"
-        :style="{ width: progressPct + '%' }"
-      />
+        class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-border-default/50 transition-[height] group-hover:h-1.5"
+      >
+        <div
+          class="absolute inset-y-0 left-0 h-full rounded-r-full bg-primary/50"
+          :style="{ width: bufferedPct + '%' }"
+        />
+        <div
+          class="absolute inset-y-0 left-0 h-full rounded-r-full bg-primary"
+          :style="{ width: progressPct + '%' }"
+        />
+      </div>
       <AbRepeatMarkers :duration="audio.duration.value" />
     </div>
 

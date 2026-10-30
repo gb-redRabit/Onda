@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Minus, Square, Maximize2, X, Search, RectangleVertical } from '@lucide/vue';
-import { useUIStore } from '@renderer/stores/ui';
+import { Minus, Square, Maximize2, X, RectangleVertical } from '@lucide/vue';
 import { useCompactSwitch } from '@renderer/composables/useCompactSwitch';
 
 defineProps<{
@@ -13,7 +12,6 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const ui = useUIStore();
 const { switching, switchToCompact } = useCompactSwitch();
 </script>
 
@@ -29,14 +27,6 @@ const { switching, switchToCompact } = useCompactSwitch();
       @click="switchToCompact"
     >
       <RectangleVertical :size="15" />
-    </button>
-    <button
-      class="h-8 my-1 px-3 flex items-center rounded-lg hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
-      :title="$t('menu.search')"
-      :aria-label="$t('menu.search')"
-      @click="ui.toggleGlobalSearch()"
-    >
-      <Search :size="15" />
     </button>
     <div class="w-px h-4 bg-base-300/70 mx-1" role="separator" aria-orientation="vertical" />
     <button

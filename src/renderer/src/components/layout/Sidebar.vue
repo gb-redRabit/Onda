@@ -118,6 +118,7 @@ function onResizeStart(e: MouseEvent) {
           :key="item.label"
           class="relative w-full flex items-center gap-3 px-3 py-2.5 rounded-field text-sm font-medium transition-colors"
           :aria-label="item.label"
+          :title="collapsed ? item.label : undefined"
           :aria-current="route.path === item.route ? 'page' : undefined"
           :class="
             route.path === item.route
