@@ -114,7 +114,7 @@ const filters = computed(() => buildDownloadFilters(yt.downloads, grouped.value)
 const downloadVirtualizer = useVirtualList({
   count: () => visible.value.length,
   scrollEl: () => downloadListRef.value,
-  estimateSize: () => 112,
+  estimateSize: () => 80,
   overscan: 8,
   measureElement: (element) => element.getBoundingClientRect().height
 });

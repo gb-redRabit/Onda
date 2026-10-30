@@ -68,7 +68,7 @@ onMounted(async () => {
       <span
         v-if="activeCount"
         class="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-medium text-primary-text"
-        >{{ activeCount }} {{ t('status.active') }}</span
+        >{{ t('downloads.filterActive') }}: {{ activeCount }}</span
       >
       <div class="flex-1" />
       <div class="flex flex-wrap items-center gap-2">

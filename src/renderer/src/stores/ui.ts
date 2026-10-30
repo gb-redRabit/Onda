@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, type Component } from 'vue';
 
+/** Szerokość menu kontekstowego w px — wspólna dla pozycjonowania i przycinania. */
+export const CONTEXT_MENU_WIDTH = 230;
+
 export interface ContextMenuItem {
   label: string;
   icon?: Component;

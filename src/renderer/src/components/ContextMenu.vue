@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronRight } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import type { ContextMenuItem } from '@renderer/stores/ui';
+import { CONTEXT_MENU_WIDTH } from '@renderer/stores/ui';
 
 const ui = useUIStore();
 const rootEl = ref<HTMLElement | null>(null);
@@ -13,7 +14,7 @@ const subStyle = ref<Record<string, string>>({});
 let openTimer: ReturnType<typeof setTimeout> | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
-const MENU_W = 230;
+const MENU_W = CONTEXT_MENU_WIDTH;
 const ITEM_H = 34;
 const SUB_W = 240;
 

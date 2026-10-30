@@ -1,5 +1,5 @@
 import { markRaw, type Component } from 'vue';
-import { useUIStore } from '@renderer/stores/ui';
+import { CONTEXT_MENU_WIDTH, useUIStore } from '@renderer/stores/ui';
 import type { ContextMenuItem } from '@renderer/stores/ui';
 
 export interface ContextMenuAction<T> {
@@ -52,5 +52,17 @@ export function useContextMenu() {
     ui.showContextMenu(e.clientX, e.clientY, build(defs, ctx));
   }
 
-  return { build, open };
+  // Menu z przycisku `⋯`: wyrównane do prawej krawędzi kontrolki i otwierane
+  // pod nią. Pozycję i tak przycina `ContextMenu.vue`, więc przy dolnej
+  // krawędzi okna menu otworzy się nad przyciskiem.
+  function openAt<T>(target: HTMLElement, defs: ContextMenuAction<T>[], ctx: T) {
+    const rect = target.getBoundingClientRect();
+    ui.showContextMenu(
+      Math.max(8, rect.right - CONTEXT_MENU_WIDTH),
+      rect.bottom + 4,
+      build(defs, ctx)
+    );
+  }
+
+  return { build, open, openAt };
 }

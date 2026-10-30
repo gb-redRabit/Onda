@@ -69,9 +69,10 @@ describe('Command palette and toasts semantics', () => {
 });
 
 describe('additional labelled controls', () => {
-  it('download row actions all expose an aria-label', () => {
-    const labels = DOWNLOADS.match(/:aria-label="t\('downloads\./g) ?? [];
-    expect(labels.length).toBeGreaterThanOrEqual(12);
+  it('download row actions all expose an accessible name', () => {
+    const labels = DOWNLOADS.match(/:label="t\('downloads\./g) ?? [];
+    expect(labels.length).toBeGreaterThanOrEqual(4);
+    expect(DOWNLOADS).toMatch(/:label="t\('common\.moreActions'\)"/);
   });
 
   it('sources sidebar reveals actions on keyboard focus and labels them', () => {

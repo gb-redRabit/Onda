@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Copy,
   Download,
   LogIn,
   Pause,
@@ -16,23 +16,38 @@ import {
   useDownloadsContextMenu,
   type DownloadCtx
 } from '@renderer/composables/useDownloadsContextMenu';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import { useOnlineStore } from '@renderer/stores/online';
 import { errorCodeKey } from '@renderer/utils/errorCodes';
+import Button from '@renderer/components/ui/Button.vue';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import type { DownloadTask } from '@renderer/types/online';
 import DownloadRowActions from './DownloadRowActions.vue';
 
-defineProps<{ task: DownloadTask }>();
+const props = defineProps<{ task: DownloadTask }>();
 const emit = defineEmits<{ play: []; editMeta: []; openLibrary: []; retryCover: [] }>();
 
 const { t } = useI18n();
+const yt = useOnlineStore();
+const prompt = usePromptDialog();
 const { openMenu } = useDownloadsContextMenu();
 
-function openFolder(path?: string) {
+// Anulowanie wymaga potwierdzenia: dla pobieranych/wstrzymanych traci częściowe
+// dane, a dla oczekujących usuwa zadanie z kolejki. Jedno miejsce dla przycisku
+// w wierszu i menu kontekstowego.
+async function cancelWithConfirm(): Promise<void> {
+  const ok = await prompt.showConfirm(t('downloads.cancelConfirm', { name: props.task.title }));
+  if (!ok) return;
+  yt.cancelDownload(props.task.id);
+}
+
+function openFolder(path?: string): void {
   if (path) void window.api?.invoke('shell:showItemInFolder', path);
 }
-function copyText(text?: string) {
+function copyText(text?: string): void {
   if (text) void window.api?.invoke('fs:copyPath', text);
 }
-function login() {
+function login(): void {
   void window.api?.invoke('yt:login');
 }
 
@@ -41,51 +56,12 @@ function downloadCtx(task: DownloadTask): DownloadCtx {
     task,
     onPlay: () => emit('play'),
     onOpenFolder: openFolder,
-    onCopyText: copyText
+    onCopyText: copyText,
+    onEditMeta: () => emit('editMeta'),
+    onOpenLibrary: () => emit('openLibrary'),
+    onCancel: cancelWithConfirm
   };
 }
-
-const coverStatusKey = (t: { coverStatus?: string }): string => {
-  switch (t.coverStatus) {
-    case 'fetching':
-      return 'downloads.coverStatusFetching';
-    case 'embedded':
-      return 'downloads.coverStatusEmbedded';
-    case 'saved':
-      return 'downloads.coverStatusSaved';
-    case 'error':
-      return 'downloads.coverStatusError';
-    default:
-      return '';
-  }
-};
-
-const subtitleStatusKey = (t: { subtitleStatus?: string }): string => {
-  switch (t.subtitleStatus) {
-    case 'embedded':
-      return 'downloads.subtitleStatusEmbedded';
-    case 'saved':
-      return 'downloads.subtitleStatusSaved';
-    case 'missing':
-      return 'downloads.subtitleStatusMissing';
-    default:
-      return '';
-  }
-};
-
-const coverStatusClass = (t: { coverStatus?: string }): string => {
-  switch (t.coverStatus) {
-    case 'fetching':
-      return 'text-base-content/50';
-    case 'embedded':
-    case 'saved':
-      return 'text-success';
-    case 'error':
-      return 'text-warning';
-    default:
-      return '';
-  }
-};
 
 const icons = {
   downloading: Download,
@@ -103,134 +79,163 @@ const colors = {
   pending: 'text-warning',
   paused: 'text-warning'
 } as const;
+
+const isActive = computed(
+  () => props.task.status === 'downloading' || props.task.status === 'pending'
+);
+
+const errorText = computed(() => {
+  const key = errorCodeKey(props.task.errorCode);
+  return key ? t(key) : props.task.error;
+});
+
+/**
+ * Jedna linia kontekstu zamiast stosu etykiet: błąd, faza przygotowania,
+ * postęp, a dla ukończonych — kanał. Statusy „cover embedded”/„napisy
+ * zapisane” nie wymagają uwagi, więc nie zajmują miejsca w wierszu.
+ */
+const metaText = computed(() => {
+  const task = props.task;
+  if (task.error) return errorText.value;
+  if (task.message) return t(task.message);
+  switch (task.status) {
+    case 'downloading':
+      return [task.progress > 0 ? `${task.progress}%` : '', task.speed, task.eta]
+        .filter(Boolean)
+        .join(' · ');
+    case 'pending':
+      return t('downloads.statusPending');
+    case 'paused':
+      return t('downloads.statusPaused');
+    case 'completed':
+      return task.metaOverride?.artist || task.channelTitle || '';
+    default:
+      return '';
+  }
+});
+
+const metaTitle = computed(() =>
+  props.task.status === 'completed' ? props.task.outputPath : undefined
+);
 </script>
 
 <template>
   <div
     data-testid="download-row"
-    class="p-3 rounded-box bg-base-100/90 border border-base-300/80 hover:border-base-content/20 transition-colors group/row"
+    class="group/row rounded-box border border-base-300/70 bg-base-100/90 px-3 py-2 transition-colors hover:border-base-content/20"
     @contextmenu="openMenu($event, downloadCtx(task))"
   >
     <div class="flex items-center gap-3">
       <div
-        class="w-20 aspect-video rounded-field bg-base-200/(--glass-alpha) overflow-hidden shrink-0"
+        class="shrink-0 overflow-hidden rounded-field bg-base-200/(--glass-alpha)"
+        :class="task.kind === 'video' ? 'aspect-video w-20' : 'size-12'"
       >
         <img
           v-if="task.thumbnail"
           :src="task.thumbnail"
           :alt="task.title"
           loading="lazy"
-          class="w-full h-full object-cover"
+          class="h-full w-full object-cover"
         />
         <component
           :is="icons[task.status] || Clock"
           v-else
-          :size="20"
-          class="w-full h-full p-3"
+          :size="18"
+          class="h-full w-full p-2"
           :class="colors[task.status] || 'text-warning'"
         />
       </div>
 
-      <div class="flex-1 min-w-0">
-        <span class="text-sm flex-1 truncate block">{{ task.title }}</span>
-        <span
-          v-if="task.error"
-          class="text-xs text-base-content/50 line-clamp-1 block"
-          :title="task.error"
-        >
-          {{ errorCodeKey(task.errorCode) ? t(errorCodeKey(task.errorCode)) : task.error }}
-        </span>
-        <span
-          v-else-if="task.outputPath"
-          class="text-xs text-base-content/50 truncate block"
-          :title="task.outputPath"
-        >
-          {{ task.outputPath }}
-        </span>
-        <span
-          v-if="task.fileHash"
-          class="text-[11px] text-base-content/50 font-mono flex items-center gap-1"
-          :title="task.fileHash"
-        >
-          <span class="truncate">sha256: {{ task.fileHash.slice(0, 16) }}…</span>
-          <button
-            class="fx-noise p-0.5 rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors shrink-0"
-            :title="t('downloads.copyHash')"
-            @click="copyText(task.fileHash)"
+      <div class="min-w-0 flex-1">
+        <div class="flex min-w-0 items-center gap-2">
+          <span class="truncate text-sm" :title="task.title">{{ task.title }}</span>
+          <span
+            class="shrink-0 rounded-full bg-base-content/6 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-base-content/45"
+            >{{ task.format }}</span
           >
-            <Copy :size="10" />
-          </button>
-        </span>
-        <span
-          v-if="task.message"
-          class="text-xs text-primary-text/80 truncate block"
-          :title="t(task.message)"
+        </div>
+        <p
+          v-if="metaText"
+          class="mt-0.5 truncate text-xs"
+          :class="
+            task.error
+              ? 'text-error/80'
+              : task.status === 'downloading'
+                ? 'font-mono text-base-content/45'
+                : 'text-base-content/50'
+          "
+          :title="metaTitle"
         >
-          {{ t(task.message) }}
-        </span>
-        <span
-          v-else-if="task.status === 'downloading'"
-          class="text-xs text-base-content/50 font-mono"
-        >
-          {{ task.speed }} · {{ task.eta }}
-        </span>
+          {{ metaText }}
+        </p>
       </div>
 
-      <button
-        v-if="task.status === 'error' && task.errorCode === 'auth-required'"
-        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary-text text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
-        :title="t('downloads.loginTitle')"
-        @click="login"
-      >
-        <LogIn :size="11" />
-        {{ t('downloads.login') }}
-      </button>
-
-      <button
-        v-if="task.coverStatus === 'error'"
+      <RefreshCw
+        v-if="task.coverStatus === 'fetching'"
+        :size="12"
+        class="shrink-0 animate-spin text-base-content/40"
+        :title="t('downloads.coverStatusFetching')"
+      />
+      <Button
+        v-else-if="task.coverStatus === 'error'"
         type="button"
         data-testid="download-retry-cover"
-        class="fx-noise text-[11px] shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-field hover:bg-base-content/10 transition-colors"
-        :class="coverStatusClass(task)"
+        variant="ghost"
+        size="sm"
+        :label="t('downloads.coverRetry')"
         :title="
           task.coverError
             ? `${task.coverError} — ${t('downloads.coverRetry')}`
             : t('downloads.coverRetry')
         "
-        :aria-label="t('downloads.coverRetry')"
+        class="gap-1 px-1.5 text-[11px] text-warning"
         @click="emit('retryCover')"
       >
         <RotateCcw :size="10" />
         {{ t('downloads.coverStatusError') }}
-      </button>
-      <span
-        v-else-if="coverStatusKey(task)"
-        class="text-[11px] shrink-0 flex items-center gap-1"
-        :class="coverStatusClass(task)"
+      </Button>
+      <Button
+        v-if="task.status === 'error' && task.errorCode === 'auth-required'"
+        type="button"
+        variant="soft"
+        size="sm"
+        :title="t('downloads.loginTitle')"
+        class="gap-1 text-[11px]"
+        @click="login"
       >
-        <RefreshCw v-if="task.coverStatus === 'fetching'" :size="10" class="animate-spin" />
-        {{ t(coverStatusKey(task)) }}
-      </span>
-      <span v-if="subtitleStatusKey(task)" class="text-[11px] text-base-content/50 shrink-0">
-        {{ t(subtitleStatusKey(task)) }}
-      </span>
-      <span class="text-xs text-base-content/50 shrink-0 uppercase">{{ task.format }}</span>
+        <LogIn :size="11" />
+        {{ t('downloads.login') }}
+      </Button>
 
       <DownloadRowActions
         :task="task"
         @play="emit('play')"
-        @copy-path="copyText(task.outputPath)"
-        @open-folder="openFolder(task.outputPath)"
         @edit-meta="emit('editMeta')"
         @open-library="emit('openLibrary')"
+        @cancel="cancelWithConfirm"
       />
     </div>
 
     <div
-      v-if="task.status === 'downloading' || task.status === 'pending'"
-      class="w-full h-1.5 bg-base-300 rounded-full overflow-hidden mt-2"
+      v-if="isActive"
+      class="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-base-300"
+      role="progressbar"
+      :aria-label="t('downloads.title')"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="task.progress"
     >
-      <div class="h-full bg-primary rounded-full" :style="{ width: task.progress + '%' }" />
+      <div class="h-full rounded-full bg-primary" :style="{ width: task.progress + '%' }" />
     </div>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm()"
+      @cancel="prompt.promptCancel()"
+    />
   </div>
 </template>

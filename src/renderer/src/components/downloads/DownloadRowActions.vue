@@ -1,180 +1,130 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpToLine,
-  Copy,
-  FolderOpen,
-  Library,
-  Pause,
-  Pencil,
-  Play,
-  RotateCcw,
-  X
-} from '@lucide/vue';
+import { FolderOpen, MoreHorizontal, Pause, Play, RotateCcw, X } from '@lucide/vue';
 import { useOnlineStore } from '@renderer/stores/online';
-import { usePromptDialog } from '@renderer/composables/usePromptDialog';
-import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
+import { useDownloadsContextMenu } from '@renderer/composables/useDownloadsContextMenu';
+import Button from '@renderer/components/ui/Button.vue';
 import type { DownloadTask } from '@renderer/types/online';
 
 const props = defineProps<{ task: DownloadTask }>();
 const emit = defineEmits<{
   play: [];
-  copyPath: [];
-  openFolder: [];
   editMeta: [];
   openLibrary: [];
+  cancel: [];
 }>();
 
 const yt = useOnlineStore();
 const { t } = useI18n();
-const prompt = usePromptDialog();
+const { openMenuAt } = useDownloadsContextMenu();
 
-// Anulowanie zadania wymaga potwierdzenia: dla pobieranych/wstrzymanych traci
-// częściowe dane, a dla oczekujących usuwa je z kolejki. Spójne z pozostałymi
-// akcjami destrukcyjnymi w aplikacji.
-async function onCancel(): Promise<void> {
-  const ok = await prompt.showConfirm(t('downloads.cancelConfirm', { name: props.task.title }));
-  if (!ok) return;
-  yt.cancelDownload(props.task.id);
+const isActive = computed(() => ['pending', 'downloading', 'paused'].includes(props.task.status));
+
+function openFolder(path?: string): void {
+  if (path) void window.api?.invoke('shell:showItemInFolder', path);
+}
+
+function copyText(text?: string): void {
+  if (text) void window.api?.invoke('fs:copyPath', text);
+}
+
+const ctx = computed(() => ({
+  task: props.task,
+  onPlay: () => emit('play'),
+  onOpenFolder: openFolder,
+  onCopyText: copyText,
+  onEditMeta: () => emit('editMeta'),
+  onOpenLibrary: () => emit('openLibrary'),
+  onCancel: () => emit('cancel')
+}));
+
+function openActions(e: MouseEvent): void {
+  openMenuAt(e.currentTarget as HTMLElement, ctx.value);
 }
 </script>
 
 <template>
-  <div class="flex items-center gap-1 shrink-0">
-    <button
+  <div class="flex items-center gap-0.5 shrink-0">
+    <Button
       v-if="task.status === 'completed' && task.outputPath"
       data-testid="download-action-play"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
+      variant="ghost"
+      size="icon"
+      :label="t('downloads.play')"
       :title="t('downloads.play')"
-      :aria-label="t('downloads.play')"
+      class="text-base-content/60 hover:text-primary-text"
       @click="emit('play')"
     >
       <Play :size="14" />
-    </button>
-    <button
+    </Button>
+    <Button
       v-if="task.status === 'completed' && task.outputPath"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.copyPath')"
-      :aria-label="t('downloads.copyPath')"
-      @click="emit('copyPath')"
-    >
-      <Copy :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'completed' && task.outputPath"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+      data-testid="download-action-open-folder"
+      variant="ghost"
+      size="icon"
+      :label="t('downloads.openFolder')"
       :title="t('downloads.openFolder')"
-      :aria-label="t('downloads.openFolder')"
-      @click="emit('openFolder')"
+      @click="openFolder(task.outputPath)"
     >
       <FolderOpen :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'completed' && task.outputPath"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.editMetadata')"
-      :aria-label="t('downloads.editMetadata')"
-      @click="emit('editMeta')"
-    >
-      <Pencil :size="14" />
-    </button>
-    <button
-      v-if="task.inLibrary"
-      class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-primary/10 text-primary-text text-[11px] font-medium hover:bg-primary hover:text-primary-content transition-colors shrink-0"
-      :title="t('downloads.inLibraryTitle')"
-      @click="emit('openLibrary')"
-    >
-      <Library :size="11" />
-      {{ t('downloads.inLibrary') }}
-    </button>
-    <button
+    </Button>
+    <Button
       v-if="task.status === 'downloading'"
       data-testid="download-action-pause"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+      variant="ghost"
+      size="icon"
+      :label="t('downloads.pause')"
       :title="t('downloads.pause')"
-      :aria-label="t('downloads.pause')"
       @click="yt.pauseDownload(task.id)"
     >
       <Pause :size="14" />
-    </button>
-    <button
+    </Button>
+    <Button
       v-if="task.status === 'paused'"
       data-testid="download-action-resume"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
+      variant="ghost"
+      size="icon"
+      :label="t('downloads.resume')"
       :title="t('downloads.resume')"
-      :aria-label="t('downloads.resume')"
+      class="text-primary-text"
       @click="yt.resumeDownload(task.id)"
     >
       <Play :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'pending'"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.moveToFront')"
-      :aria-label="t('downloads.moveToFront')"
-      @click="yt.moveToFront(task.id)"
-    >
-      <ArrowUpToLine :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'pending'"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.moveUp')"
-      :aria-label="t('downloads.moveUp')"
-      @click="yt.move(task.id, -1)"
-    >
-      <ArrowUp :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'pending'"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.moveDown')"
-      :aria-label="t('downloads.moveDown')"
-      @click="yt.move(task.id, 1)"
-    >
-      <ArrowDown :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'downloading' || task.status === 'pending'"
-      data-testid="download-action-cancel"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.cancel')"
-      :aria-label="t('downloads.cancel')"
-      @click="onCancel"
-    >
-      <X :size="14" />
-    </button>
-    <button
-      v-if="task.status === 'paused'"
-      data-testid="download-action-cancel"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-error hover:bg-base-content/10 transition-colors"
-      :title="t('downloads.cancel')"
-      :aria-label="t('downloads.cancel')"
-      @click="onCancel"
-    >
-      <X :size="14" />
-    </button>
-    <button
+    </Button>
+    <Button
       v-if="task.status === 'error' || task.status === 'cancelled'"
       data-testid="download-action-retry"
-      class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
+      variant="ghost"
+      size="icon"
+      :label="t('downloads.retry')"
       :title="t('downloads.retry')"
-      :aria-label="t('downloads.retry')"
       @click="yt.retryDownload(task)"
     >
       <RotateCcw :size="14" />
-    </button>
-
-    <ExplorerPromptDialog
-      :visible="prompt.promptVisible.value"
-      :is-confirm="prompt.promptIsConfirm.value"
-      :message="prompt.promptMessage.value"
-      :value="prompt.promptValue.value"
-      @update:value="prompt.promptValue.value = $event"
-      @confirm="prompt.promptConfirm()"
-      @cancel="prompt.promptCancel()"
-    />
+    </Button>
+    <Button
+      v-if="isActive"
+      data-testid="download-action-cancel"
+      variant="ghost"
+      size="icon"
+      :label="t('downloads.cancel')"
+      :title="t('downloads.cancel')"
+      class="hover:text-error"
+      @click="emit('cancel')"
+    >
+      <X :size="14" />
+    </Button>
+    <Button
+      data-testid="download-action-menu"
+      variant="ghost"
+      size="icon"
+      :label="t('common.moreActions')"
+      :title="t('common.moreActions')"
+      aria-haspopup="menu"
+      @click="openActions"
+    >
+      <MoreHorizontal :size="14" />
+    </Button>
   </div>
 </template>

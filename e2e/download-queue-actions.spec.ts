@@ -97,4 +97,36 @@ test.describe('download queue actions', () => {
       await onda.dispose();
     }
   });
+
+  test('row menu keeps paths and checksums out of the list', async () => {
+    const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.evaluate(
+        async (jobs) => {
+          const api = (window as unknown as { api: OndaTestApi }).api;
+          await api.invoke('yt:download:add', jobs);
+        },
+        [job('E2E Details', 'done')]
+      );
+      await page.evaluate(() => {
+        window.location.hash = '#/downloads';
+      });
+
+      const done = row(page, 'E2E Details');
+      await expect(done.getByTestId('download-action-play')).toBeVisible({ timeout: 10_000 });
+      await expect(done).not.toContainText('sha256:');
+
+      await done.getByTestId('download-action-menu').click();
+      const menu = page.getByTestId('context-menu');
+      await expect(menu).toBeVisible();
+      await expect(menu).toContainText(/kopiuj/i);
+      await expect(menu).toContainText(/metadane/i);
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });
