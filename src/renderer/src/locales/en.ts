@@ -1974,7 +1974,8 @@ api.registerCommand({
     discoverTab: 'Discover',
     subscriptionsTab: 'Subscriptions',
     noSubscriptions: 'You are not subscribed to any channel yet',
-    noSubscriptionsHint: 'Search for a channel or paste a link, then follow it to see new uploads here.',
+    noSubscriptionsHint:
+      'Search for a channel or paste a link, then follow it to see new uploads here.',
     unfollowed: 'Unfollowed {name}',
     checkNow: 'Check now',
     lastChecked: 'Checked:',

@@ -1984,7 +1984,8 @@ api.registerCommand({
     discoverTab: 'Odkrywaj',
     subscriptionsTab: 'Subskrypcje',
     noSubscriptions: 'Nie subskrybujesz jeszcze żadnego kanału',
-    noSubscriptionsHint: 'Wyszukaj kanał albo wklej link i zacznij obserwować, aby widzieć tu nowe publikacje.',
+    noSubscriptionsHint:
+      'Wyszukaj kanał albo wklej link i zacznij obserwować, aby widzieć tu nowe publikacje.',
     unfollowed: 'Odobserwowano {name}',
     checkNow: 'Sprawdź teraz',
     lastChecked: 'Sprawdzono:',
