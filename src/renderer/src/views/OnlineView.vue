@@ -54,6 +54,15 @@ void saved.ensureLoaded();
 const { profiles } = useDownloadProfiles();
 const { t } = useI18n();
 
+// Nagłówek Online zmienia się w cień i zwija padding, gdy przewijają się wyniki.
+const scrolled = ref(false);
+function onScrollCapture(event: Event): void {
+  const target = event.target as HTMLElement | null;
+  if (!target || typeof target.scrollTop !== 'number') return;
+  const next = target.scrollTop > 6;
+  if (next !== scrolled.value) scrolled.value = next;
+}
+
 const input = ref('');
 const {
   activeSection,
@@ -175,8 +184,18 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
 </script>
 
 <template>
-  <div data-testid="online-view" class="flex flex-col h-full">
-    <PageHeader :title="$t('nav.online')" :icon="Radio" sticky>
+  <div
+    data-testid="online-view"
+    class="flex flex-col h-full"
+    @scroll.capture.passive="onScrollCapture"
+  >
+    <PageHeader
+      :title="$t('nav.online')"
+      :icon="Radio"
+      sticky
+      :elevated="scrolled"
+      :compact="scrolled"
+    >
       <template #actions>
         <YTAuthButton />
       </template>

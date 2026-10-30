@@ -187,7 +187,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
       </div>
 
       <OnlineButton
-        :variant="isResolvable ? 'secondary' : 'primary'"
+        variant="secondary"
         :disabled="isResolving || isSearching || !modelValue.trim()"
         @click="emit('submit')"
       >

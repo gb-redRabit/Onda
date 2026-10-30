@@ -157,6 +157,19 @@ const storedTab: TabId = isTabId(route.query.tab)
     : 'overview';
 const tab = ref<TabId>(storedTab);
 watch(tab, (v) => writeString('onda.libraryTab', v));
+
+// Nagłówek zwija się, gdy przewija się jakakolwiek lista zakładki. Scroll nie
+// bąbelkuje, więc słuchamy w fazie capture na katalogu widoku.
+const scrolled = ref(false);
+function onScrollCapture(event: Event): void {
+  const target = event.target as HTMLElement | null;
+  if (!target || typeof target.scrollTop !== 'number') return;
+  const next = target.scrollTop > 6;
+  if (next !== scrolled.value) scrolled.value = next;
+}
+watch(tab, () => {
+  scrolled.value = false;
+});
 // Nawigacja z innych widokĂłw (np. Pobrane "w bibliotece") przekazuje ?tab=â€¦ .
 watch(
   () => route.query.tab,
@@ -302,19 +315,29 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     class="flex flex-col h-full"
     @dragover.prevent
     @drop.prevent="onLibraryDrop"
+    @scroll.capture.passive="onScrollCapture"
   >
     <!-- Przyklejony szklany nagłówek — Minimal Spotify -->
     <div
-      class="ui-page-header sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur border-b border-base-300/80 shrink-0"
+      class="ui-page-header sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur shrink-0 transition-[border-color,box-shadow]"
+      :class="scrolled ? 'border-b border-transparent shadow-md' : 'border-b border-base-300/80'"
     >
       <div class="px-5 py-3.5">
-        <LibraryHeader
-          :total-count="library.totalCount"
-          :is-scanning="library.isScanning"
-          :show-shuffle="tab === 'tracks'"
-          @shuffle="shuffleAllTracks"
-          @rescan="library.scanFolders()"
-        />
+        <!-- Tytuł chowa się przy przewijaniu; zakładki i pasek filtrów zostają. -->
+        <div
+          class="grid transition-[grid-template-rows] duration-200"
+          :class="scrolled ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'"
+        >
+          <div class="min-h-0 overflow-hidden" :inert="scrolled">
+            <LibraryHeader
+              :total-count="library.totalCount"
+              :is-scanning="library.isScanning"
+              :show-shuffle="tab === 'tracks'"
+              @shuffle="shuffleAllTracks"
+              @rescan="library.scanFolders()"
+            />
+          </div>
+        </div>
 
         <!-- Tab bar â€” jedna linia, reaguje na szerokoĹ›Ä‡: flex-1 + napisy chowane -->
         <LibraryTabBar v-model="tab" :tabs="tabs" />
