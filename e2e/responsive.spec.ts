@@ -109,6 +109,32 @@ async function assertViewFits(page: Page, view: ViewSpec, tag: string): Promise<
 }
 
 test.describe('responsive layout', () => {
+  test('library tabs never truncate their labels', async () => {
+    const onda = await launchOnda();
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/library';
+      });
+      await expect(page.getByTestId('library-tab-overview')).toBeVisible();
+
+      for (const width of [1440, 1024, 760]) {
+        await page.setViewportSize({ width, height: 800 });
+        await page.waitForTimeout(300);
+        const truncated = await page.evaluate(() =>
+          Array.from(document.querySelectorAll<HTMLElement>('[data-tab-label]'))
+            .filter((label) => getComputedStyle(label).display !== 'none')
+            .filter((label) => label.scrollWidth > label.clientWidth + 1)
+            .map((label) => label.textContent)
+        );
+        expect(truncated, `width ${width}`).toEqual([]);
+      }
+    } finally {
+      await onda.dispose();
+    }
+  });
+
   test('every view fits the window across sizes', async () => {
     const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
     const { page } = onda;
