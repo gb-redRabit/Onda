@@ -190,7 +190,7 @@ const {
       class="absolute top-12 right-4 z-80 transition-opacity"
       :class="{ 'opacity-0 pointer-events-none': !showUI, 'opacity-100': showUI }"
     >
-      <AudioVizSettings />
+      <AudioVizSettings @close="showVizSettings = false" />
     </div>
 
     <ResumePrompt

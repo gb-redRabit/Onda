@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { X } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import Button from '@renderer/components/ui/Button.vue';
 import type { VisualizationMode } from '@renderer/types/settings';
+
+const emit = defineEmits<{ close: [] }>();
 
 const { t } = useI18n();
 const settings = useSettingsStore();
@@ -56,10 +60,31 @@ function updateLayout(partial: Record<string, unknown>) {
     audioLayout: { ...audioLayout.value, ...partial }
   });
 }
+
+// Panel jest popoverem: Escape zamyka go jak każdy inny dialog.
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') emit('close');
+}
+onMounted(() => document.addEventListener('keydown', onKeydown));
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>
   <div class="min-w-55 space-y-3 rounded-box border border-base-300 bg-base-100 p-3 shadow-xl">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="text-sm font-semibold text-base-content">{{ t('audioView.vizSettingsTitle') }}</h2>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="size-7"
+        :label="t('common.close')"
+        :title="t('common.close')"
+        data-testid="viz-settings-close"
+        @click="emit('close')"
+      >
+        <X :size="14" />
+      </Button>
+    </div>
     <div>
       <p class="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
         {{ t('audioView.vizModeLabel') }}
@@ -90,7 +115,7 @@ function updateLayout(partial: Record<string, unknown>) {
         <input
           type="color"
           :value="viz.primaryColor"
-          class="h-8 w-8 cursor-pointer rounded-field border-0 p-0 fx-depth"
+          class="h-7 w-7 cursor-pointer rounded-field border-0 p-0 fx-depth"
           :aria-label="t('audioView.vizPrimaryColor')"
           @input="(e: Event) => update({ primaryColor: (e.target as HTMLInputElement).value })"
         />
@@ -106,7 +131,7 @@ function updateLayout(partial: Record<string, unknown>) {
         <input
           type="color"
           :value="viz.secondaryColor"
-          class="h-8 w-8 cursor-pointer rounded-field border-0 p-0 fx-depth"
+          class="h-7 w-7 cursor-pointer rounded-field border-0 p-0 fx-depth"
           :aria-label="t('audioView.vizSecondaryColor')"
           @input="(e: Event) => update({ secondaryColor: (e.target as HTMLInputElement).value })"
         />

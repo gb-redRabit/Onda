@@ -121,6 +121,14 @@ test.describe('audio playback and audio view', () => {
 
       await page.getByTestId('audio-cycle-viz').click();
       await page.getByTestId('audio-viz-settings').click();
+      await expect(page.getByTestId('viz-settings-close')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('viz-settings-close')).toHaveCount(0);
+
+      await page.getByTestId('audio-viz-settings').click();
+      await page.getByTestId('viz-settings-close').click();
+      await expect(page.getByTestId('viz-settings-close')).toHaveCount(0);
+
       await page.getByTestId('audio-layout-editor').click();
 
       expect(onda.pageErrors).toEqual([]);

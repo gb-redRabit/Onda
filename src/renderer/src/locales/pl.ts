@@ -2635,6 +2635,7 @@ api.registerCommand({
     fullscreen: 'Pełny ekran',
     exitFullscreen: 'Wyjdź z pełnego ekranu',
     pip: 'Audio PiP',
+    vizSettingsTitle: 'Wizualizacja',
     vizModeLabel: 'Tryb',
     vizPrimaryColor: 'Kolor podstawowy',
     vizSecondaryColor: 'Kolor dodatkowy',
