@@ -95,7 +95,7 @@
   },
   "ytdlp": {
     "channel": "nightly",
-    "pinnedVersion": "2026.08.18.122307",
+    "pinnedVersion": "2026.10.26.220202",
     "shaManifest": "SHA2-256SUMS"
   }
 }

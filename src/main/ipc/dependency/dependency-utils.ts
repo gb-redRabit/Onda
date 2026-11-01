@@ -175,22 +175,33 @@ interface VersionProbe {
 }
 
 async function probeVersion(bin: string, tool: BinTool): Promise<VersionProbe> {
-  try {
-    if (tool === 'yt-dlp') {
-      const version = (await runCommand(bin, ['--version'], { timeout: 10000 })).trim();
-      return { version, error: null };
-    }
-    if (tool === 'mkvextract') {
-      const stdout = await runCommand(bin, ['--version'], { timeout: 10000 });
-      const m = stdout.match(/mkvextract v([\d.]+)/);
+  // yt-dlp to samorozpakowujący się PyInstaller — na Windows pierwsze uruchomienie
+  // po aktualizacji potrafi przekroczyć 10 s (skan antywirusa, zimny cache). Traktowanie
+  // tego jako „uszkodzone” dawało fałszywy baner mimo działającej binarki, więc dajemy
+  // jedną ponowną próbę z dłuższym limitem.
+  const attempts = tool === 'yt-dlp' ? [10_000, 30_000] : [10_000];
+  let lastError: unknown = null;
+  for (const timeout of attempts) {
+    try {
+      if (tool === 'yt-dlp') {
+        const version = (await runCommand(bin, ['--version'], { timeout })).trim();
+        if (version) return { version, error: null };
+        lastError = new Error('empty version output');
+        continue;
+      }
+      if (tool === 'mkvextract') {
+        const stdout = await runCommand(bin, ['--version'], { timeout });
+        const m = stdout.match(/mkvextract v([\d.]+)/);
+        return { version: m ? m[1] : 'unknown', error: null };
+      }
+      const stdout = await runCommand(bin, ['-version'], { timeout });
+      const m = stdout.match(/(?:ffmpeg|ffprobe) version (\S+)/);
       return { version: m ? m[1] : 'unknown', error: null };
+    } catch (e) {
+      lastError = e;
     }
-    const stdout = await runCommand(bin, ['-version'], { timeout: 10000 });
-    const m = stdout.match(/(?:ffmpeg|ffprobe) version (\S+)/);
-    return { version: m ? m[1] : 'unknown', error: null };
-  } catch (e) {
-    return { version: null, error: errMsg(e) };
   }
+  return { version: null, error: errMsg(lastError) };
 }
 
 export interface ResolvedBinary {

@@ -12,9 +12,11 @@ import {
   inferPkgManager,
   getMkvExtractCandidates,
   resolveBinary,
-  toolFileName
+  toolFileName,
+  YTDLP_PINNED_VERSION
 } from '../dependency/dependency-utils';
 import binaries from '../../../../binaries.json';
+import { runCommand } from '../../utils/exec';
 
 // Sondy wersji są zamockowane: ścieżki zarejestrowane w `brokenPaths` nie przechodzą sondy,
 // każdy inny kandydat zgłasza działającą wersję.
@@ -35,8 +37,7 @@ describe('ytdlpBinaryName', () => {
 });
 
 describe('ytdlpDownloadUrl', () => {
-  const base =
-    'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.18.122307';
+  const base = `https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/${YTDLP_PINNED_VERSION}`;
   it('maps every platform to a pinned nightly yt-dlp release asset', () => {
     expect(ytdlpDownloadUrl('win32')).toBe(`${base}/yt-dlp.exe`);
     expect(ytdlpDownloadUrl('linux', 'x64')).toBe(`${base}/yt-dlp`);
@@ -72,9 +73,7 @@ describe('ytdlpDownloadUrl', () => {
   });
 
   it('points the checksum source at the pinned SHA2-256SUMS manifest', () => {
-    expect(ytdlpShaUrl()).toBe(
-      'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.18.122307/SHA2-256SUMS'
-    );
+    expect(ytdlpShaUrl()).toBe(`${base}/SHA2-256SUMS`);
     expect(ytdlpShaUrl('2026.08.19.010203')).toBe(
       'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.08.19.010203/SHA2-256SUMS'
     );
@@ -275,6 +274,24 @@ describe('resolveBinary', () => {
       version: null,
       error: 'spawn EACCES'
     });
+  });
+
+  it('retries a slow yt-dlp probe once before calling the binary broken', async () => {
+    const managed = join(binDir, toolFileName('yt-dlp'));
+    writeFileSync(managed, 'x');
+    // Pierwsza próba kończy się SIGTERM (zimny start PyInstallera / skan AV),
+    // druga zwraca wersję — binarka nie może zostać oznaczona jako uszkodzona.
+    vi.mocked(runCommand).mockRejectedValueOnce(new Error('Process killed by signal SIGTERM'));
+
+    const resolved = await resolveBinary(binDir, 'yt-dlp');
+
+    expect(resolved).toMatchObject({
+      path: managed,
+      source: 'managed',
+      broken: false,
+      version: '2026.09.01'
+    });
+    expect(runCommand).toHaveBeenCalledTimes(2);
   });
 
   it('prefers the bundled binary and reports its source', async () => {
