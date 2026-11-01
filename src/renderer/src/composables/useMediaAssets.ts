@@ -11,7 +11,7 @@ import { cachedThumb, setCachedThumb } from '@renderer/utils/thumbLoader';
 // Lokalny rekord trzyma tylko to, co widoczne; główny cache (thumbLoader) jest
 // współdzielony i ograniczony. Bez limitu rekord rósł z każdym przewiniętym
 // plikiem przez cały czas życia widoku.
-const MAX_LOCAL_THUMBS = 1000;
+const MAX_LOCAL_THUMBS = 2000;
 
 export function useMediaAssets(size = 180) {
   const thumbs = ref<Record<string, string>>({});

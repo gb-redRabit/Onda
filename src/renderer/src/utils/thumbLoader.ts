@@ -3,7 +3,9 @@ import { LruCache } from './lruCache';
 export const thumbTasks: (() => void)[] = [];
 let thumbActive = 0;
 const THUMB_MAX = 3;
-const CACHE_MAX = 500;
+// Duże biblioteki (tysiące obrazów) przewijane w tę i z powrotem nie mogą
+// od nowa dekodować miniatur po każdej zmianie widoku; 2000 wpisów to ok. 20-30 MB.
+const CACHE_MAX = 2000;
 // Wspólna implementacja LRU (zamiast ręcznej pary Map + tablica kolejności).
 const thumbCache = new LruCache<string>(CACHE_MAX);
 const iconCache = new LruCache<string>(CACHE_MAX);

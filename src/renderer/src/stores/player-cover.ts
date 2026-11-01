@@ -45,7 +45,7 @@ export function usePlayerCover() {
   }
   let coverFlushScheduled = false;
   let coverProcessing = false;
-  const COVER_CACHE_MAX = 500;
+  const COVER_CACHE_MAX = 2000;
   // Okładki wideo (starsze wpisy main / brak ffmpeg) konwertujemy na jedną klatkę
   // dokładnie raz na ścieżkę. Bez tego każdy remount kafelka streamował wideo od nowa.
   const videoCoverScheduled = new Set<string>();
