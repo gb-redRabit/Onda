@@ -35,8 +35,10 @@ export interface ThemeGeometry {
   sizeField: number;
   sizeSelector: number;
   border: number;
-  depth: 0 | 1;
-  noise: 0 | 1;
+  /** Mnożnik cienia `fx-depth` (0–3); 0 wyłącza cień. */
+  depth: number;
+  /** Natężenie ziarna `fx-noise` (0–1) — w UI pokazywane jako procent. */
+  noise: number;
 }
 
 export const FIELD_SIZE_PRESETS = ['2rem', '2.25rem', '2.5rem', '2.75rem', '3rem'] as const;
@@ -100,11 +102,6 @@ function clampInt(v: unknown, min: number, max: number): number | undefined {
   return n === undefined ? undefined : Math.round(n);
 }
 
-function zeroOne(v: unknown): 0 | 1 | undefined {
-  if (v === 0 || v === 1) return v;
-  return undefined;
-}
-
 function normalizeSizeMultiplier(v: number | undefined): 1 | 2 | 3 | 4 | 5 | undefined {
   if (v === undefined) return undefined;
   const legacy = v > 5 ? Math.round(v / 2) : Math.round(v);
@@ -134,9 +131,9 @@ export function sanitizeGeometry(v: unknown): Partial<ThemeGeometry> | undefined
   if (ss !== undefined) out.sizeSelector = ss;
   const border = clampInt(g.border, 0, 4);
   if (border !== undefined) out.border = border;
-  const depth = zeroOne(g.depth);
+  const depth = clampNum(g.depth, 0, 3);
   if (depth !== undefined) out.depth = depth;
-  const noise = zeroOne(g.noise);
+  const noise = clampNum(g.noise, 0, 1);
   if (noise !== undefined) out.noise = noise;
   return out;
 }

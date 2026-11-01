@@ -35,9 +35,9 @@ describe('sanitizeColorRecord', () => {
 });
 
 describe('sanitizeGeometry', () => {
-  it('clamps radius/border into range and drops invalid keys', () => {
+  it('clamps radius, border, depth and noise into range and drops invalid keys', () => {
     const out = sanitizeGeometry({ radiusBox: 99, border: -2, depth: 1, noise: 7, junk: 1 });
-    expect(out).toEqual({ radiusBox: 32, border: 0, depth: 1 });
+    expect(out).toEqual({ radiusBox: 32, border: 0, depth: 1, noise: 1 });
   });
 
   it('accepts full valid geometry', () => {

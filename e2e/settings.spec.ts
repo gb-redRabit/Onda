@@ -119,4 +119,46 @@ test.describe('settings interactions', () => {
       await onda.dispose();
     }
   });
+
+  // T3: głębię cienia i ziarno ustawia się suwakami, a nie przełącznikami 0/1.
+  test('depth and noise sliders write their CSS variables', async () => {
+    const onda = await launchOnda();
+    try {
+      const page = onda.page;
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/settings?tab=theme';
+      });
+      await expect(page.getByTestId('settings-depth-slider')).toBeVisible();
+
+      const setSlider = async (testId: string, value: string): Promise<void> => {
+        await page.getByTestId(testId).evaluate((el, v) => {
+          const input = el as HTMLInputElement;
+          input.value = v;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, value);
+      };
+
+      await setSlider('settings-depth-slider', '2.5');
+      await setSlider('settings-noise-slider', '0.3');
+
+      const readVar = (name: string): Promise<string> =>
+        page.evaluate(
+          (cssVar) => getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim(),
+          name
+        );
+
+      await expect.poll(() => readVar('--depth')).toBe('2.5');
+      await expect.poll(() => readVar('--noise')).toBe('0.3');
+
+      // Przywróć domyślną geometrię, żeby kolejne przebiegi startowały bez cienia 2.5×.
+      await setSlider('settings-depth-slider', '1');
+      await setSlider('settings-noise-slider', '0');
+      await expect.poll(() => readVar('--depth')).toBe('1');
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });

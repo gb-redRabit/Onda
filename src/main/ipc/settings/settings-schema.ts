@@ -15,7 +15,6 @@ import {
   stringArray,
   viewModes,
   hexStr,
-  zeroOne,
   sizeMultiplier,
   type Sanitizer
 } from './settings-sanitizers';
@@ -34,8 +33,8 @@ const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
   sizeField: sizeMultiplier,
   sizeSelector: sizeMultiplier,
   border: numClamped(0, 4),
-  depth: zeroOne,
-  noise: zeroOne
+  depth: numClamped(0, 3),
+  noise: numClamped(0, 1)
 };
 
 const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {

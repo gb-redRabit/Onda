@@ -96,11 +96,11 @@ describe('sanitizeSettings', () => {
   it('sanitizes geometry clamps and drops out-of-range values', () => {
     const { sanitized } = sanitizeSettings({
       appearance: {
-        geometry: { radiusBox: 99, radiusField: -3, border: 2, depth: 1, noise: 5, sizeField: 4 }
+        geometry: { radiusBox: 99, radiusField: -3, border: 2, depth: 9, noise: 5, sizeField: 4 }
       }
     });
     expect(sanitized.appearance).toEqual({
-      geometry: { radiusBox: 32, radiusField: 0, border: 2, depth: 1, sizeField: 4 }
+      geometry: { radiusBox: 32, radiusField: 0, border: 2, depth: 3, noise: 1, sizeField: 4 }
     });
   });
 

@@ -15,6 +15,12 @@ function updateGeometry<K extends keyof ThemeGeometry>(key: K, value: ThemeGeome
 function geomValue(key: keyof ThemeGeometry): number {
   return settings.appearance.geometry?.[key] ?? DEFAULT_GEOMETRY[key];
 }
+
+function onSliderInput(key: 'depth' | 'noise', event: Event): void {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  updateGeometry(key, Number(target.value));
+}
 </script>
 
 <template>
@@ -84,23 +90,39 @@ function geomValue(key: keyof ThemeGeometry): number {
           @input="updateGeometry('border', parseInt(($event.target as HTMLInputElement).value))"
         />
       </div>
-      <div class="flex items-center gap-6 pt-1">
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="geomValue('depth') === 1"
-            @change="updateGeometry('depth', ($event.target as HTMLInputElement).checked ? 1 : 0)"
-          />
-          {{ $t('creator.depth') }}
-        </label>
-        <label class="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="geomValue('noise') === 1"
-            @change="updateGeometry('noise', ($event.target as HTMLInputElement).checked ? 1 : 0)"
-          />
-          {{ $t('creator.noise') }}
-        </label>
+      <div>
+        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
+          <span>{{ $t('creator.depth') }}</span>
+          <span>{{ geomValue('depth').toFixed(1) }}×</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.5"
+          data-testid="settings-depth-slider"
+          :value="geomValue('depth')"
+          :aria-label="$t('creator.depth')"
+          class="w-full"
+          @input="onSliderInput('depth', $event)"
+        />
+      </div>
+      <div>
+        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
+          <span>{{ $t('creator.noise') }}</span>
+          <span>{{ Math.round(geomValue('noise') * 100) }}%</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          data-testid="settings-noise-slider"
+          :value="geomValue('noise')"
+          :aria-label="$t('creator.noise')"
+          class="w-full"
+          @input="onSliderInput('noise', $event)"
+        />
       </div>
     </div>
   </section>

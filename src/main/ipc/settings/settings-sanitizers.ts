@@ -112,10 +112,6 @@ export function hexStr(v: unknown): unknown | undefined {
   return /^#(?:[0-9a-f]{6}|[0-9a-f]{3})$/.test(s) ? s : undefined;
 }
 
-export function zeroOne(v: unknown): unknown | undefined {
-  return v === 0 || v === 1 ? v : undefined;
-}
-
 export function sizeMultiplier(v: unknown): unknown | undefined {
   if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
   const n = v > 5 ? Math.round(v / 2) : Math.round(v);
