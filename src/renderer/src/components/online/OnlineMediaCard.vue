@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
     :class="[
       layout === 'list'
         ? 'flex gap-3 items-center p-2 rounded-box hover:bg-base-content/10 transition-colors'
-        : 'rounded-box bg-base-100 border border-base-300 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300',
+        : 'rounded-box bg-base-100 border border-base-300 p-3 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300',
       { 'cv-card': !expanded }
     ]"
     @mouseenter="onMouseEnter"

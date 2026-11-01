@@ -14,7 +14,7 @@ const settings = useSettingsStore();
       <button
         v-for="name in BUILTIN_THEME_NAMES"
         :key="name"
-        class="p-2.5 fx-depth rounded-box border transition-all flex flex-col items-start gap-2 hover:shadow-md"
+        class="p-2.5 fx-depth rounded-box border transition flex flex-col items-start gap-2 hover:shadow-md"
         :class="
           settings.appearance.theme === name
             ? 'border-primary bg-primary/5'

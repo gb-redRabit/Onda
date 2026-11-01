@@ -63,7 +63,7 @@ const showVolume = computed(() => {
 const showExtras = computed(() => d.value.extras && !props.compact);
 
 const PLAY_ICON_CLASS =
-  'relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg';
+  'relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-lg';
 const TOGGLE_OFF = 'text-base-content/50 hover:text-base-content hover:bg-base-content/10';
 
 function togglePlay() {

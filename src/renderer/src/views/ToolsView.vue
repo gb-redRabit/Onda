@@ -83,7 +83,7 @@ async function openTool(id: ToolId): Promise<void> {
           v-for="card in cards"
           :key="card.id"
           :data-testid="`tools-card-${card.id}`"
-          class="group flex items-start gap-3.5 rounded-box border border-base-300/80 bg-base-100 p-4 text-left fx-depth transition-all hover:border-primary/40 hover:bg-base-content/4 disabled:cursor-wait disabled:opacity-60"
+          class="group flex items-start gap-3.5 rounded-box border border-base-300/80 bg-base-100 p-4 text-left fx-depth transition hover:border-primary/40 hover:bg-base-content/4 disabled:cursor-wait disabled:opacity-60"
           :disabled="opening !== null"
           @click="openTool(card.id)"
         >

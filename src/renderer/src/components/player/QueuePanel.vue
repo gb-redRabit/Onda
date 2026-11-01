@@ -246,7 +246,7 @@ function onFileDrop(e: DragEvent) {
               formatDuration(player.displayQueue[v.index].duration || 0)
             }}</span>
             <button
-              class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition-all"
+              class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition"
               :aria-label="$t('queue.removeFromQueue')"
               :title="$t('queue.removeFromQueue')"
               @click.stop="player.removeFromQueue(v.index)"

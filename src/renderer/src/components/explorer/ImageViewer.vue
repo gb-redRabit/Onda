@@ -159,7 +159,7 @@ async function openImageStudio(): Promise<void> {
           :class="uiVisible ? 'opacity-100' : 'opacity-0'"
         >
           <div
-            class="h-full bg-primary transition-all duration-150 ease-linear"
+            class="h-full bg-primary transition-[width] duration-150 ease-linear"
             :style="{ width: slideshowProgress + '%' }"
           />
         </div>

@@ -19,7 +19,7 @@ const { switching, switchToCompact } = useCompactSwitch();
   <div class="flex items-center shrink-0 ml-auto h-10" style="-webkit-app-region: no-drag">
     <div class="w-px h-4 bg-base-300/70 mx-1" role="separator" aria-orientation="vertical" />
     <button
-      class="h-8 my-1 px-3 flex items-center rounded-lg hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+      class="h-8 my-1 px-3 flex items-center rounded-field hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       :disabled="switching"
       :title="$t('window.compactMode')"
       :aria-label="$t('window.compactMode')"

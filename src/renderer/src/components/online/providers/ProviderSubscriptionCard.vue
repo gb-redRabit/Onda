@@ -64,7 +64,7 @@ function saveReplace(): void {
 <template>
   <div
     data-testid="provider-subscription-card"
-    class="cv-card flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+    class="cv-card flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
   >
     <div class="flex items-center gap-3">
       <button

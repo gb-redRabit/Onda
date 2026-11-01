@@ -110,7 +110,7 @@ const emit = defineEmits<{
           type="button"
           tabindex="-1"
           aria-hidden="true"
-          class="pointer-events-auto absolute bottom-2 right-2 z-10 grid h-8.5 w-8.5 translate-y-1 place-items-center rounded-full bg-primary text-primary-content opacity-0 shadow-md transition-all duration-150 group-hover:translate-y-0 group-hover:opacity-100"
+          class="pointer-events-auto absolute bottom-2 right-2 z-10 grid h-8.5 w-8.5 translate-y-1 place-items-center rounded-full bg-primary text-primary-content opacity-0 shadow-md transition duration-150 group-hover:translate-y-0 group-hover:opacity-100"
           @click.stop="emit('play')"
         >
           <Play :size="15" fill="currentColor" class="ml-0.5" />

@@ -144,7 +144,7 @@ onUnmounted(() => grid.destroy());
           >
             <div
               v-activate
-              class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition-all cursor-pointer h-full mx-2"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition cursor-pointer h-full mx-2"
               @click="emit('playTracks', sortedAlbums[v.index][1])"
             >
               <div

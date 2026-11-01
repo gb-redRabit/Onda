@@ -123,7 +123,7 @@ function addFrom(album: AlbumEntry, index: number): void {
               :data-testid="`compact-album-${cell.index}`"
               @click="selectedKey = albumKey(cell.album)"
             >
-              <span class="block aspect-square rounded-md overflow-hidden bg-base-300">
+              <span class="block aspect-square rounded-box overflow-hidden bg-base-300">
                 <MediaCover :path="cell.album[1][0]?.path" :size="160" fallback="disc" />
               </span>
               <span class="block mt-1.5 text-[12px] font-medium truncate">{{
@@ -154,7 +154,7 @@ function addFrom(album: AlbumEntry, index: number): void {
         </button>
       </div>
       <div class="px-3 pb-2 flex items-center gap-3 shrink-0" data-testid="compact-album-detail">
-        <span class="w-20 h-20 rounded-lg overflow-hidden bg-base-300 shrink-0">
+        <span class="w-20 h-20 rounded-box overflow-hidden bg-base-300 shrink-0">
           <MediaCover :path="selected[1][0]?.path" :size="80" fallback="disc" />
         </span>
         <span class="min-w-0 flex-1">

@@ -28,7 +28,7 @@ const normalized = computed(() =>
       v-for="opt in normalized"
       :key="opt.value"
       type="button"
-      class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-all disabled:opacity-40"
+      class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition disabled:opacity-40"
       :class="
         modelValue === opt.value
           ? 'bg-base-100 text-base-content'

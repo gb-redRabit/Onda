@@ -351,7 +351,7 @@ function dismissError(): void {
     <section class="px-3 pt-3 pb-2 shrink-0">
       <div class="flex items-center gap-3">
         <div
-          class="w-16 h-16 rounded-lg overflow-hidden bg-base-300 shrink-0"
+          class="w-16 h-16 rounded-box overflow-hidden bg-base-300 shrink-0"
           data-testid="compact-cover"
         >
           <MediaCover :path="current?.path" :size="64" autoplay />

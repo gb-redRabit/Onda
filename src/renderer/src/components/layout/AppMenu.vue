@@ -102,7 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Plik -->
       <div class="relative">
         <button
-          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+          class="h-8 my-1 px-3 rounded-field text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'file' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'file'"
@@ -134,7 +134,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Widok -->
       <div class="relative">
         <button
-          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+          class="h-8 my-1 px-3 rounded-field text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'view' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'view'"
@@ -159,7 +159,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Odtwarzanie -->
       <div v-if="player.currentTrack" class="relative">
         <button
-          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+          class="h-8 my-1 px-3 rounded-field text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'playback' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'playback'"
@@ -182,7 +182,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
       <!-- Pomoc -->
       <div class="relative">
         <button
-          class="h-8 my-1 px-3 rounded-lg text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+          class="h-8 my-1 px-3 rounded-field text-[13px] font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'help' }"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'help'"

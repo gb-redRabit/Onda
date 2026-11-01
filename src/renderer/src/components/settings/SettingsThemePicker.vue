@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { Monitor } from '@lucide/vue';
@@ -18,7 +18,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
   <div class="xl:w-64 shrink-0 flex xl:flex-col gap-2.5 overflow-x-auto pb-1">
     <button
       data-testid="theme-system"
-      class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
+      class="fx-noise p-3 fx-depth rounded-field border transition flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="
         isSystem
           ? 'border-primary bg-primary/5'
@@ -38,7 +38,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
       v-for="name in BUILTIN_THEME_NAMES"
       :key="name"
       :data-testid="'theme-' + name"
-      class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
+      class="fx-noise p-3 fx-depth rounded-field border transition flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="
         settings.appearance.theme === name
           ? 'border-primary bg-primary/5'
@@ -63,7 +63,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
     </button>
     <button
       data-testid="theme-custom"
-      class="fx-noise p-3 fx-depth rounded-field border transition-all flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
+      class="fx-noise p-3 fx-depth rounded-field border transition flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="
         isCustom
           ? 'border-primary bg-primary/5'

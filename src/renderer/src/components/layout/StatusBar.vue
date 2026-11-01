@@ -217,7 +217,7 @@ function openContextMenu(e: MouseEvent) {
     <template v-if="hasSection('downloads') && activeDownload">
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5 min-w-0"
+        class="flex items-center gap-1.5 rounded-field px-0.5 -mx-0.5 hover:bg-base-content/5 min-w-0"
         :title="activeDownload.title"
         :aria-label="$t('status.openDownloads')"
         @click="goTo('/downloads')"
@@ -234,7 +234,7 @@ function openContextMenu(e: MouseEvent) {
     <template v-if="hasSection('youtube')">
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+        class="flex items-center gap-1.5 rounded-field px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openOnline')"
         :aria-label="$t('status.openOnline')"
         @click="goTo('/online')"
@@ -250,7 +250,7 @@ function openContextMenu(e: MouseEvent) {
     <template v-if="hasSection('dependencies') && depsText">
       <button
         type="button"
-        class="flex items-center gap-1 rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+        class="flex items-center gap-1 rounded-field px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openDependencies')"
         :aria-label="$t('status.openDependencies')"
         @click="goTo('/settings?tab=dependencies')"
@@ -262,7 +262,7 @@ function openContextMenu(e: MouseEvent) {
     <template v-if="hasSection('version') && info">
       <button
         type="button"
-        class="text-base-content/60 cursor-pointer rounded-sm px-0.5 -mx-0.5 hover:bg-base-content/5"
+        class="text-base-content/60 cursor-pointer rounded-field px-0.5 -mx-0.5 hover:bg-base-content/5"
         :title="$t('status.openAbout')"
         :aria-label="$t('status.openAbout')"
         @click="goTo('/settings?tab=about')"

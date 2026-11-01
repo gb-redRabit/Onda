@@ -48,7 +48,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="absolute right-0 inset-y-0 flex flex-col items-center px-2 py-3 gap-1 transition-all duration-300"
+    class="absolute right-0 inset-y-0 flex flex-col items-center px-2 py-3 gap-1 transition duration-300"
     :class="slideshowActive && !uiVisible ? 'opacity-0 pointer-events-none' : ''"
     @click.stop
   >

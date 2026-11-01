@@ -47,7 +47,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         :aria-selected="props.modelValue === tabItem.id"
         :tabindex="props.modelValue === tabItem.id ? 0 : -1"
         :aria-label="tabItem.label"
-        class="group flex flex-1 min-w-max items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 rounded-field text-xs font-medium transition-all duration-150"
+        class="group flex flex-1 min-w-max items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 rounded-field text-xs font-medium transition duration-150"
         :class="
           props.modelValue === tabItem.id
             ? 'bg-primary/18 text-base-content shadow-xs ring-1 ring-primary/30 flex-[1.2]'

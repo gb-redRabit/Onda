@@ -177,7 +177,7 @@ onUnmounted(() => grid.destroy());
             <button
               v-for="[name, tracks] in row.artists"
               :key="name"
-              class="flex-1 min-w-0 flex flex-col items-center p-4 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition-all text-center"
+              class="flex-1 min-w-0 flex flex-col items-center p-4 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition text-center"
               @click="emit('playTracks', tracks)"
             >
               <div

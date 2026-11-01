@@ -60,7 +60,7 @@ const trackClass = computed(() => {
 const fillClass = computed(() => {
   if (waveformOn.value) return 'absolute inset-y-0 left-0 bg-primary/70';
   if (isNeon.value)
-    return 'absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_10px] shadow-primary/50';
+    return 'absolute inset-y-0 left-0 rounded-full bg-linear-to-r from-primary to-accent shadow-[0_0_10px] shadow-primary/50';
   return 'absolute inset-y-0 left-0 bg-primary rounded-full';
 });
 

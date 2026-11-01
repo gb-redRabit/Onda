@@ -56,7 +56,7 @@ const decorationOptions = computed(() =>
         <button
           v-for="key in PRESET_KEYS"
           :key="key"
-          class="fx-noise flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-2xs font-medium transition-all border"
+          class="fx-noise flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-2xs font-medium transition border"
           :class="
             props.currentPreset === key
               ? 'bg-primary/15 text-primary-text border-primary/30'
@@ -99,7 +99,7 @@ const decorationOptions = computed(() =>
           v-for="el in props.elements"
           :key="el.id"
           v-activate
-          class="flex items-center gap-2 px-2.5 py-2 rounded-field text-left transition-all text-xs cursor-pointer"
+          class="flex items-center gap-2 px-2.5 py-2 rounded-field text-left transition text-xs cursor-pointer"
           :class="[
             el.id === props.selectedId
               ? 'bg-primary/10 text-primary-text border border-primary/20'

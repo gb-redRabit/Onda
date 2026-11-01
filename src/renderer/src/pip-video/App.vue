@@ -147,7 +147,7 @@ onMounted(() => {
     >
       <button
         data-testid="pip-video-settings"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs top-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs top-btn"
         :title="t('settings')"
         @click="settingsOpen = !settingsOpen"
       >
@@ -156,7 +156,7 @@ onMounted(() => {
       <button
         v-if="!preview"
         data-testid="pip-video-maximize"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs top-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs top-btn"
         :title="t('maximize')"
         @click="sendMaximize"
       >
@@ -165,7 +165,7 @@ onMounted(() => {
       <button
         v-if="preview"
         data-testid="pip-video-preview-close"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs close-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs close-btn"
         :title="t('close')"
         :aria-label="t('close')"
         @click="api?.send('pip:hidden')"
@@ -175,7 +175,7 @@ onMounted(() => {
       <button
         v-else
         data-testid="pip-video-close"
-        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-150 text-2xs close-btn"
+        class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs close-btn"
         :title="t('close')"
         @click="api?.send('pip:hidden')"
       >
@@ -212,7 +212,7 @@ onMounted(() => {
           @click="toggleSubtitles"
         >
           <div
-            class="w-3 h-3 rounded-full bg-neutral-content absolute top-0.5 transition-all"
+            class="w-3 h-3 rounded-full bg-neutral-content absolute top-0.5 transition"
             :class="subsVisible ? 'left-4' : 'left-0.5'"
           />
         </button>

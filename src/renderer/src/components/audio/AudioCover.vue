@@ -28,9 +28,9 @@ let dataArray: Uint8Array<ArrayBuffer> | null = null;
 const coverClass = computed(() => {
   switch (props.variant) {
     case 'rounded':
-      return 'rounded-2xl bg-neutral border border-base-content/15';
+      return 'rounded-box bg-neutral border border-base-content/15';
     case 'glass':
-      return 'rounded-2xl bg-neutral';
+      return 'rounded-box bg-neutral';
     default:
       return 'rounded-box bg-neutral';
   }
@@ -121,7 +121,7 @@ onUnmounted(() => {
     :style="{ transform: `scale(${pulseScale})`, clipPath: coverClip }"
   >
     <div v-if="variant === 'rounded'" class="w-full h-full p-1.5">
-      <div class="w-full h-full overflow-hidden rounded-xl ring-1 ring-inset ring-base-content/20">
+      <div class="w-full h-full overflow-hidden rounded-box ring-1 ring-inset ring-base-content/20">
         <MediaCover
           v-if="player.currentTrack"
           :path="player.currentTrack.path"

@@ -168,7 +168,7 @@ const noMatch = computed(
     <div
       v-for="meta in folderMetas"
       :key="meta.path"
-      class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition-all duration-150"
+      class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition duration-150"
     >
       <!-- Szklany nagłówek z mozaiką -->
       <div

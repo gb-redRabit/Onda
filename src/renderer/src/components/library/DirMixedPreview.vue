@@ -59,7 +59,7 @@ function fileCountLabel(count: number): string {
     <button
       v-for="tr in files"
       :key="'prev-t-' + tr.path"
-      class="rounded-box overflow-hidden bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-sm transition-all group text-left"
+      class="rounded-box overflow-hidden bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-sm transition group text-left"
       @click="tr.type === 'image' ? emit('open-image', tr.path) : emit('play', tr.path)"
       @dblclick="tr.type === 'image' ? emit('open-image', tr.path) : emit('play', tr.path)"
       @contextmenu.prevent="

@@ -152,14 +152,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="shrink-0 transition-all duration-300 ease-in-out overflow-hidden"
+    class="shrink-0 transition duration-300 ease-in-out overflow-hidden"
     :class="visible ? 'max-h-50 opacity-100' : 'max-h-0 opacity-0'"
   >
     <div
       v-if="files.length > 1"
       ref="stripRef"
       data-testid="image-viewer-strip"
-      class="relative px-3 py-2 bg-neutral border-t border-neutral-content/20 overflow-x-auto transition-all duration-200"
+      class="relative px-3 py-2 bg-neutral border-t border-neutral-content/20 overflow-x-auto transition duration-200"
       :class="showThumbs ? 'h-20' : 'h-0 py-0 overflow-hidden'"
       @click.stop
     >
@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
           <div
             v-activate
             :data-thumb-idx="item.idx"
-            class="absolute top-0 rounded-field overflow-hidden border transition-all cursor-pointer flex items-center justify-center"
+            class="absolute top-0 rounded-field overflow-hidden border transition cursor-pointer flex items-center justify-center"
             :class="[
               item.idx === currentIndex
                 ? 'border-primary ring-1 ring-primary/30'

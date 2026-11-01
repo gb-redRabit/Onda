@@ -130,7 +130,7 @@ function dismiss() {
         >
           <div
             data-testid="wizard-progress"
-            class="h-full rounded-full bg-primary transition-all duration-300"
+            class="h-full rounded-full bg-primary transition-[width] duration-300"
             :style="{ width: progress + '%' }"
           />
         </div>

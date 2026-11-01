@@ -25,7 +25,7 @@ const color = computed(() => COLORS[props.providerId] || '#475569');
 
 <template>
   <span
-    class="inline-flex shrink-0 items-center justify-center rounded-md font-bold text-white"
+    class="inline-flex shrink-0 items-center justify-center rounded-field font-bold text-white"
     :style="{
       backgroundColor: color,
       width: `${size}px`,

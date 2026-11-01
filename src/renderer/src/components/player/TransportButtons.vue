@@ -71,7 +71,7 @@ const playBtnClass = computed(
     props.styles?.play ??
     (isBar.value
       ? 'w-10 h-10 rounded-full bg-base-content flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity] shadow-lg'
-      : 'relative w-12 h-12 rounded-full bg-neutral-content/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5')
+      : 'relative w-12 h-12 rounded-full bg-neutral-content/15 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-xl shadow-white/5')
 );
 const playIconClass = computed(
   () => props.styles?.playIcon ?? (isBar.value ? 'text-base-200' : 'text-neutral-content')

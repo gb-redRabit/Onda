@@ -15,7 +15,7 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
     </div>
     <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
       <div
-        class="bg-primary h-2 transition-all"
+        class="bg-primary h-2 transition-[width]"
         :style="{ width: (total ? (progress / total) * 100 : 0) + '%' }"
       ></div>
     </div>

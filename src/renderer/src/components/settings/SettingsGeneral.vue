@@ -84,7 +84,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
       <button
         v-for="lang in languages"
         :key="lang.id"
-        class="flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border transition-all text-left"
+        class="flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border transition text-left"
         :class="
           settings.appearance.locale === lang.id
             ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'

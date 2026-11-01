@@ -70,7 +70,7 @@ function onHoverLeave() {
        karty i osobne akcje. -->
   <article
     data-testid="library-track-card"
-    class="relative flex-1 flex flex-col fx-depth rounded-box border transition-all overflow-hidden group text-left min-w-0"
+    class="relative flex-1 flex flex-col fx-depth rounded-box border transition overflow-hidden group text-left min-w-0"
     :class="
       selected
         ? 'bg-primary/12 border-primary/50'
@@ -123,12 +123,12 @@ function onHoverLeave() {
              przycisk play lub dwuklik. Gradient jest dekoracyjny i nie ukrywa
              przycisku przed czytnikiem ekranu. -->
         <div
-          class="absolute inset-0 bg-gradient-to-t from-base-300/80 via-base-300/10 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+          class="absolute inset-0 bg-linear-to-t from-base-300/80 via-base-300/10 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
         >
           <button
             type="button"
             data-testid="library-track-play"
-            class="pointer-events-auto absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 transition-all shadow-lg"
+            class="pointer-events-auto absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 transition shadow-lg"
             :aria-label="$t('common.play')"
             @click.stop="playNow"
           >

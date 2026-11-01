@@ -91,7 +91,7 @@ function onDragStart(e: DragEvent) {
     data-testid="library-track"
     role="listitem"
     tabindex="0"
-    class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
+    class="group flex items-center gap-3 px-3 py-2.5 rounded-field hover:bg-base-100 border transition duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
     :class="
       selected
         ? 'bg-primary/10 border-primary/30'
