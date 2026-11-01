@@ -64,7 +64,7 @@ function saveReplace(): void {
 <template>
   <div
     data-testid="provider-subscription-card"
-    class="cv-card flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+    class="cv-card flex flex-col p-4 rounded-box bg-base-100 border border-hairline transition duration-200 hover:-translate-y-0.5 hover:shadow-lg"
   >
     <div class="flex items-center gap-3">
       <button
@@ -102,7 +102,7 @@ function saveReplace(): void {
       <button
         v-if="!editing"
         type="button"
-        class="rounded-field border border-base-300 px-2.5 py-1 text-xs text-base-content/80 hover:border-primary hover:text-primary-text"
+        class="rounded-field border border-hairline px-2.5 py-1 text-xs text-base-content/80 hover:border-primary hover:text-primary-text"
         data-testid="providers-replace"
         @click="editing = true"
       >
@@ -112,7 +112,7 @@ function saveReplace(): void {
         <input
           v-model="editUrl"
           type="text"
-          class="flex-1 min-w-0 rounded-field border border-base-300 bg-base-100 px-2 py-1 text-xs text-base-content outline-hidden focus:border-primary"
+          class="flex-1 min-w-0 rounded-field border border-hairline bg-base-100 px-2 py-1 text-xs text-base-content outline-hidden focus:border-primary"
           :aria-label="t('providers.pasteNewLink')"
           :placeholder="t('providers.pasteNewLink')"
           @keydown.enter="saveReplace"

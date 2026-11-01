@@ -14,7 +14,7 @@ const variantClass = computed(() => {
     case 'minimal':
       return 'border border-transparent bg-transparent shadow-none backdrop-blur-none';
     case 'solid':
-      return 'border border-base-300 bg-base-300 shadow-xl';
+      return 'border border-hairline bg-base-300 shadow-xl';
     case 'gradient':
       return 'border border-primary/25 bg-linear-to-br from-base-300/95 via-base-200/90 to-primary/20 shadow-xl';
     default:
@@ -87,7 +87,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
 
     <footer
       class="flex shrink-0 items-center justify-center gap-1 border-t px-2 py-1 text-2xs text-base-content/50 transition-opacity"
-      :class="props.variant === 'minimal' ? 'border-transparent' : 'border-base-300/60'"
+      :class="props.variant === 'minimal' ? 'border-transparent' : 'border-hairline/60'"
     >
       <button
         class="fx-noise rounded-field p-1 hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"

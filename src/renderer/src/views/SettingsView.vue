@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
             v-model="search"
             :placeholder="t('settings.searchSettings')"
             :aria-label="t('settings.searchSettings')"
-            class="w-full pl-8 pr-8 h-9 rounded-field bg-base-200 border border-base-300 text-[13px] text-base-content outline-hidden transition placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            class="w-full pl-8 pr-8 h-9 rounded-field bg-base-200 border border-hairline text-[13px] text-base-content outline-hidden transition placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             data-testid="settings-search"
             @keydown="onSearchKeydown"
           />
@@ -313,7 +313,7 @@ onBeforeUnmount(() => {
           ref="menuRef"
           role="menu"
           :aria-label="t('settings.more')"
-          class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-base-300 bg-base-100 fx-depth p-1.5 text-[13px]"
+          class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-hairline bg-base-100 fx-depth p-1.5 text-[13px]"
           data-testid="settings-menu"
           @keydown="onMenuKeydown"
         >
@@ -409,7 +409,7 @@ onBeforeUnmount(() => {
               <button
                 v-for="tab in tabsOfSection(section.id)"
                 :key="tab.id"
-                class="flex items-start p-4 fx-depth fx-noise rounded-box bg-base-100 border border-base-300 text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
+                class="flex items-start p-4 fx-depth fx-noise rounded-box bg-base-100 border border-hairline text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
                 :data-testid="`settings-overview-${tab.id}`"
                 @click="openTab(tab.id)"
               >

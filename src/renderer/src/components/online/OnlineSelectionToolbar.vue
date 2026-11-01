@@ -27,7 +27,7 @@ const allSelected = computed(
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2 p-2 rounded-box bg-base-100 border border-base-300">
+  <div class="flex flex-wrap items-center gap-2 p-2 rounded-box bg-base-100 border border-hairline">
     <OnlineButton variant="secondary" size="sm" @click="emit('selectAll')">
       <CheckSquare :size="12" />
       {{ allSelected ? $t('common.deselectAll') : $t('common.selectAll') }}
@@ -39,7 +39,7 @@ const allSelected = computed(
         :value="rangeStart"
         type="number"
         min="1"
-        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
+        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
         @input="emit('update:rangeStart', Number(($event.target as HTMLInputElement).value))"
       />
       <span>-</span>
@@ -47,7 +47,7 @@ const allSelected = computed(
         :value="rangeEnd"
         type="number"
         min="1"
-        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
+        class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
         @input="emit('update:rangeEnd', Number(($event.target as HTMLInputElement).value))"
       />
       <OnlineButton variant="secondary" size="sm" @click="emit('selectRange')">

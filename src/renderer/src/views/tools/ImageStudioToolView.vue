@@ -1001,7 +1001,7 @@ onBeforeUnmount(() => {
                 :data-image="`${orientedW},${orientedH}`"
                 :data-annotation-count="annotations.length"
                 :data-selected-width="selectedWidth ?? ''"
-                class="max-h-full max-w-full rounded-box border border-base-300 shadow-lg"
+                class="max-h-full max-w-full rounded-box border border-hairline shadow-lg"
                 :style="{ cursor: cropCursor }"
                 @pointerdown="onPointerDown"
                 @pointermove="onPointerMove"
@@ -1010,7 +1010,7 @@ onBeforeUnmount(() => {
               />
             </div>
             <div
-              class="flex items-center gap-3 border-t border-base-300 px-3 py-2 text-2xs text-base-content/60"
+              class="flex items-center gap-3 border-t border-hairline px-3 py-2 text-2xs text-base-content/60"
             >
               <span class="truncate" :title="sourcePath">{{ fileName(sourcePath) }}</span>
               <span>{{ sourceWidth }}×{{ sourceHeight }} · {{ sourceFormat }}</span>
@@ -1023,8 +1023,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <aside class="w-80 shrink-0 space-y-3 overflow-y-auto border-l border-base-300 p-3">
-            <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+          <aside class="w-80 shrink-0 space-y-3 overflow-y-auto border-l border-hairline p-3">
+            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioCrop') }}</div>
               <div class="flex flex-wrap gap-1">
                 <button
@@ -1035,7 +1035,7 @@ onBeforeUnmount(() => {
                   :class="
                     aspect === item.id
                       ? 'border-primary bg-primary/10 text-primary-text'
-                      : 'border-base-300 text-base-content/60 hover:bg-base-content/10'
+                      : 'border-hairline text-base-content/60 hover:bg-base-content/10'
                   "
                   @click="
                     aspect = item.id;
@@ -1051,7 +1051,7 @@ onBeforeUnmount(() => {
               <div class="flex gap-1">
                 <button
                   data-testid="image-studio-rotate-left"
-                  class="fx-noise flex-1 rounded-field border border-base-300 p-1.5 hover:bg-base-content/10"
+                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioRotateLeft')"
                   :aria-label="t('tools.imageStudioRotateLeft')"
                   @click="rotateBy(-1)"
@@ -1060,7 +1060,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="image-studio-rotate-right"
-                  class="fx-noise flex-1 rounded-field border border-base-300 p-1.5 hover:bg-base-content/10"
+                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioRotateRight')"
                   :aria-label="t('tools.imageStudioRotateRight')"
                   @click="rotateBy(1)"
@@ -1069,7 +1069,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="image-studio-flip-h"
-                  class="fx-noise flex-1 rounded-field border border-base-300 p-1.5 hover:bg-base-content/10"
+                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioFlipH')"
                   :aria-label="t('tools.imageStudioFlipH')"
                   @click="toggleFlip('h')"
@@ -1078,7 +1078,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="image-studio-flip-v"
-                  class="fx-noise flex-1 rounded-field border border-base-300 p-1.5 hover:bg-base-content/10"
+                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioFlipV')"
                   :aria-label="t('tools.imageStudioFlipV')"
                   @click="toggleFlip('v')"
@@ -1088,7 +1088,7 @@ onBeforeUnmount(() => {
               </div>
             </section>
 
-            <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioAdjust') }}</div>
               <label v-for="field in ADJUST_FIELDS" :key="field.id" class="block">
                 <span class="flex justify-between text-2xs text-base-content/60">
@@ -1105,7 +1105,7 @@ onBeforeUnmount(() => {
               </label>
             </section>
 
-            <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioAnnotations') }}</div>
               <div class="grid grid-cols-3 gap-1">
                 <button
@@ -1116,7 +1116,7 @@ onBeforeUnmount(() => {
                   :class="
                     tool === item.id
                       ? 'border-primary bg-primary/10 text-primary-text'
-                      : 'border-base-300 text-base-content/60 hover:bg-base-content/10'
+                      : 'border-hairline text-base-content/60 hover:bg-base-content/10'
                   "
                   @click="tool = item.id"
                 >
@@ -1129,7 +1129,7 @@ onBeforeUnmount(() => {
                   v-model="textValue"
                   type="text"
                   :placeholder="t('tools.imageStudioTextPlaceholder')"
-                  class="w-full rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
+                  class="w-full rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                 />
                 <p class="text-3xs text-base-content/50">{{ t('tools.imageStudioTextHint') }}</p>
               </div>
@@ -1137,7 +1137,7 @@ onBeforeUnmount(() => {
                 <input
                   v-model="color"
                   type="color"
-                  class="h-7 w-9 rounded border border-base-300 bg-base-100"
+                  class="h-7 w-9 rounded border border-hairline bg-base-100"
                 />
                 <label class="flex flex-1 items-center gap-2 text-2xs text-base-content/60">
                   <span class="shrink-0"
@@ -1158,7 +1158,7 @@ onBeforeUnmount(() => {
               </p>
               <div class="flex gap-1">
                 <button
-                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="undoAnnotation"
                 >
@@ -1166,14 +1166,14 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="image-studio-delete"
-                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="!selectedId"
                   @click="deleteSelected"
                 >
                   <Trash2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioDelete') }}
                 </button>
                 <button
-                  class="fx-noise flex-1 rounded-field border border-base-300 px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="clearAnnotations"
                 >
@@ -1182,7 +1182,7 @@ onBeforeUnmount(() => {
               </div>
             </section>
 
-            <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioOutput') }}</div>
               <label class="block">
                 <span class="text-2xs text-base-content/60">{{
@@ -1191,7 +1191,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="outputFormat"
                   data-testid="image-studio-format"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                 >
                   <option v-for="format in IMAGE_OUTPUT_FORMATS" :key="format" :value="format">
                     {{ format.toUpperCase() }}
@@ -1220,7 +1220,7 @@ onBeforeUnmount(() => {
                     type="number"
                     min="1"
                     :max="MAX_OUTPUT_DIMENSION"
-                    class="w-24 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
+                    class="w-24 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                   />
                   <span class="text-2xs text-base-content/50">→ {{ outputHeight }} px</span>
                 </div>
@@ -1232,7 +1232,7 @@ onBeforeUnmount(() => {
                 >
                 <button
                   data-testid="image-studio-estimate"
-                  class="rounded-field border border-base-300 px-2 py-0.5 hover:bg-base-content/10"
+                  class="rounded-field border border-hairline px-2 py-0.5 hover:bg-base-content/10"
                   :disabled="estimating"
                   @click="estimateSize"
                 >
@@ -1246,10 +1246,10 @@ onBeforeUnmount(() => {
                     v-model="outputPath"
                     data-testid="image-studio-output-path"
                     type="text"
-                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
+                    class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                   />
                   <button
-                    class="fx-noise shrink-0 rounded-field border border-base-300 p-2 hover:bg-base-content/10"
+                    class="fx-noise shrink-0 rounded-field border border-hairline p-2 hover:bg-base-content/10"
                     :title="t('tools.chooseFolder')"
                     :aria-label="t('tools.chooseFolder')"
                     @click="pickOutputDir"
@@ -1278,17 +1278,17 @@ onBeforeUnmount(() => {
               <p v-if="errorMsg" class="text-2xs text-error">{{ errorMsg }}</p>
             </section>
 
-            <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioCover') }}</div>
               <div class="flex items-center gap-1.5">
                 <input
                   v-model="coverAudioPath"
                   type="text"
                   :placeholder="t('tools.imageStudioCoverPick')"
-                  class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs"
+                  class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                 />
                 <button
-                  class="fx-noise shrink-0 rounded-field border border-base-300 p-2 hover:bg-base-content/10"
+                  class="fx-noise shrink-0 rounded-field border border-hairline p-2 hover:bg-base-content/10"
                   :title="t('tools.imageStudioCoverPick')"
                   :aria-label="t('tools.imageStudioCoverPick')"
                   @click="pickCoverAudio"
@@ -1298,7 +1298,7 @@ onBeforeUnmount(() => {
               </div>
               <button
                 data-testid="image-studio-cover-set"
-                class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs font-medium hover:bg-base-content/10 disabled:opacity-40"
+                class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs font-medium hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="!savedPath || !coverAudioPath"
                 @click="setAsCover"
               >

@@ -95,7 +95,7 @@ async function pasteThemeJson() {
 
     <div class="flex-1 min-w-0 flex flex-col gap-8">
       <div
-        class="rounded-box border border-base-300 bg-base-200/(--glass-alpha) p-5 flex flex-wrap items-end gap-3"
+        class="rounded-box border border-hairline bg-base-200/(--glass-alpha) p-5 flex flex-wrap items-end gap-3"
       >
         <div v-for="id in PREVIEW_TOKENS" :key="id" class="flex flex-col items-center gap-1.5">
           <span
@@ -122,7 +122,7 @@ async function pasteThemeJson() {
               :class="
                 (settings.appearance.customBase ?? 'dark') === seed
                   ? 'border-primary bg-primary/10 text-primary-text font-medium'
-                  : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+                  : 'border-hairline bg-base-100 text-base-content/70 hover:bg-base-content/10'
               "
               @click="setScheme(seed)"
             >
@@ -143,14 +143,14 @@ async function pasteThemeJson() {
             >
               <input
                 type="color"
-                class="w-11 h-10 fx-depth rounded-field bg-transparent border border-base-300 cursor-pointer shrink-0"
+                class="w-11 h-10 fx-depth rounded-field bg-transparent border border-hairline cursor-pointer shrink-0"
                 :value="colorValue(id)"
                 @input="updateColor(id, ($event.target as HTMLInputElement).value)"
               />
               <span class="text-sm flex-1 min-w-0 truncate">{{ tokenLabel(id) }}</span>
               <input
                 type="text"
-                class="w-28 px-2.5 py-1.5 fx-depth rounded-field bg-base-200 border border-base-300 text-xs font-mono text-base-content/70 focus:border-primary/50 focus:outline-hidden"
+                class="w-28 px-2.5 py-1.5 fx-depth rounded-field bg-base-200 border border-hairline text-xs font-mono text-base-content/70 focus:border-primary/50 focus:outline-hidden"
                 :value="colorValue(id)"
                 @change="updateColor(id, ($event.target as HTMLInputElement).value)"
               />
@@ -164,7 +164,7 @@ async function pasteThemeJson() {
             <button
               v-for="act in ['seedDark', 'seedLight', 'copy', 'paste']"
               :key="act"
-              class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
+              class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border border-hairline bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
               @click="
                 act === 'seedDark'
                   ? resetCustom('dark')

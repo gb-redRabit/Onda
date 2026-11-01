@@ -91,7 +91,7 @@ defineExpose({ focusSearch });
           type="search"
           :placeholder="$t('compact.searchPlaceholder')"
           :aria-label="$t('compact.searchPlaceholder')"
-          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-base-300 text-[12px] outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-hairline text-[12px] outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
           data-testid="compact-search"
         />
       </label>
@@ -131,7 +131,7 @@ defineExpose({ focusSearch });
           {{ $t('compact.addLibraryHint') }}
         </p>
         <button
-          class="mt-1 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field border border-base-300 text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10"
+          class="mt-1 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field border border-hairline text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10"
           data-testid="compact-empty-open-full"
           @click="openFullWindow"
         >

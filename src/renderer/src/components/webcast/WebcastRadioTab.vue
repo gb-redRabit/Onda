@@ -51,7 +51,7 @@ function commitRadioRename(id: string) {
     </div>
     <div v-if="radio.stations.length === 0" class="space-y-2">
       <div
-        class="rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/50"
+        class="rounded-box border border-dashed border-hairline p-6 text-center text-sm text-base-content/50"
       >
         <Radio :size="24" class="mx-auto mb-2 opacity-40" />
         {{ t('saved.radioSoon') }}
@@ -61,7 +61,7 @@ function commitRadioRename(id: string) {
       <div
         v-for="s in radio.stations"
         :key="s.id"
-        class="group flex items-center gap-3 rounded-box bg-base-100 border border-base-300 p-3 hover:border-base-300 transition-colors"
+        class="group flex items-center gap-3 rounded-box bg-base-100 border border-hairline p-3 hover:border-hairline transition-colors"
         :class="{ 'border-primary/60': radio.playingStationId === s.id }"
       >
         <button
@@ -87,7 +87,7 @@ function commitRadioRename(id: string) {
             <input
               v-model="editingRadioName"
               type="text"
-              class="w-full bg-base-100 border border-base-300 fx-depth rounded-field px-2 py-1 text-sm text-base-content focus:outline-hidden focus:border-primary"
+              class="w-full bg-base-100 border border-hairline fx-depth rounded-field px-2 py-1 text-sm text-base-content focus:outline-hidden focus:border-primary"
               @keyup.enter="commitRadioRename(s.id)"
               @keyup.esc="editingRadioId = null"
               @blur="commitRadioRename(s.id)"

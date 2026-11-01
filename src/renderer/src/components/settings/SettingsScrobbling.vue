@@ -198,7 +198,7 @@ onMounted(refresh);
     :description="$t('settings.scrobblingDesc')"
   >
     <div data-testid="settings-scrobbling" class="space-y-4">
-      <div class="rounded-field border border-base-300 p-3">
+      <div class="rounded-field border border-hairline p-3">
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-sm font-medium">{{ $t('settings.lastfm') }}</p>
@@ -224,7 +224,7 @@ onMounted(refresh);
             data-testid="scrobbling-lastfm-api-key"
             type="password"
             autocomplete="off"
-            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+            class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
             :placeholder="lastfmKeyPreview || $t('settings.lastfmApiKey')"
             :aria-label="$t('settings.lastfmApiKey')"
           />
@@ -233,7 +233,7 @@ onMounted(refresh);
             data-testid="scrobbling-lastfm-api-secret"
             type="password"
             autocomplete="off"
-            class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+            class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
             :placeholder="lastfmSecretPreview || $t('settings.lastfmApiSecret')"
             :aria-label="$t('settings.lastfmApiSecret')"
           />
@@ -253,7 +253,7 @@ onMounted(refresh);
           </button>
           <button
             data-testid="scrobbling-lastfm-test"
-            class="px-3 py-1.5 rounded-field border border-base-300 text-xs"
+            class="px-3 py-1.5 rounded-field border border-hairline text-xs"
             :disabled="busy !== null"
             @click="testLastfm"
           >
@@ -262,7 +262,7 @@ onMounted(refresh);
         </div>
       </div>
 
-      <div class="rounded-field border border-base-300 p-3">
+      <div class="rounded-field border border-hairline p-3">
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-sm font-medium">{{ $t('settings.listenbrainz') }}</p>
@@ -287,7 +287,7 @@ onMounted(refresh);
             data-testid="scrobbling-listenbrainz-token"
             type="password"
             autocomplete="off"
-            class="flex-1 min-w-48 px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+            class="flex-1 min-w-48 px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
             :placeholder="listenbrainzPreview || $t('settings.listenbrainzToken')"
             :aria-label="$t('settings.listenbrainzToken')"
           />

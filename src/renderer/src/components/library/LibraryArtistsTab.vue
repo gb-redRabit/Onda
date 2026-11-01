@@ -75,7 +75,7 @@ onUnmounted(() => grid.destroy());
   </div>
   <template v-else>
     <div
-      class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-1"
+      class="flex items-center justify-between px-4 py-2 border-b border-hairline bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-1"
     >
       <span class="text-xs font-medium text-base-content/60">
         {{ artists.length }} {{ $t('library.artistsCount') }}</span
@@ -83,7 +83,7 @@ onUnmounted(() => grid.destroy());
       <div class="flex items-center gap-1.5">
         <select
           v-model="sortKey"
-          class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-hidden"
+          class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus:border-primary focus:outline-hidden"
         >
           <option value="name">{{ $t('library.sortArtist') }} Aâ†’Z</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
@@ -93,7 +93,7 @@ onUnmounted(() => grid.destroy());
           :class="
             viewMode === 'list'
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
+              : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
@@ -105,7 +105,7 @@ onUnmounted(() => grid.destroy());
           :class="
             viewMode === 'grid'
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
+              : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
@@ -177,7 +177,7 @@ onUnmounted(() => grid.destroy());
             <button
               v-for="[name, tracks] in row.artists"
               :key="name"
-              class="flex-1 min-w-0 flex flex-col items-center p-4 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition text-center"
+              class="flex-1 min-w-0 flex flex-col items-center p-4 fx-depth rounded-box fx-noise bg-base-100 border border-hairline hover:bg-base-content/10 transition text-center"
               @click="emit('playTracks', tracks)"
             >
               <div

@@ -76,7 +76,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="pip-root relative w-full h-full flex flex-col select-none overflow-hidden border border-base-300 bg-base-200"
+    class="pip-root relative w-full h-full flex flex-col select-none overflow-hidden border border-hairline bg-base-200"
     @mouseenter="showOverlay = true"
     @mouseleave="
       showOverlay = false;

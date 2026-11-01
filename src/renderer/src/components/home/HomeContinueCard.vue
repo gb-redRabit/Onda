@@ -33,11 +33,11 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
 <template>
   <section
     data-testid="home-continue"
-    class="flex flex-col justify-center rounded-box border border-base-300/80 bg-base-100 p-4 sm:p-5"
+    class="flex flex-col justify-center rounded-box border border-hairline/80 bg-base-100 p-4 sm:p-5"
   >
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div
-        class="relative h-18 w-18 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-field border border-base-300/70 bg-base-200"
+        class="relative h-18 w-18 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-field border border-hairline/70 bg-base-200"
       >
         <MediaCover :path="track.path" :size="88" :fallback="coverFallback" class="h-full w-full" />
       </div>
@@ -110,7 +110,7 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
         <button
           v-if="hasProgress"
           type="button"
-          class="fx-noise grid h-8.5 w-8.5 place-items-center rounded-field border border-base-300/80 bg-base-200/50 text-base-content/70 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          class="fx-noise grid h-8.5 w-8.5 place-items-center rounded-field border border-hairline/80 bg-base-200/50 text-base-content/70 hover:bg-base-content/8 hover:text-base-content transition-colors"
           :aria-label="`${$t('home.playFromStart')}: ${title}`"
           :title="$t('home.playFromStart')"
           @click="emit('playFromStart')"

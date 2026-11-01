@@ -54,7 +54,7 @@ function buildPreview(): string {
   <div class="space-y-3">
     <div class="flex items-center gap-2">
       <div
-        class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs"
+        class="flex rounded-field overflow-hidden border border-hairline bg-base-100 text-xs"
         role="group"
         :aria-label="t('sources.level')"
       >
@@ -88,7 +88,7 @@ function buildPreview(): string {
         type="text"
         :placeholder="t('sources.endpointName')"
         :aria-label="t('sources.endpointName')"
-        class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
+        class="flex-1 min-w-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
       />
     </div>
 
@@ -97,7 +97,7 @@ function buildPreview(): string {
         t('sources.viewLabel')
       }}</span>
       <div
-        class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs"
+        class="flex rounded-field overflow-hidden border border-hairline bg-base-100 text-xs"
         role="group"
         :aria-label="t('sources.viewLabel')"
       >
@@ -149,7 +149,7 @@ function buildPreview(): string {
 
     <div class="flex items-center gap-2 pt-0.5">
       <button
-        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
         data-testid="endpoint-test"
         :disabled="testing"
         @click="emit('test')"

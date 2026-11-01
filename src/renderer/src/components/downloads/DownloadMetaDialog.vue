@@ -19,7 +19,7 @@ const { t } = useI18n();
     panel-class="w-80 max-w-[92vw] overflow-hidden"
     @close="emit('close')"
   >
-    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-hairline">
       <h3 id="download-meta-dialog-title" class="text-sm font-semibold">
         {{ t('downloads.editMetadata') }}
       </h3>
@@ -34,23 +34,23 @@ const { t } = useI18n();
     <div class="px-4 py-4 space-y-3">
       <input
         v-model="artist"
-        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
         :placeholder="t('youtube.metaArtist')"
       />
       <input
         v-model="album"
-        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
         :placeholder="t('youtube.metaAlbum')"
       />
       <input
         v-model="year"
-        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
         :placeholder="t('youtube.metaYear')"
       />
     </div>
-    <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-base-300">
+    <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-hairline">
       <button
-        class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
+        class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="emit('close')"
       >
         {{ t('common.cancel') }}

@@ -37,7 +37,7 @@ const typeIcon = {
     :class="selected ? 'rounded-box ring-2 ring-primary' : ''"
     @click="selectable ? emit('select', item, $event) : emit('preview', item)"
   >
-    <div class="relative rounded-box overflow-hidden bg-base-100 border border-base-300">
+    <div class="relative rounded-box overflow-hidden bg-base-100 border border-hairline">
       <div class="aspect-video w-full">
         <img
           v-if="item.thumbnail || (item.type === 'image' && item.mediaUrl)"

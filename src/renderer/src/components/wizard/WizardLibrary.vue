@@ -31,7 +31,7 @@ function removeFolder(path: string) {
       <div
         v-for="folder in library.folders"
         :key="folder"
-        class="flex items-center gap-3 p-3 rounded-field border border-base-300 bg-base-200/(--glass-alpha)"
+        class="flex items-center gap-3 p-3 rounded-field border border-hairline bg-base-200/(--glass-alpha)"
       >
         <FolderPlus :size="16" class="text-primary-text/70 shrink-0" />
         <span class="text-sm truncate">{{ folder }}</span>
@@ -48,7 +48,7 @@ function removeFolder(path: string) {
       </div>
 
       <button
-        class="w-full flex items-center gap-3 p-3 fx-depth rounded-box border border-dashed border-base-300 hover:border-primary/60 hover:bg-base-content/5 transition-colors text-left"
+        class="w-full flex items-center gap-3 p-3 fx-depth rounded-box border border-dashed border-hairline hover:border-primary/60 hover:bg-base-content/5 transition-colors text-left"
         @click="addFolder"
       >
         <FolderPlus :size="18" class="text-primary-text shrink-0" />

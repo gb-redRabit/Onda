@@ -43,11 +43,11 @@ function fileCountLabel(count: number): string {
 
 <template>
   <!-- mieszany podgląd: foldery + okładki (max 3 foldery) -->
-  <div class="p-3 grid grid-cols-4 gap-3 bg-base-100/40 border-b border-base-300/30">
+  <div class="p-3 grid grid-cols-4 gap-3 bg-base-100/40 border-b border-hairline/30">
     <button
       v-for="sub in folders"
       :key="'prev-f-' + sub"
-      class="flex flex-col items-center gap-2 p-3 rounded-box bg-base-100 border border-base-300 hover:border-primary/30 hover:bg-base-200/50 transition-colors text-center"
+      class="flex flex-col items-center gap-2 p-3 rounded-box bg-base-100 border border-hairline hover:border-primary/30 hover:bg-base-200/50 transition-colors text-center"
       @click="emit('toggle', sub)"
     >
       <LibraryFolderTile :tracks="folderTracksFor(sub, meta)" />
@@ -59,7 +59,7 @@ function fileCountLabel(count: number): string {
     <button
       v-for="tr in files"
       :key="'prev-t-' + tr.path"
-      class="rounded-box overflow-hidden bg-base-100 border border-base-300 hover:border-primary/30 hover:shadow-sm transition group text-left"
+      class="rounded-box overflow-hidden bg-base-100 border border-hairline hover:border-primary/30 hover:shadow-sm transition group text-left"
       @click="tr.type === 'image' ? emit('open-image', tr.path) : emit('play', tr.path)"
       @dblclick="tr.type === 'image' ? emit('open-image', tr.path) : emit('play', tr.path)"
       @contextmenu.prevent="

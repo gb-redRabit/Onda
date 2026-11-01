@@ -55,13 +55,13 @@ const tableViews = [
 </script>
 
 <template>
-  <div v-if="isPage" class="rounded-box border border-base-300 bg-base-100 p-3 space-y-2">
+  <div v-if="isPage" class="rounded-box border border-hairline bg-base-100 p-3 space-y-2">
     <div class="flex items-center gap-2">
       <SettingsToggle v-model="model.tableEnabled" :label="t('sources.tableEnable')" />
       <span class="text-xs text-base-content/70 select-none">{{ t('sources.tableEnable') }}</span>
       <span class="flex-1" />
       <button
-        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+        class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
         :disabled="tableTesting"
         :title="t('sources.testTableHint')"
         @click="emit('test-table')"
@@ -77,7 +77,7 @@ const tableViews = [
           t('sources.viewLabel')
         }}</span>
         <div
-          class="flex rounded-field overflow-hidden border border-base-300 bg-base-100 text-xs"
+          class="flex rounded-field overflow-hidden border border-hairline bg-base-100 text-xs"
           role="group"
           :aria-label="t('sources.viewLabel')"
         >
@@ -107,7 +107,7 @@ const tableViews = [
         <select
           v-model="model.tableMode"
           :aria-label="t('sources.tableSource')"
-          class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden"
+          class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden"
         >
           <option value="endpoint">{{ t('sources.tableSourceEndpoint') }}</option>
           <option value="field">{{ t('sources.tableSourceField') }}</option>
@@ -124,7 +124,7 @@ const tableViews = [
           type="text"
           :list="fieldId('tpath')"
           :placeholder="t('sources.tableEndpointPathPh')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('tpath')">
           <option
@@ -142,7 +142,7 @@ const tableViews = [
           type="text"
           :list="fieldId('tfield')"
           :placeholder="t('sources.tableArrayFieldPh')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <datalist :id="fieldId('tfield')">
           <option v-for="o in fieldOptions" :key="o" :value="o" />
@@ -177,7 +177,7 @@ const tableViews = [
         <select
           v-model="model.tableChildId"
           :aria-label="t('sources.openRow')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
         >
           <option value="">{{ t('sources.noChild') }}</option>
           <option v-for="o in levelOptions" :key="o.id" :value="o.id">{{ o.label }}</option>

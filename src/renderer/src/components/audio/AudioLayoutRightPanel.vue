@@ -159,7 +159,7 @@ const decorationOptions = computed(() =>
         </p>
 
         <!-- Dekoracje (tylko z wtyczek) -->
-        <div v-if="decorationOptions.length" class="mt-3 pt-3 border-t border-base-300/60">
+        <div v-if="decorationOptions.length" class="mt-3 pt-3 border-t border-hairline/60">
           <div class="text-2xs font-semibold text-base-content/70 uppercase tracking-wider mb-2">
             {{ t('audioView.decorationLabel') }}
           </div>

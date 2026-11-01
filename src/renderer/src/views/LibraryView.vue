@@ -320,7 +320,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     <!-- Przyklejony szklany nagłówek — Minimal Spotify -->
     <div
       class="ui-page-header sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur shrink-0 transition-[border-color,box-shadow]"
-      :class="scrolled ? 'border-b border-transparent shadow-md' : 'border-b border-base-300/80'"
+      :class="scrolled ? 'border-b border-transparent shadow-md' : 'border-b border-hairline/80'"
     >
       <div class="px-5 py-3">
         <!-- Tytuł chowa się przy przewijaniu; zakładki i pasek filtrów zostają. -->
@@ -359,7 +359,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
       <div
         v-for="i in 6"
         :key="i"
-        class="h-12 rounded-box bg-base-100 border border-base-300 animate-pulse"
+        class="h-12 rounded-box bg-base-100 border border-hairline animate-pulse"
       ></div>
     </div>
     <div

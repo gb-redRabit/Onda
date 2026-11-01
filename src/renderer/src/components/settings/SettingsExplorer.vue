@@ -22,7 +22,7 @@ const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
         :class="
           settings.explorer.viewMode === mode
             ? 'bg-primary text-primary-content border-primary'
-            : 'bg-base-100 border-base-300 hover:bg-base-200'
+            : 'bg-base-100 border-hairline hover:bg-base-200'
         "
         @click="settings.updateExplorer({ viewMode: mode })"
       >
@@ -37,7 +37,7 @@ const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
         <span class="text-xs text-base-content/70">{{ $t('settings.sortBy') }}</span>
         <select
           :value="settings.explorer.sortBy"
-          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
           @change="settings.updateExplorer({ sortBy: readSelect($event, EXPLORER_SORT_BY) })"
         >
           <option value="name">{{ $t('settings.sortByName') }}</option>
@@ -50,7 +50,7 @@ const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
         <span class="text-xs text-base-content/70">{{ $t('settings.sortOrder') }}</span>
         <select
           :value="settings.explorer.sortOrder"
-          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
           @change="
             settings.updateExplorer({
               sortOrder: readSelect($event, EXPLORER_SORT_ORDER)

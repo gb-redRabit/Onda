@@ -173,7 +173,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
 <template>
   <div
     v-if="explorer.tabs.length > 0"
-    class="flex items-center gap-1 px-2.5 py-1.5 bg-base-100 border-b border-base-300/80 overflow-x-auto shrink-0"
+    class="flex items-center gap-1 px-2.5 py-1.5 bg-base-100 border-b border-hairline/80 overflow-x-auto shrink-0"
   >
     <button
       v-for="(tab, idx) in explorer.tabs"

@@ -232,9 +232,9 @@ async function downloadResult(result: PanelResult): Promise<void> {
 <template>
   <div
     data-testid="subtitle-panel"
-    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-base-300"
+    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-hairline"
   >
-    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-hairline">
       <h3 class="text-sm font-semibold">{{ $t('subtitles.title') }}</h3>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
@@ -320,13 +320,13 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </button>
       </div>
 
-      <div class="border-t border-base-300 px-4 py-3">
+      <div class="border-t border-hairline px-4 py-3">
         <div class="text-2xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
           {{ $t('subtitles.delay') }}
         </div>
         <div class="flex items-center gap-2">
           <button
-            class="p-1.5 rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors"
+            class="p-1.5 rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 transition-colors"
             data-testid="subtitle-delay-down"
             :aria-label="$t('subtitles.delayEarlier')"
             :title="$t('subtitles.delayEarlier')"
@@ -335,7 +335,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             <Minus :size="14" />
           </button>
           <button
-            class="min-w-20 px-2 py-1.5 rounded-field border border-base-300 font-mono text-xs text-center text-base-content/80 hover:bg-base-content/10 transition-colors"
+            class="min-w-20 px-2 py-1.5 rounded-field border border-hairline font-mono text-xs text-center text-base-content/80 hover:bg-base-content/10 transition-colors"
             data-testid="subtitle-delay-value"
             :aria-label="$t('subtitles.delayReset')"
             :title="$t('subtitles.delayReset')"
@@ -344,7 +344,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             {{ formattedDelay }}
           </button>
           <button
-            class="p-1.5 rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 transition-colors"
+            class="p-1.5 rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 transition-colors"
             data-testid="subtitle-delay-up"
             :aria-label="$t('subtitles.delayLater')"
             :title="$t('subtitles.delayLater')"
@@ -355,21 +355,21 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </div>
       </div>
 
-      <div class="border-t border-base-300 px-4 py-3">
+      <div class="border-t border-hairline px-4 py-3">
         <div class="text-2xs text-base-content/50 font-medium uppercase tracking-wider mb-2">
           {{ $t('subtitles.onlineTitle') }}
         </div>
         <input
           v-model="searchQuery"
           :placeholder="$t('subtitles.onlineQuery')"
-          class="w-full px-3 py-2 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+          class="w-full px-3 py-2 rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="runSearch"
         />
         <div class="flex gap-2 mt-2">
           <select
             v-model="searchLang"
             :aria-label="$t('subtitles.onlineLanguage')"
-            class="w-20 px-2 py-1.5 rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+            class="w-20 px-2 py-1.5 rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
           >
             <option value="pl">PL</option>
             <option value="en">EN</option>

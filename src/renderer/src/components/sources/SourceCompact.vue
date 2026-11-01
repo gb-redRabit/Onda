@@ -80,7 +80,7 @@ const typeIcon = {
         :class="
           item.id && downloadedIds?.has(item.id)
             ? 'bg-success text-success-content'
-            : 'bg-base-100 border border-base-300 text-base-content/70 hover:bg-base-content/10'
+            : 'bg-base-100 border border-hairline text-base-content/70 hover:bg-base-content/10'
         "
         :disabled="!!(item.id && downloadedIds?.has(item.id)) || downloadingItem === item"
         :title="

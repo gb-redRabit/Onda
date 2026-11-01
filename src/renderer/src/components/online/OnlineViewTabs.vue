@@ -39,7 +39,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
 
 <template>
   <div
-    class="ui-page-toolbar flex flex-wrap items-center justify-between gap-3 border-b border-base-300/80 bg-base-100/60 px-5 py-2.5"
+    class="ui-page-toolbar flex flex-wrap items-center justify-between gap-3 border-b border-hairline/80 bg-base-100/60 px-5 py-2.5"
   >
     <div class="ui-segmented" role="tablist" :aria-label="t('nav.online')">
       <button

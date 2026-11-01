@@ -12,14 +12,14 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
 </script>
 
 <template>
-  <div class="border border-base-300 rounded-field overflow-hidden">
+  <div class="border border-hairline rounded-field overflow-hidden">
     <div class="bg-base-300/50 px-2 py-1 text-2xs font-medium">
       {{ $t('musicbrainz.previewChanges') }}
     </div>
     <div
       v-for="row in rows"
       :key="row.key"
-      class="flex items-center gap-2 px-2 py-1.5 text-xs border-t border-base-300/30"
+      class="flex items-center gap-2 px-2 py-1.5 text-xs border-t border-hairline/30"
     >
       <input
         type="checkbox"

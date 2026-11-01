@@ -208,7 +208,7 @@ async function save() {
     @close="onOverlayClick"
     @escape="emit('close')"
   >
-    <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-hairline">
       <h2 id="track-tag-editor-title" class="text-base font-bold">{{ $t('tags.title') }}</h2>
       <button
         class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
@@ -222,7 +222,7 @@ async function save() {
     <div class="flex gap-5 p-5">
       <div class="shrink-0 flex flex-col items-center gap-2">
         <div
-          class="w-28 h-28 rounded-box bg-base-100 border border-base-300 overflow-hidden flex items-center justify-center"
+          class="w-28 h-28 rounded-box bg-base-100 border border-hairline overflow-hidden flex items-center justify-center"
         >
           <MediaCover :cover="coverObj" :size="32" fallback="music" />
         </div>
@@ -240,28 +240,28 @@ async function save() {
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.filename') }}</span>
           <input
             v-model="name"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.titleField') }}</span>
           <input
             v-model="title"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.artist') }}</span>
           <input
             v-model="artist"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <label class="block">
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.album') }}</span>
           <input
             v-model="album"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
         <div class="grid grid-cols-3 gap-2.5">
@@ -269,14 +269,14 @@ async function save() {
             <span class="text-xs font-medium text-base-content/70">{{ $t('tags.year') }}</span>
             <input
               v-model="year"
-              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
             />
           </label>
           <label class="block col-span-2">
             <span class="text-xs font-medium text-base-content/70">{{ $t('tags.genre') }}</span>
             <input
               v-model="genre"
-              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+              class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
             />
           </label>
         </div>
@@ -284,13 +284,13 @@ async function save() {
           <span class="text-xs font-medium text-base-content/70">{{ $t('tags.trackNo') }}</span>
           <input
             v-model="trackNumber"
-            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+            class="w-full mt-1 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           />
         </label>
       </div>
     </div>
 
-    <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+    <div class="flex justify-end gap-2 px-5 py-4 border-t border-hairline">
       <button
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="emit('close')"

@@ -88,7 +88,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
         :class="
           settings.appearance.locale === lang.id
             ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
-            : 'border-base-300 bg-base-100 hover:border-base-300'
+            : 'border-hairline bg-base-100 hover:border-hairline'
         "
         @click="setLocale(lang.id)"
       >
@@ -154,7 +154,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
         @update:model-value="setCompactStartup"
       />
     </SettingsRow>
-    <div class="flex items-center justify-between gap-4 pt-2 border-t border-base-300">
+    <div class="flex items-center justify-between gap-4 pt-2 border-t border-hairline">
       <div class="min-w-0">
         <div class="text-sm font-medium">{{ $t('settings.showSetupWizard') }}</div>
         <p class="text-xs text-base-content/50 mt-0.5">

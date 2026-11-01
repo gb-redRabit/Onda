@@ -259,7 +259,7 @@ function runTestTable(idx: number): void {
     @close="onOverlayClick"
     @escape="emit('close')"
   >
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-hairline">
       <h2 id="source-editor-dialog-title" class="text-sm font-medium flex-1">
         {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
       </h2>
@@ -325,7 +325,7 @@ function runTestTable(idx: number): void {
       </div>
     </div>
 
-    <div class="flex items-center gap-2 px-4 py-3 border-t border-base-300">
+    <div class="flex items-center gap-2 px-4 py-3 border-t border-hairline">
       <button
         class="fx-noise flex items-center gap-1 px-2.5 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
         :disabled="activePhase === 0"

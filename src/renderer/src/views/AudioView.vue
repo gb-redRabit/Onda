@@ -130,7 +130,7 @@ const {
       <PageHeader
         :title="$t('audioView.layoutEditor')"
         compact
-        class="mb-4 rounded-box border border-base-300"
+        class="mb-4 rounded-box border border-hairline"
       >
         <template #actions>
           <Button

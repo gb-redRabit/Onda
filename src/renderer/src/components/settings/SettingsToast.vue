@@ -36,7 +36,7 @@ const positionOptions = computed(() =>
   </SettingsGroup>
 
   <SettingsGroup :title="$t('settings.toastTypes')">
-    <div class="divide-y divide-base-300">
+    <div class="divide-y divide-hairline">
       <SettingsRow
         :label="$t('settings.toastSuccess')"
         :description="$t('settings.toastSuccessHint')"

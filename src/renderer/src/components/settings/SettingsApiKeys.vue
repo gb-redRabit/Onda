@@ -84,7 +84,7 @@ function toggleActive(id: string, active: boolean) {
     <div v-if="visibleKeys.length === 0" class="py-4 text-center text-sm text-base-content/50">
       {{ $t('settings.noApiKeys') }}
     </div>
-    <div v-else class="divide-y divide-base-300">
+    <div v-else class="divide-y divide-hairline">
       <div v-for="k in visibleKeys" :key="k.id" class="flex items-center gap-3 py-3">
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium truncate">{{ k.name }}</div>
@@ -97,7 +97,7 @@ function toggleActive(id: string, active: boolean) {
           @update:model-value="toggleActive(k.id, $event)"
         />
         <button
-          class="px-2 py-1 rounded-field text-xs border border-base-300 hover:bg-base-200"
+          class="px-2 py-1 rounded-field text-xs border border-hairline hover:bg-base-200"
           @click="removeKey(k.id)"
         >
           {{ $t('common.delete') }}
@@ -114,18 +114,18 @@ function toggleActive(id: string, active: boolean) {
       </button>
       <div
         v-else
-        class="flex-1 flex flex-col gap-2 p-3 rounded-field border border-base-300 bg-base-200/50"
+        class="flex-1 flex flex-col gap-2 p-3 rounded-field border border-hairline bg-base-200/50"
       >
         <input
           v-model="newName"
           :placeholder="$t('settings.apiKeyName')"
           :aria-label="$t('settings.apiKeyName')"
-          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         />
         <select
           v-model="newService"
           :aria-label="$t('settings.apiKeyService')"
-          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         >
           <option value="generic">Generic</option>
           <option value="youtube">YouTube</option>
@@ -138,7 +138,7 @@ function toggleActive(id: string, active: boolean) {
           type="password"
           :placeholder="$t('settings.apiKeyValue')"
           :aria-label="$t('settings.apiKeyValue')"
-          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         />
         <div class="flex gap-2">
           <button
@@ -148,7 +148,7 @@ function toggleActive(id: string, active: boolean) {
             {{ $t('common.save') }}
           </button>
           <button
-            class="px-3 py-1.5 rounded-field border border-base-300 text-sm"
+            class="px-3 py-1.5 rounded-field border border-hairline text-sm"
             @click="showAdd = false"
           >
             {{ $t('common.cancel') }}

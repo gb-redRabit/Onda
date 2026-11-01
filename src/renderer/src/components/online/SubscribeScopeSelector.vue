@@ -16,7 +16,7 @@ const { t } = useI18n();
       <button
         class="fx-noise p-3 fx-depth rounded-field border text-left transition"
         :class="
-          !downloadAll ? 'border-primary bg-primary/10' : 'border-base-300 hover:border-base-300'
+          !downloadAll ? 'border-primary bg-primary/10' : 'border-hairline hover:border-hairline'
         "
         @click="downloadAll = false"
       >
@@ -26,7 +26,7 @@ const { t } = useI18n();
       <button
         class="fx-noise p-3 fx-depth rounded-field border text-left transition"
         :class="
-          downloadAll ? 'border-primary bg-primary/10' : 'border-base-300 hover:border-base-300'
+          downloadAll ? 'border-primary bg-primary/10' : 'border-hairline hover:border-hairline'
         "
         @click="downloadAll = true"
       >

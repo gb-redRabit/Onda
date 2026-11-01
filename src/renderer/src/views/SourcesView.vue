@@ -144,7 +144,7 @@ onMounted(() => {
     <div class="flex-1 min-w-0 h-full flex flex-col">
       <div v-if="activeSource" data-testid="sources-detail" class="flex flex-col h-full">
         <div
-          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-base-300 bg-base-100/(--glass-alpha) backdrop-blur overflow-x-auto"
+          class="ui-page-toolbar flex items-center gap-2 px-4 py-2 border-b border-hairline bg-base-100/(--glass-alpha) backdrop-blur overflow-x-auto"
         >
           <IconButton
             v-if="sources.navStack.length"
@@ -158,7 +158,7 @@ onMounted(() => {
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
             :aria-label="$t('sources.level')"
-            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
             @change="onEndpointChange(($event.target as HTMLSelectElement).value)"
           >
             <option v-for="e in activeSource.endpoints" :key="e.id" :value="e.id">
@@ -185,7 +185,7 @@ onMounted(() => {
           <button
             type="button"
             data-testid="sources-query-params"
-            class="flex min-w-0 flex-1 items-center gap-2 rounded-field border border-base-300 bg-base-100 px-2.5 py-1.5 text-left fx-depth transition-colors hover:border-base-content/30"
+            class="flex min-w-0 flex-1 items-center gap-2 rounded-field border border-hairline bg-base-100 px-2.5 py-1.5 text-left fx-depth transition-colors hover:border-base-content/30"
             :title="queryText || $t('sources.queryParams')"
             :aria-label="$t('sources.queryParams')"
             aria-haspopup="dialog"
@@ -214,7 +214,7 @@ onMounted(() => {
               v-model.number="pageInput"
               type="number"
               min="1"
-              class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-center font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
+              class="w-14 px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-center font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
               :title="$t('sources.currentPage')"
               :aria-label="$t('sources.currentPage')"
               @change="goToPage"
@@ -293,7 +293,7 @@ onMounted(() => {
           @play="onBulkPlay"
           @clear="clearSelection"
         />
-        <details v-if="currentUrl" class="border-b border-base-300 px-4 py-1">
+        <details v-if="currentUrl" class="border-b border-hairline px-4 py-1">
           <summary class="cursor-pointer text-2xs text-base-content/50">
             {{ $t('sources.requestDetails') }}
           </summary>

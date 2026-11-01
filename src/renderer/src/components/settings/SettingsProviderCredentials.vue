@@ -146,14 +146,14 @@ async function login(id: string): Promise<void> {
           <input
             v-model="editing[row.id]"
             type="text"
-            class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-200/(--glass-alpha) px-3 py-1.5 text-xs text-base-content fx-depth transition focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
+            class="min-w-0 flex-1 rounded-field border border-hairline bg-base-200/(--glass-alpha) px-3 py-1.5 text-xs text-base-content fx-depth transition focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
             :aria-label="t('providers.cookiePlaceholder')"
             :placeholder="t('providers.cookiePlaceholder')"
             @keydown.enter="save(row.id)"
           />
           <button
             type="button"
-            class="fx-noise fx-depth shrink-0 rounded-field border border-base-300 bg-base-100 px-3 py-1.5 text-xs text-base-content/80 transition-colors hover:bg-base-content/10 disabled:opacity-50"
+            class="fx-noise fx-depth shrink-0 rounded-field border border-hairline bg-base-100 px-3 py-1.5 text-xs text-base-content/80 transition-colors hover:bg-base-content/10 disabled:opacity-50"
             :disabled="busy[row.id] || !editing[row.id]?.trim()"
             @click="save(row.id)"
           >
@@ -162,7 +162,7 @@ async function login(id: string): Promise<void> {
           <button
             v-if="row.hasCookie"
             type="button"
-            class="fx-noise fx-depth shrink-0 rounded-field border border-base-300 px-3 py-1.5 text-xs text-base-content/70 transition-colors hover:border-error/40 hover:bg-error/10 hover:text-error disabled:opacity-50"
+            class="fx-noise fx-depth shrink-0 rounded-field border border-hairline px-3 py-1.5 text-xs text-base-content/70 transition-colors hover:border-error/40 hover:bg-error/10 hover:text-error disabled:opacity-50"
             :disabled="busy[row.id]"
             @click="clear(row.id)"
           >

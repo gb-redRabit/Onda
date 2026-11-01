@@ -33,7 +33,7 @@ const grantedCapabilities = computed(() => {
     @close="emit('cancel')"
     @escape="emit('cancel')"
   >
-    <header class="flex items-start gap-3 px-5 py-4 border-b border-base-300">
+    <header class="flex items-start gap-3 px-5 py-4 border-b border-hairline">
       <div class="flex-1 min-w-0">
         <h2 id="plugin-permission-title" class="text-lg font-semibold">
           {{ t('plugins.enableConfirmTitle') }}
@@ -156,10 +156,10 @@ const grantedCapabilities = computed(() => {
       </section>
     </div>
 
-    <footer class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+    <footer class="flex justify-end gap-2 px-5 py-4 border-t border-hairline">
       <button
         type="button"
-        class="px-3 h-9 rounded-field text-sm font-medium border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
+        class="px-3 h-9 rounded-field text-sm font-medium border border-hairline bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="$emit('cancel')"
       >
         {{ t('plugins.enableCancel') }}

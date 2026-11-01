@@ -16,7 +16,7 @@ const props = withDefaults(
 
 const classes = computed(() => [
   'ui-page-header relative shrink-0 bg-base-100/(--glass-alpha) backdrop-blur transition-[border-color,box-shadow]',
-  props.elevated ? 'border-b border-transparent shadow-md' : 'border-b border-base-300/80',
+  props.elevated ? 'border-b border-transparent shadow-md' : 'border-b border-hairline/80',
   props.sticky ? 'sticky top-0 z-10' : '',
   props.compact ? 'px-4 py-2.5' : 'px-5 py-3'
 ]);

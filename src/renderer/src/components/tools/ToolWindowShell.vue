@@ -58,7 +58,7 @@ onBeforeUnmount(() => {
     class="flex h-full w-full flex-col overflow-hidden bg-base-200/(--glass-alpha)"
   >
     <header
-      class="flex h-9 shrink-0 select-none items-center justify-between gap-3 border-b border-base-300 pl-3 pr-1"
+      class="flex h-9 shrink-0 select-none items-center justify-between gap-3 border-b border-hairline pl-3 pr-1"
       style="-webkit-app-region: drag"
     >
       <div class="flex min-w-0 items-center gap-2 text-xs text-base-content/70">

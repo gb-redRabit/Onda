@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
   <ToolWindowShell :title="t('tools.converterTitle')" :icon="Wrench">
     <div data-testid="tools-converter-view" class="flex h-full flex-col">
       <div class="flex-1 overflow-auto p-4 space-y-4">
-        <div class="inline-flex rounded-field border border-base-300 bg-base-100 p-1">
+        <div class="inline-flex rounded-field border border-hairline bg-base-100 p-1">
           <button
             data-testid="tools-kind-audio"
             class="flex items-center gap-1.5 rounded-field px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
@@ -255,7 +255,7 @@ onBeforeUnmount(() => {
 
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <section
-            class="flex min-h-64 flex-col rounded-box border border-base-300 bg-base-100/70 p-4"
+            class="flex min-h-64 flex-col rounded-box border border-hairline bg-base-100/70 p-4"
             @dragover.prevent
             @drop.prevent="onDrop"
           >
@@ -269,7 +269,7 @@ onBeforeUnmount(() => {
               <div class="flex items-center gap-1.5">
                 <button
                   data-testid="tools-add-files"
-                  class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="busy"
                   @click="pickFiles"
                 >
@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
                   {{ t('tools.addFiles') }}
                 </button>
                 <button
-                  class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                  class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                   :disabled="busy || files.length === 0"
                   @click="clearFiles"
                 >
@@ -298,7 +298,7 @@ onBeforeUnmount(() => {
               <div
                 v-for="path in files"
                 :key="path"
-                class="flex items-center gap-2 rounded-field border border-base-300/70 bg-base-200/40 px-2.5 py-2"
+                class="flex items-center gap-2 rounded-field border border-hairline/70 bg-base-200/40 px-2.5 py-2"
               >
                 <component
                   :is="kind === 'audio' ? Music : Video"
@@ -322,7 +322,7 @@ onBeforeUnmount(() => {
           </section>
 
           <aside class="space-y-4">
-            <section class="rounded-box border border-base-300 bg-base-100/70 p-4 space-y-3">
+            <section class="rounded-box border border-hairline bg-base-100/70 p-4 space-y-3">
               <label v-if="kind === 'audio'" class="block">
                 <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.audioFormat') }}
@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="audioFormat"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="mp3">MP3</option>
                   <option value="flac">FLAC</option>
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model.number="audioBitrate"
                   :disabled="busy || bitrateDisabled"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option :value="128">{{ t('tools.bitrateOption', { value: 128 }) }}</option>
                   <option :value="192">{{ t('tools.bitrateOption', { value: 192 }) }}</option>
@@ -366,7 +366,7 @@ onBeforeUnmount(() => {
                   v-model="videoContainer"
                   data-testid="tools-video-format"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="mp4">{{ t('tools.mp4') }}</option>
                   <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="videoQuality"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="high">{{ t('tools.qualityHigh') }}</option>
                   <option value="medium">{{ t('tools.qualityMedium') }}</option>
@@ -399,10 +399,10 @@ onBeforeUnmount(() => {
                     type="text"
                     :disabled="busy"
                     :placeholder="t('tools.outputDefault')"
-                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                    class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   />
                   <button
-                    class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                    class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                     :disabled="busy"
                     :title="t('tools.chooseFolder')"
                     :aria-label="t('tools.chooseFolder')"
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
               </label>
             </section>
 
-            <section class="rounded-box border border-base-300 bg-base-100/70 p-4 space-y-2">
+            <section class="rounded-box border border-hairline bg-base-100/70 p-4 space-y-2">
               <button
                 data-testid="tools-convert"
                 class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 v-if="busy"
-                class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
+                class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
                 @click="cancelConvert"
               >
                 <Square :size="12" />
@@ -444,7 +444,7 @@ onBeforeUnmount(() => {
             v-for="job in jobs"
             :key="job.id"
             :data-testid="`tools-job-${job.status}`"
-            class="rounded-box border border-base-300 bg-base-100/70 px-3 py-2"
+            class="rounded-box border border-hairline bg-base-100/70 px-3 py-2"
           >
             <div class="flex items-center gap-2">
               <CheckCircle2 v-if="job.status === 'done'" :size="14" class="shrink-0 text-success" />

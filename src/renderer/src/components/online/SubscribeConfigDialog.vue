@@ -126,7 +126,7 @@ function confirm() {
     @escape="emit('cancel')"
   >
     <!-- Nagłówek -->
-    <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-hairline shrink-0">
       <div
         v-if="avatarSrc && !avatarFailed"
         class="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-base-100"
@@ -140,7 +140,7 @@ function confirm() {
       </div>
       <div
         v-else
-        class="w-10 h-10 rounded-full bg-base-100 border border-base-300 flex items-center justify-center shrink-0 text-base-content/50"
+        class="w-10 h-10 rounded-full bg-base-100 border border-hairline flex items-center justify-center shrink-0 text-base-content/50"
       >
         <Tv2 :size="18" />
       </div>
@@ -241,9 +241,9 @@ function confirm() {
     </div>
 
     <!-- Stopka -->
-    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300 shrink-0">
+    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-hairline shrink-0">
       <button
-        class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
+        class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="close"
       >
         {{ $t('youtube.cancel') }}

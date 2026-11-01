@@ -173,7 +173,7 @@ function addFrom(album: AlbumEntry, index: number): void {
             {{ $t('compact.playAlbum') }}
           </button>
           <button
-            class="mt-2 ml-1.5 inline-grid place-items-center w-7 h-7 rounded-field border border-base-300 text-base-content/60 hover:text-primary-text hover:bg-primary/10"
+            class="mt-2 ml-1.5 inline-grid place-items-center w-7 h-7 rounded-field border border-hairline text-base-content/60 hover:text-primary-text hover:bg-primary/10"
             :title="$t('compact.addAlbumToQueue')"
             :aria-label="$t('compact.addAlbumToQueue')"
             data-testid="compact-add-album-queue"

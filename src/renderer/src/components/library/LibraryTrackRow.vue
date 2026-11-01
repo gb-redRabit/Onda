@@ -95,7 +95,7 @@ function onDragStart(e: DragEvent) {
     :class="
       selected
         ? 'bg-primary/10 border-primary/30'
-        : 'border-transparent hover:border-base-300 hover:shadow-sm'
+        : 'border-transparent hover:border-hairline hover:shadow-sm'
     "
     draggable="true"
     @click="emit('select', $event, false)"
@@ -116,7 +116,7 @@ function onDragStart(e: DragEvent) {
       @click.stop="onCheckboxClick"
     />
     <div
-      class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300"
+      class="relative shrink-0 w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-hairline"
     >
       <MediaCover :path="props.track.path" :size="14" :autoplay="hovered" fallback="play" />
       <button

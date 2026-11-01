@@ -183,7 +183,7 @@ const trackCount = computed(() => saved.tracks.length);
                 <div
                   v-for="s in row.tracks"
                   :key="s.id"
-                  class="group rounded-box bg-base-100 border border-base-300/80 p-2.5 transition hover:-translate-y-0.5 hover:shadow-md hover:border-base-content/20"
+                  class="group rounded-box bg-base-100 border border-hairline/80 p-2.5 transition hover:-translate-y-0.5 hover:shadow-md hover:border-base-content/20"
                 >
                   <div class="relative overflow-hidden rounded-field bg-base-200 aspect-video">
                     <img

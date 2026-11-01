@@ -50,7 +50,7 @@ const settings = useSettingsStore();
   </SettingsGroup>
   <SettingsGroup :title="$t('settings.retryBaseMs')" :description="$t('settings.retryBaseMsDesc')">
     <select
-      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
       :value="String(settings.download.retryBaseMs ?? 1500)"
       @change="
         settings.updateDownload({
@@ -95,7 +95,7 @@ const settings = useSettingsStore();
         min="0"
         max="23"
         :value="settings.download.nightScheduleStart"
-        class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm w-20"
+        class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm w-20"
         @change="
           settings.updateDownload({
             nightScheduleStart: parseInt(($event.target as HTMLInputElement).value) || 0
@@ -108,7 +108,7 @@ const settings = useSettingsStore();
         min="0"
         max="23"
         :value="settings.download.nightScheduleEnd"
-        class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm w-20"
+        class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm w-20"
         @change="
           settings.updateDownload({
             nightScheduleEnd: parseInt(($event.target as HTMLInputElement).value) || 0

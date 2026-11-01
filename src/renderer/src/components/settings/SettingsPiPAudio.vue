@@ -151,7 +151,7 @@ onBeforeUnmount(() => {
 
 <template>
   <SettingsGroup>
-    <div class="flex items-center justify-between pb-4 border-b border-base-300">
+    <div class="flex items-center justify-between pb-4 border-b border-hairline">
       <SettingsSectionTitle :title="$t('settings.audioPipSection')" class="mb-0!" />
       <button
         class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
@@ -180,7 +180,7 @@ onBeforeUnmount(() => {
                   settings.appearance.audioPipDock ===
                   DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id
                     ? 'border-primary bg-primary/10 text-primary-text'
-                    : 'border-base-300 bg-base-100 text-base-content/60 hover:bg-base-content/5'
+                    : 'border-hairline bg-base-100 text-base-content/60 hover:bg-base-content/5'
                 "
                 :title="dockLabel(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
                 @click="setDock(DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id)"
@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
               :class="
                 isChecked(id)
                   ? 'border-primary bg-primary/10 text-primary-text'
-                  : 'border-base-300 bg-base-100 text-base-content/60 hover:bg-base-content/5'
+                  : 'border-hairline bg-base-100 text-base-content/60 hover:bg-base-content/5'
               "
               @click="toggleElement(id)"
             >

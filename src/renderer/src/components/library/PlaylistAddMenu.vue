@@ -81,7 +81,7 @@ function pick(playlistId: string) {
     <Teleport to="body">
       <div
         v-if="open"
-        class="playlist-popup fixed w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-50"
+        class="playlist-popup fixed w-48 bg-base-100 border border-hairline rounded-box shadow-xl py-1 z-50"
         :style="popupStyle"
         @click.stop
       >

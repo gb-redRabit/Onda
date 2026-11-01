@@ -13,7 +13,7 @@ const props = withDefaults(
 );
 
 const variants: Record<string, string> = {
-  default: 'bg-base-100 text-base-content/70 border border-base-300',
+  default: 'bg-base-100 text-base-content/70 border border-hairline',
   accent: 'bg-primary/10 text-primary-text',
   green: 'bg-success/15 text-success',
   amber: 'bg-warning/15 text-warning',

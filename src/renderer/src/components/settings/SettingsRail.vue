@@ -34,7 +34,7 @@ const activeSectionId = computed(
 
 <template>
   <nav
-    class="shrink-0 flex flex-col overflow-y-auto border-r border-base-300/60 bg-base-200/30 w-14 lg:w-64 px-1.5 lg:px-3 py-3"
+    class="shrink-0 flex flex-col overflow-y-auto border-r border-hairline/60 bg-base-200/30 w-14 lg:w-64 px-1.5 lg:px-3 py-3"
   >
     <template v-for="section in sections" :key="section.id">
       <button
@@ -55,7 +55,7 @@ const activeSectionId = computed(
           {{ $t(section.labelKey) }}
         </span>
       </button>
-      <div class="hidden lg:flex flex-col gap-0.5 mb-2 pl-3 ml-4 border-l border-base-300/60">
+      <div class="hidden lg:flex flex-col gap-0.5 mb-2 pl-3 ml-4 border-l border-hairline/60">
         <button
           v-for="tab in tabsOf(section.id)"
           :key="tab.id"
@@ -74,7 +74,7 @@ const activeSectionId = computed(
       </div>
     </template>
 
-    <div class="mt-auto pt-3 border-t border-base-300/50">
+    <div class="mt-auto pt-3 border-t border-hairline/50">
       <button
         class="flex items-center gap-2 px-2 h-8 w-full rounded-field text-[12px] text-base-content/50 hover:text-error hover:bg-error/10 transition-colors"
         :title="$t('settings.reset')"

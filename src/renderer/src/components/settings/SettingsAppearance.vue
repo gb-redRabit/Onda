@@ -56,7 +56,7 @@ const sidebarPositionOptions = computed(() =>
   </SettingsGroup>
 
   <SettingsGroup :title="$t('settings.sidebarSections')">
-    <div class="divide-y divide-base-300">
+    <div class="divide-y divide-hairline">
       <SettingsRow :label="$t('library.playlists')">
         <input
           type="checkbox"

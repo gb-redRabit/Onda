@@ -146,7 +146,7 @@ const noMatch = computed(
     class="flex flex-col items-center justify-center h-full gap-4 p-8 text-base-content/50"
   >
     <div
-      class="w-20 h-20 rounded-full bg-base-100 border border-base-300 flex items-center justify-center"
+      class="w-20 h-20 rounded-full bg-base-100 border border-hairline flex items-center justify-center"
     >
       <Folder :size="28" class="opacity-40" />
     </div>
@@ -168,7 +168,7 @@ const noMatch = computed(
     <div
       v-for="meta in folderMetas"
       :key="meta.path"
-      class="group rounded-box bg-base-100 border border-base-300 overflow-hidden hover:border-primary/20 hover:shadow-sm transition duration-150"
+      class="group rounded-box bg-base-100 border border-hairline overflow-hidden hover:border-primary/20 hover:shadow-sm transition duration-150"
     >
       <!-- Szklany nagłówek z mozaiką -->
       <div
@@ -190,7 +190,7 @@ const noMatch = computed(
             <span class="text-2xs">{{ folderTypeIcon(meta.type) }}</span>
             <span class="text-sm font-semibold truncate">{{ meta.name }}</span>
             <span
-              class="hidden sm:inline text-2xs px-1.5 py-0.5 rounded-full bg-base-200 border border-base-300 text-base-content/60"
+              class="hidden sm:inline text-2xs px-1.5 py-0.5 rounded-full bg-base-200 border border-hairline text-base-content/60"
               >{{ meta.count }} {{ $t('library.folderFiles') }}</span
             >
             <span v-if="meta.duration > 0" class="hidden md:inline text-2xs text-base-content/60">{{
@@ -213,21 +213,21 @@ const noMatch = computed(
             <Play :size="14" class="ml-0.5 fill-current" />
           </button>
           <button
-            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-base-300 text-base-content/60 hover:text-primary-text hover:border-primary/30 items-center justify-center transition-colors"
+            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-hairline text-base-content/60 hover:text-primary-text hover:border-primary/30 items-center justify-center transition-colors"
             :title="$t('library.folderShuffle')"
             @click.stop="shuffleFolder(meta.path)"
           >
             <Shuffle :size="12" />
           </button>
           <button
-            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-base-300 text-base-content/60 hover:text-base-content items-center justify-center transition-colors"
+            class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-hairline text-base-content/60 hover:text-base-content items-center justify-center transition-colors"
             :title="$t('library.folderShowInExplorer')"
             @click.stop="showInExplorer(meta.path)"
           >
             <ExternalLink :size="12" />
           </button>
           <button
-            class="w-8 h-8 rounded-full bg-base-200 border border-base-300 flex items-center justify-center hover:bg-base-300 transition-colors ml-1"
+            class="w-8 h-8 rounded-full bg-base-200 border border-hairline flex items-center justify-center hover:bg-base-300 transition-colors ml-1"
             :aria-label="$t('library.expandFolder')"
             :aria-expanded="isExpanded(meta.path)"
             @click="togglePath(meta.path)"
@@ -243,7 +243,7 @@ const noMatch = computed(
 
       <div
         v-if="isExpanded(meta.path)"
-        class="border-t border-base-300 bg-base-200/30 backdrop-blur-sm"
+        class="border-t border-hairline bg-base-200/30 backdrop-blur-sm"
       >
         <DirNode
           :dir="meta.path"

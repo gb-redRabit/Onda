@@ -2774,6 +2774,7 @@ api.registerCommand({
       base200: 'App background',
       base100: 'Cards and panels',
       base300: 'Details and borders',
+      hairline: 'Borders (hairline)',
       baseContent: 'Text on backgrounds',
       primary: 'Primary accent',
       primaryContent: 'Text on primary',

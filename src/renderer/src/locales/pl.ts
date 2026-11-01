@@ -2785,6 +2785,7 @@ api.registerCommand({
       base200: 'Tło aplikacji',
       base100: 'Karty i panele',
       base300: 'Detale i obramowania',
+      hairline: 'Obramowania (hairline)',
       baseContent: 'Tekst na tłach',
       primary: 'Akcent główny',
       primaryContent: 'Napisy na akcencie',

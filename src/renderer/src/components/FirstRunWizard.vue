@@ -103,9 +103,9 @@ function dismiss() {
       aria-modal="true"
       aria-labelledby="wizard-title"
       tabindex="-1"
-      class="w-full max-w-xl rounded-box bg-base-100 border border-base-300 shadow-2xl shadow-black/50 flex flex-col max-h-[86vh]"
+      class="w-full max-w-xl rounded-box bg-base-100 border border-hairline shadow-2xl shadow-black/50 flex flex-col max-h-[86vh]"
     >
-      <header class="px-6 pt-5 pb-4 border-b border-base-300">
+      <header class="px-6 pt-5 pb-4 border-b border-hairline">
         <div class="flex items-center justify-between gap-4">
           <div id="wizard-title" class="text-xs font-medium text-base-content/50">
             {{ t('wizard.title') }}
@@ -143,7 +143,7 @@ function dismiss() {
         <component :is="steps[current]" v-bind="stepProps" @update:scan-now="scanNow = $event" />
       </main>
 
-      <footer class="px-6 pb-5 pt-4 border-t border-base-300 flex items-center gap-3">
+      <footer class="px-6 pb-5 pt-4 border-t border-hairline flex items-center gap-3">
         <button
           data-testid="wizard-skip"
           class="px-3 py-2 rounded-field text-sm text-base-content/60 hover:text-base-content hover:bg-base-content/10 transition-colors"
@@ -156,7 +156,7 @@ function dismiss() {
 
         <button
           data-testid="wizard-back"
-          class="fx-noise px-3 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
+          class="fx-noise px-3 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
           :disabled="isFirst"
           @click="back"
         >

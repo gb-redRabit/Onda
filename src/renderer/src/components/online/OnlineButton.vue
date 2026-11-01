@@ -27,10 +27,10 @@ const variants: Record<string, string> = {
   primary:
     'bg-primary text-primary-content hover:bg-primary/90 fx-depth fx-noise shadow-primary/20',
   secondary:
-    'bg-base-100 border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content',
+    'bg-base-100 border border-hairline text-base-content/70 hover:bg-base-content/10 hover:text-base-content',
   ghost: 'text-base-content/70 hover:bg-base-content/10 hover:text-base-content',
   danger:
-    'bg-base-100 border border-base-300 text-base-content/70 hover:bg-error/10 hover:text-error hover:border-error/30'
+    'bg-base-100 border border-hairline text-base-content/70 hover:bg-error/10 hover:text-error hover:border-error/30'
 };
 
 const sizes: Record<string, string> = {

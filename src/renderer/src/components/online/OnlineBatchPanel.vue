@@ -30,12 +30,12 @@ const { t } = useI18n();
     leave-from-class="opacity-100 translate-y-0"
     leave-to-class="opacity-0 -translate-y-1"
   >
-    <div v-if="open" class="mt-3 p-3 rounded-box bg-base-100 border border-base-300">
+    <div v-if="open" class="mt-3 p-3 rounded-box bg-base-100 border border-hairline">
       <textarea
         v-model="text"
         :placeholder="t('youtube.batchPlaceholder')"
         rows="4"
-        class="w-full px-3 py-2.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 resize-y"
+        class="w-full px-3 py-2.5 fx-depth rounded-field bg-base-100 border border-hairline text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 resize-y"
       />
       <div class="flex items-center gap-2 mt-3 flex-wrap">
         <span class="text-xs text-base-content/50">
@@ -47,7 +47,7 @@ const { t } = useI18n();
         <select
           v-if="profiles.length && !hasSc"
           v-model="profileId"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content focus:border-primary focus:outline-hidden"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
         >
           <option value="">{{ t('youtube.profileNone') }}</option>
           <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>

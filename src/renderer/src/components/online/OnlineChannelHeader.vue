@@ -33,7 +33,7 @@ watch(
   <div
     v-if="yt.channel"
     data-testid="online-channel-header"
-    class="relative rounded-box overflow-hidden bg-base-100 border border-base-300"
+    class="relative rounded-box overflow-hidden bg-base-100 border border-hairline"
   >
     <div
       v-if="bannerSrc"

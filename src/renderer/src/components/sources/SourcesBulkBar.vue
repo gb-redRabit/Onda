@@ -9,7 +9,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
 
 <template>
   <div
-    class="flex items-center gap-2 px-4 py-1.5 border-b border-base-300 bg-primary/10 text-xs"
+    class="flex items-center gap-2 px-4 py-1.5 border-b border-hairline bg-primary/10 text-xs"
     data-testid="sources-bulk-bar"
   >
     <span class="text-base-content/70 shrink-0" data-testid="sources-selected-count">{{
@@ -17,7 +17,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
     }}</span>
     <span class="flex-1" />
     <button
-      class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+      class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!count"
       :title="$t('sources.downloadAll')"
       @click="emit('download')"
@@ -26,7 +26,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       {{ $t('sources.downloadAll') }}
     </button>
     <button
-      class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+      class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!playableCount"
       :title="$t('sources.addToQueue')"
       @click="emit('queue')"
@@ -35,7 +35,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       {{ $t('sources.addToQueue') }}
     </button>
     <button
-      class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+      class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!playableCount"
       :title="$t('sources.playNow')"
       @click="emit('play')"

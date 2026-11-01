@@ -70,7 +70,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>
-  <div class="min-w-55 space-y-3 rounded-box border border-base-300 bg-base-100 p-3 shadow-xl">
+  <div class="min-w-55 space-y-3 rounded-box border border-hairline bg-base-100 p-3 shadow-xl">
     <div class="flex items-center justify-between gap-2">
       <h2 class="text-sm font-semibold text-base-content">{{ t('audioView.vizSettingsTitle') }}</h2>
       <Button
@@ -210,7 +210,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
       </div>
     </div>
 
-    <div class="space-y-3 border-t border-base-300 pt-3">
+    <div class="space-y-3 border-t border-hairline pt-3">
       <div>
         <div class="mb-1.5 flex items-baseline justify-between gap-2">
           <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">

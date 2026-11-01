@@ -25,14 +25,14 @@ const canSearch = computed(
 </script>
 
 <template>
-  <div class="p-4 border-b border-base-300 shrink-0 space-y-2">
+  <div class="p-4 border-b border-hairline shrink-0 space-y-2">
     <div class="grid grid-cols-2 gap-2">
       <label class="flex flex-col gap-1">
         <span class="text-2xs text-base-content/60">{{ $t('musicbrainz.fieldArtist') }}</span>
         <input
           v-model="artist"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Skillet'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>
@@ -41,7 +41,7 @@ const canSearch = computed(
         <input
           v-model="title"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Monster'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>
@@ -50,7 +50,7 @@ const canSearch = computed(
         <input
           v-model="album"
           :placeholder="$t('musicbrainz.examplePrefix') + 'Awake'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>
@@ -59,7 +59,7 @@ const canSearch = computed(
         <input
           v-model="year"
           :placeholder="$t('musicbrainz.examplePrefix') + '2009'"
-          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm focus:border-primary focus:outline-hidden"
+          class="px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="emit('search')"
         />
       </label>

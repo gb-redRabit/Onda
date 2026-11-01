@@ -315,7 +315,7 @@ async function confirmDownloadFolder(): Promise<void> {
             v-if="item.kind === 'folder'"
             v-activate
             data-testid="providers-folder"
-            class="group relative flex cursor-pointer flex-col gap-2 rounded-box border border-base-300 bg-base-100 p-3 text-left transition-colors hover:border-primary hover:shadow-lg"
+            class="group relative flex cursor-pointer flex-col gap-2 rounded-box border border-hairline bg-base-100 p-3 text-left transition-colors hover:border-primary hover:shadow-lg"
             @click="onItem(item)"
           >
             <div class="flex h-16 items-center justify-center rounded-box bg-primary/10">
@@ -327,7 +327,7 @@ async function confirmDownloadFolder(): Promise<void> {
             <span class="mt-auto text-xs text-base-content/50">{{ t('providers.folder') }}</span>
             <button
               type="button"
-              class="absolute bottom-2 right-2 rounded-field border border-base-300 p-1 text-base-content/70 transition-colors hover:border-primary hover:text-primary-text"
+              class="absolute bottom-2 right-2 rounded-field border border-hairline p-1 text-base-content/70 transition-colors hover:border-primary hover:text-primary-text"
               data-testid="providers-download-folder"
               :title="t('providers.downloadFolder')"
               @click.stop="pendingFolder = item"
@@ -339,7 +339,7 @@ async function confirmDownloadFolder(): Promise<void> {
           <div
             v-else
             data-testid="providers-file"
-            class="group flex flex-col gap-2 rounded-box border border-base-300 bg-base-100 p-3"
+            class="group flex flex-col gap-2 rounded-box border border-hairline bg-base-100 p-3"
           >
             <div
               class="relative flex h-24 items-center justify-center overflow-hidden rounded-box bg-base-content/5"
@@ -379,7 +379,7 @@ async function confirmDownloadFolder(): Promise<void> {
                 v-else
                 type="button"
                 data-testid="providers-download"
-                class="flex shrink-0 items-center gap-1 rounded-field border border-base-300 px-2 py-1 text-xs text-base-content/80 transition-colors hover:border-primary hover:text-primary-text"
+                class="flex shrink-0 items-center gap-1 rounded-field border border-hairline px-2 py-1 text-xs text-base-content/80 transition-colors hover:border-primary hover:text-primary-text"
                 :title="t('providers.download')"
                 @click="store.download(item)"
               >
@@ -393,7 +393,7 @@ async function confirmDownloadFolder(): Promise<void> {
       <div v-if="hasMore" class="flex justify-center">
         <button
           type="button"
-          class="rounded-field border border-base-300 px-3 py-1.5 text-xs text-base-content/80 hover:border-primary hover:text-primary-text"
+          class="rounded-field border border-hairline px-3 py-1.5 text-xs text-base-content/80 hover:border-primary hover:text-primary-text"
           data-testid="providers-show-more"
           @click="visibleCount += PAGE_SIZE"
         >
@@ -467,7 +467,7 @@ async function confirmDownloadFolder(): Promise<void> {
         <textarea
           v-model="credValue"
           rows="3"
-          class="w-full rounded-field border border-base-300 bg-base-200/(--glass-alpha) px-3 py-2 text-xs text-base-content fx-depth outline-hidden transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+          class="w-full rounded-field border border-hairline bg-base-200/(--glass-alpha) px-3 py-2 text-xs text-base-content fx-depth outline-hidden transition focus:border-primary focus:ring-2 focus:ring-primary/15"
           :aria-label="t('providers.cookiePlaceholder')"
           :placeholder="t('providers.cookiePlaceholder')"
           data-testid="providers-cookie-input"
@@ -475,7 +475,7 @@ async function confirmDownloadFolder(): Promise<void> {
         <p v-if="credError" class="text-xs text-error">{{ credError }}</p>
       </div>
 
-      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300">
+      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-hairline">
         <OnlineButton
           variant="secondary"
           size="sm"

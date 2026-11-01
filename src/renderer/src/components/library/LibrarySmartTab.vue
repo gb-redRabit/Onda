@@ -120,7 +120,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
 <template>
   <div class="flex-1 flex min-h-0" data-testid="library-smart-tab">
     <aside
-      class="w-64 shrink-0 border-r border-base-300 overflow-auto p-2 space-y-0.5 bg-base-100"
+      class="w-64 shrink-0 border-r border-hairline overflow-auto p-2 space-y-0.5 bg-base-100"
       :aria-label="$t('library.smart')"
     >
       <button
@@ -144,13 +144,13 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
           :class="
             selected === folder.id
               ? 'bg-primary-content/20 border-primary-content/20'
-              : 'bg-base-300 border-base-300 text-base-content/60'
+              : 'bg-base-300 border-hairline text-base-content/60'
           "
           >{{ folder.count }}</span
         >
       </button>
 
-      <div class="mt-3 pt-3 border-t border-base-300/70">
+      <div class="mt-3 pt-3 border-t border-hairline/70">
         <div
           class="px-2.5 pb-1 text-3xs font-semibold uppercase tracking-wider text-base-content/40"
         >
@@ -188,7 +188,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
               :class="
                 selected === item.id
                   ? 'bg-primary-content/20 border-primary-content/20'
-                  : 'bg-base-300 border-base-300 text-base-content/60'
+                  : 'bg-base-300 border-hairline text-base-content/60'
               "
               >{{ item.count }}</span
             >

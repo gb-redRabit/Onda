@@ -23,7 +23,7 @@ watch(
 </script>
 
 <template>
-  <div class="p-5 rounded-box bg-base-100 border border-base-300">
+  <div class="p-5 rounded-box bg-base-100 border border-hairline">
     <div class="flex items-center gap-4">
       <div
         v-if="avatarSrc && !avatarFailed"
@@ -38,7 +38,7 @@ watch(
       </div>
       <div
         v-else
-        class="w-16 h-16 rounded-full bg-base-200/(--glass-alpha) border border-base-300 flex items-center justify-center shrink-0 text-base-content/50"
+        class="w-16 h-16 rounded-full bg-base-200/(--glass-alpha) border border-hairline flex items-center justify-center shrink-0 text-base-content/50"
       >
         <Tv2 :size="28" />
       </div>

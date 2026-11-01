@@ -16,7 +16,7 @@ async function pickDownloadDir() {
 </script>
 
 <template>
-  <div class="space-y-2 rounded-box border border-base-300 bg-base-200 p-3">
+  <div class="space-y-2 rounded-box border border-hairline bg-base-200 p-3">
     <FieldLabel :text="t('sources.downloadSection')" />
     <div>
       <FieldLabel :text="t('sources.downloadOutputDir')" />
@@ -26,10 +26,10 @@ async function pickDownloadDir() {
           type="text"
           :placeholder="defaultDir"
           :aria-label="t('sources.downloadOutputDir')"
-          class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-sm font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
+          class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <button
-          class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
+          class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           @click="pickDownloadDir"
         >
           {{ t('sources.chooseFolder') }}

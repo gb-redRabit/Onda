@@ -22,7 +22,7 @@ const { showImageMenu } = useLibraryContextMenu();
 </script>
 
 <template>
-  <div v-if="props.audio.length > 0" class="divide-y divide-base-300/30">
+  <div v-if="props.audio.length > 0" class="divide-y divide-hairline/30">
     <LibraryTrackRow
       v-for="t in props.audio.slice(0, props.audioLimit)"
       :key="t.path"
@@ -32,7 +32,7 @@ const { showImageMenu } = useLibraryContextMenu();
     />
     <button
       v-if="props.audio.length > props.audioLimit"
-      class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors border-t border-base-300/30"
+      class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors border-t border-hairline/30"
       @click="emit('more-audio')"
     >
       Pokaż więcej ({{ props.audio.length - props.audioLimit }} z {{ props.audio.length }})
@@ -42,7 +42,7 @@ const { showImageMenu } = useLibraryContextMenu();
     <button
       v-for="img in props.images.slice(0, props.imageLimit)"
       :key="img.path"
-      class="aspect-square rounded-field overflow-hidden bg-base-200 border border-base-300 hover:border-primary/30 transition-colors group"
+      class="aspect-square rounded-field overflow-hidden bg-base-200 border border-hairline hover:border-primary/30 transition-colors group"
       @click="emit('open-image', img.path)"
       @contextmenu.prevent="showImageMenu($event, img, () => emit('open-image', img.path))"
     >

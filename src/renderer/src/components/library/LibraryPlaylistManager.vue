@@ -159,13 +159,13 @@ const playlistVirtualizer = useVirtualList({
 
 <template>
   <div class="flex h-full">
-    <div class="w-56 border-r border-base-300 p-3 shrink-0 flex flex-col">
+    <div class="w-56 border-r border-hairline p-3 shrink-0 flex flex-col">
       <h2 class="text-sm font-bold mb-3">{{ $t('library.playlists') }}</h2>
 
       <div class="flex gap-2 mb-3">
         <input
           v-model="newName"
-          class="flex-1 px-2 py-1 text-xs fx-depth rounded-field bg-base-100 border border-base-300 outline-hidden focus:border-primary"
+          class="flex-1 px-2 py-1 text-xs fx-depth rounded-field bg-base-100 border border-hairline outline-hidden focus:border-primary"
           :placeholder="$t('library.playlistName')"
           @keyup.enter="createPlaylist"
         />
@@ -208,7 +208,7 @@ const playlistVirtualizer = useVirtualList({
     </div>
 
     <div v-if="selectedPlaylist" class="flex-1 flex flex-col min-w-0">
-      <div class="flex items-center justify-between p-3 border-b border-base-300">
+      <div class="flex items-center justify-between p-3 border-b border-hairline">
         <div>
           <h2 class="text-sm font-bold">{{ selectedPlaylist.name }}</h2>
           <p class="text-xs text-base-content/50">

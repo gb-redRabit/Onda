@@ -225,7 +225,7 @@ watch(
     >
       <div class="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <section
-          class="flex min-h-0 flex-col rounded-box border border-base-300 bg-base-100/70 p-3"
+          class="flex min-h-0 flex-col rounded-box border border-hairline bg-base-100/70 p-3"
         >
           <div class="flex items-center justify-between gap-2">
             <div class="text-sm font-semibold">
@@ -235,7 +235,7 @@ watch(
             <div class="flex items-center gap-1.5">
               <button
                 data-testid="batch-images-add"
-                class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="busy"
                 @click="pickFiles"
               >
@@ -244,7 +244,7 @@ watch(
               </button>
               <button
                 data-testid="batch-images-clear"
-                class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                 :disabled="busy || total === 0"
                 @click="clearAll"
               >
@@ -266,7 +266,7 @@ watch(
               v-for="row in files"
               :key="row.path"
               :data-testid="`batch-images-row-${row.status}`"
-              class="rounded-field border border-base-300/70 bg-base-200/40 px-2.5 py-2"
+              class="rounded-field border border-hairline/70 bg-base-200/40 px-2.5 py-2"
             >
               <div class="flex items-center gap-2">
                 <CheckCircle2
@@ -319,7 +319,7 @@ watch(
         </section>
 
         <aside class="space-y-3">
-          <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+          <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
             <label class="block">
               <span class="text-2xs font-medium text-base-content/60">
                 {{ t('tools.batchImagesFormat') }}
@@ -328,7 +328,7 @@ watch(
                 v-model="format"
                 data-testid="batch-images-format"
                 :disabled="busy"
-                class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
               >
                 <option v-for="item in IMAGE_OUTPUT_FORMATS" :key="item" :value="item">
                   {{ item.toUpperCase() }}
@@ -362,7 +362,7 @@ watch(
                   type="number"
                   min="0"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
               </label>
               <label class="block">
@@ -375,7 +375,7 @@ watch(
                   type="number"
                   min="0"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
               </label>
             </div>
@@ -392,10 +392,10 @@ watch(
                   type="text"
                   :disabled="busy"
                   :placeholder="t('tools.outputDefault')"
-                  class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
                 <button
-                  class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="busy"
                   :title="t('tools.chooseFolder')"
                   :aria-label="t('tools.chooseFolder')"
@@ -407,7 +407,7 @@ watch(
             </label>
           </section>
 
-          <section class="space-y-2 rounded-box border border-base-300 bg-base-100/70 p-3">
+          <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
             <button
               data-testid="batch-images-start"
               class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
@@ -420,7 +420,7 @@ watch(
             <button
               v-if="busy"
               data-testid="batch-images-cancel"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
+              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
               @click="cancel"
             >
               <Square :size="12" />

@@ -94,7 +94,7 @@ async function onDrop(e: DragEvent, targetPath: string) {
     </button>
   </div>
   <div
-    class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs overflow-hidden"
+    class="flex-1 flex items-center gap-0.5 px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs overflow-hidden"
     @dragover.prevent
     @drop.prevent
   >

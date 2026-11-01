@@ -55,9 +55,9 @@ function close() {
       </button>
     </div>
 
-    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300">
+    <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-hairline">
       <button
-        class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
+        class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="close"
       >
         {{ cancelText || $t('common.cancel') }}

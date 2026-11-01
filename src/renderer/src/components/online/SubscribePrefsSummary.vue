@@ -8,7 +8,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="p-4 rounded-box bg-base-100 border border-base-300">
+  <div class="p-4 rounded-box bg-base-100 border border-hairline">
     <p class="text-xs text-base-content/50 font-medium uppercase tracking-wider mb-3">
       {{ t('youtube.prefsSummary') }}
     </p>

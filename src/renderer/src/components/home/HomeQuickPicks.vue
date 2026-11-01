@@ -43,7 +43,7 @@ const emit = defineEmits<{
         v-for="pick in items"
         :key="pick.track.path"
         v-activate
-        class="group flex min-w-0 cursor-pointer items-center gap-3 rounded-box border border-base-300/75 bg-base-100 p-2 pr-3 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/4"
+        class="group flex min-w-0 cursor-pointer items-center gap-3 rounded-box border border-hairline/75 bg-base-100 p-2 pr-3 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/4"
         :aria-label="`${$t('common.play')}: ${pick.title}`"
         @click="emit('play', pick.track)"
         @contextmenu="emit('contextmenu', $event, pick.track)"

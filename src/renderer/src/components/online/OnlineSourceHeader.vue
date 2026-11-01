@@ -39,7 +39,7 @@ const kindMeta = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 p-3 rounded-box bg-base-100 border border-base-300">
+  <div class="flex items-center gap-3 p-3 rounded-box bg-base-100 border border-hairline">
     <OnlineBadge :variant="kindMeta.variant" size="md">{{ $t(kindMeta.key) }}</OnlineBadge>
     <div class="min-w-0 flex-1">
       <h2 class="text-sm font-semibold text-base-content truncate">{{ title }}</h2>

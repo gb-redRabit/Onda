@@ -34,7 +34,7 @@ const { t } = useI18n();
 
     <details
       v-if="prettyRaw"
-      class="rounded-field border border-base-300 bg-base-100/50"
+      class="rounded-field border border-hairline bg-base-100/50"
       data-testid="source-test-raw"
     >
       <summary class="cursor-pointer px-3 py-2 text-2xs font-medium text-base-content/60">
@@ -47,7 +47,7 @@ const { t } = useI18n();
 
     <details
       v-if="headerRows.length"
-      class="rounded-field border border-base-300 bg-base-100/50"
+      class="rounded-field border border-hairline bg-base-100/50"
       data-testid="source-test-headers"
     >
       <summary class="cursor-pointer px-3 py-2 text-2xs font-medium text-base-content/60">

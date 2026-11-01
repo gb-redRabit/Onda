@@ -36,7 +36,7 @@ function isRowSelected(item: SourceItem): boolean {
 
 <template>
   <div class="h-full overflow-y-auto p-4 space-y-4">
-    <div class="flex gap-4 rounded-box border border-base-300 bg-base-100 p-4">
+    <div class="flex gap-4 rounded-box border border-hairline bg-base-100 p-4">
       <div class="w-56 shrink-0 rounded-field overflow-hidden bg-base-100">
         <img
           v-if="item?.thumbnail"
@@ -87,7 +87,7 @@ function isRowSelected(item: SourceItem): boolean {
         <div class="flex-1" />
         <button
           v-if="downloadable && rows.length"
-          class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-2xs text-base-content/70 hover:bg-base-content/10 transition-colors"
+          class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-2xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.downloadAllRows')"
           @click="emit('download-all', rows)"
         >
@@ -107,7 +107,7 @@ function isRowSelected(item: SourceItem): boolean {
       />
       <SourcePlayerView
         v-else-if="viewMode === 'player'"
-        class="min-h-[50vh] rounded-box border border-base-300 overflow-hidden"
+        class="min-h-[50vh] rounded-box border border-hairline overflow-hidden"
         :items="rows"
         :downloadable="downloadable"
         :selectable="selectable"
@@ -150,7 +150,7 @@ function isRowSelected(item: SourceItem): boolean {
           :class="
             isRowSelected(row)
               ? 'border-primary ring-2 ring-primary'
-              : 'border-base-300 hover:border-primary/50'
+              : 'border-hairline hover:border-primary/50'
           "
           :disabled="!rowClickable && !selectable"
           :title="row.title"

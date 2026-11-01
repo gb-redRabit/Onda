@@ -24,7 +24,7 @@ const emit = defineEmits<{ (e: 'open', tab: TabId): void }>();
 <template>
   <aside
     data-testid="home-stats"
-    class="flex h-full flex-col justify-between rounded-box border border-base-300/80 bg-base-100 p-3"
+    class="flex h-full flex-col justify-between rounded-box border border-hairline/80 bg-base-100 p-3"
   >
     <!-- Nagłówek będący jednocześnie skrótem do przeglądu całej biblioteki (items[0]) -->
     <button
@@ -68,7 +68,7 @@ const emit = defineEmits<{ (e: 'open', tab: TabId): void }>();
         :key="item.tab"
         type="button"
         :data-testid="'home-counter-' + item.tab"
-        class="group flex min-w-0 items-center gap-2.5 rounded-field border border-transparent bg-base-200/45 px-2.5 py-2 text-left transition-colors hover:border-base-300/80 hover:bg-base-content/6"
+        class="group flex min-w-0 items-center gap-2.5 rounded-field border border-transparent bg-base-200/45 px-2.5 py-2 text-left transition-colors hover:border-hairline/80 hover:bg-base-content/6"
         :title="$t('home.openInLibrary')"
         @click="emit('open', item.tab)"
       >

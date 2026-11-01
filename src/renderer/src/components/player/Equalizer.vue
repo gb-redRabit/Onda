@@ -85,7 +85,7 @@ const {
   <div
     ref="panel"
     data-testid="equalizer"
-    class="bg-base-100 border border-base-300 rounded-box p-4 w-135 max-w-[95vw]"
+    class="bg-base-100 border border-hairline rounded-box p-4 w-135 max-w-[95vw]"
   >
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-1.5">
@@ -293,7 +293,7 @@ const {
         type="text"
         :aria-label="$t('equalizer.presetName')"
         :placeholder="$t('equalizer.presetName')"
-        class="flex-1 min-w-0 px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-hidden"
+        class="flex-1 min-w-0 px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus:border-primary focus:outline-hidden"
         data-testid="eq-preset-name-input"
         @keydown.enter="confirmSavePreset"
       />
@@ -319,7 +319,7 @@ const {
     <!-- krzywa -->
     <div
       ref="curveEl"
-      class="relative z-30 rounded-field border border-base-300 bg-base-200/(--glass-alpha) mb-3"
+      class="relative z-30 rounded-field border border-hairline bg-base-200/(--glass-alpha) mb-3"
       data-testid="eq-curve"
       @dblclick="onCurveDblClick"
     >
@@ -416,7 +416,7 @@ const {
       <!-- menu kontekstowe kropki -->
       <div
         v-if="menuBand !== null"
-        class="absolute z-50 w-36 p-1 rounded-field border border-base-300 bg-base-100 fx-depth text-2xs"
+        class="absolute z-50 w-36 p-1 rounded-field border border-hairline bg-base-100 fx-depth text-2xs"
         :style="{
           left: bandX(bands[menuBand].frequency) + '%',
           top: bandY(bands[menuBand].gain + fx.equalizerPreamp) + '%',
@@ -433,7 +433,7 @@ const {
         >
           {{ typeLabel(tp) }}
         </button>
-        <div class="my-0.5 border-t border-base-300" />
+        <div class="my-0.5 border-t border-hairline" />
         <button
           class="w-full text-left px-2 py-1 rounded-field text-error hover:bg-base-content/10 transition-colors"
           :disabled="bands.length <= 1"

@@ -21,7 +21,7 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
   <div
     role="menu"
     data-menu="view"
-    class="absolute top-full left-0 mt-1 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-2 min-w-56 z-70"
+    class="absolute top-full left-0 mt-1 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-black/40 py-2 min-w-56 z-70"
   >
     <AppMenuItem
       v-for="r in ROUTES"
@@ -35,7 +35,7 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
         shortcut(r.shortcut)
       }}</template>
     </AppMenuItem>
-    <div class="border-t border-base-300 my-1.5 mx-2" role="separator" />
+    <div class="border-t border-hairline my-1.5 mx-2" role="separator" />
     <AppMenuItem :icon="Download" @click="$emit('navigate', '/downloads')">{{
       $t('menu.downloads')
     }}</AppMenuItem>
@@ -43,7 +43,7 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
       {{ $t('menu.settings') }}
       <template v-if="shortcut('settings')" #hint>{{ shortcut('settings') }}</template>
     </AppMenuItem>
-    <div class="border-t border-base-300 my-1.5 mx-2" role="separator" />
+    <div class="border-t border-hairline my-1.5 mx-2" role="separator" />
     <AppMenuItem
       :icon="PanelBottom"
       @click="settings.updateStatusBar({ visible: !settings.statusBar.visible })"

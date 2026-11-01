@@ -74,7 +74,7 @@ function onHoverLeave() {
     :class="
       selected
         ? 'bg-primary/12 border-primary/50'
-        : 'bg-base-100 border-base-300/80 hover:border-primary/35'
+        : 'bg-base-100 border-hairline/80 hover:border-primary/35'
     "
     draggable="true"
     @contextmenu.prevent="onContextMenu"

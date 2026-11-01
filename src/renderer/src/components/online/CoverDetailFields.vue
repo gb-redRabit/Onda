@@ -47,7 +47,7 @@ async function onPickFile() {
 }
 
 const INPUT_BASE =
-  'mt-1 w-full py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden';
+  'mt-1 w-full py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden';
 
 /** Wiersz klipu z 3 kolumnami jest węższy, więc traci stopień poziomego paddingu. */
 function inputClass(compact: boolean): string {
@@ -126,7 +126,7 @@ function inputClass(compact: boolean): string {
   <div v-else-if="coverType === 'custom'" class="mt-2 flex items-center gap-2">
     <button
       type="button"
-      class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
+      class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="onPickFile"
     >
       <ImagePlus :size="13" />

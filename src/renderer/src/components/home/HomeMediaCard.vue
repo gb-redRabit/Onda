@@ -42,7 +42,7 @@ const emit = defineEmits<{
        Widoczne Play / „otwórz” to afordancje dla myszy; dostępność zapewnia
        rozciągnięty przycisk, więc jego duplikaty są ukryte przed czytnikiem. -->
   <article
-    class="group relative w-36 sm:w-38 shrink-0 rounded-box border border-base-300/75 bg-base-100 p-2.5 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/3"
+    class="group relative w-36 sm:w-38 shrink-0 rounded-box border border-hairline/75 bg-base-100 p-2.5 text-left transition-colors hover:border-base-content/20 hover:bg-base-content/3"
     @contextmenu="emit('contextmenu', $event)"
   >
     <button
@@ -57,11 +57,11 @@ const emit = defineEmits<{
       <template v-if="stacked && !round">
         <div
           aria-hidden="true"
-          class="pointer-events-none absolute inset-x-3 top-0 bottom-2 rounded-field border border-base-300/60 bg-base-200/60"
+          class="pointer-events-none absolute inset-x-3 top-0 bottom-2 rounded-field border border-hairline/60 bg-base-200/60"
         />
         <div
           aria-hidden="true"
-          class="pointer-events-none absolute inset-x-1.5 top-0.5 bottom-1 rounded-field border border-base-300/75 bg-base-200/90"
+          class="pointer-events-none absolute inset-x-1.5 top-0.5 bottom-1 rounded-field border border-hairline/75 bg-base-200/90"
         />
       </template>
 

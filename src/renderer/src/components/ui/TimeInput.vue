@@ -91,7 +91,7 @@ const classes = computed(() =>
     props.size === 'sm' ? 'h-8 px-2.5 text-xs' : 'h-9 px-3 text-sm',
     isInvalid.value
       ? 'border-error focus:border-error focus:ring-error/20'
-      : 'border-base-300/80 focus:border-primary/50'
+      : 'border-hairline/80 focus:border-primary/50'
   )
 );
 </script>

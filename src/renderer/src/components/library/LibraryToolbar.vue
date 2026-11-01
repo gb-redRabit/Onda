@@ -43,7 +43,7 @@ const { t } = useI18n();
       <div class="relative">
         <select
           v-model="sortKey"
-          class="appearance-none h-9 pl-2.5 pr-8 rounded-field bg-base-200/70 border border-base-300/80 text-xs font-medium focus:border-primary/50 focus:outline-hidden cursor-pointer"
+          class="appearance-none h-9 pl-2.5 pr-8 rounded-field bg-base-200/70 border border-hairline/80 text-xs font-medium focus:border-primary/50 focus:outline-hidden cursor-pointer"
         >
           <option value="added">{{ t('library.sortAdded') }}</option>
           <option value="title">{{ t('library.sortTitle') }}</option>
@@ -58,7 +58,7 @@ const { t } = useI18n();
         />
       </div>
       <button
-        class="grid h-9 w-9 place-items-center rounded-field bg-base-200/70 border border-base-300/80 hover:border-primary/40 text-base-content/65 hover:text-primary-text transition-colors"
+        class="grid h-9 w-9 place-items-center rounded-field bg-base-200/70 border border-hairline/80 hover:border-primary/40 text-base-content/65 hover:text-primary-text transition-colors"
         :title="sortDir === 'asc' ? '↑' : '↓'"
         :aria-label="sortDir === 'asc' ? '↑' : '↓'"
         @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
@@ -94,7 +94,7 @@ const { t } = useI18n();
       :class="
         chip === c.id
           ? 'bg-primary/18 text-primary-text border-primary/35'
-          : 'bg-base-200/50 text-base-content/65 border-base-300/70 hover:border-base-content/20 hover:text-base-content'
+          : 'bg-base-200/50 text-base-content/65 border-hairline/70 hover:border-base-content/20 hover:text-base-content'
       "
       @click="chip = c.id"
     >

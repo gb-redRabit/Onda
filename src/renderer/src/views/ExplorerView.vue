@@ -265,7 +265,7 @@ onBeforeUnmount(() => {
       <ExplorerTabs />
 
       <div
-        class="ui-page-toolbar relative z-20 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
+        class="ui-page-toolbar relative z-20 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-hairline bg-base-200/(--glass-alpha)"
       >
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"

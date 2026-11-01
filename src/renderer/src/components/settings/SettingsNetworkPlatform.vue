@@ -112,7 +112,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         :class="
           settings.youtube.method === m.value
             ? 'border-primary bg-primary/10 text-primary-text font-medium'
-            : 'border-base-300 bg-base-100 text-base-content/70 hover:bg-base-content/10'
+            : 'border-hairline bg-base-100 text-base-content/70 hover:bg-base-content/10'
         "
         @click="setMethod(m.value)"
       >
@@ -142,7 +142,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
           {{ $t('settings.loginWithGoogle') }}
         </button>
         <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+          class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
           :disabled="isBusy || !status.loggedIn"
           @click="doLogout"
         >
@@ -160,13 +160,13 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         </button>
         <button
           v-if="status.cookiesPath"
-          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
+          class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
           @click="doExport"
         >
           {{ $t('settings.exportCookies') }}
         </button>
         <button
-          class="fx-noise px-4 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+          class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
           :disabled="isBusy || !status.loggedIn"
           @click="doLogout"
         >
@@ -176,7 +176,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
 
       <template v-else-if="settings.youtube.method === 'browser'">
         <select
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
+          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
           :value="settings.youtube.cookiesBrowser"
           @change="onBrowserChange"
         >
@@ -207,7 +207,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         <label class="block text-xs text-base-content/50"
           >YouTube<select
             :value="settings.network.youtubeQuality || 'best'"
-            class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+            class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
             @change="
               settings.updateNetwork({
                 youtubeQuality: ($event.target as HTMLSelectElement).value
@@ -223,7 +223,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         <label class="block text-xs text-base-content/50"
           >SoundCloud<select
             :value="settings.network.soundcloudQuality || 'best'"
-            class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+            class="mt-1 w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
             @change="
               settings.updateNetwork({
                 soundcloudQuality: ($event.target as HTMLSelectElement).value
@@ -248,7 +248,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         @update:model-value="settings.updateNetwork({ proxyPerPlatform: $event })"
     /></SettingsRow>
     <template v-if="settings.network.proxyPerPlatform">
-      <div class="mt-3 p-3 rounded-box border border-base-300 bg-base-200/30">
+      <div class="mt-3 p-3 rounded-box border border-hairline bg-base-200/30">
         <div class="text-xs font-semibold mb-2">
           {{ $t('settings.proxyFor', { platform: 'YouTube' }) }}
         </div>
@@ -262,12 +262,12 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
             <input
               :value="settings.network.proxyYoutube.host"
               placeholder="host"
-              class="px-2 py-1.5 rounded-field bg-base-100 border border-base-300 text-sm"
+              class="px-2 py-1.5 rounded-field bg-base-100 border border-hairline text-sm"
               @input="updateProxyYt({ host: ($event.target as HTMLInputElement).value })"
             /><input
               type="number"
               :value="settings.network.proxyYoutube.port"
-              class="px-2 py-1.5 rounded-field bg-base-100 border border-base-300 text-sm"
+              class="px-2 py-1.5 rounded-field bg-base-100 border border-hairline text-sm"
               @input="
                 updateProxyYt({
                   port: parseInt(($event.target as HTMLInputElement).value) || 8080
@@ -276,7 +276,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
             /></div
         ></template>
       </div>
-      <div class="mt-3 p-3 rounded-box border border-base-300 bg-base-200/30">
+      <div class="mt-3 p-3 rounded-box border border-hairline bg-base-200/30">
         <div class="text-xs font-semibold mb-2">
           {{ $t('settings.proxyFor', { platform: 'SoundCloud' }) }}
         </div>
@@ -290,12 +290,12 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
             <input
               :value="settings.network.proxySoundcloud.host"
               placeholder="host"
-              class="px-2 py-1.5 rounded-field bg-base-100 border border-base-300 text-sm"
+              class="px-2 py-1.5 rounded-field bg-base-100 border border-hairline text-sm"
               @input="updateProxySc({ host: ($event.target as HTMLInputElement).value })"
             /><input
               type="number"
               :value="settings.network.proxySoundcloud.port"
-              class="px-2 py-1.5 rounded-field bg-base-100 border border-base-300 text-sm"
+              class="px-2 py-1.5 rounded-field bg-base-100 border border-hairline text-sm"
               @input="
                 updateProxySc({
                   port: parseInt(($event.target as HTMLInputElement).value) || 8080

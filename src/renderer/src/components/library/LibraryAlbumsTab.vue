@@ -80,7 +80,7 @@ onUnmounted(() => grid.destroy());
   </div>
   <template v-else>
     <div
-      class="flex items-center justify-between px-4 py-2 border-b border-base-300 bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-1"
+      class="flex items-center justify-between px-4 py-2 border-b border-hairline bg-base-100/50 backdrop-blur shrink-0 sticky top-0 z-1"
     >
       <span class="text-xs font-medium text-base-content/60">
         {{ albums.length }} {{ $t('library.albumsCount') }}</span
@@ -88,7 +88,7 @@ onUnmounted(() => grid.destroy());
       <div class="flex items-center gap-1.5">
         <select
           v-model="sortKey"
-          class="px-2 py-1 rounded-field bg-base-100 border border-base-300 text-xs focus:border-primary focus:outline-hidden"
+          class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus:border-primary focus:outline-hidden"
         >
           <option value="name">{{ $t('library.sortAlbumsByName') }}</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
@@ -99,7 +99,7 @@ onUnmounted(() => grid.destroy());
           :class="
             viewMode === 'list'
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
+              : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
@@ -111,7 +111,7 @@ onUnmounted(() => grid.destroy());
           :class="
             viewMode === 'grid'
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
+              : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
@@ -144,11 +144,11 @@ onUnmounted(() => grid.destroy());
           >
             <div
               v-activate
-              class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition cursor-pointer h-full mx-2"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-hairline hover:shadow-sm rounded-field transition cursor-pointer h-full mx-2"
               @click="emit('playTracks', sortedAlbums[v.index][1])"
             >
               <div
-                class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center"
+                class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-hairline shrink-0 flex items-center justify-center"
               >
                 <MediaCover
                   :path="sortedAlbums[v.index][1][0]?.path"

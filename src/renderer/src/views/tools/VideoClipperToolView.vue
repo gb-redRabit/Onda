@@ -833,7 +833,7 @@ onBeforeUnmount(() => {
       <section
         v-if="!videoPath"
         data-testid="clip-dropzone"
-        class="flex min-h-72 flex-col items-center justify-center rounded-box border border-base-300 bg-base-100/70 p-6"
+        class="flex min-h-72 flex-col items-center justify-center rounded-box border border-hairline bg-base-100/70 p-6"
       >
         <EmptyState
           :title="t('tools.clipEmpty')"
@@ -842,7 +842,7 @@ onBeforeUnmount(() => {
         />
         <button
           data-testid="clip-pick"
-          class="fx-noise mt-4 flex items-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs transition-colors hover:bg-base-content/10"
+          class="fx-noise mt-4 flex items-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs transition-colors hover:bg-base-content/10"
           @click="pickVideo"
         >
           <Video :size="14" />
@@ -853,7 +853,7 @@ onBeforeUnmount(() => {
       <div v-else class="flex flex-col gap-4">
         <section class="flex min-w-0 flex-col gap-3">
           <div
-            class="relative h-[46vh] min-h-64 max-h-[520px] w-full overflow-hidden rounded-box border border-base-300 bg-black"
+            class="relative h-[46vh] min-h-64 max-h-[520px] w-full overflow-hidden rounded-box border border-hairline bg-black"
           >
             <video
               ref="videoEl"
@@ -892,11 +892,11 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <div class="rounded-box border border-base-300 bg-base-100/70 p-3">
+          <div class="rounded-box border border-hairline bg-base-100/70 p-3">
             <div class="flex flex-wrap items-center gap-1.5">
               <button
                 data-testid="clip-play"
-                class="fx-noise flex h-8 w-8 items-center justify-center rounded-field border border-base-300 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                class="fx-noise flex h-8 w-8 items-center justify-center rounded-field border border-hairline transition-colors hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="busy"
                 :aria-label="isPlaying ? t('tools.clipPause') : t('tools.clipPlay')"
                 @click="togglePlay"
@@ -905,14 +905,14 @@ onBeforeUnmount(() => {
                 <Play v-else :size="14" />
               </button>
               <button
-                class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10"
+                class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10"
                 :disabled="busy"
                 @click="seekBy(-1)"
               >
                 −1 s
               </button>
               <button
-                class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10"
+                class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10"
                 :disabled="busy"
                 @click="seekBy(1)"
               >
@@ -920,7 +920,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 data-testid="clip-prev-frame"
-                class="fx-noise rounded-field border border-base-300 px-2 py-1.5 text-xs transition-colors hover:bg-base-content/10"
+                class="fx-noise rounded-field border border-hairline px-2 py-1.5 text-xs transition-colors hover:bg-base-content/10"
                 :disabled="busy"
                 :title="t('tools.clipPrevFrame')"
                 :aria-label="t('tools.clipPrevFrame')"
@@ -930,7 +930,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 data-testid="clip-next-frame"
-                class="fx-noise rounded-field border border-base-300 px-2 py-1.5 text-xs transition-colors hover:bg-base-content/10"
+                class="fx-noise rounded-field border border-hairline px-2 py-1.5 text-xs transition-colors hover:bg-base-content/10"
                 :disabled="busy"
                 :title="t('tools.clipNextFrame')"
                 :aria-label="t('tools.clipNextFrame')"
@@ -945,7 +945,7 @@ onBeforeUnmount(() => {
                 :class="
                   snapEnabled
                     ? 'border-primary/50 bg-primary/10 text-primary-text'
-                    : 'border-base-300 text-base-content/50 hover:bg-base-content/10'
+                    : 'border-hairline text-base-content/50 hover:bg-base-content/10'
                 "
                 :aria-pressed="snapEnabled"
                 :title="t('tools.clipSnap')"
@@ -960,7 +960,7 @@ onBeforeUnmount(() => {
                 :class="
                   loopRange
                     ? 'border-primary/50 bg-primary/10 text-primary-text'
-                    : 'border-base-300 text-base-content/50 hover:bg-base-content/10'
+                    : 'border-hairline text-base-content/50 hover:bg-base-content/10'
                 "
                 :aria-pressed="loopRange"
                 :title="t('tools.clipLoop')"
@@ -988,7 +988,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 data-testid="clip-preview"
-                class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="busy || duration <= 0"
                 @click="previewClip"
               >
@@ -996,7 +996,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 data-testid="clip-add"
-                class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="busy || clipDuration < 0.05"
                 @click="addClip"
               >
@@ -1013,7 +1013,7 @@ onBeforeUnmount(() => {
                   :class="
                     followPlayhead
                       ? 'border-primary/50 bg-primary/10 text-primary-text'
-                      : 'border-base-300 text-base-content/50 hover:bg-base-content/10'
+                      : 'border-hairline text-base-content/50 hover:bg-base-content/10'
                   "
                   :aria-pressed="followPlayhead"
                   :title="t('tools.clipFollow')"
@@ -1024,7 +1024,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="clip-fit"
-                  class="fx-noise rounded-field border border-base-300 p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
+                  class="fx-noise rounded-field border border-hairline p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
                   :disabled="busy || duration <= 0"
                   :title="t('tools.clipFit')"
                   :aria-label="t('tools.clipFit')"
@@ -1034,7 +1034,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="clip-fit-selection"
-                  class="fx-noise rounded-field border border-base-300 p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                  class="fx-noise rounded-field border border-hairline p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                   :disabled="busy || clipDuration <= 0"
                   :title="t('tools.clipFitSelection')"
                   :aria-label="t('tools.clipFitSelection')"
@@ -1044,7 +1044,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button
                   data-testid="clip-fit-second"
-                  class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2 py-1.5 text-2xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                  class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2 py-1.5 text-2xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                   :disabled="busy || duration <= 0"
                   :title="t('tools.clipFitSecond')"
                   :aria-label="t('tools.clipFitSecond')"
@@ -1056,7 +1056,7 @@ onBeforeUnmount(() => {
                 <span class="mx-1 h-5 w-px bg-base-300" />
                 <button
                   data-testid="clip-zoom-out"
-                  class="fx-noise rounded-field border border-base-300 px-2 py-1 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise rounded-field border border-hairline px-2 py-1 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="busy || timelineZoom <= MIN_ZOOM"
                   :aria-label="t('tools.clipZoomOut')"
                   @click="zoomBy(-1)"
@@ -1071,7 +1071,7 @@ onBeforeUnmount(() => {
                 </span>
                 <button
                   data-testid="clip-zoom-in"
-                  class="fx-noise rounded-field border border-base-300 px-2 py-1 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                  class="fx-noise rounded-field border border-hairline px-2 py-1 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="busy || timelineZoom >= MAX_ZOOM"
                   :aria-label="t('tools.clipZoomIn')"
                   @click="zoomBy(1)"
@@ -1079,7 +1079,7 @@ onBeforeUnmount(() => {
                   +
                 </button>
                 <button
-                  class="fx-noise rounded-field border border-base-300 p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+                  class="fx-noise rounded-field border border-hairline p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                   :disabled="busy || duration <= 0"
                   :title="t('tools.clipReset')"
                   :aria-label="t('tools.clipReset')"
@@ -1114,11 +1114,11 @@ onBeforeUnmount(() => {
                 data-testid="clip-timeline"
                 :data-duration="duration"
                 :style="{ width: `${timelineZoom * 100}%` }"
-                class="relative h-28 touch-none select-none rounded-field border border-base-300 bg-base-200/60"
+                class="relative h-28 touch-none select-none rounded-field border border-hairline bg-base-200/60"
                 @pointerdown="onTimelinePointerDown"
               >
                 <div
-                  class="pointer-events-none absolute top-2 h-14 overflow-hidden rounded border border-base-300/50 bg-base-300/50"
+                  class="pointer-events-none absolute top-2 h-14 overflow-hidden rounded border border-hairline/50 bg-base-300/50"
                   :style="{ left: `${TRACK_PAD_PCT}%`, right: `${TRACK_PAD_PCT}%` }"
                 >
                   <div
@@ -1264,7 +1264,7 @@ onBeforeUnmount(() => {
           <section
             v-if="clips.length"
             data-testid="clip-list"
-            class="rounded-box border border-base-300 bg-base-100/70 p-3"
+            class="rounded-box border border-hairline bg-base-100/70 p-3"
           >
             <div class="mb-2 flex items-center justify-between gap-2">
               <span class="text-xs font-semibold">
@@ -1282,7 +1282,7 @@ onBeforeUnmount(() => {
               <div
                 v-for="(clip, index) in clips"
                 :key="clip.id"
-                class="flex items-center gap-2 rounded-field border border-base-300/60 bg-base-200/40 px-2 py-1.5"
+                class="flex items-center gap-2 rounded-field border border-hairline/60 bg-base-200/40 px-2 py-1.5"
               >
                 <span class="w-5 text-center font-mono text-3xs text-base-content/45">
                   {{ index + 1 }}
@@ -1320,7 +1320,7 @@ onBeforeUnmount(() => {
         </section>
 
         <aside class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <section class="rounded-box border border-base-300 bg-base-100/70 p-4 lg:row-span-2">
+          <section class="rounded-box border border-hairline bg-base-100/70 p-4 lg:row-span-2">
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <label class="block">
                 <span class="text-2xs font-medium text-base-content/60">
@@ -1330,7 +1330,7 @@ onBeforeUnmount(() => {
                   v-model="clipFormat"
                   data-testid="clip-format"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="video">{{ t('tools.clipFormatVideo') }}</option>
                   <option value="gif">{{ t('tools.clipFormatGif') }}</option>
@@ -1345,7 +1345,7 @@ onBeforeUnmount(() => {
                   v-model="clipMode"
                   data-testid="clip-mode"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="copy">{{ t('tools.clipModeCopy') }}</option>
                   <option value="exact">{{ t('tools.clipModeExact') }}</option>
@@ -1360,7 +1360,7 @@ onBeforeUnmount(() => {
                   v-model="container"
                   data-testid="clip-container"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="mp4">{{ t('tools.mp4') }}</option>
                   <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -1376,7 +1376,7 @@ onBeforeUnmount(() => {
                   v-model="audioMode"
                   data-testid="clip-audio"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
                   <option value="mute">{{ t('tools.clipAudioMute') }}</option>
@@ -1392,7 +1392,7 @@ onBeforeUnmount(() => {
                   v-model.number="rotation"
                   data-testid="clip-rotation"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option :value="0">{{ t('tools.clipRotationNone') }}</option>
                   <option :value="90">90°</option>
@@ -1409,7 +1409,7 @@ onBeforeUnmount(() => {
                   v-model.number="targetSizeMb"
                   data-testid="clip-target-size"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 >
                   <option :value="0">{{ t('tools.clipTargetNone') }}</option>
                   <option :value="10">10 MB</option>
@@ -1427,10 +1427,10 @@ onBeforeUnmount(() => {
                     type="text"
                     :disabled="busy"
                     :placeholder="t('tools.outputDefault')"
-                    class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                    class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   />
                   <button
-                    class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                    class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                     :disabled="busy"
                     :title="t('tools.chooseFolder')"
                     :aria-label="t('tools.chooseFolder')"
@@ -1443,7 +1443,7 @@ onBeforeUnmount(() => {
             </div>
           </section>
 
-          <section class="rounded-box border border-base-300 bg-base-100/70 p-4 space-y-2">
+          <section class="rounded-box border border-hairline bg-base-100/70 p-4 space-y-2">
             <button
               data-testid="clip-export"
               class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-4 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
@@ -1456,7 +1456,7 @@ onBeforeUnmount(() => {
             <button
               v-if="clips.length"
               data-testid="clip-export-list"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs text-base-content/75 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/75 transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
               @click="startClipList"
             >
@@ -1466,7 +1466,7 @@ onBeforeUnmount(() => {
             <button
               v-if="busy"
               data-testid="clip-cancel"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
+              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
               @click="cancelClip"
             >
               <Square :size="12" />
@@ -1478,7 +1478,7 @@ onBeforeUnmount(() => {
             v-if="status !== 'idle'"
             data-testid="clip-job"
             :data-status="status"
-            class="rounded-box border border-base-300 bg-base-100/70 px-3 py-2"
+            class="rounded-box border border-hairline bg-base-100/70 px-3 py-2"
           >
             <div class="flex items-center gap-2">
               <CheckCircle2 v-if="status === 'done'" :size="14" class="shrink-0 text-success" />

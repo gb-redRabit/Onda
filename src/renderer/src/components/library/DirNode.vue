@@ -194,7 +194,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
     @edit="previewEdit"
   />
 
-  <div class="divide-y divide-base-300/50">
+  <div class="divide-y divide-hairline/50">
     <div v-for="sub in childDirNames" :key="sub">
       <div
         class="group/row flex items-center gap-2 py-2 pr-3 text-xs hover:bg-base-100/60 transition-colors"
@@ -222,7 +222,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
             >{{ sub }}</span
           >
           <span
-            class="ml-auto text-2xs px-1.5 py-0.5 rounded-full bg-base-100 border border-base-300 text-base-content/60 shrink-0"
+            class="ml-auto text-2xs px-1.5 py-0.5 rounded-full bg-base-100 border border-hairline text-base-content/60 shrink-0"
           >
             {{ metaFor(sub).audioCount }}
           </span>
@@ -235,14 +235,14 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         </button>
 
         <button
-          class="w-6 h-6 rounded-full bg-base-100 border border-base-300 text-base-content/50 hover:text-primary-text hover:border-primary/30 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0"
+          class="w-6 h-6 rounded-full bg-base-100 border border-hairline text-base-content/50 hover:text-primary-text hover:border-primary/30 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0"
           :title="$t('library.folderPlay')"
           @click.stop="playDir(childOriginal(sub))"
         >
           <Play :size="10" class="ml-px fill-current" />
         </button>
         <button
-          class="w-6 h-6 rounded-full bg-base-100 border border-base-300 text-base-content/60 hover:text-base-content flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0 hidden sm:flex"
+          class="w-6 h-6 rounded-full bg-base-100 border border-hairline text-base-content/60 hover:text-base-content flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0 hidden sm:flex"
           :title="$t('common.showInFolder')"
           @click.stop="openExplorer(childOriginal(sub))"
         >
@@ -250,7 +250,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         </button>
       </div>
 
-      <div v-if="isExpanded(childOriginal(sub))" class="bg-base-100/30 border-t border-base-300/30">
+      <div v-if="isExpanded(childOriginal(sub))" class="bg-base-100/30 border-t border-hairline/30">
         <DirNode
           :dir="childOriginal(sub)"
           :depth="depth + 1"

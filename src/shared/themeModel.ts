@@ -3,6 +3,8 @@ export const COLOR_TOKEN_IDS = [
   'base200',
   'base300',
   'baseContent',
+  // Kolor obramowań (domyślnie = ase300, ale motyw może go ustawić osobno).
+  'hairline',
   'primary',
   'primaryContent',
   // Wariant `primary` czytelny jako TEKST/ikona na powierzchniach bazowych (AA 4.5:1).

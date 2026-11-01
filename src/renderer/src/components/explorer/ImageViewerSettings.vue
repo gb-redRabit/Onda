@@ -38,7 +38,7 @@ const emit = defineEmits<{
 <template>
   <div
     data-testid="image-viewer-settings"
-    class="absolute right-full mr-2 top-0 bg-base-100 border border-base-300 rounded-field shadow-xl p-3 min-w-55 z-20"
+    class="absolute right-full mr-2 top-0 bg-base-100 border border-hairline rounded-field shadow-xl p-3 min-w-55 z-20"
     @click.stop
   >
     <div class="text-xs font-semibold text-base-content mb-2 tracking-wide uppercase">
@@ -166,7 +166,7 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <div class="border-t border-base-300/20 my-2" />
+    <div class="border-t border-hairline/20 my-2" />
 
     <div class="flex items-center justify-between">
       <div class="text-2xs text-base-content/70 flex items-center gap-1">

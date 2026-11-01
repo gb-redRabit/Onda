@@ -16,7 +16,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div v-if="element" class="flex flex-col gap-3 pt-2 border-t border-base-300">
+  <div v-if="element" class="flex flex-col gap-3 pt-2 border-t border-hairline">
     <div class="text-2xs font-semibold text-base-content/70 uppercase tracking-wider">
       {{ t(ELEMENT_META[element.id].labelKey) }}
     </div>

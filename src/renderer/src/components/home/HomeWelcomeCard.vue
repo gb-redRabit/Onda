@@ -15,7 +15,7 @@ const emit = defineEmits<{
 <template>
   <section
     data-testid="home-welcome"
-    class="flex flex-col justify-center rounded-box border border-base-300/80 bg-base-100 p-4 sm:p-5"
+    class="flex flex-col justify-center rounded-box border border-hairline/80 bg-base-100 p-4 sm:p-5"
   >
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-start gap-3 min-w-0">
@@ -46,7 +46,7 @@ const emit = defineEmits<{
         </button>
         <button
           type="button"
-          class="fx-noise flex h-8 items-center gap-1.5 px-3 rounded-field border border-base-300/80 bg-base-200/50 text-xs font-medium text-base-content/80 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          class="fx-noise flex h-8 items-center gap-1.5 px-3 rounded-field border border-hairline/80 bg-base-200/50 text-xs font-medium text-base-content/80 hover:bg-base-content/8 hover:text-base-content transition-colors"
           @click="emit('openFiles')"
         >
           <FolderOpen :size="14" class="text-primary-text" />
@@ -54,7 +54,7 @@ const emit = defineEmits<{
         </button>
         <button
           type="button"
-          class="fx-noise flex h-8 items-center gap-1.5 px-3 rounded-field border border-base-300/80 bg-base-200/50 text-xs font-medium text-base-content/80 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          class="fx-noise flex h-8 items-center gap-1.5 px-3 rounded-field border border-hairline/80 bg-base-200/50 text-xs font-medium text-base-content/80 hover:bg-base-content/8 hover:text-base-content transition-colors"
           @click="emit('openFolder')"
         >
           <FolderUp :size="14" class="text-primary-text" />

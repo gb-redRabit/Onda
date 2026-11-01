@@ -156,7 +156,7 @@ function onSelect(item: SourceItem, event: MouseEvent): void {
     <EmptyState v-else-if="!loading" :title="t('sources.noItems')" :icon="Globe" class="py-16" />
     <button
       v-if="hasMore && items.length && paginationMode !== 'page'"
-      class="fx-noise mt-4 mx-auto mb-4 block px-4 py-2 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
+      class="fx-noise mt-4 mx-auto mb-4 block px-4 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="loading"
       @click="emit('fetchMore')"
     >

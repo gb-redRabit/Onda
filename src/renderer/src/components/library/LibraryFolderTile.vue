@@ -23,7 +23,7 @@ watch(
 
 <template>
   <div
-    class="w-12 h-12 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 grid grid-cols-2 grid-rows-2 gap-px"
+    class="w-12 h-12 rounded-field overflow-hidden bg-base-200 border border-hairline shrink-0 grid grid-cols-2 grid-rows-2 gap-px"
   >
     <div
       v-for="tr in displayTracks()"

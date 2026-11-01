@@ -49,7 +49,7 @@ function onDragStart(e: DragEvent) {
 <template>
   <button
     data-testid="video-card"
-    class="flex-1 flex flex-col fx-depth rounded-box fx-noise bg-base-100 border border-base-300 hover:bg-base-content/10 transition overflow-hidden group text-left min-w-0"
+    class="flex-1 flex flex-col fx-depth rounded-box fx-noise bg-base-100 border border-hairline hover:bg-base-content/10 transition overflow-hidden group text-left min-w-0"
     draggable="true"
     @click="emit('play', track)"
     @contextmenu.prevent="onContextMenu"

@@ -12,12 +12,12 @@ const emit = defineEmits<{
   <div
     role="menu"
     data-menu="help"
-    class="absolute top-full left-0 mt-1 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-2 min-w-56 z-70"
+    class="absolute top-full left-0 mt-1 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-black/40 py-2 min-w-56 z-70"
   >
     <AppMenuItem :icon="BookOpen" @click="emit('shortcuts')">
       {{ $t('menu.documentation') }}
     </AppMenuItem>
-    <div class="border-t border-base-300 my-1.5 mx-2" role="separator" />
+    <div class="border-t border-hairline my-1.5 mx-2" role="separator" />
     <AppMenuItem :icon="Info" @click="emit('about')">
       {{ $t('menu.about') }}
     </AppMenuItem>

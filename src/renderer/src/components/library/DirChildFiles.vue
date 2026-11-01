@@ -24,7 +24,7 @@ const { showImageMenu } = useLibraryContextMenu();
       <button
         v-for="img in meta.directImages.slice(0, 24)"
         :key="img.path"
-        class="aspect-square rounded-field overflow-hidden bg-base-200 border border-base-300 hover:border-primary/30 transition-colors"
+        class="aspect-square rounded-field overflow-hidden bg-base-200 border border-hairline hover:border-primary/30 transition-colors"
         @click="emit('open-image', childName, img.path)"
         @contextmenu.prevent="
           showImageMenu($event, img, () => emit('open-image', childName, img.path))
@@ -38,7 +38,7 @@ const { showImageMenu } = useLibraryContextMenu();
         />
       </button>
     </div>
-    <div v-if="meta.directAudio.length > 0" class="divide-y divide-base-300/30">
+    <div v-if="meta.directAudio.length > 0" class="divide-y divide-hairline/30">
       <LibraryTrackRow
         v-for="t in meta.directAudio.slice(0, 50)"
         :key="t.path"

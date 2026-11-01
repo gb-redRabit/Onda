@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
 
 <template>
   <SettingsGroup>
-    <div class="flex items-center justify-between pb-4 border-b border-base-300">
+    <div class="flex items-center justify-between pb-4 border-b border-hairline">
       <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="mb-0!" />
       <button
         data-testid="pip-video-preview-toggle"
@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <div class="pt-4 border-t border-base-300">
+    <div class="pt-4 border-t border-hairline">
       <SettingsRow :label="$t('settings.pipPreBuffer')">
         <SettingsToggle
           :model-value="settings.playback.pipPreBuffer"

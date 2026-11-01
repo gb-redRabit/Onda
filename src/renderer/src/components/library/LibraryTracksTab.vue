@@ -142,7 +142,7 @@ onUnmounted(() => {
   <LibraryTracksEmpty v-if="tracks.length === 0" :liked="chip === 'liked'" />
   <template v-else>
     <div
-      class="flex items-center justify-between px-4 py-2.5 bg-base-100/50 backdrop-blur border-b border-base-300 shrink-0 sticky top-0 z-1"
+      class="flex items-center justify-between px-4 py-2.5 bg-base-100/50 backdrop-blur border-b border-hairline shrink-0 sticky top-0 z-1"
     >
       <span class="text-xs font-medium text-base-content/60">{{ trackCount(tracks.length) }}</span>
       <div class="flex items-center gap-1.5">
@@ -152,7 +152,7 @@ onUnmounted(() => {
           :class="
             viewMode === 'list'
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
+              : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
           :aria-label="$t('library.viewModeList')"
@@ -166,7 +166,7 @@ onUnmounted(() => {
           :class="
             viewMode === 'grid'
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 border border-base-300 text-base-content/50 hover:text-base-content hover:border-primary/30'
+              : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
           :aria-label="$t('library.viewModeGrid')"
@@ -184,7 +184,7 @@ onUnmounted(() => {
           ><span class="sm:hidden">{{ $t('common.play') }}</span>
         </button>
         <button
-          class="p-2 rounded-full bg-base-100 border border-base-300 text-base-content/60 hover:text-primary-text hover:border-primary/30 transition-colors"
+          class="p-2 rounded-full bg-base-100 border border-hairline text-base-content/60 hover:text-primary-text hover:border-primary/30 transition-colors"
           :title="$t('library.shuffle')"
           @click="emit('shuffleAll')"
         >

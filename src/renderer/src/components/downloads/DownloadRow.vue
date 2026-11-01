@@ -122,7 +122,7 @@ const metaTitle = computed(() =>
 <template>
   <div
     data-testid="download-row"
-    class="group/row rounded-box border border-base-300/70 bg-base-100/90 px-3 py-2 transition-colors hover:border-base-content/20"
+    class="group/row rounded-box border border-hairline/70 bg-base-100/90 px-3 py-2 transition-colors hover:border-base-content/20"
     @contextmenu="openMenu($event, downloadCtx(task))"
   >
     <div class="flex items-center gap-3">

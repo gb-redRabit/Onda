@@ -38,7 +38,7 @@ const features = [
       <div
         v-for="f in features"
         :key="f.titleKey"
-        class="flex items-start gap-3 p-3 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
+        class="flex items-start gap-3 p-3 fx-depth rounded-box border border-hairline bg-base-200/(--glass-alpha)"
       >
         <span
           class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary-text flex items-center justify-center"

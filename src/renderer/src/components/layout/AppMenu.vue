@@ -89,7 +89,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
     data-app-menu
     role="menubar"
     aria-orientation="horizontal"
-    class="relative z-40 flex h-10 bg-base-100/(--glass-alpha) border-b border-base-300 shrink-0 select-none"
+    class="relative z-40 flex h-10 bg-base-100/(--glass-alpha) border-b border-hairline shrink-0 select-none"
     style="-webkit-app-region: drag"
   >
     <div class="flex items-center shrink-0 gap-0.5 pl-2" style="-webkit-app-region: no-drag">

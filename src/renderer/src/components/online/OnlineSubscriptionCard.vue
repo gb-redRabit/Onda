@@ -108,7 +108,7 @@ const autoDownload = computed({
 <template>
   <div
     data-testid="online-subscription-card"
-    class="cv-card flex flex-col p-4 rounded-box bg-base-100 border border-base-300 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-base-300"
+    class="cv-card flex flex-col p-4 rounded-box bg-base-100 border border-hairline transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-hairline"
     @contextmenu="openMenu"
   >
     <div class="flex items-center gap-3">

@@ -53,12 +53,12 @@ const rows = computed(() => [
       description-gap
     />
 
-    <div class="rounded-box border border-base-300 bg-base-200/(--glass-alpha) overflow-hidden">
+    <div class="rounded-box border border-hairline bg-base-200/(--glass-alpha) overflow-hidden">
       <div
         v-for="(row, i) in rows"
         :key="row.labelKey"
         class="flex items-start justify-between gap-6 px-4 py-3"
-        :class="i > 0 ? 'border-t border-base-300' : ''"
+        :class="i > 0 ? 'border-t border-hairline' : ''"
       >
         <span class="text-sm text-base-content/60 shrink-0">{{ $t(row.labelKey) }}</span>
         <span class="text-sm font-medium text-right min-w-0 truncate">

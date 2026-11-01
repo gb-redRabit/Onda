@@ -82,7 +82,7 @@ const toggles = [
     >
       <select
         :value="settings.playback.replayGainMode"
-        class="w-full px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+        class="w-full px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         @change="settings.updatePlayback({ replayGainMode: readSelect($event, REPLAY_GAIN_MODES) })"
       >
         <option value="off">{{ $t('settings.replayGainOff') }}</option>
@@ -160,7 +160,7 @@ const toggles = [
   </SettingsGroup>
 
   <SettingsGroup>
-    <div class="divide-y divide-base-300">
+    <div class="divide-y divide-hairline">
       <SettingsRow v-for="opt in toggles" :key="opt.key" :label="$t(opt.labelKey) ?? ''">
         <SettingsToggle
           :model-value="settings.playback[opt.key]"
@@ -245,7 +245,7 @@ const toggles = [
     >
       <select
         :value="settings.playback.videoFilter"
-        class="w-full px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+        class="w-full px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         @change="
           settings.updatePlayback({ videoFilter: ($event.target as HTMLSelectElement).value })
         "
@@ -269,7 +269,7 @@ const toggles = [
         <span class="text-xs text-base-content/70">{{ $t('settings.vizMode') }}</span>
         <select
           :value="settings.playback.visualization.mode"
-          class="px-3 py-2 rounded-field bg-base-100 border border-base-300 text-sm"
+          class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
           @change="
             settings.updatePlayback({
               visualization: {
@@ -296,7 +296,7 @@ const toggles = [
           <input
             type="color"
             :value="settings.playback.visualization.primaryColor"
-            class="h-9 w-full rounded-field border border-base-300 p-1"
+            class="h-9 w-full rounded-field border border-hairline p-1"
             @input="
               settings.updatePlayback({
                 visualization: {
@@ -312,7 +312,7 @@ const toggles = [
           <input
             type="color"
             :value="settings.playback.visualization.secondaryColor"
-            class="h-9 w-full rounded-field border border-base-300 p-1"
+            class="h-9 w-full rounded-field border border-hairline p-1"
             @input="
               settings.updatePlayback({
                 visualization: {

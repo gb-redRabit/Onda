@@ -66,7 +66,7 @@ onUnmounted(() => grid.destroy());
     <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
+    <div class="flex items-center justify-between px-4 py-2 border-b border-hairline shrink-0">
       <span class="text-xs text-base-content/50">{{ fileCount(tracks.length) }}</span>
       <div class="flex items-center gap-2">
         <button

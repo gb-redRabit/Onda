@@ -5,6 +5,9 @@
   --color-base-200: #191e24;
   --color-base-300: #15191e;
   --color-base-content: #ecf9ff;
+  /* Jeden token obramowań. Domyślnie to kolor powierzchni `base-300`, czyli
+     dotychczasowy wygląd; motywy mogą go nadpisać niezależnie od tła. */
+  --color-hairline: #15191e;
 
   --color-primary: #605dff;
   --color-primary-content: #edf1fe;

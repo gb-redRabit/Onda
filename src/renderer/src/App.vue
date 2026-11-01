@@ -424,7 +424,7 @@ function onWindowBlur() {
 <template>
   <div
     data-testid="app-root"
-    class="app-root relative flex flex-col h-full w-full overflow-hidden border border-base-300 bg-base-200/(--glass-alpha)"
+    class="app-root relative flex flex-col h-full w-full overflow-hidden border border-hairline bg-base-200/(--glass-alpha)"
     :class="{ 'is-maximized': isWinMaximized, 'app-root-glass': glassOn }"
   >
     <AppMenu v-if="!isStandaloneWindow" />

@@ -276,7 +276,7 @@ function setSubRef(i: number) {
       @mouseleave="onItemLeave()"
     >
       <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">
-        <div v-if="item.separator" class="border-t border-base-300 my-1 mx-2" />
+        <div v-if="item.separator" class="border-t border-hairline my-1 mx-2" />
         <div
           v-else
           :ref="setRef(idx)"
@@ -326,7 +326,7 @@ function setSubRef(i: number) {
               @contextmenu.prevent
             >
               <template v-for="(child, cidx) in item.children" :key="cidx">
-                <div v-if="child.separator" class="border-t border-base-300 my-1 mx-2" />
+                <div v-if="child.separator" class="border-t border-hairline my-1 mx-2" />
                 <button
                   v-else
                   :ref="setSubRef(cidx)"

@@ -36,7 +36,7 @@ onMounted(async () => {
   </SettingsGroup>
 
   <SettingsGroup :title="$t('settings.licenses')">
-    <div class="divide-y divide-base-300">
+    <div class="divide-y divide-hairline">
       <div
         v-for="lic in licenses"
         :key="lic.name"
@@ -58,7 +58,7 @@ onMounted(async () => {
       :href="link.url"
       target="_blank"
       rel="noopener"
-      class="px-3 py-1.5 rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+      class="px-3 py-1.5 rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
     >
       {{ link.label }}
     </a>

@@ -26,7 +26,7 @@ function onKeydown(e: KeyboardEvent, index: number): void {
 
 <template>
   <nav
-    class="w-56 shrink-0 h-full overflow-y-auto border-r border-base-300 bg-base-200/40 py-2"
+    class="w-56 shrink-0 h-full overflow-y-auto border-r border-hairline bg-base-200/40 py-2"
     role="tablist"
     :aria-label="t('sources.levels')"
   >

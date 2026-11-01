@@ -20,7 +20,7 @@ function setValue(key: string, value: string): void {
 <template>
   <div
     v-if="props.keys.length"
-    class="px-4 py-2 border-b border-base-300 bg-base-100"
+    class="px-4 py-2 border-b border-hairline bg-base-100"
     data-testid="sources-query-builder"
   >
     <FieldLabel :text="t('sources.queryBuilderParams')" />
@@ -33,7 +33,7 @@ function setValue(key: string, value: string): void {
           :value="values[key] ?? ''"
           :placeholder="props.defaults[key]"
           :aria-label="key"
-          class="flex-1 min-w-0 px-2 py-1 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
+          class="flex-1 min-w-0 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
           @input="setValue(key, ($event.target as HTMLInputElement).value)"
         />
       </label>

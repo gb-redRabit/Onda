@@ -98,9 +98,9 @@ function move(index: number, dir: -1 | 1): void {
 
 <template>
   <div
-    class="w-64 max-lg:w-56 shrink-0 h-full flex flex-col border-r border-base-300 bg-base-100/(--glass-alpha)"
+    class="w-64 max-lg:w-56 shrink-0 h-full flex flex-col border-r border-hairline bg-base-100/(--glass-alpha)"
   >
-    <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300">
+    <div class="flex items-center justify-between px-3 py-2.5 border-b border-hairline">
       <h2 class="text-sm font-semibold">{{ $t('sources.title') }}</h2>
       <div class="flex items-center gap-0.5">
         <IconButton

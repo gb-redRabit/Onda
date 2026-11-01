@@ -134,11 +134,11 @@ function onFileDrop(e: DragEvent) {
 <template>
   <div
     data-testid="queue-panel"
-    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-base-300"
+    class="h-full flex flex-col bg-base-100/(--glass-alpha) border-l border-hairline"
     @dragover.prevent
     @drop="onFileDrop"
   >
-    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-hairline">
       <h3 class="text-sm font-semibold flex items-center gap-2">
         <span>{{ $t('queue.title') }}</span>
         <span class="text-2xs text-base-content/50 font-normal">({{ player.queueLength }})</span>
@@ -164,7 +164,7 @@ function onFileDrop(e: DragEvent) {
     </div>
 
     <!-- teraz odtwarzane -->
-    <div v-if="player.currentTrack" class="px-4 py-3 border-b border-base-300 bg-base-100">
+    <div v-if="player.currentTrack" class="px-4 py-3 border-b border-hairline bg-base-100">
       <div class="text-2xs text-primary-text font-medium uppercase tracking-wider mb-2">
         {{ $t('queue.nowPlaying') }}
       </div>
@@ -259,7 +259,7 @@ function onFileDrop(e: DragEvent) {
     </div>
 
     <!-- historia -->
-    <div v-if="player.history.length > 0" class="border-t border-base-300 max-h-40 overflow-auto">
+    <div v-if="player.history.length > 0" class="border-t border-hairline max-h-40 overflow-auto">
       <div class="px-4 py-2 text-2xs text-base-content/50 font-medium uppercase tracking-wider">
         {{ $t('queue.history') }}
       </div>

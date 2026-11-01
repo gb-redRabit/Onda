@@ -68,7 +68,7 @@ function folderIcon(type: string): string {
 <template>
   <div class="flex items-center gap-3">
     <button
-      class="flex items-center gap-2 px-4 py-2 fx-depth rounded-box fx-noise bg-base-100 border border-base-300 text-sm font-medium hover:bg-base-content/10 transition-colors"
+      class="flex items-center gap-2 px-4 py-2 fx-depth rounded-box fx-noise bg-base-100 border border-hairline text-sm font-medium hover:bg-base-content/10 transition-colors"
       @click="addFolder"
     >
       <FolderPlus :size="16" />{{ $t('settings.libAddFolder') }}
@@ -83,7 +83,7 @@ function folderIcon(type: string): string {
     </button>
     <button
       v-if="library.isScanning"
-      class="fx-noise flex items-center gap-2 px-4 py-2 fx-depth rounded-field border border-base-300 text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
+      class="fx-noise flex items-center gap-2 px-4 py-2 fx-depth rounded-field border border-hairline text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="library.cancelScan()"
     >
       {{ $t('common.cancel') }}
@@ -98,7 +98,7 @@ function folderIcon(type: string): string {
     <div
       v-for="entry in folderEntries"
       :key="entry.path"
-      class="flex items-center justify-between px-4 py-3 border-b border-base-300 last:border-b-0"
+      class="flex items-center justify-between px-4 py-3 border-b border-hairline last:border-b-0"
     >
       <div class="flex items-center gap-3 min-w-0">
         <span class="text-lg">{{ folderIcon(entry.type) }}</span>
@@ -162,7 +162,7 @@ function folderIcon(type: string): string {
     </div>
     <p class="text-2xs text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
     <button
-      class="fx-noise mt-3 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
+      class="fx-noise mt-3 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="clearCoverCache"
     >
       <Trash2 :size="14" />{{ $t('settings.coverCacheClear') }}

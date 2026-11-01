@@ -214,7 +214,7 @@ const readout = computed(() => {
       </div>
       <div
         id="audio-layout-preview"
-        class="relative z-0 isolate bg-base-300/50 rounded-box border border-base-300 overflow-hidden select-none"
+        class="relative z-0 isolate bg-base-300/50 rounded-box border border-hairline overflow-hidden select-none"
         :style="{ aspectRatio: `${PREVIEW_W}/${PREVIEW_H}` }"
       >
         <!-- Siatka (1% + 5%) -->

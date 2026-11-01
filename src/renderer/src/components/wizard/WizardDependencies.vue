@@ -16,7 +16,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
         />
       </div>
       <button
-        class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
+        class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
         :disabled="refreshing"
         @click="refreshAll"
       >
@@ -29,7 +29,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
       <div
         v-for="dep in deps"
         :key="dep.name"
-        class="p-3 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
+        class="p-3 fx-depth rounded-box border border-hairline bg-base-200/(--glass-alpha)"
       >
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -46,7 +46,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
             <template v-if="dep.installing">
               <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
               <button
-                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+                class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
                 @click="cancelInstall(dep)"
               >
                 {{ $t('settings.depCancel') }}

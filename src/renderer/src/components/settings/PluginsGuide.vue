@@ -74,7 +74,7 @@ function clearSearch(): void {
     panel-class="w-full max-w-3xl max-h-full flex flex-col overflow-hidden"
     @close="emit('close')"
   >
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-hairline">
       <BookOpen :size="16" class="text-primary-text shrink-0" />
       <h2 id="plugins-guide-modal-title" class="text-lg font-medium truncate flex-1">
         {{ t('plugins.guide.title') }}
@@ -89,7 +89,7 @@ function clearSearch(): void {
       </button>
     </div>
 
-    <div class="flex items-center gap-2 px-4 py-2 border-b border-base-300">
+    <div class="flex items-center gap-2 px-4 py-2 border-b border-hairline">
       <div class="relative flex-1">
         <Search
           :size="14"
@@ -100,7 +100,7 @@ function clearSearch(): void {
           v-model="query"
           type="text"
           :placeholder="t('plugins.guide.searchPlaceholder')"
-          class="w-full pl-8 pr-8 py-1.5 text-xs fx-depth rounded-field bg-base-100 border border-base-300 text-base-content placeholder:text-base-content/50 outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+          class="w-full pl-8 pr-8 py-1.5 text-xs fx-depth rounded-field bg-base-100 border border-hairline text-base-content placeholder:text-base-content/50 outline-hidden focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
           data-testid="plugins-guide-search"
         />
         <button

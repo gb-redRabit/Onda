@@ -48,7 +48,7 @@ function clear(): void {
     @close="emit('close')"
     @escape="emit('close')"
   >
-    <div class="border-b border-base-300 px-5 py-3">
+    <div class="border-b border-hairline px-5 py-3">
       <h3 id="sources-params-title" class="text-sm font-semibold text-base-content">
         {{ t('sources.queryParams') }}
       </h3>
@@ -63,13 +63,13 @@ function clear(): void {
             rows="7"
             spellcheck="false"
             data-testid="sources-params-input"
-            class="w-full resize-y rounded-field border border-base-300/80 bg-base-200/70 px-3 py-2 font-mono text-xs text-base-content transition-colors placeholder:text-base-content/50 focus:border-primary/50 focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+            class="w-full resize-y rounded-field border border-hairline/80 bg-base-200/70 px-3 py-2 font-mono text-xs text-base-content transition-colors placeholder:text-base-content/50 focus:border-primary/50 focus:outline-hidden focus:ring-2 focus:ring-primary/20"
             :placeholder="t('sources.queryParamsPlaceholder')"
           />
         </template>
       </FormField>
 
-      <details v-if="requestUrl" class="rounded-field border border-base-300 bg-base-100/60">
+      <details v-if="requestUrl" class="rounded-field border border-hairline bg-base-100/60">
         <summary class="cursor-pointer px-3 py-2 text-2xs font-medium text-base-content/60">
           {{ t('sources.requestDetails') }}
         </summary>
@@ -79,7 +79,7 @@ function clear(): void {
       </details>
     </div>
 
-    <div class="flex items-center justify-end gap-2 border-t border-base-300 px-5 py-3">
+    <div class="flex items-center justify-end gap-2 border-t border-hairline px-5 py-3">
       <Button variant="ghost" size="md" class="mr-auto" @click="clear">
         {{ t('common.clear') }}
       </Button>

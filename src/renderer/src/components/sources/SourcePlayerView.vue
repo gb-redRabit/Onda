@@ -97,7 +97,7 @@ function browserUrl(item: SourceItem | null): string {
 
       <div
         v-if="current"
-        class="shrink-0 flex items-center gap-3 px-4 py-3 border-t border-base-300 bg-base-100"
+        class="shrink-0 flex items-center gap-3 px-4 py-3 border-t border-hairline bg-base-100"
       >
         <div class="min-w-0 flex-1">
           <p class="text-sm font-medium truncate">{{ current.title || $t('sources.untitled') }}</p>
@@ -106,7 +106,7 @@ function browserUrl(item: SourceItem | null): string {
           </p>
         </div>
         <button
-          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-200 border border-base-300 text-xs text-base-content/80 hover:bg-base-content/10 transition-colors"
+          class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-200 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.openInModal')"
           @click="emit('activate', current)"
         >
@@ -132,7 +132,7 @@ function browserUrl(item: SourceItem | null): string {
     </div>
 
     <!-- Lista (zwykły przepływ — równe, gęste odstępy) -->
-    <aside class="w-72 max-lg:w-60 shrink-0 border-l border-base-300 overflow-y-auto">
+    <aside class="w-72 max-lg:w-60 shrink-0 border-l border-hairline overflow-y-auto">
       <button
         v-for="(item, i) in items"
         :key="item.id || i"

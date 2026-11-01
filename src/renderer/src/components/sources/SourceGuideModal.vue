@@ -26,7 +26,7 @@ const steps = computed(
     panel-class="w-full max-w-4xl max-h-full flex flex-col overflow-hidden"
     @close="emit('close')"
   >
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-hairline">
       <BookOpen :size="16" class="text-primary-text shrink-0" />
       <h2 id="source-guide-modal-title" class="text-lg font-medium truncate flex-1">
         {{ t('sources.guide.title') }}

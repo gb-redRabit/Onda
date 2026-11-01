@@ -1,6 +1,12 @@
 import type { ColorTokenId } from '@shared/themeModel';
 
-export const BASE_TOKENS: ColorTokenId[] = ['base200', 'base100', 'base300', 'baseContent'];
+export const BASE_TOKENS: ColorTokenId[] = [
+  'base200',
+  'base100',
+  'base300',
+  'hairline',
+  'baseContent'
+];
 
 export const BRAND_TOKENS: ColorTokenId[] = [
   'primary',
@@ -29,6 +35,7 @@ export const PREVIEW_TOKENS: ColorTokenId[] = [
   'base200',
   'base100',
   'base300',
+  'hairline',
   'baseContent',
   'primary',
   'primaryContent',

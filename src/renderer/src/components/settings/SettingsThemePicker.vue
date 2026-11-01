@@ -22,7 +22,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
       :class="
         isSystem
           ? 'border-primary bg-primary/5'
-          : 'border-base-300 bg-base-100 hover:border-primary/40'
+          : 'border-hairline bg-base-100 hover:border-primary/40'
       "
       @click="settings.updateAppearance({ theme: 'system' })"
     >
@@ -42,7 +42,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
       :class="
         settings.appearance.theme === name
           ? 'border-primary bg-primary/5'
-          : 'border-base-300 bg-base-100 hover:border-primary/40'
+          : 'border-hairline bg-base-100 hover:border-primary/40'
       "
       @click="settings.updateAppearance({ theme: name })"
     >
@@ -67,7 +67,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
       :class="
         isCustom
           ? 'border-primary bg-primary/5'
-          : 'border-base-300 bg-base-100 hover:border-primary/40'
+          : 'border-hairline bg-base-100 hover:border-primary/40'
       "
       @click="settings.updateAppearance({ theme: 'custom' })"
     >

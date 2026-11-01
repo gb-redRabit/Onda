@@ -79,7 +79,7 @@ async function applyProperties() {
     @close="onOverlayClick"
     @escape="closeProperties"
   >
-    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-hairline">
       <h3
         id="explorer-properties-dialog-title"
         class="text-sm font-semibold text-base-content flex items-center gap-2"
@@ -104,7 +104,7 @@ async function applyProperties() {
         <input
           v-model="propertiesName"
           type="text"
-          class="w-full mt-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content outline-hidden focus:ring-1 focus:ring-primary"
+          class="w-full mt-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-sm text-base-content outline-hidden focus:ring-1 focus:ring-primary"
           @keydown.enter="applyProperties"
         />
       </div>
@@ -137,7 +137,7 @@ async function applyProperties() {
         <span class="text-base-content">{{ new Date(item.modifiedAt).toLocaleString() }}</span>
       </div>
     </div>
-    <div class="flex justify-end gap-2 px-4 py-3 border-t border-base-300">
+    <div class="flex justify-end gap-2 px-4 py-3 border-t border-hairline">
       <button
         class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="closeProperties"

@@ -150,7 +150,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         {{ t('plugins.installFromFolder') }}
       </button>
       <button
-        class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-base-300 hover:bg-base-content/10 hover:text-base-content transition-colors"
+        class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-hairline hover:bg-base-content/10 hover:text-base-content transition-colors"
         :disabled="loading"
         data-testid="plugins-refresh"
         @click="onRefresh"
@@ -160,7 +160,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         {{ t('plugins.refresh') }}
       </button>
       <button
-        class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-base-300 hover:bg-base-content/10 hover:text-base-content transition-colors"
+        class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-hairline hover:bg-base-content/10 hover:text-base-content transition-colors"
         data-testid="plugins-guide-open"
         @click="guideOpen = true"
       >
@@ -187,7 +187,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
       <div
         v-for="ex in store.examples"
         :key="ex.id"
-        class="flex items-start gap-3 p-3 rounded-field border border-base-300/70 bg-base-100"
+        class="flex items-start gap-3 p-3 rounded-field border border-hairline/70 bg-base-100"
       >
         <div
           class="w-8 h-8 rounded-box bg-primary/10 text-primary-text flex items-center justify-center shrink-0"
@@ -331,7 +331,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
 
         <div
           v-if="commandsFor.filter((c) => (c as { pluginId?: string }).pluginId === p.id).length"
-          class="mt-3 pt-3 border-t border-base-300/60"
+          class="mt-3 pt-3 border-t border-hairline/60"
         >
           <div class="text-xs font-medium text-base-content/70 mb-1.5">
             {{ t('plugins.commands') }}
@@ -342,7 +342,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
                 (c) => (c as { pluginId?: string }).pluginId === p.id
               )"
               :key="cmd.id"
-              class="flex items-center gap-1 px-2 h-7 rounded-field text-xs border border-base-300 hover:bg-base-200"
+              class="flex items-center gap-1 px-2 h-7 rounded-field text-xs border border-hairline hover:bg-base-200"
               @click="testCommand(cmd.id)"
             >
               {{ cmd.label }}
@@ -350,7 +350,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
           </div>
         </div>
 
-        <div v-if="store.settingFields(p.id).length" class="mt-3 pt-3 border-t border-base-300/60">
+        <div v-if="store.settingFields(p.id).length" class="mt-3 pt-3 border-t border-hairline/60">
           <div class="text-xs font-medium text-base-content/70 mb-1.5">
             {{ t('plugins.settings') }}
           </div>
@@ -366,7 +366,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               v-if="field.type === 'text'"
               type="text"
               :data-testid="`plugin-setting-${p.id}-${field.key}`"
-              class="w-40 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-hidden"
+              class="w-40 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-xs focus:border-primary focus:outline-hidden"
               :value="String(settingsValue(p.id, field) ?? '')"
               @change="onSettingChange(p.id, field.key, ($event.target as HTMLInputElement).value)"
             />
@@ -374,7 +374,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               v-else-if="field.type === 'number'"
               type="number"
               :data-testid="`plugin-setting-${p.id}-${field.key}`"
-              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-xs focus:border-primary focus:outline-hidden"
+              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-xs focus:border-primary focus:outline-hidden"
               :min="field.min"
               :max="field.max"
               :value="Number(settingsValue(p.id, field))"

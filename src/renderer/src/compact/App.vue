@@ -288,7 +288,7 @@ function dismissError(): void {
 <template>
   <div class="compact-root" data-testid="compact-root">
     <header
-      class="compact-titlebar flex items-center gap-2 px-3 h-9 shrink-0 border-b border-base-300/60"
+      class="compact-titlebar flex items-center gap-2 px-3 h-9 shrink-0 border-b border-hairline/60"
     >
       <span
         class="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-base-content/80"
@@ -476,7 +476,7 @@ function dismissError(): void {
     </section>
 
     <nav
-      class="flex items-center gap-1 px-2 pb-1 shrink-0 border-b border-base-300/60"
+      class="flex items-center gap-1 px-2 pb-1 shrink-0 border-b border-hairline/60"
       role="tablist"
       :aria-label="$t('compact.tabs')"
     >

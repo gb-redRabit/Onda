@@ -9,7 +9,7 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
 </script>
 
 <template>
-  <div class="border border-base-300 rounded-field p-2 space-y-2">
+  <div class="border border-hairline rounded-field p-2 space-y-2">
     <div class="text-xs font-medium">
       {{ $t('musicbrainz.batchSummary', { total, progress }) }}
     </div>

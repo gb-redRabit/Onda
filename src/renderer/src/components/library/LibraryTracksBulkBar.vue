@@ -35,7 +35,7 @@ const showBulkPlaylist = ref(false);
         <Play :size="12" /> {{ $t('common.play') }}
       </button>
       <button
-        class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
+        class="px-2.5 py-1 rounded-field bg-base-100 border border-hairline hover:bg-base-200"
         @click="emit('queue')"
       >
         <ListMusic :size="12" class="inline mr-1" />
@@ -43,14 +43,14 @@ const showBulkPlaylist = ref(false);
       </button>
       <div class="relative">
         <button
-          class="px-2.5 py-1 rounded-field bg-base-100 border border-base-300 hover:bg-base-200"
+          class="px-2.5 py-1 rounded-field bg-base-100 border border-hairline hover:bg-base-200"
           @click="showBulkPlaylist = !showBulkPlaylist"
         >
           {{ isSingle ? $t('common.addTrackToPlaylist') : $t('common.addToPlaylist') }}
         </button>
         <div
           v-if="showBulkPlaylist"
-          class="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-base-300 rounded-box shadow-xl py-1 z-20 max-h-48 overflow-auto"
+          class="absolute right-0 top-full mt-1 w-48 bg-base-100 border border-hairline rounded-box shadow-xl py-1 z-20 max-h-48 overflow-auto"
         >
           <button
             v-for="p in playlists"

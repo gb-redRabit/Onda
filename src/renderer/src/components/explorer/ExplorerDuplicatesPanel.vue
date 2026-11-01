@@ -108,9 +108,9 @@ function revealDupFile(path: string) {
   <div
     v-if="open"
     data-testid="explorer-duplicates-panel"
-    class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-base-100 border-l border-base-300 shadow-2xl"
+    class="absolute right-0 top-0 bottom-0 w-80 max-w-[85%] z-20 flex flex-col bg-base-100 border-l border-hairline shadow-2xl"
   >
-    <div class="flex items-center justify-between px-3 py-2.5 border-b border-base-300 shrink-0">
+    <div class="flex items-center justify-between px-3 py-2.5 border-b border-hairline shrink-0">
       <h3 class="text-xs font-semibold text-base-content flex items-center gap-2">
         <Copy :size="14" class="text-primary-text" /> {{ $t('explorer.duplicates') }}
       </h3>
@@ -149,11 +149,11 @@ function revealDupFile(path: string) {
         :key="group.original"
         data-testid="explorer-duplicate-group"
         :data-original="group.original"
-        class="rounded-field border border-base-300 overflow-hidden"
+        class="rounded-field border border-hairline overflow-hidden"
       >
         <div
           v-activate
-          class="flex items-center gap-2 px-2.5 py-1.5 bg-base-100 border-b border-base-300 cursor-pointer hover:bg-base-content/10 transition-colors"
+          class="flex items-center gap-2 px-2.5 py-1.5 bg-base-100 border-b border-hairline cursor-pointer hover:bg-base-content/10 transition-colors"
           @click="revealDupFile(group.original)"
         >
           <FileText :size="13" class="text-primary-text shrink-0" />
@@ -188,7 +188,7 @@ function revealDupFile(path: string) {
 
     <div
       v-if="dupGroups.length > 0"
-      class="flex items-center gap-2 px-3 py-2.5 border-t border-base-300 shrink-0"
+      class="flex items-center gap-2 px-3 py-2.5 border-t border-hairline shrink-0"
     >
       <button
         data-testid="explorer-duplicates-select-all"

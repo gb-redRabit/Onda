@@ -55,7 +55,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="border-b border-base-300/80 bg-base-100/(--glass-alpha) backdrop-blur">
+  <div class="border-b border-hairline/80 bg-base-100/(--glass-alpha) backdrop-blur">
     <div class="ui-page-header flex flex-wrap items-center gap-3 px-5 py-3">
       <div
         class="grid h-8 w-8 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text"
@@ -75,7 +75,7 @@ onMounted(async () => {
         <button
           v-if="activeCount"
           type="button"
-          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
           :title="t('downloads.pauseAll')"
           @click="yt.pauseAll"
         >
@@ -85,7 +85,7 @@ onMounted(async () => {
         <button
           v-if="pausedCount"
           type="button"
-          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
           :title="t('downloads.resumeAll')"
           @click="yt.resumeAll"
         >
@@ -96,7 +96,7 @@ onMounted(async () => {
           v-if="hasFinished"
           type="button"
           data-testid="downloads-clear-finished"
-          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
           @click="clearFinished"
         >
           <Trash2 :size="13" />
@@ -108,7 +108,7 @@ onMounted(async () => {
           :class="
             showOptions || scheduledAt || settings.network.downloadSpeedLimit > 0
               ? 'border-primary/40 bg-primary/14 text-primary-text'
-              : 'border-base-300 bg-base-100 text-base-content/65 hover:bg-base-content/8 hover:text-base-content'
+              : 'border-hairline bg-base-100 text-base-content/65 hover:bg-base-content/8 hover:text-base-content'
           "
           :title="t('downloads.speedLimit')"
           :aria-label="t('downloads.speedLimit')"
@@ -122,13 +122,13 @@ onMounted(async () => {
 
     <div
       v-show="showOptions"
-      class="flex flex-wrap items-center gap-2.5 border-t border-base-300/60 bg-base-200/35 px-5 py-2.5 text-xs"
+      class="flex flex-wrap items-center gap-2.5 border-t border-hairline/60 bg-base-200/35 px-5 py-2.5 text-xs"
     >
       <div class="flex items-center gap-1.5 text-xs text-base-content/70">
         <Gauge :size="13" class="text-base-content/50" />
         <select
           :value="settings.network.downloadSpeedLimit"
-          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
+          class="h-7 rounded-field border border-hairline bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
           :title="t('downloads.speedLimit')"
           :aria-label="t('downloads.speedLimit')"
           @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
@@ -145,13 +145,13 @@ onMounted(async () => {
         <input
           v-model="scheduleTime"
           type="time"
-          class="h-7 rounded-field border border-base-300 bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
+          class="h-7 rounded-field border border-hairline bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
           :title="t('downloads.scheduleStart')"
           :aria-label="t('downloads.scheduleStart')"
         />
         <button
           type="button"
-          class="fx-noise h-7 rounded-field border border-base-300 bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors disabled:opacity-40"
+          class="fx-noise h-7 rounded-field border border-hairline bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors disabled:opacity-40"
           :disabled="!scheduleTime"
           @click="applySchedule"
         >
@@ -160,7 +160,7 @@ onMounted(async () => {
         <button
           v-if="scheduledAt"
           type="button"
-          class="fx-noise flex h-7 w-7 items-center justify-center rounded-field border border-base-300 bg-base-100 text-xs text-base-content/70 hover:bg-base-content/8 transition-colors"
+          class="fx-noise flex h-7 w-7 items-center justify-center rounded-field border border-hairline bg-base-100 text-xs text-base-content/70 hover:bg-base-content/8 transition-colors"
           :title="t('downloads.scheduleClear')"
           :aria-label="t('downloads.scheduleClear')"
           @click="clearSchedule"
@@ -173,7 +173,7 @@ onMounted(async () => {
 
       <button
         type="button"
-        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
         :title="t('downloads.exportQueue')"
         @click="yt.exportQueue"
       >
@@ -182,7 +182,7 @@ onMounted(async () => {
       </button>
       <button
         type="button"
-        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
+        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
         :title="t('downloads.importQueue')"
         @click="yt.importQueue"
       >

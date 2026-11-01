@@ -18,7 +18,7 @@ const settings = useSettingsStore();
         :class="
           settings.appearance.theme === name
             ? 'border-primary bg-primary/5'
-            : 'border-base-300 hover:border-primary/40'
+            : 'border-hairline hover:border-primary/40'
         "
         @click="settings.updateAppearance({ theme: name })"
       >

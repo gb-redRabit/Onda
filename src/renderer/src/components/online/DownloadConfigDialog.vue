@@ -164,7 +164,7 @@ function confirm() {
     @escape="emit('cancel')"
   >
     <!-- Nagłówek -->
-    <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300 shrink-0">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-hairline shrink-0">
       <div
         v-if="props.thumbnail"
         class="w-12 h-8 rounded-field overflow-hidden shrink-0 bg-base-100"
@@ -288,7 +288,7 @@ function confirm() {
     </div>
 
     <!-- Stopka -->
-    <div class="flex shrink-0 items-center justify-end gap-2 border-t border-base-300 px-5 py-4">
+    <div class="flex shrink-0 items-center justify-end gap-2 border-t border-hairline px-5 py-4">
       <Button variant="outline" size="md" @click="close">
         {{ $t('youtube.cancel') }}
       </Button>

@@ -10,7 +10,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
 <template>
   <div class="flex items-center justify-end pb-2">
     <button
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
+      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
       :disabled="refreshing"
       @click="refreshAll"
     >
@@ -56,7 +56,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
           <template v-if="dep.installing">
             <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
             <button
-              class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+              class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
               @click="cancelInstall(dep)"
             >
               {{ $t('settings.depCancel') }}

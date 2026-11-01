@@ -44,7 +44,7 @@ withDefaults(
 
   <div
     v-else
-    class="flex flex-col items-center justify-center rounded-box border border-dashed border-base-300 text-center text-base-content/55"
+    class="flex flex-col items-center justify-center rounded-box border border-dashed border-hairline text-center text-base-content/55"
     :class="compact ? 'gap-2 p-6' : 'gap-3 p-10'"
     role="status"
   >

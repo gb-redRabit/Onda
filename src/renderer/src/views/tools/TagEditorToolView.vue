@@ -296,13 +296,13 @@ function fieldLabel(field: AudioTagField): string {
   <ToolWindowShell :title="t('tools.tagEditorTitle')" :icon="Tags">
     <div data-testid="tools-tag-editor-view" class="flex h-full flex-col">
       <div
-        class="flex flex-wrap items-center gap-2 border-b border-base-300 px-3 py-2"
+        class="flex flex-wrap items-center gap-2 border-b border-hairline px-3 py-2"
         @dragover.prevent
         @drop.prevent="onDrop"
       >
         <button
           data-testid="tools-tag-add"
-          class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+          class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
           :disabled="saving"
           @click="pickFiles"
         >
@@ -310,7 +310,7 @@ function fieldLabel(field: AudioTagField): string {
           {{ t('tools.addFiles') }}
         </button>
         <button
-          class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+          class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
           :disabled="saving || files.length === 0"
           @click="clearAll"
         >
@@ -326,7 +326,7 @@ function fieldLabel(field: AudioTagField): string {
             v-model="batchField"
             data-testid="tools-tag-batch-field"
             :disabled="saving || selectedCount === 0"
-            class="rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option v-for="field in AUDIO_TAG_FIELDS" :key="field" :value="field">
               {{ fieldLabel(field) }}
@@ -338,7 +338,7 @@ function fieldLabel(field: AudioTagField): string {
             type="text"
             :disabled="saving || selectedCount === 0"
             :placeholder="t('tools.tagEditorBatchValue')"
-            class="w-44 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="w-44 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             @keydown.enter="applyBatch"
           />
           <button
@@ -352,7 +352,7 @@ function fieldLabel(field: AudioTagField): string {
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 border-b border-base-300 px-3 py-2">
+      <div class="flex flex-wrap items-center gap-2 border-b border-hairline px-3 py-2">
         <span class="text-2xs font-medium text-base-content/60">
           {{ t('tools.tagEditorCover') }}
         </span>
@@ -362,10 +362,10 @@ function fieldLabel(field: AudioTagField): string {
           type="text"
           :disabled="coverBusy"
           :placeholder="t('tools.tagEditorCoverPick')"
-          class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+          class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
         />
         <button
-          class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+          class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
           :disabled="coverBusy"
           @click="pickCoverImage"
         >
@@ -423,7 +423,7 @@ function fieldLabel(field: AudioTagField): string {
         <table v-else class="w-full min-w-[980px] border-separate border-spacing-0 text-xs">
           <thead class="sticky top-0 z-10">
             <tr class="text-left text-2xs uppercase tracking-wider text-base-content/50">
-              <th class="w-8 border-b border-base-300 bg-base-100 px-2 py-2">
+              <th class="w-8 border-b border-hairline bg-base-100 px-2 py-2">
                 <input
                   type="checkbox"
                   :checked="allSelected"
@@ -431,17 +431,17 @@ function fieldLabel(field: AudioTagField): string {
                   @change="toggleAll"
                 />
               </th>
-              <th class="border-b border-base-300 bg-base-100 px-2 py-2">
+              <th class="border-b border-hairline bg-base-100 px-2 py-2">
                 {{ t('tools.tagEditorFile') }}
               </th>
               <th
                 v-for="field in AUDIO_TAG_FIELDS"
                 :key="field"
-                class="border-b border-base-300 bg-base-100 px-2 py-2"
+                class="border-b border-hairline bg-base-100 px-2 py-2"
               >
                 {{ fieldLabel(field) }}
               </th>
-              <th class="w-8 border-b border-base-300 bg-base-100 px-2 py-2"></th>
+              <th class="w-8 border-b border-hairline bg-base-100 px-2 py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -451,7 +451,7 @@ function fieldLabel(field: AudioTagField): string {
               class="align-top"
               :class="row.selected ? 'bg-primary/5' : ''"
             >
-              <td class="border-b border-base-300/60 px-2 py-1.5">
+              <td class="border-b border-hairline/60 px-2 py-1.5">
                 <input
                   v-model="row.selected"
                   type="checkbox"
@@ -459,12 +459,12 @@ function fieldLabel(field: AudioTagField): string {
                   :aria-label="row.name"
                 />
               </td>
-              <td class="max-w-56 border-b border-base-300/60 px-2 py-1.5">
+              <td class="max-w-56 border-b border-hairline/60 px-2 py-1.5">
                 <div class="flex items-center gap-1.5">
                   <span class="truncate" :title="row.path">{{ row.name }}</span>
                   <span
                     v-if="!row.writable"
-                    class="shrink-0 rounded-full border border-base-300 px-1.5 py-0.5 text-[9px] text-base-content/50"
+                    class="shrink-0 rounded-full border border-hairline px-1.5 py-0.5 text-[9px] text-base-content/50"
                   >
                     {{ t('tools.tagEditorReadOnly') }}
                   </span>
@@ -488,18 +488,18 @@ function fieldLabel(field: AudioTagField): string {
               <td
                 v-for="field in AUDIO_TAG_FIELDS"
                 :key="field"
-                class="border-b border-base-300/60 px-1.5 py-1.5"
+                class="border-b border-hairline/60 px-1.5 py-1.5"
               >
                 <input
                   v-model="row.tags[field]"
                   type="text"
                   :disabled="saving || !row.writable || !!row.error"
                   :aria-label="`${row.name} ${fieldLabel(field)}`"
-                  class="w-full min-w-24 rounded-field border border-base-300/70 bg-base-100 px-1.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="w-full min-w-24 rounded-field border border-hairline/70 bg-base-100 px-1.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   @input="markDirty(row)"
                 />
               </td>
-              <td class="border-b border-base-300/60 px-1.5 py-1.5">
+              <td class="border-b border-hairline/60 px-1.5 py-1.5">
                 <button
                   class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
                   :title="t('tools.remove')"
@@ -515,7 +515,7 @@ function fieldLabel(field: AudioTagField): string {
         </table>
       </div>
 
-      <div class="flex items-center gap-3 border-t border-base-300 px-3 py-2">
+      <div class="flex items-center gap-3 border-t border-hairline px-3 py-2">
         <p v-if="lastSave" class="flex items-center gap-1.5 text-2xs">
           <CheckCircle2 v-if="lastSave.failed === 0" :size="13" class="text-success" />
           <AlertCircle v-else :size="13" class="text-error" />

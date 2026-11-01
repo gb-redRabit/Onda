@@ -61,7 +61,7 @@ function openUpdates(): void {
       <RotateCw :size="14" />{{ $t('settings.restartInstall') }}
     </button>
     <button
-      class="fx-noise shrink-0 flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
+      class="fx-noise shrink-0 flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="openUpdates"
     >
       {{ $t('settings.updateManage') }}<ArrowRight :size="14" />

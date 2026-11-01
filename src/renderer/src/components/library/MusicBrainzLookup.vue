@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Disc3, Check, Loader2, X } from '@lucide/vue';
@@ -125,7 +125,7 @@ onMounted(() => {
     @close="onOverlayClick"
     @escape="emit('close')"
   >
-    <div class="flex items-center justify-between px-5 py-4 border-b border-base-300 shrink-0">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-hairline shrink-0">
       <h2 id="musicbrainz-lookup-title" class="text-base font-bold flex items-center gap-2">
         <Disc3 :size="18" /> {{ $t('musicbrainz.title') }}
       </h2>
@@ -167,7 +167,7 @@ onMounted(() => {
       </div>
 
       <template v-for="rel in releases" :key="rel.id">
-        <div class="rounded-box border border-base-300 overflow-hidden">
+        <div class="rounded-box border border-hairline overflow-hidden">
           <MusicBrainzReleaseCard
             :rel="rel"
             :selected="selectedId === rel.id"
@@ -178,7 +178,7 @@ onMounted(() => {
 
           <div
             v-if="lookupResult && selectedId === rel.id"
-            class="border-t border-base-300 p-3 space-y-3"
+            class="border-t border-hairline p-3 space-y-3"
           >
             <div class="text-xs text-base-content/70">
               <span class="font-medium text-base-content">{{ $t('musicbrainz.selected') }}</span>

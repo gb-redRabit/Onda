@@ -27,7 +27,7 @@ const fx = useAudioFxStore();
   <div
     role="menu"
     data-menu="playback"
-    class="absolute top-full left-0 mt-1 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/40 py-2 min-w-60 z-70"
+    class="absolute top-full left-0 mt-1 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-black/40 py-2 min-w-60 z-70"
   >
     <AppMenuItem :icon="player.isPlaying ? Pause : Play" @click="action(player.togglePlay)">
       {{ $t('menu.playPause') }}
@@ -57,7 +57,7 @@ const fx = useAudioFxStore();
     >
       {{ $t('menu.returnFromPip') }}
     </AppMenuItem>
-    <div class="border-t border-base-300 my-1.5 mx-2" role="separator" />
+    <div class="border-t border-hairline my-1.5 mx-2" role="separator" />
     <AppMenuItem :icon="Shuffle" @click="action(player.toggleShuffle)">
       {{ $t('menu.shuffle') }}
       <template #hint>{{ $t(player.shuffle ? 'common.on' : 'common.off') }}</template>
@@ -74,7 +74,7 @@ const fx = useAudioFxStore();
         )
       }}</template>
     </AppMenuItem>
-    <div class="border-t border-base-300 my-1.5 mx-2" role="separator" />
+    <div class="border-t border-hairline my-1.5 mx-2" role="separator" />
     <AppMenuItem :icon="SlidersHorizontal" @click="action(fx.toggleEqualizer)">{{
       $t('menu.eq')
     }}</AppMenuItem>

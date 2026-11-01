@@ -72,7 +72,7 @@ watch(
     class="flex flex-col h-full w-full bg-base-200/(--glass-alpha)"
   >
     <div
-      class="flex items-center justify-between gap-3 pl-3 pr-1 h-9 shrink-0 border-b border-base-300 select-none"
+      class="flex items-center justify-between gap-3 pl-3 pr-1 h-9 shrink-0 border-b border-hairline select-none"
       style="-webkit-app-region: drag"
     >
       <div class="flex items-center gap-2 text-xs text-base-content/70 min-w-0">

@@ -13,7 +13,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
 <template>
   <div>
     <div
-      class="w-full rounded-box bg-base-200/(--glass-alpha) border border-base-300 p-2 relative select-none"
+      class="w-full rounded-box bg-base-200/(--glass-alpha) border border-hairline p-2 relative select-none"
     >
       <div class="grid gap-2" :class="columns === 4 ? 'grid-cols-4' : 'grid-cols-2'">
         <button

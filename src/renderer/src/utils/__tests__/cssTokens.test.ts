@@ -10,6 +10,8 @@ const css = readFileSync(join(process.cwd(), 'src/renderer/src/assets/main.css')
 describe('design tokens', () => {
   it('defines the semantic tokens used by components', () => {
     expect(css).toContain('--color-border-default');
+    // Jeden token obramowan (T5): motywy moga nadpisac kolor krawedzi.
+    expect(css).toContain('--color-hairline');
     expect(css).toContain('--color-elevated');
   });
 

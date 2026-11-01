@@ -120,8 +120,8 @@ async function openChannelInApp(url: string): Promise<void> {
       <div
         v-for="p in saved.playlists"
         :key="p.id"
-        class="group rounded-box bg-base-100 border border-base-300 transition-colors"
-        :class="expandedPlaylistId === p.id ? 'border-primary/60' : 'hover:border-base-300'"
+        class="group rounded-box bg-base-100 border border-hairline transition-colors"
+        :class="expandedPlaylistId === p.id ? 'border-primary/60' : 'hover:border-hairline'"
       >
         <div class="flex items-center gap-3 p-3">
           <button
@@ -179,7 +179,7 @@ async function openChannelInApp(url: string): Promise<void> {
           </button>
         </div>
 
-        <div v-if="expandedPlaylistId === p.id" class="border-t border-base-300 px-3 py-3">
+        <div v-if="expandedPlaylistId === p.id" class="border-t border-hairline px-3 py-3">
           <div
             v-if="
               (!p.items || p.items.length === 0) &&

@@ -42,14 +42,14 @@ function openInWindow() {
         <p v-if="channelTitle" class="text-xs text-base-content/50 truncate">{{ channelTitle }}</p>
       </div>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
+        class="fx-noise p-1.5 fx-depth rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
         :title="$t('youtube.openInWindow')"
         @click="openInWindow"
       >
         <ExternalLink :size="13" />
       </button>
       <button
-        class="fx-noise p-1.5 fx-depth rounded-field border border-base-300 text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
+        class="fx-noise p-1.5 fx-depth rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
         :title="$t('nav.collapse')"
         @click="emit('close')"
       >

@@ -34,7 +34,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
 <template>
   <div class="tab-shell relative" role="tablist" :aria-label="$t('library.title')">
     <div
-      class="tab-row flex gap-1 rounded-box border border-base-300/70 bg-base-200/75 p-1 overflow-x-auto overflow-y-hidden"
+      class="tab-row flex gap-1 rounded-box border border-hairline/70 bg-base-200/75 p-1 overflow-x-auto overflow-y-hidden"
     >
       <button
         v-for="(tabItem, i) in props.tabs"

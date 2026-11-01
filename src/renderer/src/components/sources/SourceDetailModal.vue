@@ -43,7 +43,7 @@ function browserUrl(item: SourceItem): string {
     @close="emit('close')"
   >
     <template v-if="props.item">
-      <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300">
+      <div class="flex items-center gap-3 px-4 py-3 border-b border-hairline">
         <span
           class="shrink-0 px-2 py-0.5 rounded-field bg-base-200 text-2xs font-medium uppercase text-base-content/60"
         >
@@ -107,7 +107,7 @@ function browserUrl(item: SourceItem): string {
 
         <!-- Metadane i akcje -->
         <div
-          class="flex flex-col gap-4 p-4 md:border-l border-t md:border-t-0 border-base-300 overflow-y-auto bg-base-100"
+          class="flex flex-col gap-4 p-4 md:border-l border-t md:border-t-0 border-hairline overflow-y-auto bg-base-100"
         >
           <div>
             <p class="text-2xs uppercase tracking-wider text-base-content/55 mb-1">

@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
       @dragover.prevent
       @drop.prevent="onDrop"
     >
-      <section class="rounded-box border border-base-300 bg-base-100/70 p-4">
+      <section class="rounded-box border border-hairline bg-base-100/70 p-4">
         <div class="flex items-center justify-between gap-2">
           <div class="text-sm font-semibold">
             {{ t('tools.concatFiles') }}
@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
           <div class="flex items-center gap-1.5">
             <button
               data-testid="concat-add"
-              class="fx-noise flex items-center gap-1 rounded-field border border-base-300 px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
+              class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
               @click="pickFiles"
             >
@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
               {{ t('tools.addFiles') }}
             </button>
             <button
-              class="fx-noise rounded-field border border-base-300 px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+              class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
               :disabled="busy || files.length === 0"
               @click="clearFiles"
             >
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
             v-for="(path, index) in files"
             :key="path"
             data-testid="concat-item"
-            class="flex items-center gap-2 rounded-field border border-base-300/70 bg-base-200/40 px-2.5 py-2"
+            class="flex items-center gap-2 rounded-field border border-hairline/70 bg-base-200/40 px-2.5 py-2"
           >
             <span class="w-5 shrink-0 text-center font-mono text-2xs text-base-content/40">
               {{ index + 1 }}
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
             v-model="container"
             data-testid="concat-container"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="mp4">{{ t('tools.mp4') }}</option>
             <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -287,7 +287,7 @@ onBeforeUnmount(() => {
           <select
             v-model="mode"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="copy">{{ t('tools.clipModeCopy') }}</option>
             <option value="exact">{{ t('tools.clipModeExact') }}</option>
@@ -300,7 +300,7 @@ onBeforeUnmount(() => {
           <select
             v-model="audio"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
             <option value="mute">{{ t('tools.clipAudioMute') }}</option>
@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
         </label>
       </section>
 
-      <section class="rounded-box border border-base-300 bg-base-100/70 p-4">
+      <section class="rounded-box border border-hairline bg-base-100/70 p-4">
         <label class="block">
           <span class="text-2xs font-medium text-base-content/60">
             {{ t('tools.outputFolder') }}
@@ -320,10 +320,10 @@ onBeforeUnmount(() => {
               type="text"
               :disabled="busy"
               :placeholder="t('tools.outputDefault')"
-              class="min-w-0 flex-1 rounded-field border border-base-300 bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+              class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             />
             <button
-              class="fx-noise shrink-0 rounded-field border border-base-300 p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+              class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
               :title="t('tools.chooseFolder')"
               :aria-label="t('tools.chooseFolder')"
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
         <button
           v-if="busy"
           data-testid="concat-cancel"
-          class="fx-noise flex items-center justify-center gap-1.5 rounded-field border border-base-300 px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
+          class="fx-noise flex items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
           @click="cancelConcat"
         >
           <Square :size="12" />
@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
         v-if="status !== 'idle'"
         data-testid="concat-job"
         :data-status="status"
-        class="rounded-box border border-base-300 bg-base-100/70 px-3 py-2"
+        class="rounded-box border border-hairline bg-base-100/70 px-3 py-2"
       >
         <div class="flex items-center gap-2">
           <CheckCircle2 v-if="status === 'done'" :size="14" class="shrink-0 text-success" />

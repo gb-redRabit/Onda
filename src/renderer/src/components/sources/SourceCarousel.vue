@@ -61,7 +61,7 @@ const cells = computed(() =>
       >
         <div
           v-activate
-          class="group w-56 max-lg:w-48 cursor-pointer fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 transition-colors"
+          class="group w-56 max-lg:w-48 cursor-pointer fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-hairline transition-colors"
           :class="
             props.selectable && cell.item.id && props.selectedIds?.has(cell.item.id)
               ? 'border-primary ring-2 ring-primary'

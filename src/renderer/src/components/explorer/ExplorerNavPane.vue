@@ -141,13 +141,13 @@ async function onNavDrop(e: DragEvent, path: string) {
 <template>
   <div
     data-testid="explorer-nav-pane"
-    class="w-56 shrink-0 border-r border-base-300/80 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden"
+    class="w-56 shrink-0 border-r border-hairline/80 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden"
   >
     <!-- W trybie nakładki (wąskie okno) panel zasłania pasek narzędzi, więc
          zamykanie musi być w środku panelu. -->
     <div
       v-if="overlay"
-      class="flex shrink-0 items-center justify-between gap-2 border-b border-base-300/80 px-2.5 py-2"
+      class="flex shrink-0 items-center justify-between gap-2 border-b border-hairline/80 px-2.5 py-2"
     >
       <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">
         {{ t('explorer.navPane') }}

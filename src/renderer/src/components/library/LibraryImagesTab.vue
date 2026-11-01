@@ -100,7 +100,7 @@ onUnmounted(() => {
     <p class="text-xs">{{ $t('library.addFolderHint') }}</p>
   </div>
   <template v-else>
-    <div class="flex items-center justify-between px-4 py-2 border-b border-base-300 shrink-0">
+    <div class="flex items-center justify-between px-4 py-2 border-b border-hairline shrink-0">
       <span class="text-xs text-base-content/50">{{ fileCount(images.length) }}</span>
     </div>
     <div ref="imageGridRef" class="flex-1 overflow-auto p-4">
@@ -121,7 +121,7 @@ onUnmounted(() => {
           <button
             v-for="item in row.items"
             :key="item.img.path"
-            class="group fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-base-300 hover:border-primary transition-colors text-left flex flex-col shrink-0"
+            class="group fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-hairline hover:border-primary transition-colors text-left flex flex-col shrink-0"
             :style="{ width: imageCellSize + 'px' }"
             :title="item.img.name"
             @dblclick="emit('open', item.index)"

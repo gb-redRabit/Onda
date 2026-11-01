@@ -94,6 +94,9 @@ export function resolveThemeAppearance(src: ThemeAppearanceSource): SemanticThem
   const colors: Record<ColorTokenId, string> = { ...base.colors };
   const custom = sanitizeColorRecord(src.customColors);
   if (custom) Object.assign(colors, custom);
+  // Motyw własny: obramowania idą za nadpisanym `base300`, chyba że użytkownik
+  // ustawił własny kolor krawędzi.
+  colors.hairline = custom?.hairline ?? colors.base300;
   return {
     scheme: base.scheme,
     colors,
@@ -110,6 +113,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#1d232a',
       base200: '#191e24',
       base300: '#15191e',
+      hairline: '#15191e',
       baseContent: '#ecf9ff',
       primary: '#605dff',
       primaryContent: '#ffffff',
@@ -139,6 +143,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#ffffff',
       base200: '#f8f8f8',
       base300: '#eeeeee',
+      hairline: '#eeeeee',
       baseContent: '#18181b',
       primary: '#422ad5',
       primaryContent: '#e0e7ff',
@@ -168,6 +173,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#161b22',
       base200: '#0d1117',
       base300: '#21262d',
+      hairline: '#21262d',
       baseContent: '#c9d1d9',
       primary: '#58a6ff',
       primaryContent: '#04182b',
@@ -197,6 +203,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#181818',
       base200: '#121212',
       base300: '#242424',
+      hairline: '#242424',
       baseContent: '#eaeaea',
       primary: '#1db954',
       primaryContent: '#04150a',
@@ -226,6 +233,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#09090b',
       base200: '#171618',
       base300: '#1e1d1f',
+      hairline: '#1e1d1f',
       baseContent: '#dca54d',
       primary: '#ffffff',
       primaryContent: '#161616',
@@ -255,6 +263,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#fff248',
       base200: '#f7e83a',
       base300: '#e3d40e',
+      hairline: '#e3d40e',
       baseContent: '#000000',
       primary: '#ff6596',
       primaryContent: '#180408',
@@ -284,6 +293,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#1a368b',
       base200: '#162455',
       base300: '#091444',
+      hairline: '#091444',
       baseContent: '#b8e6fe',
       primary: '#13ecf3',
       primaryContent: '#015355',
@@ -313,6 +323,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#000000',
       base200: '#141414',
       base300: '#1b1b1b',
+      hairline: '#1b1b1b',
       baseContent: '#d6d6d6',
       primary: '#3a3a3a',
       primaryContent: '#ffffff',
@@ -342,6 +353,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#f8fdef',
       base200: '#e1e6d9',
       base300: '#cbcfc3',
+      hairline: '#cbcfc3',
       baseContent: '#151614',
       primary: '#419400',
       primaryContent: '#010800',
@@ -371,6 +383,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       base100: '#001e29',
       base200: '#00111d',
       base300: '#000611',
+      hairline: '#000611',
       baseContent: '#ffd6a7',
       primary: '#bdff00',
       primaryContent: '#427600',

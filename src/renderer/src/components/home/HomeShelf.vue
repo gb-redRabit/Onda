@@ -76,7 +76,7 @@ onUnmounted(() => {
         <button
           v-if="canScrollLeft"
           type="button"
-          class="grid h-6 w-6 place-items-center rounded-field border border-base-300/80 bg-base-100 text-base-content/60 transition-colors hover:bg-base-content/8 hover:text-base-content"
+          class="grid h-6 w-6 place-items-center rounded-field border border-hairline/80 bg-base-100 text-base-content/60 transition-colors hover:bg-base-content/8 hover:text-base-content"
           :aria-label="$t('home.scrollLeft')"
           @click="scrollBy(-1)"
         >
@@ -85,7 +85,7 @@ onUnmounted(() => {
         <button
           v-if="canScrollRight"
           type="button"
-          class="grid h-6 w-6 place-items-center rounded-field border border-base-300/80 bg-base-100 text-base-content/60 transition-colors hover:bg-base-content/8 hover:text-base-content"
+          class="grid h-6 w-6 place-items-center rounded-field border border-hairline/80 bg-base-100 text-base-content/60 transition-colors hover:bg-base-content/8 hover:text-base-content"
           :aria-label="$t('home.scrollRight')"
           @click="scrollBy(1)"
         >

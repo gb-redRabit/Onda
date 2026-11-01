@@ -78,7 +78,7 @@ function onSpeedPreset(v: number) {
     <Transition name="menu-fade">
       <div
         v-if="speedMenuOpen"
-        class="absolute bottom-full right-0 mb-2 w-64 bg-base-100 border border-base-300 rounded-box shadow-2xl shadow-black/50 p-3 z-50"
+        class="absolute bottom-full right-0 mb-2 w-64 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-black/50 p-3 z-50"
       >
         <div class="flex items-center justify-between mb-2.5">
           <span class="text-2xs text-base-content/50 font-medium uppercase tracking-wider">
@@ -123,7 +123,7 @@ function onSpeedPreset(v: number) {
           <span>3x</span>
         </div>
 
-        <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-base-300">
+        <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-hairline">
           <span class="text-2xs text-base-content/60">{{ $t('player.speedHint') }}</span>
           <button
             class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"

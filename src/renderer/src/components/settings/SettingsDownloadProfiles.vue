@@ -123,7 +123,7 @@ async function doDeleteProfile() {
   >
     <div class="flex items-center gap-2">
       <select
-        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         :value="selectedProfileId"
         @change="onProfileSelect"
       >
@@ -131,7 +131,7 @@ async function doDeleteProfile() {
         <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
       <button
-        class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 disabled:opacity-40 shrink-0"
+        class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 disabled:opacity-40 shrink-0"
         :aria-label="$t('settings.profileDelete')"
         :disabled="!selectedProfileId"
         @click="doDeleteProfile"
@@ -141,7 +141,7 @@ async function doDeleteProfile() {
     </div>
     <input
       v-model="profileName"
-      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
       :placeholder="$t('settings.profileNamePlaceholder')"
     />
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -149,7 +149,7 @@ async function doDeleteProfile() {
         >{{ $t('youtube.prefKind')
         }}<select
           v-model="pfKind"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         >
           <option v-for="k in profileKinds" :key="k.value" :value="k.value">
             {{ $t(k.labelKey) }}
@@ -160,7 +160,7 @@ async function doDeleteProfile() {
         >{{ $t('youtube.prefFormat')
         }}<select
           v-model="pfFormat"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         >
           <option v-for="f in audioFormats" :key="f" :value="f">
             {{ f === 'best' ? $t('settings.audioNative') : f }}
@@ -171,7 +171,7 @@ async function doDeleteProfile() {
         >{{ $t('youtube.prefQuality')
         }}<select
           v-model="pfQuality"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         >
           <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
         </select></label
@@ -180,7 +180,7 @@ async function doDeleteProfile() {
         >{{ $t('youtube.prefContainer')
         }}<select
           v-model="pfContainer"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         >
           <option v-for="c in videoContainers" :key="c" :value="c">{{ c }}</option>
         </select></label
@@ -189,7 +189,7 @@ async function doDeleteProfile() {
         >{{ $t('settings.defaultAudioQuality')
         }}<select
           v-model="pfAudioQuality"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         >
           <option v-for="q in ['best', 'high', 'medium', 'low'] as const" :key="q" :value="q">
             {{ $t('settings.audioQuality.' + q) }}
@@ -200,7 +200,7 @@ async function doDeleteProfile() {
         >{{ $t('settings.defaultCover')
         }}<select
           v-model="pfCoverType"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         >
           <option value="thumbnail">{{ $t('settings.cover.thumbnail') }}</option>
           <option value="none">{{ $t('settings.cover.none') }}</option>
@@ -214,7 +214,7 @@ async function doDeleteProfile() {
           v-model.number="pfFrameTime"
           type="number"
           min="0"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
       /></label>
       <template v-if="pfCoverType === 'clip'">
         <label class="block text-xs text-base-content/50"
@@ -223,7 +223,7 @@ async function doDeleteProfile() {
             v-model.number="pfClipStart"
             type="number"
             min="0"
-            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         /></label>
         <label class="block text-xs text-base-content/50"
           >{{ $t('youtube.clipEndLabel')
@@ -231,13 +231,13 @@ async function doDeleteProfile() {
             v-model.number="pfClipEnd"
             type="number"
             min="1"
-            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
         /></label>
         <label class="block text-xs text-base-content/50"
           >{{ $t('youtube.clipFormatLabel')
           }}<select
             v-model="pfClipFormat"
-            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-base-300 text-sm"
+            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
           >
             <option value="webm">.webm</option>
             <option value="mp4">.mp4</option>

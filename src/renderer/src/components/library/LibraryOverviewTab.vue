@@ -138,7 +138,7 @@ const sections = computed(() => [
 <template>
   <!-- Tryb wyników wyszukiwania -->
   <div v-if="hasQuery" class="flex-1 flex flex-col min-h-0">
-    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-hairline shrink-0">
       <span class="text-xs text-base-content/50">{{ trackCount(filteredAll.length) }}</span>
       <button
         v-if="filteredAll.length > 0"
@@ -187,7 +187,7 @@ const sections = computed(() => [
     <!-- Hero polubionych, gdy są polubienia -->
     <div
       v-if="likedTracks.length > 0"
-      class="mx-4 mb-4 p-4 rounded-box bg-base-100 border border-base-300 flex items-center gap-4"
+      class="mx-4 mb-4 p-4 rounded-box bg-base-100 border border-hairline flex items-center gap-4"
     >
       <div
         class="w-14 h-14 rounded-box bg-primary flex items-center justify-center shrink-0 fx-depth"
@@ -246,7 +246,7 @@ const sections = computed(() => [
 
         <div
           v-if="sec.tracks.length === 0"
-          class="py-8 flex flex-col items-center gap-2 text-base-content/60 border border-dashed border-base-300 rounded-box bg-base-100/50"
+          class="py-8 flex flex-col items-center gap-2 text-base-content/60 border border-dashed border-hairline rounded-box bg-base-100/50"
         >
           <component :is="sec.icon" :size="20" class="opacity-30" />
           <p class="text-xs">{{ sec.empty }}</p>
@@ -270,7 +270,7 @@ const sections = computed(() => [
 
       <!-- Minimalna stopka statystyk -->
       <div
-        class="flex items-center gap-2 text-2xs text-base-content/60 pt-4 border-t border-base-300"
+        class="flex items-center gap-2 text-2xs text-base-content/60 pt-4 border-t border-hairline"
       >
         <span>{{ $t('home.statFiles') }}: {{ library.totalCount }}</span>
         <span>·</span>

@@ -150,42 +150,42 @@ async function onFactoryReset(): Promise<void> {
     <div class="mb-3 text-sm font-medium">{{ $t('settings.runtimeDetails') }}</div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <template v-if="info">
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">Electron</div>
           <div class="text-sm font-mono">{{ info.electron }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">Chrome</div>
           <div class="text-sm font-mono">{{ info.chrome }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">Node.js</div>
           <div class="text-sm font-mono">{{ info.node }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">V8</div>
           <div class="text-sm font-mono">{{ info.v8 }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">{{ $t('settings.os') }}</div>
           <div class="text-sm font-mono truncate" :title="info.os">{{ info.os }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">{{ $t('settings.platform') }}</div>
           <div class="text-sm font-mono">{{ info.platform }} / {{ info.arch }}</div>
         </div>
-        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+        <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
           <div class="text-2xs text-base-content/50 mb-0.5">{{ $t('settings.uptime') }}</div>
           <div class="text-sm font-mono">{{ info.uptime }}s</div>
         </div>
       </template>
-      <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+      <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
         <div class="text-2xs text-base-content/50 mb-0.5">
           {{ $t('settings.userDataPath') }}
         </div>
         <div class="text-xs font-mono break-all">{{ info?.userDataPath }}</div>
       </div>
-      <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+      <div class="col-span-2 p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
         <div class="text-2xs text-base-content/50 mb-0.5">{{ $t('settings.logPath') }}</div>
         <div class="text-xs font-mono break-all">{{ info?.logPath }}</div>
       </div>
@@ -198,7 +198,7 @@ async function onFactoryReset(): Promise<void> {
       <div class="text-2xs text-base-content/50">{{ $t('settings.perfDesc') }}</div>
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
         <div class="text-2xs text-base-content/50 mb-0.5">
           {{ $t('settings.perfRendererDom') }}
         </div>
@@ -208,7 +208,7 @@ async function onFactoryReset(): Promise<void> {
           }}
         </div>
       </div>
-      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
         <div class="text-2xs text-base-content/50 mb-0.5">
           {{ $t('settings.perfRendererReady') }}
         </div>
@@ -216,13 +216,13 @@ async function onFactoryReset(): Promise<void> {
           {{ rendererBoot.rendererReadyMs !== null ? `${rendererBoot.rendererReadyMs} ms` : '—' }}
         </div>
       </div>
-      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
         <div class="text-2xs text-base-content/50 mb-0.5">
           {{ $t('settings.perfMainRss') }}
         </div>
         <div class="text-sm font-mono">{{ perf ? `${perf.mainRssMb} MB` : '—' }}</div>
       </div>
-      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-base-300">
+      <div class="p-3 rounded-box bg-base-200/(--glass-alpha) border border-hairline">
         <div class="text-2xs text-base-content/50 mb-0.5">
           {{ $t('settings.perfProcesses') }}
         </div>
@@ -361,14 +361,14 @@ async function onFactoryReset(): Promise<void> {
 
   <div class="flex items-center gap-2">
     <button
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
       :disabled="busy"
       @click="refresh"
     >
       <RefreshCw :size="14" />{{ $t('settings.depRefresh') }}
     </button>
     <button
-      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-base-300 text-xs font-medium hover:bg-base-content/10 transition-colors"
+      class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
       @click="onDownload"
     >
       <Download :size="14" />{{ $t('settings.downloadLog') }}

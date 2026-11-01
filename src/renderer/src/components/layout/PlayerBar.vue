@@ -151,7 +151,7 @@ function togglePlay() {
     v-else
     data-testid="player-bar"
     :data-playing="audio.isPlaying.value ? 'true' : 'false'"
-    class="h-18 bg-base-200/(--glass-alpha) border-t border-base-300/80 flex items-center px-4 shrink-0 relative"
+    class="h-18 bg-base-200/(--glass-alpha) border-t border-hairline/80 flex items-center px-4 shrink-0 relative"
   >
     <div
       v-if="!isLive"
@@ -183,7 +183,7 @@ function togglePlay() {
 
     <div class="flex items-center gap-3 min-w-0 w-70 shrink-0 max-lg:w-56 max-md:w-44">
       <div
-        class="w-11 h-11 rounded-field bg-base-100 border border-base-300 flex items-center justify-center shrink-0 overflow-hidden"
+        class="w-11 h-11 rounded-field bg-base-100 border border-hairline flex items-center justify-center shrink-0 overflow-hidden"
         :style="coverClip ? { clipPath: coverClip } : undefined"
       >
         <MediaCover :path="displayTrack?.path" :size="18" :autoplay="true" fallback="music" />

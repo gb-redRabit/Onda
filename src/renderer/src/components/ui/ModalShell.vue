@@ -91,7 +91,7 @@ useDialogFocus(panelRef, {
         aria-modal="true"
         :aria-labelledby="props.labelledBy || undefined"
         tabindex="-1"
-        class="border border-base-300 rounded-box shadow-2xl"
+        class="border border-hairline rounded-box shadow-2xl"
         :class="[panelTone === 'neutral' ? 'bg-neutral' : 'bg-base-100', panelClass]"
         v-bind="$attrs"
       >
