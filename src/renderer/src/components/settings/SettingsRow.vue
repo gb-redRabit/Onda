@@ -37,7 +37,7 @@ const valueLabel = computed(() => {
   <div :id="anchor" class="flex items-center justify-between gap-4 py-2.5 scroll-mt-14">
     <div class="min-w-0">
       <div class="flex items-center gap-1.5">
-        <span class="text-[13px] font-medium text-base-content">{{ label }}</span>
+        <span class="text-ui font-medium text-base-content">{{ label }}</span>
         <span
           v-if="modified"
           class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"

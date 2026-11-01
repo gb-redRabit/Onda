@@ -215,7 +215,7 @@ async function onNavDrop(e: DragEvent, path: string) {
           <span class="truncate flex-1">{{ drive.name }}</span>
           <span
             v-if="drive.total > 0"
-            class="shrink-0 text-[10px] tabular-nums text-base-content/45"
+            class="shrink-0 text-3xs tabular-nums text-base-content/45"
             >{{ formatFileSize(drive.free) }}</span
           >
         </span>
@@ -256,7 +256,7 @@ async function onNavDrop(e: DragEvent, path: string) {
         <FolderOpen :size="14" class="shrink-0 text-primary-text" />
         <span class="truncate flex-1">{{ folder.replace(/.*[\\/]/, '') || folder }}</span>
         <span
-          class="shrink-0 text-[8px] px-1 py-0.5 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
+          class="shrink-0 text-4xs px-1 py-0.5 rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
           :title="t('explorer.libraryFolder')"
         >
           LIB

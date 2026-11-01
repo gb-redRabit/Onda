@@ -191,7 +191,7 @@ function onHoverLeave() {
         </div>
       </div>
       <div class="p-2.5">
-        <div class="text-[13px] font-medium truncate leading-snug">
+        <div class="text-ui font-medium truncate leading-snug">
           {{ track.metadata?.title || track.name }}
         </div>
         <div class="text-xs text-base-content/50 mt-0.5 truncate">

@@ -112,7 +112,7 @@ const buttons = computed<TransportButton[]>(() => {
       :aria-pressed="b.toggle ? b.active : undefined"
       @click.stop="send(b.action)"
     >
-      {{ b.glyph }}<span v-if="b.badge" class="-ml-px text-[8px]">{{ b.badge }}</span>
+      {{ b.glyph }}<span v-if="b.badge" class="-ml-px text-4xs">{{ b.badge }}</span>
     </button>
   </div>
 </template>

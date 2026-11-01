@@ -91,7 +91,7 @@ defineExpose({ focusSearch });
           type="search"
           :placeholder="$t('compact.searchPlaceholder')"
           :aria-label="$t('compact.searchPlaceholder')"
-          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-hairline text-[12px] outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-hairline text-xs outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
           data-testid="compact-search"
         />
       </label>
@@ -118,12 +118,12 @@ defineExpose({ focusSearch });
       </button>
     </div>
 
-    <div v-if="!library.isLoaded" class="px-4 py-6 text-[12px] text-base-content/50">
+    <div v-if="!library.isLoaded" class="px-4 py-6 text-xs text-base-content/50">
       {{ $t('compact.loading') }}
     </div>
     <div
       v-else-if="!results.length"
-      class="px-4 py-8 flex flex-col items-center gap-2 text-center text-[12px] text-base-content/50"
+      class="px-4 py-8 flex flex-col items-center gap-2 text-center text-xs text-base-content/50"
     >
       <Music2 :size="20" />
       {{ query ? $t('compact.noResults') : $t('compact.emptyLibrary') }}
@@ -166,7 +166,7 @@ defineExpose({ focusSearch });
               </span>
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-[12px] truncate">{{ trackTitle(results[row.index]) }}</span>
+              <span class="block text-xs truncate">{{ trackTitle(results[row.index]) }}</span>
               <span class="block text-3xs text-base-content/50 truncate">
                 {{ trackArtist(results[row.index]) }}
               </span>

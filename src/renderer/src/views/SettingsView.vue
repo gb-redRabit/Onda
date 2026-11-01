@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
             v-model="search"
             :placeholder="t('settings.searchSettings')"
             :aria-label="t('settings.searchSettings')"
-            class="w-full pl-8 pr-8 h-9 rounded-field bg-base-200 border border-hairline text-[13px] text-base-content outline-hidden transition placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            class="w-full pl-8 pr-8 h-9 rounded-field bg-base-200 border border-hairline text-ui text-base-content outline-hidden transition placeholder:text-base-content/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             data-testid="settings-search"
             @keydown="onSearchKeydown"
           />
@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
           ref="menuRef"
           role="menu"
           :aria-label="t('settings.more')"
-          class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-hairline bg-base-100 fx-depth p-1.5 text-[13px]"
+          class="absolute right-6 top-full z-50 mt-1 w-56 rounded-box border border-hairline bg-base-100 fx-depth p-1.5 text-ui"
           data-testid="settings-menu"
           @keydown="onMenuKeydown"
         >
@@ -374,7 +374,7 @@ onBeforeUnmount(() => {
                 @click="openHit(hit)"
               >
                 <span class="min-w-0 flex-1">
-                  <span class="block text-[13px] text-base-content truncate">{{ hit.label }}</span>
+                  <span class="block text-ui text-base-content truncate">{{ hit.label }}</span>
                   <span v-if="hit.description" class="block text-2xs text-base-content/60 truncate">
                     {{ hit.description }}
                   </span>

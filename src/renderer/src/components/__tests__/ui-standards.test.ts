@@ -8,9 +8,13 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = join(process.cwd(), 'src/renderer/src');
 
-/** Sufity dla długu, który dopiero będzie migrowany (etapy A3/A4). */
+/** Wzorce, których nie wolno używać (licznik musi być 0). */
+const FORBIDDEN_PATTERNS = {
+  arbitraryTextPx: /\btext-\[\d+px\]/g
+};
+
+/** Sufity dla długu, który dopiero będzie migrowany (etapy A4). */
 const BUDGETS = {
-  arbitraryTextPx: { pattern: /\btext-\[\d+px\]/g, max: 47 },
   blackShadow: { pattern: /\bshadow-black(?:\/\d+)?\b/g, max: 14 },
   blackWhitePalette: {
     pattern: /\b(?:bg|text|border|ring|from|to|via)-(?:black|white)(?:\/\d+)?\b/g,
@@ -107,13 +111,8 @@ describe('UI standards', () => {
     expect(hits, 'Use focus-visible: for buttons/selects/links').toEqual([]);
   });
 
-  it('does not grow the arbitrary font-size debt', () => {
-    const hits = collect(BUDGETS.arbitraryTextPx.pattern);
-    const budget = BUDGETS.arbitraryTextPx.max;
-    expect(
-      hits.length,
-      `Budget ${budget}; use text-2xs/3xs/xs.\n${hits.join('\n')}`
-    ).toBeLessThanOrEqual(budget);
+  it('uses the typography scale, not arbitrary pixel sizes', () => {
+    expect(collect(FORBIDDEN_PATTERNS.arbitraryTextPx), 'Use text-4xs/3xs/2xs/xs/ui').toEqual([]);
   });
 
   it('does not grow the black shadow debt', () => {

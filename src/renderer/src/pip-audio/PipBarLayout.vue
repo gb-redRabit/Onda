@@ -74,7 +74,7 @@ const {
         class="flex min-w-0 max-w-[30%] shrink-0 flex-col justify-center leading-tight"
       >
         <template v-if="has('trackInfo')">
-          <span class="truncate text-[12px] font-semibold text-base-content">{{ trackName }}</span>
+          <span class="truncate text-xs font-semibold text-base-content">{{ trackName }}</span>
           <span v-if="artist" class="truncate text-2xs text-base-content/50">{{ artist }}</span>
         </template>
         <span

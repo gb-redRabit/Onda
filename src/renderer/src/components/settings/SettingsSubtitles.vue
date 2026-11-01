@@ -45,7 +45,7 @@ onMounted(loadStats);
       :label="$t('settings.fontCacheSaved')"
       :description="$t('settings.fontCacheSavedDesc')"
     >
-      <span class="text-[13px] text-base-content/70">
+      <span class="text-ui text-base-content/70">
         {{
           $t('settings.fontCacheStats', {
             files: stats?.files ?? 0,

@@ -104,7 +104,7 @@ async function login(id: string): Promise<void> {
       <div v-for="row in rows" v-else :key="row.id" class="py-3 space-y-2.5">
         <div class="flex items-center gap-2.5">
           <ProviderIcon :provider-id="row.id" :label="row.label" :size="20" />
-          <span class="text-[13px] font-medium text-base-content">
+          <span class="text-ui font-medium text-base-content">
             {{ providerLabel(row.id, row.label, t) }}
           </span>
           <span

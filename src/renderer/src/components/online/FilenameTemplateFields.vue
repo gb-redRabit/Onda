@@ -43,7 +43,7 @@ function insertToken(token: string): void {
           v-for="token in TOKENS"
           :key="token"
           type="button"
-          class="rounded-field border border-hairline/70 bg-base-200/50 px-1.5 py-0.5 font-mono text-[11px] text-base-content/65 transition-colors hover:border-primary/40 hover:text-base-content"
+          class="rounded-field border border-hairline/70 bg-base-200/50 px-1.5 py-0.5 font-mono text-2xs text-base-content/65 transition-colors hover:border-primary/40 hover:text-base-content"
           :title="t('youtube.templateTokenHint', { token })"
           @click="insertToken(token)"
         >
@@ -52,7 +52,7 @@ function insertToken(token: string): void {
       </div>
       <p
         v-if="previewText"
-        class="mt-2 truncate font-mono text-[11px] text-base-content/55"
+        class="mt-2 truncate font-mono text-2xs text-base-content/55"
         :title="previewText"
         data-testid="template-preview"
       >

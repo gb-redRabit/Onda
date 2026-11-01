@@ -61,7 +61,7 @@ const activeSectionId = computed(
           v-for="tab in tabsOf(section.id)"
           :key="tab.id"
           type="button"
-          class="flex items-center gap-2 pl-2 pr-2 h-8 rounded-field text-[13px] text-left transition-colors"
+          class="flex items-center gap-2 pl-2 pr-2 h-8 rounded-field text-ui text-left transition-colors"
           :class="
             activeTab === tab.id
               ? 'bg-primary/15 text-primary-text font-medium'
@@ -79,7 +79,7 @@ const activeSectionId = computed(
     <div class="mt-auto pt-3 border-t border-hairline/50">
       <button
         type="button"
-        class="flex items-center gap-2 px-2 h-8 w-full rounded-field text-[12px] text-base-content/50 hover:text-error hover:bg-error/10 transition-colors"
+        class="flex items-center gap-2 px-2 h-8 w-full rounded-field text-xs text-base-content/50 hover:text-error hover:bg-error/10 transition-colors"
         :title="$t('settings.reset')"
         data-testid="settings-reset"
         @click="emit('reset')"

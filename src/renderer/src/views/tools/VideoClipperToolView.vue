@@ -1224,7 +1224,7 @@ onBeforeUnmount(() => {
                 >
                   <span
                     v-if="tick.label"
-                    class="absolute bottom-1 left-1 whitespace-nowrap font-mono text-[9px] text-base-content/45"
+                    class="absolute bottom-1 left-1 whitespace-nowrap font-mono text-4xs text-base-content/45"
                   >
                     {{ tick.label }}
                   </span>
@@ -1249,7 +1249,7 @@ onBeforeUnmount(() => {
                 >
                   <span class="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 bg-primary" />
                   <span
-                    class="absolute left-1/2 top-1 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-base-100 bg-primary text-[9px] font-bold text-primary-content shadow"
+                    class="absolute left-1/2 top-1 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-base-100 bg-primary text-4xs font-bold text-primary-content shadow"
                   >
                     A
                   </span>
@@ -1265,7 +1265,7 @@ onBeforeUnmount(() => {
                 >
                   <span class="absolute left-1/2 top-0 h-full w-0.5 -translate-x-1/2 bg-primary" />
                   <span
-                    class="absolute left-1/2 top-1 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-base-100 bg-primary text-[9px] font-bold text-primary-content shadow"
+                    class="absolute left-1/2 top-1 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-base-100 bg-primary text-4xs font-bold text-primary-content shadow"
                   >
                     B
                   </span>

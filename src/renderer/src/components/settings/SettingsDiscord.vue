@@ -93,7 +93,7 @@ watch(
         <AlertCircle v-else :size="17" />
       </span>
       <div class="min-w-0">
-        <p class="text-[13px] font-medium" data-testid="settings-discord-status">
+        <p class="text-ui font-medium" data-testid="settings-discord-status">
           {{ statusLabel }}
         </p>
         <p v-if="statusDetail" class="text-2xs text-base-content/60 mt-0.5 break-words">
@@ -177,7 +177,7 @@ watch(
   </SettingsGroup>
 
   <SettingsGroup :title="$t('settings.discordSetup')">
-    <div class="py-3 space-y-3 text-[13px] text-base-content/80">
+    <div class="py-3 space-y-3 text-ui text-base-content/80">
       <p class="text-2xs text-base-content/60">{{ $t('settings.discordSetupIntro') }}</p>
       <ol class="space-y-2.5 list-decimal pl-5">
         <li>

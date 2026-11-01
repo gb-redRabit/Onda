@@ -47,9 +47,9 @@ const size = computed(() => {
     case 'medium':
       return { icon: 48, pad: 10, fs: 'text-2xs', mb: 1.5 };
     case 'large':
-      return { icon: 64, pad: 14, fs: 'text-[12px]', mb: 2 };
+      return { icon: 64, pad: 14, fs: 'text-xs', mb: 2 };
     case 'extraLarge':
-      return { icon: 80, pad: 18, fs: 'text-[13px]', mb: 2.5 };
+      return { icon: 80, pad: 18, fs: 'text-ui', mb: 2.5 };
     default:
       return { icon: 48, pad: 10, fs: 'text-2xs', mb: 1.5 };
   }
@@ -128,7 +128,7 @@ const size = computed(() => {
       />
       <span
         v-if="!isDriveList && !item.isDirectory && item.extension"
-        class="absolute bottom-0.5 right-0.5 rounded-field bg-neutral/80 px-1 py-0.5 text-[8px] font-semibold uppercase leading-none text-neutral-content"
+        class="absolute bottom-0.5 right-0.5 rounded-field bg-neutral/80 px-1 py-0.5 text-4xs font-semibold uppercase leading-none text-neutral-content"
         >{{ item.extension }}</span
       >
     </div>
@@ -140,7 +140,7 @@ const size = computed(() => {
     }}</span>
     <span
       v-if="isLibraryFolder && !isDriveList"
-      class="absolute top-1 right-1 px-1 py-0.5 text-[8px] rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
+      class="absolute top-1 right-1 px-1 py-0.5 text-4xs rounded-field bg-primary/20 text-primary-text font-bold border border-primary/40 leading-none"
       >LIB</span
     >
   </button>

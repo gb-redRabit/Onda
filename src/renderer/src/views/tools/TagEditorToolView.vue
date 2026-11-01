@@ -469,13 +469,13 @@ function fieldLabel(field: AudioTagField): string {
                   <span class="truncate" :title="row.path">{{ row.name }}</span>
                   <span
                     v-if="!row.writable"
-                    class="shrink-0 rounded-full border border-hairline px-1.5 py-0.5 text-[9px] text-base-content/50"
+                    class="shrink-0 rounded-full border border-hairline px-1.5 py-0.5 text-4xs text-base-content/50"
                   >
                     {{ t('tools.tagEditorReadOnly') }}
                   </span>
                   <span
                     v-if="row.dirty"
-                    class="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] text-primary-text"
+                    class="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-4xs text-primary-text"
                   >
                     {{ t('tools.tagEditorChanged') }}
                   </span>

@@ -118,7 +118,7 @@ function onDragOver(event: DragEvent): void {
           <MediaCover :path="current.path" :size="32" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block text-[12px] truncate font-medium">{{ trackTitle(current) }}</span>
+          <span class="block text-xs truncate font-medium">{{ trackTitle(current) }}</span>
           <span class="block text-3xs text-base-content/55 truncate">
             {{ trackArtist(current) }}
           </span>
@@ -131,7 +131,7 @@ function onDragOver(event: DragEvent): void {
       {{ $t('compact.upNext') }}
     </div>
 
-    <div v-if="!items.length" class="px-4 py-6 text-[12px] text-base-content/50">
+    <div v-if="!items.length" class="px-4 py-6 text-xs text-base-content/50">
       {{ $t('compact.emptyQueue') }}
     </div>
 
@@ -181,7 +181,7 @@ function onDragOver(event: DragEvent): void {
             </span>
           </button>
           <button type="button" class="min-w-0 flex-1 text-left" @click="playNow(row.index)">
-            <span class="block text-[12px] truncate">
+            <span class="block text-xs truncate">
               {{ trackTitle(items[row.index]?.track) }}
             </span>
             <span class="block text-3xs text-base-content/50 truncate">

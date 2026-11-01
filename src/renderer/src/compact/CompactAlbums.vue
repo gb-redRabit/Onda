@@ -101,7 +101,7 @@ function addFrom(album: AlbumEntry, index: number): void {
     <template v-if="!selected">
       <div
         v-if="!albums.length"
-        class="px-4 py-8 flex flex-col items-center gap-2 text-center text-[12px] text-base-content/50"
+        class="px-4 py-8 flex flex-col items-center gap-2 text-center text-xs text-base-content/50"
       >
         <Disc3 :size="22" />
         {{ $t('compact.emptyAlbums') }}
@@ -127,7 +127,7 @@ function addFrom(album: AlbumEntry, index: number): void {
               <span class="block aspect-square rounded-box overflow-hidden bg-base-300">
                 <MediaCover :path="cell.album[1][0]?.path" :size="160" fallback="disc" />
               </span>
-              <span class="block mt-1.5 text-[12px] font-medium truncate">{{
+              <span class="block mt-1.5 text-xs font-medium truncate">{{
                 groupLabel(cell.album[0], $t)
               }}</span>
               <span class="block text-3xs text-base-content/50 truncate">
@@ -207,9 +207,7 @@ function addFrom(album: AlbumEntry, index: number): void {
                 row.index + 1
               }}</span>
               <span class="min-w-0 flex-1">
-                <span class="block text-[12px] truncate">{{
-                  trackTitle(selected[1][row.index])
-                }}</span>
+                <span class="block text-xs truncate">{{ trackTitle(selected[1][row.index]) }}</span>
               </span>
               <Play :size="11" class="text-base-content/30" />
             </button>

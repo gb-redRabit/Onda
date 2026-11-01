@@ -291,7 +291,7 @@ function dismissError(): void {
       class="compact-titlebar flex items-center gap-2 px-3 h-9 shrink-0 border-b border-hairline/60"
     >
       <span
-        class="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-base-content/80"
+        class="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-base-content/80"
       >
         <span class="w-1.5 h-1.5 rounded-full bg-primary" />
         {{ $t('compact.appName') }}
@@ -499,7 +499,7 @@ function dismissError(): void {
         :id="`compact-tab-${item.id}`"
         :key="item.id"
         type="button"
-        class="compact-tab flex items-center gap-1.5 px-2.5 h-8 rounded-field text-[12px] transition-colors"
+        class="compact-tab flex items-center gap-1.5 px-2.5 h-8 rounded-field text-xs transition-colors"
         :class="
           tab === item.id
             ? 'bg-primary/15 text-primary-text font-medium'
@@ -517,7 +517,7 @@ function dismissError(): void {
         {{ item.label }}
         <span
           v-if="item.id === 'queue' && queueCount"
-          class="min-w-4 h-4 px-1 grid place-items-center rounded-full bg-base-content/10 text-[9px] tabular-nums"
+          class="min-w-4 h-4 px-1 grid place-items-center rounded-full bg-base-content/10 text-4xs tabular-nums"
           data-testid="compact-queue-count"
         >
           {{ queueBadge }}

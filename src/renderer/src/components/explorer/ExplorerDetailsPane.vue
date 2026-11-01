@@ -177,7 +177,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
           <dd class="min-w-0 text-base-content">{{ formatDate(item.createdAt) }}</dd>
 
           <dt class="text-base-content/50">{{ t('explorer.propertiesLocation') }}</dt>
-          <dd class="min-w-0 selectable break-all font-mono text-[10px] text-base-content/70">
+          <dd class="min-w-0 selectable break-all font-mono text-3xs text-base-content/70">
             {{ item.path }}
           </dd>
         </dl>
