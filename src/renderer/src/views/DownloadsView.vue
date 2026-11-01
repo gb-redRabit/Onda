@@ -139,7 +139,7 @@ function measureDownloadRow(node: Element | ComponentPublicInstance | null): voi
       :channels="channels"
     />
 
-    <div ref="downloadListRef" class="flex-1 min-h-0 overflow-auto p-4">
+    <div ref="downloadListRef" class="flex-1 min-h-0 overflow-auto ui-page-content">
       <div
         v-if="visible.length"
         class="relative"

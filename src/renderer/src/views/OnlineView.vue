@@ -285,7 +285,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
       role="tabpanel"
       :aria-labelledby="'online-tab-' + activeSection"
     >
-      <div v-if="activeSection === 'subscriptions'" class="h-full overflow-auto p-4">
+      <div v-if="activeSection === 'subscriptions'" class="h-full overflow-auto ui-page-content">
         <OnlineSubscriptionsPanel
           :subscriptions="yt.subscriptions"
           :loaded="yt.subscriptionsLoaded"
@@ -302,13 +302,13 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
         <ProviderSubscriptionsPanel class="mt-4" @open="openProviderSub" />
       </div>
 
-      <div v-else-if="activeSection === 'links'" class="h-full overflow-auto p-4">
+      <div v-else-if="activeSection === 'links'" class="h-full overflow-auto ui-page-content">
         <ProviderPanel />
       </div>
 
       <OnlineChannelView v-else-if="yt.channelLoading || yt.channel" class="h-full" />
 
-      <div v-else-if="yt.channelError" class="h-full overflow-auto p-4">
+      <div v-else-if="yt.channelError" class="h-full overflow-auto ui-page-content">
         <OnlineChannelError :message="yt.channelError" @retry="submit" />
       </div>
 
@@ -338,7 +338,7 @@ function onPrefsConfirm(payload: { prefs?: Parameters<typeof yt.setDownloadPrefs
         @load-more="yt.loadMoreResolved"
       />
 
-      <div v-else class="h-full overflow-auto p-4">
+      <div v-else class="h-full overflow-auto ui-page-content">
         <OnlineSearchResultsPanel
           v-model:expanded-id="expandedSearchId"
           @quick-queue="quickQueueVideo"

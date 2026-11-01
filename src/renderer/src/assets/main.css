@@ -495,3 +495,10 @@ input[type='range']:focus-visible {
 @utility interactive {
   @apply transition-[color,background-color,box-shadow,transform] duration-150 hover:bg-base-content/8 active:bg-base-content/12 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:pointer-events-none disabled:opacity-45;
 }
+
+/* Margines treści widoku. 20 px w poziomie to ta sama linia startu co `px-5`
+   w `PageHeader`; wcześniej widoki używały wymiennie 16, 20 i 24 px, przez co
+   tytuł i pierwsza karta nie stały w jednej kolumnie. */
+@utility ui-page-content {
+  padding: 1.25rem;
+}

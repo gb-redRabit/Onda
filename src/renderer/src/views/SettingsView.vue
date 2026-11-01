@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
 
       <main class="flex-1 min-w-0 overflow-auto">
         <!-- Wyniki wyszukiwania -->
-        <div v-if="query" class="px-6 py-5">
+        <div v-if="query" class="ui-page-content">
           <EmptyState v-if="!hits.length" :title="t('settings.noResults')" :icon="Search" />
           <ul v-else class="space-y-0.5">
             <li v-for="hit in hits" :key="hit.id" data-testid="settings-search-hit">
@@ -386,7 +386,11 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Przegląd: ekran startowy ze wszystkimi sekcjami i zakładkami -->
-        <div v-else-if="!activeTab" class="px-6 py-6 space-y-8" data-testid="settings-overview">
+        <div
+          v-else-if="!activeTab"
+          class="ui-page-content space-y-8"
+          data-testid="settings-overview"
+        >
           <section v-for="section in SETTINGS_SECTIONS" :key="section.id">
             <button
               type="button"
@@ -421,7 +425,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Aktywna zakładka -->
-        <div v-else :key="'tab-' + activeTab" class="px-6 py-6">
+        <div v-else :key="'tab-' + activeTab" class="ui-page-content">
           <!-- Powrót: przegląd → sekcja → zakładka. Wcześniej z otwartej zakładki
                nie było drogi do przeglądu poza ponownym klikaniem w rail. -->
           <nav

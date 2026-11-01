@@ -93,7 +93,7 @@ async function onPlayFromStart(): Promise<void> {
     </PageHeader>
 
     <div class="flex-1 overflow-y-auto">
-      <div class="px-5 py-5 space-y-6">
+      <div class="ui-page-content space-y-6">
         <!-- Bento: hero (8/12) + liczby biblioteki (4/12). -->
         <div class="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
           <HomeContinueCard

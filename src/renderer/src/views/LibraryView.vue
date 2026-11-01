@@ -355,7 +355,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
     </div>
 
     <!-- ZawartoĹ›Ä‡ -->
-    <div v-if="library.isLoading && !library.isLoaded" class="flex-1 p-4 space-y-3">
+    <div v-if="library.isLoading && !library.isLoaded" class="flex-1 ui-page-content space-y-3">
       <div
         v-for="i in 6"
         :key="i"

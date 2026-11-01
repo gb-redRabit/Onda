@@ -108,7 +108,7 @@ async function openTool(id: ToolId): Promise<void> {
   <div data-testid="tools-hub" class="flex h-full flex-col">
     <PageHeader :title="t('tools.title')" :subtitle="t('tools.subtitle')" :icon="Wrench" sticky />
 
-    <div class="flex-1 overflow-auto p-6">
+    <div class="flex-1 overflow-auto ui-page-content">
       <!-- Jedna oś z nagłówkiem: bez wyśrodkowanego kontenera. Siatka dobiera
            kolumny do szerokości, więc nie ma skoku przy 2/3 kolumnach. -->
       <div class="flex flex-col gap-7">
