@@ -2178,6 +2178,8 @@ api.registerCommand({
     nItems: '{n} element(ów)',
     alwaysOnTop: 'Zawsze na wierzchu',
     libraryFolder: 'Folder biblioteki',
+    toggleNav: 'Pokaż lub ukryj panel nawigacji',
+    navPane: 'Nawigacja',
     duplicates: 'Znajdź duplikaty',
     openInWindow: 'Otwórz w osobnym oknie (Ctrl+Shift+N)',
     pinAsTab: 'Wyślij jako kartę do głównego okna',

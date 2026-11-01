@@ -2168,6 +2168,8 @@ api.registerCommand({
     nItems: '{n} item(s)',
     alwaysOnTop: 'Always on top',
     libraryFolder: 'Library folder',
+    toggleNav: 'Show or hide the navigation pane',
+    navPane: 'Navigation',
     duplicates: 'Find duplicates',
     openInWindow: 'Open in new window (Ctrl+Shift+N)',
     pinAsTab: 'Send as tab to main window',

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, provide } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, provide, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Monitor, Plus, Pin, PinOff, Copy, Eye, EyeOff } from '@lucide/vue';
+import { Monitor, Plus, Pin, PinOff, Copy, Eye, EyeOff, PanelLeft } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { clonePlain } from '@renderer/utils/clone';
@@ -59,6 +59,36 @@ const propertiesItem = ref<FileItem | null>(null);
 const contentRef = ref<InstanceType<typeof ExplorerContent> | null>(null);
 
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
+
+// W wąskim oknie panel nawigacji zabierałby połowę szerokości na listę plików,
+// więc domyślnie się zwija. Użytkownik może go otworzyć — wtedy pokazuje się
+// jako nakładka, a przejście do folderu ponownie go zwija.
+const NAV_BREAKPOINT = 1024;
+const narrowWindow = ref(window.innerWidth < NAV_BREAKPOINT);
+const navPreference = ref<'auto' | 'open' | 'closed'>('auto');
+
+const showNav = computed(() => {
+  if (navPreference.value === 'open') return true;
+  if (navPreference.value === 'closed') return false;
+  return !narrowWindow.value;
+});
+
+function toggleNav(): void {
+  navPreference.value = showNav.value ? 'closed' : 'open';
+}
+
+function onWindowResize(): void {
+  narrowWindow.value = window.innerWidth < NAV_BREAKPOINT;
+  // Po powrocie do szerokiego okna wracamy do układu domyślnego.
+  if (!narrowWindow.value) navPreference.value = 'auto';
+}
+
+watch(
+  () => explorer.currentPath,
+  () => {
+    if (narrowWindow.value) navPreference.value = 'auto';
+  }
+);
 
 const filteredFiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim();
@@ -176,28 +206,56 @@ onMounted(() => {
   if (explorer.tabs.length === 0) explorer.addTab(explorer.currentPath || '');
   window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('keydown', actions.onKeydown);
+  window.addEventListener('resize', onWindowResize);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('wheel', onWheel);
   window.removeEventListener('keydown', actions.onKeydown);
+  window.removeEventListener('resize', onWindowResize);
 });
 </script>
 
 <template>
   <div
     data-testid="explorer-view"
-    class="flex h-full"
+    class="relative flex h-full"
     @dragover.prevent
     @drop.prevent="onWindowTabDrop"
   >
-    <ExplorerNavPane />
+    <ExplorerNavPane
+      v-if="showNav"
+      :overlay="narrowWindow"
+      :class="narrowWindow ? 'absolute inset-y-0 left-0 z-30 fx-depth' : ''"
+      @close="toggleNav"
+    />
+    <div
+      v-if="narrowWindow && showNav"
+      class="absolute inset-0 z-20 bg-neutral/35"
+      @click.self="toggleNav"
+    />
     <div class="flex flex-col flex-1 min-w-0 relative" @dragover.prevent @drop.prevent>
       <ExplorerTabs />
 
       <div
         class="ui-page-toolbar relative z-20 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-base-300 bg-base-200/(--glass-alpha)"
       >
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="
+            showNav
+              ? 'text-primary-text bg-primary/10'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
+          data-testid="explorer-toggle-nav"
+          :title="$t('explorer.toggleNav')"
+          :aria-label="$t('explorer.toggleNav')"
+          :aria-pressed="showNav"
+          @click="toggleNav"
+        >
+          <PanelLeft :size="14" class="pointer-events-none" />
+        </button>
+
         <ExplorerBreadcrumb />
 
         <ExplorerToolbar @search="searchQuery = $event" />

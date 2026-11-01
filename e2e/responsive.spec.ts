@@ -135,6 +135,34 @@ test.describe('responsive layout', () => {
     }
   });
 
+  test('explorer navigation pane collapses in narrow windows', async () => {
+    const onda = await launchOnda();
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/explorer';
+      });
+      await expect(page.getByTestId('explorer-view')).toBeVisible();
+
+      await page.setViewportSize({ width: 1400, height: 900 });
+      await page.waitForTimeout(200);
+      await expect(page.getByTestId('explorer-nav-pane')).toBeVisible();
+
+      await page.setViewportSize({ width: 800, height: 700 });
+      await page.waitForTimeout(200);
+      await expect(page.getByTestId('explorer-nav-pane')).toHaveCount(0);
+
+      await page.getByTestId('explorer-toggle-nav').click();
+      await expect(page.getByTestId('explorer-nav-pane')).toBeVisible();
+
+      await page.getByTestId('explorer-nav-close').click();
+      await expect(page.getByTestId('explorer-nav-pane')).toHaveCount(0);
+    } finally {
+      await onda.dispose();
+    }
+  });
+
   test('every view fits the window across sizes', async () => {
     const onda = await launchOnda({ env: { ONDA_E2E_FIXTURES: '1' } });
     const { page } = onda;

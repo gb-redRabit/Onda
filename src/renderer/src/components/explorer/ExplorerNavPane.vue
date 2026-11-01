@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { HardDrive, FolderOpen, Monitor, Download, Home } from '@lucide/vue';
+import { HardDrive, FolderOpen, Monitor, Download, Home, X } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { formatFileSize } from '@renderer/utils/formatters';
+
+defineProps<{ overlay?: boolean }>();
+const emit = defineEmits<{ close: [] }>();
 
 const { t } = useI18n();
 const explorer = useExplorerStore();
@@ -137,8 +140,29 @@ async function onNavDrop(e: DragEvent, path: string) {
 
 <template>
   <div
+    data-testid="explorer-nav-pane"
     class="w-56 shrink-0 border-r border-base-300/80 bg-base-100/(--glass-alpha) flex flex-col overflow-hidden"
   >
+    <!-- W trybie nakładki (wąskie okno) panel zasłania pasek narzędzi, więc
+         zamykanie musi być w środku panelu. -->
+    <div
+      v-if="overlay"
+      class="flex shrink-0 items-center justify-between gap-2 border-b border-base-300/80 px-2.5 py-2"
+    >
+      <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/50">
+        {{ t('explorer.navPane') }}
+      </span>
+      <button
+        type="button"
+        class="fx-noise rounded-field p-1 text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content"
+        data-testid="explorer-nav-close"
+        :title="t('common.close')"
+        :aria-label="t('common.close')"
+        @click="emit('close')"
+      >
+        <X :size="14" class="pointer-events-none" />
+      </button>
+    </div>
     <div class="flex-1 overflow-y-auto p-2 space-y-0.5">
       <!-- szybkie linki -->
       <div class="px-2 py-1.5 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
