@@ -76,7 +76,7 @@ function fileCountLabel(count: number): string {
           class="w-full h-full object-cover"
           loading="lazy"
         />
-        <MediaCover v-else :path="tr.path" :size="80" :autoplay="false" fallback="music" />
+        <MediaCover v-else :path="tr.path" :size="80" :autoplay="false" still fallback="music" />
       </div>
       <div class="p-2">
         <div class="text-xs font-medium truncate">{{ tr.metadata?.title || tr.name }}</div>

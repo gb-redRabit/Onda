@@ -27,7 +27,8 @@ export const usePlayerStore = defineStore('player', () => {
   // gdy URL będzie gotowy; nigdy nie podawany silnikowi audio.
   const streamPending = ref<MediaFile | null>(null);
 
-  const { loadCover, getCover, invalidateCoverCache, enrichTrack } = usePlayerCover();
+  const { loadCover, getCover, getCoverStill, loadCoverStill, invalidateCoverCache, enrichTrack } =
+    usePlayerCover();
   const {
     queue,
     pendingQueue,
@@ -309,6 +310,8 @@ export const usePlayerStore = defineStore('player', () => {
     exitPiP,
     loadCover,
     getCover,
+    getCoverStill,
+    loadCoverStill,
     invalidateCoverCache,
     enrichTrack,
     subtitleTracks,

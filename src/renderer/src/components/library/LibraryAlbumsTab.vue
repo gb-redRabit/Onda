@@ -154,6 +154,7 @@ onUnmounted(() => grid.destroy());
                   :path="sortedAlbums[v.index][1][0]?.path"
                   :size="16"
                   :render-as-video="false"
+                  still
                   fallback="disc"
                 />
               </div>

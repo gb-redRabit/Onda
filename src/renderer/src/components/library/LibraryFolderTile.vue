@@ -43,6 +43,7 @@ watch(
         :size="20"
         :autoplay="false"
         :render-as-video="false"
+        still
         fallback="music"
       />
     </div>

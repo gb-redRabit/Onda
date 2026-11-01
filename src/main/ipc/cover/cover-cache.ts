@@ -271,9 +271,6 @@ export async function extractAndCacheCover(
     }
   }
   const siblingVideo = findSiblingVideo(filePath);
-  // Sibling video is only a *source* for a frame, never the cover itself: a `<video>`
-  // cover re-streams the file on every mount (visible flashing in grids). Frames are
-  // extracted once and persisted like any other cover.
 
   // Poprzedni wywołujący może już wyodrębniać ten plik — poczekaj na niego i
   // użyj ponownie zbuforowanego wyniku (nawet wynik "brak okładki" jest buforowany).
@@ -301,8 +298,9 @@ export async function extractAndCacheCover(
       if (cover) {
         result = { type: 'image', data: cover };
       } else if (siblingVideo) {
-        const frame = await extractVideoFrame(siblingVideo);
-        result = frame ? { type: 'image', data: frame } : { type: 'video', data: siblingVideo };
+        // Sibling video zostaje okładką-wideo (compact/pełny widok odtwarzają je jako
+        // animację). Statyczne siatki proszą o nieruchomą klatkę przez `MediaCover still`.
+        result = { type: 'video', data: siblingVideo };
       }
     } else if (VIDEO_EXTS.includes(ext)) {
       const frame = await extractVideoFrame(filePath);

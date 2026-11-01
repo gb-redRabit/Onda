@@ -115,6 +115,7 @@ function onHoverLeave() {
           :path="props.track.path"
           :size="160"
           :autoplay="hovered"
+          still
           fallback="play"
           class="w-full h-full transition-transform duration-300 ease-out group-hover:scale-105"
         />

@@ -77,6 +77,7 @@ const emit = defineEmits<{
           :path="coverPath"
           :size="coverSize"
           :fallback="fallback"
+          still
           class="h-full w-full transition-transform duration-300 ease-out group-hover:scale-105"
         />
 

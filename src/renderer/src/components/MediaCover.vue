@@ -12,12 +12,15 @@ const props = withDefaults(
     size?: number;
     autoplay?: boolean;
     renderAsVideo?: boolean;
+    /** Statyczne siatki: okładkę-wideo pokaż jako nieruchomą klatkę (bez streamowania). */
+    still?: boolean;
     fallback?: 'music' | 'play' | 'disc' | 'film';
   }>(),
   {
     size: 40,
     autoplay: false,
     renderAsVideo: true,
+    still: false,
     fallback: 'music'
   }
 );
@@ -64,11 +67,24 @@ const isVideoFile = computed(() => {
   return VIDEO_EXTS.includes(ext);
 });
 const isVideoLike = computed(() => result.value.type === 'video' || isVideoFile.value);
-const isVideo = computed(() => isVideoLike.value && props.renderAsVideo);
-// Statyczni odbiorcy (kafle folderów, karty albumów) nie mogą pokazać odtwarzanego wideo —
+const isVideo = computed(() => isVideoLike.value && props.renderAsVideo); // Statyczni odbiorcy (kafle folderów, karty albumów) nie mogą pokazać odtwarzanego wideo —
 // zatrzymany <video> i tak renderuje pierwszą klatkę, inaczej niż <img> wskazujący
 // na mp4 (który zawsze renderuje się pusty).
 const isStaticVideo = computed(() => isVideoLike.value && !props.renderAsVideo);
+
+// Statyczne siatki proszą o jedną klatkę zamiast montować `<video>` przy każdym
+// przewinięciu. Klatka jest cache'owana w store i wraca natychmiast po remount.
+const stillCover = computed(() =>
+  props.still && props.path ? player.getCoverStill(props.path) : null
+);
+
+function maybeLoadStill(): void {
+  if (!props.still || !props.path || stillCover.value?.data) return;
+  const cached = player.getCover(props.path);
+  const videoPath =
+    cached.type === 'video' ? cached.data : props.cover?.type === 'video' ? props.cover.data : null;
+  if (videoPath) player.loadCoverStill(props.path, videoPath);
+}
 const src = computed(() => {
   if (!result.value.data) return '';
   if (result.value.type === 'video' || isVideoFile.value)
@@ -122,6 +138,7 @@ onMounted(() => {
 
   const cached = player.getCover(props.path);
   if (cached.data) loaded.value = true;
+  maybeLoadStill();
 
   const obs = getSharedObserver();
   if (!obs || !el.value) {
@@ -141,6 +158,7 @@ onMounted(() => {
     if (isIntersecting) {
       loaded.value = true;
       if (!player.getCover(props.path!).data) player.loadCover(props.path!);
+      maybeLoadStill();
     }
   });
   obs.observe(observedTarget);
@@ -158,6 +176,7 @@ watch(
     const cached = player.getCover(path);
     if (cached.data) {
       loaded.value = true;
+      maybeLoadStill();
       return;
     }
     // Element jest już w viewporcie (wirtualizowany wiersz został reużyty):
@@ -177,8 +196,9 @@ onUnmounted(() => {
 
 <template>
   <div ref="el" class="w-full h-full overflow-hidden flex items-center justify-center">
+    <img v-if="stillCover?.data" alt="" :src="stillCover.data" class="w-full h-full object-cover" />
     <video
-      v-if="isVideo && inView"
+      v-else-if="isVideo && inView"
       ref="videoRef"
       :src="src"
       class="w-full h-full object-cover"

@@ -68,6 +68,7 @@ function onDragStart(e: DragEvent) {
         :cover="displayCover.data ? displayCover : cover"
         :size="28"
         :render-as-video="false"
+        still
         fallback="disc"
       />
       <div
