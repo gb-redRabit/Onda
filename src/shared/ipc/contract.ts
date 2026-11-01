@@ -19,6 +19,7 @@ export const INVOKE_CHANNELS = [
   // system
   'fs:readdir',
   'fs:getDrives',
+  'fs:getDriveUsage',
   'fs:findDuplicates',
   'fs:delete',
   'fs:copy',

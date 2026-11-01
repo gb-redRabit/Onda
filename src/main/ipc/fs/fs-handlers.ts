@@ -6,7 +6,7 @@ import { mainMessages } from '../../i18n-main';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import type { FileItem } from '../../../shared/types/explorer';
-import { getDrives, getFileItem } from './fs-utils';
+import { getDrives, getDriveUsage, getFileItem } from './fs-utils';
 import { visibleEntries } from './fs-visible';
 import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath } from '../../utils/validate';
@@ -88,6 +88,15 @@ async function isBlockedDestructivePath(filePath: string): Promise<boolean> {
 export function registerFsHandlers(): void {
   ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
     return getDrives();
+  });
+
+  ipcMain.handle('fs:getDriveUsage', async () => {
+    try {
+      return await withTimeout(getDriveUsage(), FS_OP_TIMEOUT_MS);
+    } catch (e) {
+      logger.warn('fs', 'getDriveUsage failed', e);
+      return [];
+    }
   });
 
   ipcMain.handle('fs:getProperties', async (_event, filePath: unknown) => {

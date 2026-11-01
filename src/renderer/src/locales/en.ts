@@ -2126,6 +2126,7 @@ api.registerCommand({
     folderEmpty: 'This folder is empty',
     loadError: 'Failed to load folder',
     drives: 'Drives',
+    driveUsage: '{percent}% used · {free} free of {total}',
     name: 'Name',
     size: 'Size',
     type: 'Type',

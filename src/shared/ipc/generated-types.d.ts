@@ -4,6 +4,7 @@
 export type IpcInvokeChannel =
   | 'fs:readdir'
   | 'fs:getDrives'
+  | 'fs:getDriveUsage'
   | 'fs:findDuplicates'
   | 'fs:delete'
   | 'fs:copy'

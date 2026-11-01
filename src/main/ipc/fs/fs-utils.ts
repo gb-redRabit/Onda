@@ -1,11 +1,77 @@
-import { access, lstat } from 'fs/promises';
+import { access, lstat, statfs } from 'fs/promises';
 import { join, extname, basename, dirname } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 import { logger } from '../../../shared/logger';
+import { withTimeout } from '../../utils/with-timeout';
 import type { FileItem } from '../../../shared/types/explorer';
 
 const execAsync = promisify(execCb);
+
+// Zapytanie o wolne miejsce na odłączonym udziale sieciowym potrafi wisieć,
+// a to blokowałoby cały panel nawigacji. 2 s wystarcza lokalnym dyskom.
+const VOLUME_TIMEOUT_MS = 2_000;
+
+/** Wolne/zajęte bajty z wyniku `statfs`, odporne na wartości niepoprawne. */
+export function volumeUsageFromStatfs(stats: { bsize: number; blocks: number; bavail: number }): {
+  total: number;
+  free: number;
+} {
+  const total = stats.blocks * stats.bsize;
+  if (!Number.isFinite(total) || total <= 0) return { total: 0, free: 0 };
+  const free = stats.bavail * stats.bsize;
+  // `bavail` bywa większe od `blocks` na dziwnych systemach plików; pasek
+  // zajętości nie może wtedy wyjść ujemny.
+  return { total, free: Number.isFinite(free) ? Math.min(Math.max(free, 0), total) : 0 };
+}
+
+async function readVolumeUsage(root: string): Promise<{ total: number; free: number }> {
+  try {
+    return volumeUsageFromStatfs(await withTimeout(statfs(root), VOLUME_TIMEOUT_MS));
+  } catch {
+    // pusta stacja CD, odłączony dysk sieciowy, brak uprawnień — wpis zostaje bez paska
+    return { total: 0, free: 0 };
+  }
+}
+
+export interface DriveUsage {
+  name: string;
+  path: string;
+  total: number;
+  free: number;
+}
+
+/**
+ * Dyski razem z zajętością. Wykrywanie korzeni robimy skanem liter (bez
+ * uruchamiania PowerShella jak w `getDrives`), bo panel nawigacji pyta o to
+ * przy każdym montowaniu, a sama `statfs` jest tania.
+ */
+export async function getDriveUsage(): Promise<DriveUsage[]> {
+  if (process.platform !== 'win32') {
+    return [{ name: '/', path: '/', ...(await readVolumeUsage('/')) }];
+  }
+  const letters = 'CDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const roots = await Promise.all(
+    letters.map(async (letter) => {
+      const root = `${letter}:\\`;
+      try {
+        await withTimeout(access(root), VOLUME_TIMEOUT_MS);
+        return root;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return Promise.all(
+    roots
+      .filter((root): root is string => root !== null)
+      .map(async (root) => ({
+        name: root.slice(0, 2),
+        path: root,
+        ...(await readVolumeUsage(root))
+      }))
+  );
+}
 
 export async function getDrives(): Promise<FileItem[]> {
   const platform = process.platform;

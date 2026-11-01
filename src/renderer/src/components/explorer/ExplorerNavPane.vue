@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, inject, onMounted } from 'vue';
+import { ref, inject, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { HardDrive, FolderOpen, Monitor, Download, Home } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useLibraryStore } from '@renderer/stores/library';
 import { useSettingsStore } from '@renderer/stores/settings';
+import { formatFileSize } from '@renderer/utils/formatters';
 
 const { t } = useI18n();
 const explorer = useExplorerStore();
@@ -14,7 +15,14 @@ const showConfirm = inject<(msg: string) => Promise<boolean>>('showConfirm', asy
   confirm(msg)
 );
 
-const drives = ref<{ name: string; path: string }[]>([]);
+interface DriveEntry {
+  name: string;
+  path: string;
+  total: number;
+  free: number;
+}
+
+const drives = ref<DriveEntry[]>([]);
 const desktopPath = ref('');
 const downloadsPath = ref('');
 const dropTargetPath = ref<string | null>(null);
@@ -28,16 +36,53 @@ const quickLinks = [
 
 onMounted(async () => {
   if (window.api) {
-    const [drivesResult, desktop, downloads] = await Promise.all([
-      window.api.invoke('fs:getDrives') as Promise<{ name: string; path: string }[]>,
+    const [desktop, downloads] = await Promise.all([
       window.api.invoke('app:getPath', 'desktop') as Promise<string>,
       window.api.invoke('app:getPath', 'downloads') as Promise<string>
     ]);
-    drives.value = drivesResult;
     desktopPath.value = desktop;
     downloadsPath.value = downloads;
+    await loadDrives();
   }
 });
+
+// Zajętość dysków zmienia się rzadko, więc odświeżamy ją przy wejściu na listę
+// dysków (a nie przy każdym przejściu do folderu).
+watch(
+  () => explorer.currentPath,
+  (path) => {
+    if (!path || /^[A-Z]:\\$/i.test(path)) void loadDrives();
+  }
+);
+
+async function loadDrives(): Promise<void> {
+  try {
+    drives.value = (await window.api.invoke('fs:getDriveUsage')) as DriveEntry[];
+  } catch {
+    drives.value = [];
+  }
+}
+
+function usedPercent(drive: DriveEntry): number {
+  if (drive.total <= 0) return 0;
+  const used = drive.total - drive.free;
+  return Math.min(100, Math.max(0, Math.round((used / drive.total) * 100)));
+}
+
+function usageClass(drive: DriveEntry): string {
+  const percent = usedPercent(drive);
+  if (percent >= 90) return 'bg-error';
+  if (percent >= 75) return 'bg-warning';
+  return 'bg-primary/70';
+}
+
+function usageTitle(drive: DriveEntry): string {
+  return t('explorer.driveUsage', {
+    percent: usedPercent(drive),
+    free: formatFileSize(drive.free),
+    total: formatFileSize(drive.total)
+  });
+}
 
 function resolvePath(link: (typeof quickLinks)[number]): string {
   if (link.label === 'Desktop') return desktopPath.value;
@@ -127,19 +172,38 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="drive in drives"
         :key="drive.path"
-        class="fx-noise w-full flex items-center gap-2 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left"
+        class="fx-noise w-full flex flex-col gap-1 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left"
         :class="{
           'bg-primary/14 text-primary-text font-medium': explorer.currentPath === drive.path,
           'ring-2 ring-primary bg-primary/50': dropTargetPath === drive.path
         }"
+        :title="drive.total > 0 ? usageTitle(drive) : drive.name"
         @click="explorer.navigateTo(drive.path)"
         @dragover="onNavDragOver($event, drive.path)"
         @dragenter="onNavDragEnter($event, drive.path)"
         @dragleave="onNavDragLeave"
         @drop="onNavDrop($event, drive.path)"
       >
-        <HardDrive :size="14" class="shrink-0 text-primary-text" />
-        <span class="truncate">{{ drive.name }}</span>
+        <span class="flex w-full min-w-0 items-center gap-2">
+          <HardDrive :size="14" class="shrink-0 text-primary-text" />
+          <span class="truncate flex-1">{{ drive.name }}</span>
+          <span
+            v-if="drive.total > 0"
+            class="shrink-0 text-[10px] tabular-nums text-base-content/45"
+            >{{ formatFileSize(drive.free) }}</span
+          >
+        </span>
+        <span
+          v-if="drive.total > 0"
+          class="block h-1 w-full overflow-hidden rounded-full bg-base-content/10"
+          aria-hidden="true"
+        >
+          <span
+            class="block h-full rounded-full transition-[width] duration-300"
+            :class="usageClass(drive)"
+            :style="{ width: `${usedPercent(drive)}%` }"
+          />
+        </span>
       </button>
 
       <!-- foldery biblioteki -->

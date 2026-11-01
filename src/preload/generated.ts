@@ -4,6 +4,7 @@
 export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'fs:readdir',
   'fs:getDrives',
+  'fs:getDriveUsage',
   'fs:findDuplicates',
   'fs:delete',
   'fs:copy',
