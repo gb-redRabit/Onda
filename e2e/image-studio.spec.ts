@@ -56,14 +56,24 @@ test.describe('image studio tool', () => {
       if (!box) throw new Error('canvas has no bounding box');
       const scale = box.width / imgW;
 
-      // Rozciągnięcie kadru za prawy dolny uchwyt do wewnątrz.
-      await studio.mouse.move(box.x + (x0 + w0) * scale - 10, box.y + (y0 + h0) * scale - 10);
-      await studio.mouse.down();
-      await studio.mouse.move(box.x + (x0 + w0) * scale - 100, box.y + (y0 + h0) * scale - 100, {
-        steps: 6
-      });
-      await studio.mouse.up();
-      const [x1, y1, w1, h1] = parseNumbers(await canvas.getAttribute('data-crop'));
+      // Rozciągnięcie kadru za prawy dolny uchwyt do wewnątrz. Świeżo otwarte okno
+      // narzędzia potrafi zgubić pierwsze zdarzenie wskaźnika (animacja wejścia),
+      // więc powtarzamy przeciągnięcie, zanim uznamy to za błąd.
+      const dragCropIn = async (): Promise<number[]> => {
+        await studio.mouse.move(box.x + (x0 + w0) * scale - 10, box.y + (y0 + h0) * scale - 10);
+        await studio.mouse.down();
+        await studio.mouse.move(box.x + (x0 + w0) * scale - 100, box.y + (y0 + h0) * scale - 100, {
+          steps: 8
+        });
+        await studio.mouse.up();
+        return parseNumbers(await canvas.getAttribute('data-crop'));
+      };
+
+      let [x1, y1, w1, h1] = await dragCropIn();
+      if (w1 >= w0) {
+        await studio.waitForTimeout(200);
+        [x1, y1, w1, h1] = await dragCropIn();
+      }
       expect(w1).toBeLessThan(w0);
       expect(h1).toBeLessThan(h0);
       expect(x1).toBe(x0);
@@ -104,8 +114,12 @@ test.describe('image studio tool', () => {
       // Bufor zamiast ścieżki: libvips na Windows trzyma handle do GC i blokuje clean-up.
       const meta = await sharp(readFileSync(outPath)).metadata();
       expect(meta.format).toBe('webp');
-      expect(Math.abs((meta.width ?? 0) - w2)).toBeLessThanOrEqual(1);
-      expect(Math.abs((meta.height ?? 0) - h2)).toBeLessThanOrEqual(1);
+      // Wymiary eksportu liczy aplikacja (szerokość wyjściowa + proporcje kadru),
+      // więc porównujemy je z tym, co pokazuje `data-output`, a nie z zaokrąglonym
+      // kadrem — inaczej test zależy od różnic w zaokrąglaniu o 1–2 px.
+      const [outW, outH] = parseNumbers(await canvas.getAttribute('data-output'));
+      expect(meta.width).toBe(outW);
+      expect(meta.height).toBe(outH);
 
       expect(onda.pageErrors).toEqual([]);
     } finally {

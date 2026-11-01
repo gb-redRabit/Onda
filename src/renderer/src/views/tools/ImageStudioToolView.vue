@@ -999,6 +999,7 @@ onBeforeUnmount(() => {
                 data-testid="image-studio-canvas"
                 :data-crop="`${Math.round(crop.x)},${Math.round(crop.y)},${Math.round(crop.w)},${Math.round(crop.h)}`"
                 :data-image="`${orientedW},${orientedH}`"
+                :data-output="`${Math.round(outputWidth)},${outputHeight}`"
                 :data-annotation-count="annotations.length"
                 :data-selected-width="selectedWidth ?? ''"
                 class="max-h-full max-w-full rounded-box border border-hairline shadow-lg"
