@@ -67,16 +67,19 @@ const isVideoFile = computed(() => {
   return VIDEO_EXTS.includes(ext);
 });
 const isVideoLike = computed(() => result.value.type === 'video' || isVideoFile.value);
-const isVideo = computed(() => isVideoLike.value && props.renderAsVideo); // Statyczni odbiorcy (kafle folderów, karty albumów) nie mogą pokazać odtwarzanego wideo —
-// zatrzymany <video> i tak renderuje pierwszą klatkę, inaczej niż <img> wskazujący
-// na mp4 (który zawsze renderuje się pusty).
-const isStaticVideo = computed(() => isVideoLike.value && !props.renderAsVideo);
 
 // Statyczne siatki proszą o jedną klatkę zamiast montować `<video>` przy każdym
 // przewinięciu. Klatka jest cache'owana w store i wraca natychmiast po remount.
 const stillCover = computed(() =>
   props.still && props.path ? player.getCoverStill(props.path) : null
 );
+
+// W siatkach okładka-wideo gra dopiero po najechaniu (jeden strumień zamiast wielu),
+// a po zjechaniu myszką wraca do zapamiętanej klatki.
+const hovering = ref(false);
+const shouldPlay = computed(() => props.autoplay || (props.still && hovering.value));
+const animateVideo = computed(() => isVideoLike.value && (!props.still || shouldPlay.value));
+const showStill = computed(() => props.still && !!stillCover.value?.data && !animateVideo.value);
 
 function maybeLoadStill(): void {
   if (!props.still || !props.path || stillCover.value?.data) return;
@@ -110,12 +113,9 @@ function applyAutoplay(on: boolean) {
   }
 }
 
-watch(
-  () => props.autoplay,
-  (on) => applyAutoplay(on)
-);
-watch(isVideo, (v) => {
-  if (v && props.autoplay) {
+watch(shouldPlay, (on) => nextTick(() => applyAutoplay(on)), { immediate: false });
+watch(isVideoLike, (v) => {
+  if (v && shouldPlay.value) {
     nextTick(() => applyAutoplay(true));
   }
 });
@@ -204,26 +204,23 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="el" class="w-full h-full overflow-hidden flex items-center justify-center">
-    <img v-if="stillCover?.data" alt="" :src="stillCover.data" class="w-full h-full object-cover" />
+  <div
+    ref="el"
+    class="w-full h-full overflow-hidden flex items-center justify-center"
+    @mouseenter="hovering = true"
+    @mouseleave="hovering = false"
+  >
+    <img v-if="showStill" alt="" :src="stillCover!.data!" class="w-full h-full object-cover" />
     <video
-      v-else-if="isVideo && !still && inView"
+      v-else-if="isVideoLike && animateVideo && inView"
       ref="videoRef"
       :src="src"
       class="w-full h-full object-cover"
-      :autoplay="autoplay"
+      :autoplay="shouldPlay"
       muted
       preload="auto"
       playsinline
       @ended="onVideoEnded"
-    />
-    <video
-      v-else-if="isStaticVideo && !still && inView"
-      :src="src"
-      class="w-full h-full object-cover"
-      muted
-      preload="auto"
-      playsinline
     />
     <img
       v-else-if="result.data && !isVideoLike"
