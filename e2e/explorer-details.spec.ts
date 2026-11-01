@@ -44,6 +44,10 @@ test.describe('explorer details pane', () => {
   });
 
   test('shows the selected file, folder contents and closes with Escape', async () => {
+    // macOS runner: proces Electron kończy się SIGTRAP-em w testach eksploratora
+    // (ten sam crash co w `explorer-file-ops.spec.ts`), niezależnie od asercji.
+    test.skip(process.platform === 'darwin', 'macOS runner: Electron exits (SIGTRAP)');
+
     const onda = await launchOnda();
     const { page } = onda;
     try {
