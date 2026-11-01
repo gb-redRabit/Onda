@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch, type Component } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Component } from 'vue';
 import { Maximize2, Minus, Square, X } from '@lucide/vue';
+
+// Wspólny szkielet okna narzędzia: chrom (przeciąganie/minimalizacja) + sloty
+// na akcje w nagłówku, treść, pasek statusu i stopkę z akcją główną. Dzięki temu
+// siedem narzędzi nie buduje własnego układu i własnych stanów.
+
+export interface ToolStatus {
+  tone: 'idle' | 'busy' | 'success' | 'error';
+  text: string;
+}
 
 const props = defineProps<{
   title: string;
   icon?: Component;
+  /** Komunikat nad stopką; `aria-live="polite"`, więc czytnik go przeczyta. */
+  status?: ToolStatus | null;
 }>();
 
 const isMaximized = ref(false);
@@ -50,6 +61,19 @@ onBeforeUnmount(() => {
   offMaximized?.();
   offMaximized = null;
 });
+
+const statusClass = computed(() => {
+  switch (props.status?.tone) {
+    case 'error':
+      return 'text-error';
+    case 'success':
+      return 'text-success';
+    case 'busy':
+      return 'text-base-content/70';
+    default:
+      return 'text-base-content/55';
+  }
+});
 </script>
 
 <template>
@@ -65,7 +89,8 @@ onBeforeUnmount(() => {
         <component :is="icon" v-if="icon" :size="14" class="shrink-0 text-primary-text" />
         <span class="truncate font-medium">{{ title }}</span>
       </div>
-      <div class="flex shrink-0 items-center gap-0.5" style="-webkit-app-region: no-drag">
+      <div class="flex shrink-0 items-center gap-1" style="-webkit-app-region: no-drag">
+        <slot name="actions" />
         <button
           type="button"
           class="fx-noise rounded-field p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
@@ -99,5 +124,20 @@ onBeforeUnmount(() => {
     <div class="min-h-0 flex-1 overflow-hidden">
       <slot />
     </div>
+    <p
+      v-if="status?.text"
+      data-testid="tool-window-status"
+      class="shrink-0 truncate border-t border-hairline px-3 py-1.5 text-2xs"
+      :class="statusClass"
+      aria-live="polite"
+    >
+      {{ status.text }}
+    </p>
+    <footer
+      v-if="$slots.footer"
+      class="flex shrink-0 items-center justify-end gap-2 border-t border-hairline px-3 py-2"
+    >
+      <slot name="footer" />
+    </footer>
   </div>
 </template>
