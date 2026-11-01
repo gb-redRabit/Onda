@@ -47,7 +47,9 @@ export function useViewTransitions(router: Router): void {
         });
         running = true;
         transition.finished
-          .catch(() => {})
+          // Odrzucenie `finished` oznacza przerwaną animację; dla nas to tylko
+          // sygnał, że można znowu animować kolejne przejście.
+          .catch(() => undefined)
           .finally(() => {
             running = false;
           });
