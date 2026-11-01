@@ -3,11 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // D6/K7: nowy przycisk w kolorze akcentu powinien powstawać z `ui/Button`
-// (wariant `solid`), a nie z surowego `bg-primary` w klasach. Migracja 213
+// (wariant `solid`), a nie z surowego `bg-primary` w klasach. Migracja 121
 // istniejących przycisków jest nieopłacalna, więc pilnujemy liczby: budżet może
 // tylko maleć. Gdy przeniesiesz przyciski na `ui/Button`, obniż `BUDGET`.
 
-const BUDGET = 213;
+const BUDGET = 121;
 const ROOT = join(process.cwd(), 'src/renderer/src');
 
 function vueFiles(dir: string): string[] {
@@ -27,7 +27,8 @@ function vueFiles(dir: string): string[] {
 /** Przyciski z surowym `bg-primary` w tagu otwierającym (statycznie lub w `:class`). */
 function countRawPrimaryButtons(file: string): number {
   const source = readFileSync(file, 'utf8');
-  return (source.match(/<button\b[^>]*\bbg-primary\b/g) ?? []).length;
+  // `bg-primary/10` i `bg-primary-content` to akcenty i tekst, nie pełne tło przycisku.
+  return (source.match(/<button\b[^>]*\bbg-primary(?![-/\w])/g) ?? []).length;
 }
 
 describe('raw bg-primary buttons', () => {

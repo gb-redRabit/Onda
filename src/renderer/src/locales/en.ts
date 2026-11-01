@@ -2188,7 +2188,10 @@ api.registerCommand({
     propertiesContains: 'Contains',
     propertiesContainsValue: '{n} items ({d} folders, {f} files)',
     propertiesCreated: 'Created',
-    propertiesModified: 'Modified'
+    propertiesModified: 'Modified',
+    detailsTitle: 'Details',
+    detailsEmpty: 'Select a file or folder to see its details.',
+    detailsMultiple: '{n} items selected — details show a single item.'
   },
   openMedia: {
     unsupported: 'These files cannot be played.',

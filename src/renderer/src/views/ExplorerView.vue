@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, provide, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { Monitor, Plus, Pin, PinOff, Copy, Eye, EyeOff, PanelLeft } from '@lucide/vue';
+import { Monitor, Plus, Pin, PinOff, Copy, Eye, EyeOff, PanelLeft, Info } from '@lucide/vue';
 import { useExplorerStore } from '@renderer/stores/explorer';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { clonePlain } from '@renderer/utils/clone';
@@ -22,6 +22,7 @@ import ExplorerViewModeDropdown from '@renderer/components/explorer/ExplorerView
 import ExplorerContent from '@renderer/components/explorer/ExplorerContent.vue';
 import ExplorerTabs from '@renderer/components/explorer/ExplorerTabs.vue';
 import ExplorerDuplicatesPanel from '@renderer/components/explorer/ExplorerDuplicatesPanel.vue';
+import ExplorerDetailsPane from '@renderer/components/explorer/ExplorerDetailsPane.vue';
 import ExplorerPropertiesDialog from '@renderer/components/explorer/ExplorerPropertiesDialog.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useExplorerActions } from '@renderer/composables/useExplorerActions';
@@ -57,6 +58,32 @@ useViewSearch(searchQuery);
 const dupPanelOpen = ref(false);
 const propertiesItem = ref<FileItem | null>(null);
 const contentRef = ref<InstanceType<typeof ExplorerContent> | null>(null);
+
+// Panel szczegółów: pokazuje pojedyncze zaznaczenie i przeżywa przeładowanie
+// listy (dlatego stan jest w pamięci, a nie w selekcji). Domyślnie zamknięty.
+const detailsOpen = ref(readDetailsOpen());
+const detailItem = computed<FileItem | null>(() => {
+  if (explorer.selectedCount !== 1) return null;
+  const [path] = [...explorer.selectedFiles];
+  return explorer.sortedFiles.find((file) => file.path === path) ?? null;
+});
+
+function readDetailsOpen(): boolean {
+  try {
+    return localStorage.getItem('onda-explorer-details') === '1';
+  } catch {
+    return false;
+  }
+}
+
+function toggleDetails(): void {
+  detailsOpen.value = !detailsOpen.value;
+  try {
+    localStorage.setItem('onda-explorer-details', detailsOpen.value ? '1' : '0');
+  } catch {
+    /* brak storage — panel działa nadal, tylko nie pamięta stanu */
+  }
+}
 
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
@@ -284,6 +311,22 @@ onBeforeUnmount(() => {
         <button
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
+            detailsOpen
+              ? 'text-primary-text bg-primary/10'
+              : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
+          "
+          data-testid="explorer-details-toggle"
+          :title="$t('explorer.detailsTitle')"
+          :aria-label="$t('explorer.detailsTitle')"
+          :aria-pressed="detailsOpen"
+          @click="toggleDetails"
+        >
+          <Info :size="14" class="pointer-events-none" />
+        </button>
+
+        <button
+          class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
+          :class="
             dupPanelOpen
               ? 'text-primary-text bg-primary/10'
               : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10'
@@ -365,5 +408,14 @@ onBeforeUnmount(() => {
         @renamed="onPropertiesRenamed"
       />
     </div>
+
+    <ExplorerDetailsPane
+      v-if="detailsOpen"
+      :item="detailItem"
+      :selected-count="explorer.selectedCount"
+      :class="narrowWindow ? 'absolute inset-y-0 right-0 z-30 fx-depth' : ''"
+      @close="toggleDetails"
+      @properties="openProperties"
+    />
   </div>
 </template>

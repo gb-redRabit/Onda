@@ -2198,7 +2198,10 @@ api.registerCommand({
     propertiesContains: 'Zawartość',
     propertiesContainsValue: '{n} element(ów) ({d} folder(y), {f} plik(ów))',
     propertiesCreated: 'Utworzono',
-    propertiesModified: 'Zmodyfikowano'
+    propertiesModified: 'Zmodyfikowano',
+    detailsTitle: 'Szczegóły',
+    detailsEmpty: 'Zaznacz plik lub folder, aby zobaczyć szczegóły.',
+    detailsMultiple: 'Wybrano {n} elementów — szczegóły pokazujemy dla jednego.'
   },
   openMedia: {
     unsupported: 'Tych plików nie można odtworzyć.',
