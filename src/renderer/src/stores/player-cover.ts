@@ -29,24 +29,59 @@ export function usePlayerCover() {
 
   // Nieruchome klatki okładek-wideo dla statycznych siatek (biblioteka, półki).
   // Compact i odtwarzacz nadal dostają `<video>` z `coverCache` i mogą je animować.
+  // Ekstrakcja jest kolejkowana (2 równolegle), bo skok na koniec listy montował
+  // wcześniej dziesiątki `<video>` naraz i zamrażał UI.
   const coverStillCache = shallowRef<Record<string, CoverResult>>({});
   const stillScheduled = new Set<string>();
+  const stillQueue: Array<{ path: string; videoPath: string }> = [];
+  let stillActive = 0;
+  const STILL_CONCURRENCY = 2;
+  const STILL_CACHE_MAX = 2000;
 
   function getCoverStill(filePath: string): CoverResult | null {
     return coverStillCache.value[filePath] ?? null;
   }
 
+  function evictStills(): void {
+    const keys = Object.keys(coverStillCache.value);
+    if (keys.length <= STILL_CACHE_MAX) return;
+    const next = { ...coverStillCache.value };
+    for (const key of keys.slice(0, keys.length - STILL_CACHE_MAX)) delete next[key];
+    coverStillCache.value = next;
+  }
+
+  function pumpStillQueue(): void {
+    while (stillActive < STILL_CONCURRENCY && stillQueue.length > 0) {
+      const job = stillQueue.shift()!;
+      stillActive++;
+      void (async () => {
+        try {
+          // Najpierw trwały cache main (ffmpeg + dysk), więc po restarcie nie ma
+          // ponownej ekstrakcji; canvas zostaje jako fallback bez ffmpeg.
+          const fromMain = await window.api?.getCoverStill?.(job.path);
+          let frame: CoverResult | null =
+            fromMain?.data != null ? { type: 'image', data: fromMain.data } : null;
+          if (!frame?.data) frame = await captureVideoFrame(job.videoPath);
+          if (!frame?.data) {
+            stillScheduled.delete(job.path);
+            return;
+          }
+          coverStillCache.value[job.path] = frame;
+          evictStills();
+          triggerRef(coverStillCache);
+        } finally {
+          stillActive--;
+          pumpStillQueue();
+        }
+      })();
+    }
+  }
+
   function loadCoverStill(filePath: string, videoPath: string): void {
     if (stillScheduled.has(filePath) || coverStillCache.value[filePath]?.data) return;
     stillScheduled.add(filePath);
-    void captureVideoFrame(videoPath).then((frame) => {
-      if (!frame.data) {
-        stillScheduled.delete(filePath);
-        return;
-      }
-      coverStillCache.value[filePath] = frame;
-      triggerRef(coverStillCache);
-    });
+    stillQueue.push({ path: filePath, videoPath });
+    pumpStillQueue();
   }
   let coverFlushScheduled = false;
   let coverProcessing = false;

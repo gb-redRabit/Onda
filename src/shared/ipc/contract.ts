@@ -78,6 +78,7 @@ export const INVOKE_CHANNELS = [
   'media:getServerUrl',
   'media:renameFile',
   'media:getCover',
+  'media:getCoverStill',
   'media:getDuration',
   'media:getWaveform',
   'media:batchDurations',

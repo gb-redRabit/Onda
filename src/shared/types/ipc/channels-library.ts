@@ -99,6 +99,10 @@ export interface LibraryChannels {
     args: [filePath: string];
     result: { type: 'video' | 'image' | null; data: string | null };
   };
+  'media:getCoverStill': {
+    args: [filePath: string];
+    result: { type: 'image' | null; data: string | null };
+  };
   'media:getDuration': { args: [filePath: string]; result: number };
   'media:batchDurations': { args: [paths: string[]]; result: Record<string, number> };
   'media:getVideoFps': { args: [filePath: string]; result: number };

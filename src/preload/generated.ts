@@ -63,6 +63,7 @@ export const ALLOWED_INVOKE_CHANNELS: ReadonlySet<string> = new Set([
   'media:getServerUrl',
   'media:renameFile',
   'media:getCover',
+  'media:getCoverStill',
   'media:getDuration',
   'media:getWaveform',
   'media:batchDurations',

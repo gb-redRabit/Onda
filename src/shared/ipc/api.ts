@@ -65,6 +65,7 @@ export interface OndaAPI {
 
   // media / tagi / okładki / napisy
   getCover: BoundIpcMethod<'media:getCover'>;
+  getCoverStill: BoundIpcMethod<'media:getCoverStill'>;
   getDuration: BoundIpcMethod<'media:getDuration'>;
   getDurations: BoundIpcMethod<'media:batchDurations'>;
   getVideoFps: BoundIpcMethod<'media:getVideoFps'>;

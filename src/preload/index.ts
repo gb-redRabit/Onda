@@ -210,6 +210,8 @@ const api: OndaAPI = {
   cancelDepInstall: (tool: string): Promise<boolean> => tryInvoke('dep:cancelInstall', tool),
   getCover: (filePath: string): Promise<{ type: 'video' | 'image' | null; data: string | null }> =>
     tryInvoke('media:getCover', filePath),
+  getCoverStill: (filePath: string): Promise<{ type: 'image' | null; data: string | null }> =>
+    tryInvoke('media:getCoverStill', filePath),
   getDuration: (filePath: string): Promise<number> => tryInvoke('media:getDuration', filePath),
   getVideoFps: (filePath: string): Promise<number> => tryInvoke('media:getVideoFps', filePath),
   saveScreenshot: (

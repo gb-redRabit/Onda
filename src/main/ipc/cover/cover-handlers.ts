@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron';
-import { extractAndCacheCover } from './cover-cache';
+import { extractAndCacheCover, extractAndCacheStill } from './cover-cache';
 import { isSafeAbsolutePath } from '../../utils/validate';
 import { logger } from '../../../shared/logger';
 
@@ -16,6 +16,17 @@ export function registerCoverHandlers(): void {
       }
       const result = await extractAndCacheCover(filePath);
       return result;
+    }
+  );
+
+  ipcMain.handle(
+    'media:getCoverStill',
+    async (_event, filePath: string): Promise<{ type: 'image' | null; data: string | null }> => {
+      if (!isSafeAbsolutePath(filePath)) {
+        logger.warn('cover', `media:getCoverStill rejected unsafe path: ${filePath}`);
+        return { type: null, data: null };
+      }
+      return extractAndCacheStill(filePath);
     }
   );
 }

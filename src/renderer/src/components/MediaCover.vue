@@ -120,6 +120,15 @@ watch(isVideo, (v) => {
   }
 });
 
+// Okładka-wideo może dojść asynchronicznie (IPC); dopiero wtedy znamy ścieżkę wideo
+// do wyciągnięcia nieruchomej klatki.
+watch(
+  () => result.value.type,
+  (type) => {
+    if (type === 'video') maybeLoadStill();
+  }
+);
+
 const iconComponent = computed(() => {
   if (props.fallback === 'play') return Play;
   if (props.fallback === 'disc') return Disc3;
@@ -198,7 +207,7 @@ onUnmounted(() => {
   <div ref="el" class="w-full h-full overflow-hidden flex items-center justify-center">
     <img v-if="stillCover?.data" alt="" :src="stillCover.data" class="w-full h-full object-cover" />
     <video
-      v-else-if="isVideo && inView"
+      v-else-if="isVideo && !still && inView"
       ref="videoRef"
       :src="src"
       class="w-full h-full object-cover"
@@ -209,7 +218,7 @@ onUnmounted(() => {
       @ended="onVideoEnded"
     />
     <video
-      v-else-if="isStaticVideo && inView"
+      v-else-if="isStaticVideo && !still && inView"
       :src="src"
       class="w-full h-full object-cover"
       muted

@@ -63,6 +63,7 @@ export type IpcInvokeChannel =
   | 'media:getServerUrl'
   | 'media:renameFile'
   | 'media:getCover'
+  | 'media:getCoverStill'
   | 'media:getDuration'
   | 'media:getWaveform'
   | 'media:batchDurations'

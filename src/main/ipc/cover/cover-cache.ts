@@ -75,17 +75,18 @@ export function deleteCachedDuration(filePath: string): void {
 
 export const PERSISTENT_COVER_DIR = join(getTempDir(), 'persistent');
 
-async function getPersistentCover(
-  filePath: string
+async function getPersistentEntry(
+  mapKey: string,
+  sourcePath: string
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   try {
     const cacheMap = await readCoverMap();
-    const entry = cacheMap[filePath];
+    const entry = cacheMap[mapKey];
     if (!entry) return null;
 
-    const s = await stat(filePath).catch(() => null);
+    const s = await stat(sourcePath).catch(() => null);
     if (!s || s.mtimeMs > entry.mtime) {
-      delete cacheMap[filePath];
+      delete cacheMap[mapKey];
       await writeCoverMap(cacheMap);
       return null;
     }
@@ -100,26 +101,41 @@ async function getPersistentCover(
       : `data:image/png;base64,${buf.toString('base64')}`;
     return { type: 'image', data: dataUrl };
   } catch (e) {
-    logger.warn('cover', `getPersistentCover failed for ${filePath}`, e);
+    logger.warn('cover', `getPersistentCover failed for ${mapKey}`, e);
     return null;
   }
 }
 
-async function savePersistentCover(filePath: string, binary: Buffer, ext: string): Promise<void> {
+async function getPersistentCover(
+  filePath: string
+): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
+  return getPersistentEntry(filePath, filePath);
+}
+
+async function savePersistentEntry(
+  mapKey: string,
+  binary: Buffer,
+  ext: string,
+  sourcePath: string
+): Promise<void> {
   try {
     await mkdir(PERSISTENT_COVER_DIR, { recursive: true });
-    const hash = hashPath(filePath);
+    const hash = hashPath(mapKey);
     const cacheFile = `${hash}.${ext}`;
     const cachePath = join(PERSISTENT_COVER_DIR, cacheFile);
     await writeFile(cachePath, binary);
 
     const cacheMap = await readCoverMap();
-    const s = await stat(filePath).catch(() => null);
-    cacheMap[filePath] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
+    const s = await stat(sourcePath).catch(() => null);
+    cacheMap[mapKey] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
     await writeCoverMap(cacheMap);
   } catch (e) {
-    logger.warn('cover', `savePersistentCover failed for ${filePath}`, e);
+    logger.warn('cover', `savePersistentCover failed for ${mapKey}`, e);
   }
+}
+
+async function savePersistentCover(filePath: string, binary: Buffer, ext: string): Promise<void> {
+  return savePersistentEntry(filePath, binary, ext, filePath);
 }
 
 async function extractAudioCover(filePath: string): Promise<string | null> {
@@ -328,6 +344,33 @@ export async function extractAndCacheCover(
     coverCacheLocks.delete(filePath);
     if (waiting) waiting.forEach((r) => r());
   }
+}
+
+/**
+ * Nieruchoma klatka okładki dla statycznych siatek. Dla audio z wideo-okładką
+ * wyciąga klatkę z wideo i zapisuje ją w trwałym cache (klucz `still:<ścieżka>`),
+ * więc po restarcie nie trzeba jej generować ponownie.
+ */
+export async function extractAndCacheStill(
+  filePath: string
+): Promise<{ type: 'image' | null; data: string | null }> {
+  const cover = await extractAndCacheCover(filePath);
+  if (!cover?.data) return { type: null, data: null };
+  if (cover.type === 'image') return { type: 'image', data: cover.data };
+
+  const videoPath = cover.data;
+  const mapKey = `still:${filePath}`;
+  const cached = await getPersistentEntry(mapKey, videoPath);
+  if (cached) return { type: 'image', data: cached.data };
+
+  const frame = await extractVideoFrame(videoPath);
+  if (!frame) return { type: null, data: null };
+  const match = frame.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (match) {
+    const imgExt = match[1] === 'jpeg' ? 'jpg' : match[1];
+    void savePersistentEntry(mapKey, Buffer.from(match[2], 'base64'), imgExt, videoPath);
+  }
+  return { type: 'image', data: frame };
 }
 
 async function getCachedCover(
