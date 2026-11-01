@@ -293,15 +293,13 @@ export async function extractAndCacheCover(
       data: null
     };
 
-    if (AUDIO_EXTS.includes(ext)) {
+    if (siblingVideo) {
+      // Sibling video zostaje okładką-wideo (compact/pełny widok odtwarzają je jako
+      // animację). Statyczne siatki proszą o nieruchomą klatkę przez `MediaCover still`.
+      result = { type: 'video', data: siblingVideo };
+    } else if (AUDIO_EXTS.includes(ext)) {
       const cover = await extractAudioCover(filePath);
-      if (cover) {
-        result = { type: 'image', data: cover };
-      } else if (siblingVideo) {
-        // Sibling video zostaje okładką-wideo (compact/pełny widok odtwarzają je jako
-        // animację). Statyczne siatki proszą o nieruchomą klatkę przez `MediaCover still`.
-        result = { type: 'video', data: siblingVideo };
-      }
+      if (cover) result = { type: 'image', data: cover };
     } else if (VIDEO_EXTS.includes(ext)) {
       const frame = await extractVideoFrame(filePath);
       result = frame ? { type: 'image', data: frame } : { type: null, data: null };
