@@ -64,7 +64,7 @@ function color(type: string) {
       data-testid="toast"
       :data-toast-type="n.type"
       :role="n.type === 'error' ? 'alert' : undefined"
-      class="pointer-events-auto flex items-start gap-2.5 px-3 py-2.5 rounded-box bg-neutral border border-neutral-content/20 shadow-xl shadow-black/30 max-w-xs animate-in"
+      class="pointer-events-auto flex items-start gap-2.5 px-3 py-2.5 rounded-box bg-neutral border border-neutral-content/20 shadow-xl shadow-scrim/30 max-w-xs animate-in"
     >
       <component :is="icon(n.type)" :size="16" class="shrink-0 mt-0.5" :class="color(n.type)" />
       <div class="flex-1 min-w-0">

@@ -9,7 +9,7 @@ defineEmits<{ openFile: []; openFolder: []; quit: [] }>();
   <div
     role="menu"
     data-menu="file"
-    class="absolute top-full left-0 mt-1 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-black/40 py-2 min-w-56 z-70"
+    class="absolute top-full left-0 mt-1 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-scrim/40 py-2 min-w-56 z-70"
   >
     <AppMenuItem :icon="FileAudio" @click="$emit('openFile')">
       {{ $t('menu.openFile') }}

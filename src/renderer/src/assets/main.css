@@ -39,6 +39,12 @@
   /* Semantic extras used by existing components (tokens were previously undefined). */
   --color-border-default: color-mix(in srgb, var(--color-base-content) 22%, transparent);
   --color-elevated: var(--color-base-100);
+  /* Kolor nakładek na treść (media, lightboxy, menu). Trzymany osobno od palety
+     motywu, bo ciemna zasłona jest potrzebna także w jasnych motywach; przezroczystość
+     ustawia się modyfikatorem, np. `bg-scrim/45`. */
+  --color-scrim: #000000;
+  --color-canvas: #000000;
+  --color-scrim-contrast: #ffffff;
 
   /* Skale typografii i ruchu (P3): jedna wartość dla drobnych etykiet i wspólne
      czasy/easingi, żeby komponenty nie dobierały 120/140/150 ms po kolei. */

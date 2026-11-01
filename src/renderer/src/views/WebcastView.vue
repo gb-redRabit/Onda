@@ -194,12 +194,12 @@ const trackCount = computed(() => saved.tracks.length);
                       class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
                     <div
-                      class="absolute inset-0 bg-linear-to-t from-black/65 via-black/15 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+                      class="absolute inset-0 bg-linear-to-t from-scrim/65 via-scrim/15 to-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                     >
                       <div class="absolute top-2 right-2 flex items-center gap-1">
                         <button
                           type="button"
-                          class="grid h-7 w-7 place-items-center rounded-field bg-black/55 text-white/90 backdrop-blur-sm hover:bg-black/75 transition-colors"
+                          class="grid h-7 w-7 place-items-center rounded-field bg-scrim/55 text-scrim-contrast/90 backdrop-blur-sm hover:bg-canvas/75 transition-colors"
                           :title="$t('saved.addToQueue')"
                           :aria-label="$t('saved.addToQueue')"
                           @click="queueTrack(s)"
@@ -208,7 +208,7 @@ const trackCount = computed(() => saved.tracks.length);
                         </button>
                         <button
                           type="button"
-                          class="grid h-7 w-7 place-items-center rounded-field bg-black/55 text-white/90 backdrop-blur-sm hover:bg-error hover:text-error-content transition-colors"
+                          class="grid h-7 w-7 place-items-center rounded-field bg-scrim/55 text-scrim-contrast/90 backdrop-blur-sm hover:bg-error hover:text-error-content transition-colors"
                           :title="$t('common.delete')"
                           :aria-label="$t('common.delete')"
                           @click="removeTrack(s.id)"
@@ -228,7 +228,7 @@ const trackCount = computed(() => saved.tracks.length);
                     </div>
                     <span
                       v-if="s.duration"
-                      class="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-3xs font-mono px-1.5 py-0.5 rounded-field backdrop-blur-xs"
+                      class="absolute bottom-1.5 left-1.5 bg-scrim/70 text-scrim-contrast text-3xs font-mono px-1.5 py-0.5 rounded-field backdrop-blur-xs"
                     >
                       {{ s.duration }}
                     </span>

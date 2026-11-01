@@ -3,22 +3,21 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Bramka jakości UI (etap A planu 2026-11-02). Nowe pliki nie mogą wprowadzać
-// wzorców, które audyt wyeliminował, a istniejące długi mają jawny sufit —
-// budżet może tylko maleć. Po migracji obniż `BUDGETS`; nie podnoś go.
+// wzorców, które audyt wyeliminował: typografia i kolory nakładek mają własne
+// tokeny, buttony jawny `type`, a obwódka fokusu `focus-visible`.
 
 const ROOT = join(process.cwd(), 'src/renderer/src');
 
 /** Wzorce, których nie wolno używać (licznik musi być 0). */
 const FORBIDDEN_PATTERNS = {
-  arbitraryTextPx: /\btext-\[\d+px\]/g
-};
-
-/** Sufity dla długu, który dopiero będzie migrowany (etapy A4). */
-const BUDGETS = {
-  blackShadow: { pattern: /\bshadow-black(?:\/\d+)?\b/g, max: 14 },
+  arbitraryTextPx: { pattern: /\btext-\[\d+px\]/g, hint: 'Use text-4xs/3xs/2xs/xs/ui' },
   blackWhitePalette: {
     pattern: /\b(?:bg|text|border|ring|from|to|via)-(?:black|white)(?:\/\d+)?\b/g,
-    max: 72
+    hint: 'Use bg-scrim/N, bg-canvas, text-scrim-contrast'
+  },
+  blackShadow: {
+    pattern: /\bshadow-black(?:\/\d+)?\b/g,
+    hint: 'Use shadow-scrim/N'
   }
 };
 
@@ -111,25 +110,7 @@ describe('UI standards', () => {
     expect(hits, 'Use focus-visible: for buttons/selects/links').toEqual([]);
   });
 
-  it('uses the typography scale, not arbitrary pixel sizes', () => {
-    expect(collect(FORBIDDEN_PATTERNS.arbitraryTextPx), 'Use text-4xs/3xs/2xs/xs/ui').toEqual([]);
-  });
-
-  it('does not grow the black shadow debt', () => {
-    const hits = collect(BUDGETS.blackShadow.pattern);
-    const budget = BUDGETS.blackShadow.max;
-    expect(
-      hits.length,
-      `Budget ${budget}; use shadow-(--shadow-color).\n${hits.join('\n')}`
-    ).toBeLessThanOrEqual(budget);
-  });
-
-  it('does not grow the black/white palette debt', () => {
-    const hits = collect(BUDGETS.blackWhitePalette.pattern);
-    const budget = BUDGETS.blackWhitePalette.max;
-    expect(
-      hits.length,
-      `Budget ${budget}; use scrim tokens.\n${hits.join('\n')}`
-    ).toBeLessThanOrEqual(budget);
+  it.each(Object.entries(FORBIDDEN_PATTERNS))('%s is not used', (name, rule) => {
+    expect(collect(rule.pattern), `${name}: ${rule.hint}`).toEqual([]);
   });
 });

@@ -143,7 +143,7 @@ const { t } = useI18n();
       >
         <span
           class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition shadow"
-          :class="element.bg ? 'translate-x-4 bg-white' : 'bg-base-content/60'"
+          :class="element.bg ? 'translate-x-4 bg-base-100' : 'bg-base-content/60'"
         />
       </button>
     </div>

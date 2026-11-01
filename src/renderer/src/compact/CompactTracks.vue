@@ -160,7 +160,7 @@ defineExpose({ focusSearch });
             <span class="w-8 h-8 rounded overflow-hidden bg-base-300 shrink-0 relative">
               <MediaCover :path="results[row.index]?.path" :size="32" />
               <span
-                class="absolute inset-0 hidden group-hover:grid place-items-center bg-black/45 text-white"
+                class="absolute inset-0 hidden group-hover:grid place-items-center bg-scrim/45 text-scrim-contrast"
               >
                 <Play :size="13" />
               </span>

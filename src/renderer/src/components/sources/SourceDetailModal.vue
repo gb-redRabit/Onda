@@ -79,7 +79,7 @@ function browserUrl(item: SourceItem): string {
             :src="mediaUrl(props.item)"
             controls
             autoplay
-            class="w-full h-full object-contain bg-black"
+            class="w-full h-full object-contain bg-canvas"
           />
           <audio
             v-else-if="props.item.type === 'audio' && mediaUrl(props.item)"

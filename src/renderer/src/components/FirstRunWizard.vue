@@ -103,7 +103,7 @@ function dismiss() {
       aria-modal="true"
       aria-labelledby="wizard-title"
       tabindex="-1"
-      class="w-full max-w-xl rounded-box bg-base-100 border border-hairline shadow-2xl shadow-black/50 flex flex-col max-h-[86vh]"
+      class="w-full max-w-xl rounded-box bg-base-100 border border-hairline shadow-2xl shadow-scrim/50 flex flex-col max-h-[86vh]"
     >
       <header class="px-6 pt-5 pb-4 border-b border-hairline">
         <div class="flex items-center justify-between gap-4">

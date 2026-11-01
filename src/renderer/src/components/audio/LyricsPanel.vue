@@ -18,7 +18,7 @@ const variantClass = computed(() => {
     case 'gradient':
       return 'border border-primary/25 bg-linear-to-br from-base-300/95 via-base-200/90 to-primary/20 shadow-xl';
     default:
-      return 'border border-white/15 bg-linear-to-br from-white/10 via-base-200/20 to-base-200/35 shadow-2xl ring-1 ring-inset ring-white/10 backdrop-blur-xl backdrop-saturate-150';
+      return 'border border-scrim-contrast/15 bg-linear-to-br from-scrim-contrast/10 via-base-200/20 to-base-200/35 shadow-2xl ring-1 ring-inset ring-scrim-contrast/10 backdrop-blur-xl backdrop-saturate-150';
   }
 });
 

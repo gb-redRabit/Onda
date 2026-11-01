@@ -854,7 +854,7 @@ onBeforeUnmount(() => {
       <div v-else class="flex flex-col gap-4">
         <section class="flex min-w-0 flex-col gap-3">
           <div
-            class="relative h-[46vh] min-h-64 max-h-[520px] w-full overflow-hidden rounded-box border border-hairline bg-black"
+            class="relative h-[46vh] min-h-64 max-h-[520px] w-full overflow-hidden rounded-box border border-hairline bg-canvas"
           >
             <video
               ref="videoEl"
@@ -870,23 +870,23 @@ onBeforeUnmount(() => {
             />
             <button
               type="button"
-              class="absolute inset-0 flex items-center justify-center bg-black/20 text-white/80 opacity-0 transition-opacity hover:opacity-100"
+              class="absolute inset-0 flex items-center justify-center bg-scrim/20 text-scrim-contrast/80 opacity-0 transition-opacity hover:opacity-100"
               :aria-label="isPlaying ? t('tools.clipPause') : t('tools.clipPlay')"
               @click="togglePlay"
             >
-              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-black/60">
+              <span class="flex h-12 w-12 items-center justify-center rounded-full bg-scrim/60">
                 <Pause v-if="isPlaying" :size="22" />
                 <Play v-else :size="22" />
               </span>
             </button>
             <div
-              class="pointer-events-none absolute bottom-2 left-2 rounded bg-black/65 px-2 py-1 font-mono text-2xs text-white/90"
+              class="pointer-events-none absolute bottom-2 left-2 rounded bg-scrim/65 px-2 py-1 font-mono text-2xs text-scrim-contrast/90"
             >
               {{ formatTimecode(currentTime) }} / {{ formatTimecode(duration) }}
             </div>
             <button
               type="button"
-              class="absolute right-2 top-2 flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-2xs text-white/80 transition-colors hover:bg-black/80"
+              class="absolute right-2 top-2 flex items-center gap-1 rounded bg-scrim/60 px-2 py-1 text-2xs text-scrim-contrast/80 transition-colors hover:bg-canvas/80"
               :disabled="busy"
               @click="clearVideo"
             >
@@ -1150,7 +1150,7 @@ onBeforeUnmount(() => {
                       v-for="(frame, index) in frameStrip.frames"
                       :key="index"
                       data-testid="clip-frame"
-                      class="absolute inset-y-0 overflow-hidden border-r border-black/25"
+                      class="absolute inset-y-0 overflow-hidden border-r border-scrim/25"
                       :style="{
                         left: `${((frameStrip.startSec + index * frameStrip.stepSec) / duration) * 100}%`,
                         width: `${(frameStrip.stepSec / duration) * 100}%`

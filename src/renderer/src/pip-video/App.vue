@@ -119,13 +119,17 @@ onMounted(() => {
           );
         "
       />
-      <div class="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-black/75 to-transparent" />
+      <div class="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-scrim/75 to-transparent" />
       <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
         <div class="min-w-0">
-          <p class="text-sm font-semibold text-white drop-shadow">{{ t('previewTitle') }}</p>
-          <p class="mt-0.5 text-2xs text-white/70">{{ t('previewDescription') }}</p>
+          <p class="text-sm font-semibold text-scrim-contrast drop-shadow">
+            {{ t('previewTitle') }}
+          </p>
+          <p class="mt-0.5 text-2xs text-scrim-contrast/70">{{ t('previewDescription') }}</p>
         </div>
-        <span class="shrink-0 rounded bg-black/50 px-1.5 py-0.5 text-2xs font-mono text-white">
+        <span
+          class="shrink-0 rounded bg-scrim/50 px-1.5 py-0.5 text-2xs font-mono text-scrim-contrast"
+        >
           1080p
         </span>
       </div>
@@ -300,7 +304,7 @@ onMounted(() => {
         :style="{ left: previewLeft + '%' }"
       >
         <div
-          class="rounded-field overflow-hidden shadow-lg border border-white/10 bg-neutral"
+          class="rounded-field overflow-hidden shadow-lg border border-scrim-contrast/10 bg-neutral"
           :style="{ width: '96px', height: '54px' }"
         >
           <img

@@ -79,7 +79,7 @@ function onSpeedPreset(v: number) {
     <Transition name="menu-fade">
       <div
         v-if="speedMenuOpen"
-        class="absolute bottom-full right-0 mb-2 w-64 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-black/50 p-3 z-50"
+        class="absolute bottom-full right-0 mb-2 w-64 bg-base-100 border border-hairline rounded-box shadow-2xl shadow-scrim/50 p-3 z-50"
       >
         <div class="flex items-center justify-between mb-2.5">
           <span class="text-2xs text-base-content/50 font-medium uppercase tracking-wider">

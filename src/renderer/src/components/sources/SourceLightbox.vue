@@ -54,7 +54,7 @@ function onKeydown(event: KeyboardEvent): void {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-10000 flex flex-col bg-black/90"
+      class="fixed inset-0 z-10000 flex flex-col bg-scrim/90"
       role="dialog"
       aria-modal="true"
       aria-label="Gallery"
@@ -64,17 +64,17 @@ function onKeydown(event: KeyboardEvent): void {
     >
       <div ref="panelRef" class="flex flex-col h-full w-full outline-hidden">
         <!-- Pasek narzędzi -->
-        <div class="shrink-0 flex items-center gap-2 px-3 py-2 text-white/80">
+        <div class="shrink-0 flex items-center gap-2 px-3 py-2 text-scrim-contrast/80">
           <span class="text-xs font-mono tabular-nums shrink-0">
             {{ index + 1 }} / {{ items.length }}
           </span>
-          <span class="flex-1 min-w-0 truncate text-sm text-white">
+          <span class="flex-1 min-w-0 truncate text-sm text-scrim-contrast">
             {{ current?.title || $t('sources.untitled') }}
           </span>
           <button
             v-if="current && isSourceItemPlayable(current)"
             type="button"
-            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-white/10 transition-colors text-xs"
+            class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-scrim-contrast/10 transition-colors text-xs"
             :title="$t('sources.playNow')"
             @click="emit('play', current)"
           >
@@ -84,7 +84,7 @@ function onKeydown(event: KeyboardEvent): void {
             v-if="downloadable && (current?.mediaUrl || current?.playerUrl)"
             type="button"
             class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field transition-colors text-xs disabled:opacity-50"
-            :class="isDownloaded ? 'text-success' : 'hover:bg-white/10'"
+            :class="isDownloaded ? 'text-success' : 'hover:bg-scrim-contrast/10'"
             :disabled="isDownloaded || downloadingItem === current"
             :title="isDownloaded ? $t('sources.downloaded') : $t('sources.download')"
             @click="current && emit('download', current)"
@@ -93,7 +93,7 @@ function onKeydown(event: KeyboardEvent): void {
           </button>
           <button
             type="button"
-            class="fx-noise shrink-0 p-1.5 rounded-field hover:bg-white/10 transition-colors"
+            class="fx-noise shrink-0 p-1.5 rounded-field hover:bg-scrim-contrast/10 transition-colors"
             :aria-label="$t('common.close')"
             @click="emit('close')"
           >
@@ -105,7 +105,7 @@ function onKeydown(event: KeyboardEvent): void {
         <div class="flex-1 min-h-0 relative flex items-center justify-center px-12">
           <button
             type="button"
-            class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-scrim-contrast/10 hover:bg-scrim-contrast/20 text-scrim-contrast transition-colors"
             :aria-label="$t('common.previous')"
             @click="go(-1)"
           >
@@ -113,7 +113,7 @@ function onKeydown(event: KeyboardEvent): void {
           </button>
           <button
             type="button"
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-scrim-contrast/10 hover:bg-scrim-contrast/20 text-scrim-contrast transition-colors"
             :aria-label="$t('common.next')"
             @click="go(1)"
           >
@@ -133,7 +133,7 @@ function onKeydown(event: KeyboardEvent): void {
             :src="mediaUrl"
             controls
             autoplay
-            class="max-h-full max-w-full bg-black"
+            class="max-h-full max-w-full bg-canvas"
           />
           <audio
             v-else-if="current?.type === 'audio' && mediaUrl"
@@ -163,13 +163,15 @@ function onKeydown(event: KeyboardEvent): void {
         </div>
 
         <!-- Pasek miniatur -->
-        <div class="shrink-0 flex gap-2 px-3 py-2 overflow-x-auto bg-black/40">
+        <div class="shrink-0 flex gap-2 px-3 py-2 overflow-x-auto bg-scrim/40">
           <button
             v-for="(item, i) in items"
             :key="item.id || i"
             type="button"
             class="shrink-0 w-16 h-10 rounded-field overflow-hidden border-2 transition-colors"
-            :class="i === index ? 'border-primary' : 'border-transparent hover:border-white/40'"
+            :class="
+              i === index ? 'border-primary' : 'border-transparent hover:border-scrim-contrast/40'
+            "
             :title="item.title"
             @click="select(i)"
           >
@@ -182,7 +184,7 @@ function onKeydown(event: KeyboardEvent): void {
             />
             <span
               v-else
-              class="w-full h-full flex items-center justify-center bg-white/10 text-white/60 text-2xs"
+              class="w-full h-full flex items-center justify-center bg-scrim-contrast/10 text-scrim-contrast/60 text-2xs"
             >
               {{ i + 1 }}
             </span>

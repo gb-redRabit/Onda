@@ -156,7 +156,7 @@ onUnmounted(() => {
     </template>
     <div
       v-if="variant === 'glass'"
-      class="absolute inset-0 pointer-events-none bg-white/20 backdrop-blur-[3px] border border-white/30 shadow-[inset_0_0_24px_rgba(255,255,255,0.15),inset_0_-12px_24px_rgba(0,0,0,0.3)]"
+      class="absolute inset-0 pointer-events-none bg-scrim-contrast/20 backdrop-blur-[3px] border border-scrim-contrast/30 shadow-[inset_0_0_24px_rgba(255,255,255,0.15),inset_0_-12px_24px_rgba(0,0,0,0.3)]"
     />
   </div>
 </template>

@@ -68,7 +68,7 @@ function browserUrl(item: SourceItem | null): string {
           v-else-if="current?.type === 'video' && mediaUrl(current)"
           :src="mediaUrl(current)"
           controls
-          class="w-full h-full object-contain bg-black"
+          class="w-full h-full object-contain bg-canvas"
         />
         <audio
           v-else-if="current?.type === 'audio' && mediaUrl(current)"

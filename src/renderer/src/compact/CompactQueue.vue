@@ -175,7 +175,7 @@ function onDragOver(event: DragEvent): void {
           >
             <MediaCover :path="items[row.index]?.track.path" :size="28" />
             <span
-              class="absolute inset-0 hidden group-hover:grid place-items-center bg-black/45 text-white"
+              class="absolute inset-0 hidden group-hover:grid place-items-center bg-scrim/45 text-scrim-contrast"
             >
               <Play :size="11" />
             </span>

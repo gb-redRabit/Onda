@@ -269,7 +269,7 @@ function setSubRef(i: number) {
       ref="rootEl"
       data-testid="context-menu"
       role="menu"
-      class="fixed z-999 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
+      class="fixed z-999 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
       :style="position"
       @click.stop
       @contextmenu.prevent
@@ -319,7 +319,7 @@ function setSubRef(i: number) {
             <div
               v-if="openSubIndex === idx && item.children?.length"
               role="menu"
-              class="fixed z-1000 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
+              class="fixed z-1000 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
               :style="subStyle"
               @mouseenter="onSubEnter()"
               @mouseleave="onItemLeave()"

@@ -83,12 +83,12 @@ const emit = defineEmits<{
 
         <!-- Ciemny subtelny gradient na dole okładki (spójny z LibraryTrackCard). -->
         <div
-          class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          class="pointer-events-none absolute inset-0 bg-linear-to-t from-scrim/60 via-scrim/10 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         />
 
         <span
           v-if="badge"
-          class="absolute left-1.5 top-1.5 rounded-field bg-black/65 px-1.5 py-0.5 text-3xs font-semibold tabular-nums text-white backdrop-blur-xs"
+          class="absolute left-1.5 top-1.5 rounded-field bg-scrim/65 px-1.5 py-0.5 text-3xs font-semibold tabular-nums text-scrim-contrast backdrop-blur-xs"
         >
           {{ badge }}
         </span>
@@ -96,7 +96,7 @@ const emit = defineEmits<{
         <button
           v-if="openLabel"
           type="button"
-          class="pointer-events-auto absolute right-1.5 top-1.5 z-10 grid h-6.5 w-6.5 place-items-center rounded-field bg-black/55 text-white/90 opacity-0 backdrop-blur-xs transition-opacity hover:bg-black/75 group-hover:opacity-100 group-focus-within:opacity-100"
+          class="pointer-events-auto absolute right-1.5 top-1.5 z-10 grid h-6.5 w-6.5 place-items-center rounded-field bg-scrim/55 text-scrim-contrast/90 opacity-0 backdrop-blur-xs transition-opacity hover:bg-canvas/75 group-hover:opacity-100 group-focus-within:opacity-100"
           :title="openLabel"
           :aria-label="openLabel"
           @click.stop="emit('open')"
@@ -121,7 +121,7 @@ const emit = defineEmits<{
           type="button"
           tabindex="-1"
           aria-hidden="true"
-          class="pointer-events-auto absolute inset-0 z-10 grid place-items-center rounded-full bg-black/35 text-white opacity-0 transition-opacity group-hover:opacity-100"
+          class="pointer-events-auto absolute inset-0 z-10 grid place-items-center rounded-full bg-scrim/35 text-scrim-contrast opacity-0 transition-opacity group-hover:opacity-100"
           @click.stop="emit('play')"
         >
           <span

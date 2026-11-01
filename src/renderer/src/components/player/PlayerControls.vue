@@ -176,7 +176,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         :style="{ left: previewLeft + '%' }"
       >
         <div
-          class="rounded-field overflow-hidden shadow-2xl border border-white/10 bg-neutral"
+          class="rounded-field overflow-hidden shadow-2xl border border-scrim-contrast/10 bg-neutral"
           style="width: 160px; height: 90px"
         >
           <img

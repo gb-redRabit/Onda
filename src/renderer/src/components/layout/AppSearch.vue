@@ -224,7 +224,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
     <div
       ref="panelRef"
       :class="ui.searchMode === 'global' ? 'w-120' : 'w-72'"
-      class="max-w-[90vw] bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-black/50 overflow-hidden"
+      class="max-w-[90vw] bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 overflow-hidden"
     >
       <div class="flex items-center gap-2 px-3 py-2.5 border border-b border-hairline">
         <FolderSearch
