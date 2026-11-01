@@ -161,4 +161,41 @@ test.describe('settings interactions', () => {
       await onda.dispose();
     }
   });
+
+  // T4: rozmycie szkła jest ustawieniem motywu; PiP dostaje tę samą zmienną.
+  test('glass blur slider updates the css variable', async () => {
+    const onda = await launchOnda();
+    try {
+      const page = onda.page;
+      await dismissWizard(page);
+      await page.evaluate(() => {
+        window.location.hash = '#/settings?tab=theme';
+      });
+      const slider = page.getByTestId('settings-glass-blur');
+      await expect(slider).toBeVisible();
+
+      const readBlur = (): Promise<string> =>
+        page.evaluate(() =>
+          getComputedStyle(document.documentElement).getPropertyValue('--glass-blur').trim()
+        );
+
+      await slider.evaluate((el, v) => {
+        const input = el as HTMLInputElement;
+        input.value = v;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, '24');
+      await expect.poll(readBlur).toBe('24px');
+
+      await slider.evaluate((el, v) => {
+        const input = el as HTMLInputElement;
+        input.value = v;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, '14');
+      await expect.poll(readBlur).toBe('14px');
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });

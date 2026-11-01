@@ -198,12 +198,34 @@ async function pasteThemeJson() {
           max="100"
           :value="settings.appearance.glassAlpha ?? 100"
           class="w-full"
+          :aria-label="$t('creator.glass')"
           @input="
             settings.updateAppearance({
               glassAlpha: parseInt(($event.target as HTMLInputElement).value)
             })
           "
         />
+        <div class="mt-4">
+          <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
+            <span>{{ $t('creator.glassBlur') }}</span>
+            <span>{{ settings.appearance.glassBlur ?? 14 }}px</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="32"
+            data-testid="settings-glass-blur"
+            :value="settings.appearance.glassBlur ?? 14"
+            :aria-label="$t('creator.glassBlur')"
+            class="w-full"
+            @input="
+              settings.updateAppearance({
+                glassBlur: parseInt(($event.target as HTMLInputElement).value)
+              })
+            "
+          />
+          <p class="mt-2 text-xs text-base-content/50">{{ $t('creator.glassBlurHint') }}</p>
+        </div>
         <p class="mt-2 text-xs text-base-content/50">{{ $t('creator.glassHint') }}</p>
       </section>
     </div>

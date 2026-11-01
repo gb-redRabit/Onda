@@ -134,10 +134,12 @@ export interface AppearanceSettings {
     sizeField?: number;
     sizeSelector?: number;
     border?: number;
-    depth?: 0 | 1;
-    noise?: 0 | 1;
+    depth?: number;
+    noise?: number;
   };
   glassAlpha?: number;
+  /** Rozmycie paneli szklanych w px (0-32); PiP korzysta z materiału systemu. */
+  glassBlur?: number;
   fontSize: number;
   sidebarPosition: 'left' | 'right';
   sidebarCollapsed: boolean;

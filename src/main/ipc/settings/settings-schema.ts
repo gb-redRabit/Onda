@@ -108,6 +108,7 @@ const APPEARANCE_FIELDS: Record<string, Sanitizer> = {
   customColors: recordOf(hexStr),
   geometry: obj(GEOMETRY_FIELDS),
   glassAlpha: numClamped(0, 100),
+  glassBlur: numClamped(0, 32),
   fontSize: numClamped(8, 48),
   sidebarPosition: enumOf(['left', 'right']),
   sidebarCollapsed: bool,

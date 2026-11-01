@@ -69,6 +69,7 @@ describe('builtin themes registry', () => {
       }
       expect(['dark', 'light']).toContain(t.scheme);
       expect(t.glassAlpha).toBe(100);
+      expect(t.glassBlur).toBe(14);
     }
   });
 });
@@ -143,6 +144,14 @@ describe('buildEngineVars', () => {
     expect(vars['--font-size']).toBe('14px');
     // Szkło wymusza kwadratowe narożniki okna (spójnie z applyWindowCorners).
     expect(vars['--window-radius']).toBe('0px');
+  });
+
+  it('passes the configured glass blur to the CSS variables', () => {
+    const t = resolveThemeAppearance({ theme: 'dark', glassAlpha: 70, glassBlur: 24 });
+    expect(buildEngineVars(t, 14)['--glass-blur']).toBe('24px');
+    expect(buildEngineVars(resolveThemeAppearance({ theme: 'dark' }), 14)['--glass-blur']).toBe(
+      '14px'
+    );
   });
 
   it('uses the system window radius for positive box radii and square at 0', () => {

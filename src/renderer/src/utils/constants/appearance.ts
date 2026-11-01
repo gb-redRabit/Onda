@@ -7,6 +7,7 @@ export const DEFAULT_APPEARANCE = {
   theme: 'dark' as const,
   customBase: 'dark' as const,
   glassAlpha: 100,
+  glassBlur: 14,
   fontSize: 14,
   sidebarPosition: 'left' as const,
   sidebarCollapsed: false,

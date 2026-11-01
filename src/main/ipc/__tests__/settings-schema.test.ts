@@ -104,6 +104,15 @@ describe('sanitizeSettings', () => {
     });
   });
 
+  it('clamps glass blur into the allowed range', () => {
+    expect(sanitizeSettings({ appearance: { glassBlur: 99 } }).sanitized.appearance).toEqual({
+      glassBlur: 32
+    });
+    expect(sanitizeSettings({ appearance: { glassBlur: -5 } }).sanitized.appearance).toEqual({
+      glassBlur: 0
+    });
+  });
+
   it('drops invalid hex values from customColors', () => {
     const { sanitized } = sanitizeSettings({
       appearance: { customColors: { primary: '#GG0000', accent: 'red', info: '#0af' } }

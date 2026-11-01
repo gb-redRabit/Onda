@@ -2757,7 +2757,10 @@ api.registerCommand({
     seedLight: 'Reset — light',
     copy: 'Copy JSON',
     paste: 'Paste JSON',
-    glassHint: 'Open DevTools force an opaque background — test with them closed.',
+    glassHint: 'Open DevTools force an opaque background - test with them closed.',
+    glassBlur: 'Glass blur',
+    glassBlurHint:
+      'Affects the main window panels. The PiP window uses the system material (acrylic/vibrancy), so its blur stays fixed.',
     glassLocked: 'glass',
     radiusBox: 'Card/modal radius',
     radiusField: 'Field radius (button, input)',

@@ -112,4 +112,19 @@ describe('useTheme window material', () => {
     expect(pipThemeSends).toHaveLength(2); // audio-pip + pip, po jednym malowaniu każde
     expect(send.mock.calls.length - sendBaseline).toBe(3); // + jedna locale
   });
+
+  it('pushes the glass blur to the PiP windows with the rest of the theme', async () => {
+    const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE, glassBlur: 20 });
+    const send = vi.fn();
+    window.api.send = send as typeof window.api.send;
+    const theme = useTheme(appearance);
+
+    theme.applyTheme();
+
+    const pipVars = send.mock.calls
+      .filter((c) => c[0] === 'audio-pip:theme' || c[0] === 'pip:theme')
+      .map((c) => c[1] as Record<string, string>);
+    expect(pipVars).toHaveLength(2);
+    for (const vars of pipVars) expect(vars['--glass-blur']).toBe('20px');
+  });
 });

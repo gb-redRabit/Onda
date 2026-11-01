@@ -82,7 +82,8 @@ export function resolveThemeAppearance(src: ThemeAppearanceSource): SemanticThem
       scheme: t.scheme,
       colors: { ...t.colors },
       geometry: { ...t.geometry, ...(sanitizeGeometry(src.geometry) ?? {}) },
-      glassAlpha: src.glassAlpha ?? t.glassAlpha
+      glassAlpha: src.glassAlpha ?? t.glassAlpha,
+      glassBlur: src.glassBlur ?? t.glassBlur
     };
   }
   const seed: BuiltinThemeName =
@@ -97,7 +98,8 @@ export function resolveThemeAppearance(src: ThemeAppearanceSource): SemanticThem
     scheme: base.scheme,
     colors,
     geometry: { ...base.geometry, ...(sanitizeGeometry(src.geometry) ?? {}) },
-    glassAlpha: src.glassAlpha ?? base.glassAlpha
+    glassAlpha: src.glassAlpha ?? base.glassAlpha,
+    glassBlur: src.glassBlur ?? base.glassBlur
   };
 }
 
@@ -128,7 +130,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#4d0218'
     },
     geometry: DEFAULT_GEOMETRY,
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   light: {
     scheme: 'light',
@@ -156,7 +159,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#4d0218'
     },
     geometry: DEFAULT_GEOMETRY,
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   midnight: {
     scheme: 'dark',
@@ -184,7 +188,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#390608'
     },
     geometry: DEFAULT_GEOMETRY,
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   spotify: {
     scheme: 'dark',
@@ -212,7 +217,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#38070d'
     },
     geometry: DEFAULT_GEOMETRY,
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   luxury: {
     scheme: 'dark',
@@ -240,7 +246,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#160404'
     },
     geometry: geom(16, 8, 16, 1, 1, 1),
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   cyberpunk: {
     scheme: 'light',
@@ -268,7 +275,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#000000'
     },
     geometry: geom(0, 0, 0, 1, 0, 0),
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   aqua: {
     scheme: 'dark',
@@ -296,7 +304,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#180403'
     },
     geometry: geom(16, 8, 16, 1, 1, 0),
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   black: {
     scheme: 'dark',
@@ -324,7 +333,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#160000'
     },
     geometry: geom(0, 0, 0, 1, 0, 0),
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   lemonade: {
     scheme: 'light',
@@ -352,7 +362,8 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#140e0e'
     },
     geometry: geom(16, 8, 16, 1, 0, 0),
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   },
   abyss: {
     scheme: 'dark',
@@ -380,6 +391,7 @@ export const BUILTIN_THEMES: Record<BuiltinThemeName, SemanticTheme> = {
       errorContent: '#690000'
     },
     geometry: geom(8, 4, 32, 1, 1, 0),
-    glassAlpha: 100
+    glassAlpha: 100,
+    glassBlur: 14
   }
 };

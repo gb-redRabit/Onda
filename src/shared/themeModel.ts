@@ -60,6 +60,8 @@ export interface SemanticTheme {
   colors: Record<ColorTokenId, string>;
   geometry: ThemeGeometry;
   glassAlpha: number;
+  /** Rozmycie paneli szklanych w px; PiP dostaje tę wartość, choć rozmywa go natywnie. */
+  glassBlur: number;
 }
 
 export interface ThemeAppearanceSource {
@@ -68,6 +70,7 @@ export interface ThemeAppearanceSource {
   customColors?: Partial<Record<string, string>>;
   geometry?: Partial<ThemeGeometry>;
   glassAlpha?: number;
+  glassBlur?: number;
 }
 
 const HEX_RE = /^#(?:[0-9a-f]{6}|[0-9a-f]{3})$/;
@@ -165,8 +168,10 @@ export function buildEngineVars(t: SemanticTheme, fontSize: number): Record<stri
   vars['--depth'] = String(t.geometry.depth);
   vars['--noise'] = String(t.geometry.noise);
   vars['--glass-alpha'] = `${t.glassAlpha}%`;
-  // Pojedyncze źródło blura dla apki i PiP (pełny sync przezroczystości).
-  vars['--glass-blur'] = '14px';
+  // Jedyne źródło rozmycia paneli: główne okno bierze je z CSS, a PiP dostaje tę
+  // samą zmienną (samo okno PiP rozmywa natywny materiał systemu — acrylic/vibrancy,
+  // bo CSS `backdrop-filter` nie rozmywa pulpitu za przezroczystym oknem).
+  vars['--glass-blur'] = `${t.glassBlur}px`;
   vars['--font-size'] = `${fontSize}px`;
   return vars;
 }

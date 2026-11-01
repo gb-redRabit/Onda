@@ -138,6 +138,7 @@ export function useTheme(appearanceRef: Ref<AppearanceSettings>) {
         a.customColors,
         a.geometry,
         a.glassAlpha,
+        a.glassBlur,
         a.fontSize,
         a.animations
       ];

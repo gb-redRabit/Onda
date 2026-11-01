@@ -2768,7 +2768,10 @@ api.registerCommand({
     seedLight: 'Reset — jasny',
     copy: 'Kopiuj JSON',
     paste: 'Wklej JSON',
-    glassHint: 'Otwarte DevTools wymuszają kryte tło — testuj przy zamkniętych.',
+    glassHint: 'Otwarte DevTools wymuszają kryte tło - testuj przy zamkniętych.',
+    glassBlur: 'Rozmycie szkła',
+    glassBlurHint:
+      'Dotyczy paneli głównego okna. Okno PiP rozmywa system (acrylic/vibrancy), więc ma stałe rozmycie.',
     glassLocked: 'szkło',
     radiusBox: 'Radius kart i modali',
     radiusField: 'Radius pól (button, input)',
