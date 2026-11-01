@@ -33,6 +33,7 @@ import { useScrobbling } from './composables/useScrobbling';
 import { useToolMessages } from './composables/useToolMessages';
 import { useSessionPersistence } from './composables/useSessionPersistence';
 import { useAlwaysOnTop } from './composables/useAlwaysOnTop';
+import { supportsViewTransitions, useViewTransitions } from './composables/useViewTransitions';
 import { openMediaFiles } from './composables/useOpenMedia';
 import { getDroppedFilePaths } from './utils/fileDrag';
 import { audioEngine } from './modules/audioEngine';
@@ -70,11 +71,14 @@ const mediaSession = useMediaSession();
 if (isCoreShell()) useCoreSync();
 useScrobbling();
 useToolMessages();
+useViewTransitions(router);
 useDiscordPresence();
 const session = useSessionPersistence();
 const alwaysOnTop = useAlwaysOnTop();
 const isWinMaximized = ref(false);
 const isNarrowLayout = ref(window.innerWidth < 1200);
+// Z View Transitions <transition> Vue jest zbędne (i dublowałoby animację).
+const pageTransitionCss = !supportsViewTransitions();
 const externalDropActive = ref(false);
 let externalDragDepth = 0;
 const glassOn = computed(() => (settings.appearance.glassAlpha ?? 100) < 100);
@@ -444,7 +448,7 @@ function onWindowBlur() {
         class="flex-1 min-w-0 relative overflow-auto flex flex-col outline-hidden"
       >
         <router-view v-slot="{ Component }">
-          <transition name="page" mode="out-in">
+          <transition name="page" mode="out-in" :css="pageTransitionCss">
             <ErrorBoundary>
               <component :is="Component" />
             </ErrorBoundary>

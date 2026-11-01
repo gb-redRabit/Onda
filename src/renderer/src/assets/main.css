@@ -374,6 +374,42 @@ input[type='range']:focus-visible {
   }
 }
 
+/* Płynne przejścia widoków (T7, View Transitions API). Animujemy tylko treść
+   `<main>` — pasek boczny, player i status bar mają zostać nieruchome. */
+#main-content {
+  view-transition-name: page-content;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(page-content) {
+  animation: page-out var(--duration-fast) var(--ease-standard) both;
+}
+
+::view-transition-new(page-content) {
+  animation: page-in var(--duration-base) var(--ease-standard) both;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes download-blink {
   0%,
   100% {
