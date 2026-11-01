@@ -7,7 +7,6 @@ import { useVirtualGrid } from '@renderer/composables/useVirtualGrid';
 import { useCountLabel } from '@renderer/composables/useCountLabel';
 import AlbumCard from '@renderer/components/library/AlbumCard.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
-import { usePlayerStore } from '@renderer/stores/player';
 import { groupLabel } from '@renderer/utils/libraryLabels';
 
 const { trackCount } = useCountLabel();
@@ -21,11 +20,8 @@ const emit = defineEmits<{
   playTracks: [tracks: MediaFile[]];
 }>();
 
-const player = usePlayerStore();
-
-function onAlbumHover(path: string) {
-  if (path) player.loadCover(path);
-}
+// Okładki ładuje MediaCover przez wspólny IntersectionObserver; ręczne
+// `loadCover` na hover było duplikatem (K21).
 
 const sortKey = ref<'name' | 'count' | 'year'>('name');
 const sortedAlbums = computed(() => {
@@ -150,7 +146,6 @@ onUnmounted(() => grid.destroy());
               v-activate
               class="flex items-center gap-3 px-4 py-2 hover:bg-base-100 border border-transparent hover:border-base-300 hover:shadow-sm rounded-field transition-all cursor-pointer h-full mx-2"
               @click="emit('playTracks', sortedAlbums[v.index][1])"
-              @mouseenter="onAlbumHover(sortedAlbums[v.index][1][0]?.path || '')"
             >
               <div
                 class="w-10 h-10 rounded-field overflow-hidden bg-base-200 border border-base-300 shrink-0 flex items-center justify-center"

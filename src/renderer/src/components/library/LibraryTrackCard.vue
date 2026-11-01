@@ -56,7 +56,6 @@ function onDragStart(e: DragEvent) {
 
 function onHover() {
   hovered.value = true;
-  player.loadCover(props.track.path);
 }
 
 function onHoverLeave() {

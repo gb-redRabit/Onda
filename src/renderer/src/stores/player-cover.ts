@@ -26,9 +26,29 @@ export function usePlayerCover() {
   function touchCover(path: string): void {
     coverLastUsed.set(path, ++coverAccessClock);
   }
+
+  // Zamienia okładkę-wideo na nieruchomą klatkę w tle (canvas, bez ffmpeg). Wywoływane
+  // także dla wpisów już obecnych w cache, bo `loadCover` zwraca je bez ponownego ładowania.
+  function ensureVideoFrame(path: string, data: string): void {
+    if (videoCoverScheduled.has(path)) return;
+    videoCoverScheduled.add(path);
+    void captureVideoFrame(data).then((frame) => {
+      if (!frame.data) {
+        videoCoverScheduled.delete(path);
+        return;
+      }
+      coverCache.value[path] = frame;
+      touchCover(path);
+      evictCoverCache();
+      triggerRef(coverCache);
+    });
+  }
   let coverFlushScheduled = false;
   let coverProcessing = false;
   const COVER_CACHE_MAX = 500;
+  // Okładki wideo (starsze wpisy main / brak ffmpeg) konwertujemy na jedną klatkę
+  // dokładnie raz na ścieżkę. Bez tego każdy remount kafelka streamował wideo od nowa.
+  const videoCoverScheduled = new Set<string>();
   // Wynik "brak okładki" jest buforowany krótko (tanio — main zwraca natychmiast z
   // własnego cache w pamięci) i sondowany ponownie później, więc przejściowy błąd IPC lub
   // plik chwilowo nieobecny nigdy nie zatrują cache.
@@ -112,6 +132,10 @@ export function usePlayerCover() {
       const cover = (await window.api?.getCover(filePath)) ?? { type: null, data: null };
       if (cover.data) {
         coverCache.value[filePath] = cover;
+        // Starsze wpisy cache w main mogły wskazywać plik wideo jako okładkę. Taki
+        // kafelek streamowałby pierwsze klatki przy każdym montowaniu — zamień go
+        // na jedną nieruchomą klatkę; do tego czasu zostaje działający podgląd wideo.
+        if (cover.type === 'video') ensureVideoFrame(filePath, cover.data);
       } else {
         const frame = await captureVideoFrame(filePath);
         coverCache.value[filePath] = frame;
@@ -141,13 +165,20 @@ export function usePlayerCover() {
   }
 
   function getCover(filePath: string): CoverResult {
-    if (coverCache.value[filePath]) touchCover(filePath);
-    return coverCache.value[filePath] ?? { type: null, data: null };
+    const cached = coverCache.value[filePath];
+    if (cached) {
+      touchCover(filePath);
+      // Wpisy wideo sprzed zmiany w main konwertujemy przy pierwszym odczycie.
+      if (cached.type === 'video' && cached.data) ensureVideoFrame(filePath, cached.data);
+      return cached;
+    }
+    return { type: null, data: null };
   }
 
   function invalidateCoverCache(filePath: string) {
     delete coverCache.value[filePath];
     coverLastUsed.delete(filePath);
+    videoCoverScheduled.delete(filePath);
     triggerRef(coverCache);
     loadCover(filePath);
   }

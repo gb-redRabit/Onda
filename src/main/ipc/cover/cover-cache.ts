@@ -271,16 +271,9 @@ export async function extractAndCacheCover(
     }
   }
   const siblingVideo = findSiblingVideo(filePath);
-  if (siblingVideo) {
-    const result: { type: 'video'; data: string } = { type: 'video', data: siblingVideo };
-    const s = await stat(siblingVideo).catch(() => null);
-    cacheSet(coverResultCache, filePath, {
-      result,
-      mtimeMs: s?.mtimeMs ?? Date.now(),
-      checkedAt: Date.now()
-    });
-    return result;
-  }
+  // Sibling video is only a *source* for a frame, never the cover itself: a `<video>`
+  // cover re-streams the file on every mount (visible flashing in grids). Frames are
+  // extracted once and persisted like any other cover.
 
   // Poprzedni wywołujący może już wyodrębniać ten plik — poczekaj na niego i
   // użyj ponownie zbuforowanego wyniku (nawet wynik "brak okładki" jest buforowany).
@@ -305,7 +298,12 @@ export async function extractAndCacheCover(
 
     if (AUDIO_EXTS.includes(ext)) {
       const cover = await extractAudioCover(filePath);
-      if (cover) result = { type: 'image', data: cover };
+      if (cover) {
+        result = { type: 'image', data: cover };
+      } else if (siblingVideo) {
+        const frame = await extractVideoFrame(siblingVideo);
+        result = frame ? { type: 'image', data: frame } : { type: 'video', data: siblingVideo };
+      }
     } else if (VIDEO_EXTS.includes(ext)) {
       const frame = await extractVideoFrame(filePath);
       result = frame ? { type: 'image', data: frame } : { type: null, data: null };
