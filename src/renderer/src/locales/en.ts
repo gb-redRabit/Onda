@@ -322,6 +322,10 @@ export default {
   tools: {
     title: 'Tools',
     subtitle: 'Separate tools opened in their own windows',
+    groupConversion: 'Conversion',
+    groupAudio: 'Audio',
+    groupVideo: 'Video',
+    groupImages: 'Images',
     converterTitle: 'Converter',
     converterDescription: 'Convert audio and video files with FFmpeg.',
     videoClipperTitle: 'Video Clipper',

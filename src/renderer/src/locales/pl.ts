@@ -323,6 +323,10 @@ export default {
   tools: {
     title: 'Narzędzia',
     subtitle: 'Osobne narzędzia otwierane w nowych oknach',
+    groupConversion: 'Konwersja',
+    groupAudio: 'Audio',
+    groupVideo: 'Wideo',
+    groupImages: 'Obrazy',
     converterTitle: 'Konwerter',
     converterDescription: 'Konwersja plików audio i wideo z użyciem FFmpeg.',
     videoClipperTitle: 'Video Clipper',
