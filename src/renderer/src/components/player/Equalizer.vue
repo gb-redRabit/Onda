@@ -90,6 +90,7 @@ const {
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-1.5">
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="fx.equalizerEnabled ? 'text-primary-text' : 'text-base-content/55'"
           data-testid="eq-power"
@@ -104,6 +105,7 @@ const {
       </div>
       <div class="flex items-center gap-1">
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="fx.equalizerMono ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-mono"
@@ -115,6 +117,7 @@ const {
           <Combine :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="fx.nightMode ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-night"
@@ -126,6 +129,7 @@ const {
           <Moon :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="fx.equalizerSnap ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-snap"
@@ -137,6 +141,7 @@ const {
           <Magnet :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="fx.equalizerMulticolor ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-multicolor"
@@ -148,6 +153,7 @@ const {
           <Palette :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors disabled:opacity-30"
           data-testid="eq-add-band"
           :title="$t('equalizer.addBand')"
@@ -158,6 +164,7 @@ const {
           <Plus :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="showControls ? 'text-primary-text' : 'text-base-content/50'"
           data-testid="eq-toggle-controls"
@@ -168,6 +175,7 @@ const {
           <SlidersHorizontal :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :title="$t('equalizer.reset')"
           :aria-label="$t('equalizer.reset')"
@@ -222,6 +230,7 @@ const {
       <button
         v-for="(_, name) in EQUALIZER_PRESETS"
         :key="name"
+        type="button"
         :data-testid="'eq-preset-' + name"
         class="fx-noise px-2.5 py-1 fx-depth rounded-field text-2xs font-medium transition-colors"
         :class="
@@ -236,6 +245,7 @@ const {
       <button
         v-for="(_, name) in userPresets"
         :key="'u-' + name"
+        type="button"
         :data-testid="'eq-user-preset-' + name"
         class="fx-noise px-2.5 py-1 fx-depth rounded-field text-2xs font-medium transition-colors border border-primary/40"
         :class="
@@ -256,6 +266,7 @@ const {
         {{ $t('equalizer.custom') }}
       </span>
       <button
+        type="button"
         class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-save-preset"
         :title="$t('equalizer.savePreset')"
@@ -264,6 +275,7 @@ const {
         <Save :size="12" />
       </button>
       <button
+        type="button"
         class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-export"
         :title="$t('equalizer.export')"
@@ -272,6 +284,7 @@ const {
         <Download :size="12" />
       </button>
       <button
+        type="button"
         class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-import"
         :title="$t('equalizer.import')"
@@ -427,6 +440,7 @@ const {
         <button
           v-for="tp in bandTypes"
           :key="tp"
+          type="button"
           class="w-full text-left px-2 py-1 rounded-field hover:bg-base-content/10 transition-colors"
           :class="{ 'text-primary-text': bands[menuBand].type === tp }"
           @click="setType(menuBand, tp)"
@@ -435,6 +449,7 @@ const {
         </button>
         <div class="my-0.5 border-t border-hairline" />
         <button
+          type="button"
           class="w-full text-left px-2 py-1 rounded-field text-error hover:bg-base-content/10 transition-colors"
           :disabled="bands.length <= 1"
           @click="removeBand(menuBand)"

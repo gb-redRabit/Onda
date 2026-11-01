@@ -17,6 +17,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
 <template>
   <div class="xl:w-64 shrink-0 flex xl:flex-col gap-2.5 overflow-x-auto pb-1">
     <button
+      type="button"
       data-testid="theme-system"
       class="fx-noise p-3 fx-depth rounded-field border transition flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="
@@ -37,6 +38,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
     <button
       v-for="name in BUILTIN_THEME_NAMES"
       :key="name"
+      type="button"
       :data-testid="'theme-' + name"
       class="fx-noise p-3 fx-depth rounded-field border transition flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="
@@ -62,6 +64,7 @@ const resolved = computed(() => resolveThemeAppearance(settings.appearance));
       <span class="text-sm font-medium whitespace-nowrap">{{ $t(`settings.${name}`) }}</span>
     </button>
     <button
+      type="button"
       data-testid="theme-custom"
       class="fx-noise p-3 fx-depth rounded-field border transition flex items-center gap-4 text-left shrink-0 xl:w-full hover:shadow-md"
       :class="

@@ -171,6 +171,7 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="link in quickLinks"
         :key="link.label"
+        type="button"
         class="fx-noise w-full flex items-center gap-2 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left disabled:opacity-40"
         :class="{
           'bg-primary/14 text-primary-text font-medium': isActiveLink(link),
@@ -196,6 +197,7 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="drive in drives"
         :key="drive.path"
+        type="button"
         class="fx-noise w-full flex flex-col gap-1 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left"
         :class="{
           'bg-primary/14 text-primary-text font-medium': explorer.currentPath === drive.path,
@@ -239,6 +241,7 @@ async function onNavDrop(e: DragEvent, path: string) {
       <button
         v-for="folder in library.folders"
         :key="folder"
+        type="button"
         class="fx-noise w-full flex items-center gap-2 px-2.5 py-1.5 rounded-field text-xs text-base-content/70 hover:text-base-content hover:bg-base-content/8 transition-colors text-left"
         :class="{
           'bg-primary/14 text-primary-text font-medium': explorer.currentPath === folder,

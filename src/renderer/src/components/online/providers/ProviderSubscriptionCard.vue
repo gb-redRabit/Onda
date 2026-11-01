@@ -68,6 +68,7 @@ function saveReplace(): void {
   >
     <div class="flex items-center gap-3">
       <button
+        type="button"
         class="shrink-0"
         :title="providerLabel(sub.providerId, sub.providerId, t)"
         @click="emit('open')"
@@ -77,6 +78,7 @@ function saveReplace(): void {
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <button
+            type="button"
             class="text-sm font-semibold text-base-content truncate hover:text-primary-text transition-colors"
             :title="sub.title"
             @click="emit('open')"

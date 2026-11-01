@@ -98,6 +98,7 @@ const repeatLabel = computed(() =>
 <template>
   <div :class="containerClass || 'flex items-center gap-3'">
     <button
+      type="button"
       :class="[toggleClass, shuffle ? activeClass : '']"
       :aria-label="t('common.shuffle')"
       :aria-pressed="shuffle"
@@ -107,18 +108,25 @@ const repeatLabel = computed(() =>
     </button>
     <button
       v-if="showFavorite"
+      type="button"
       :class="[toggleClass, favorite ? 'text-error!' : '']"
       :aria-label="favorite ? t('common.removeFav') : t('common.addFav')"
       @click="emit('toggleFavorite')"
     >
       <Heart :size="sz.toggle" :fill="favorite ? 'currentColor' : 'none'" />
     </button>
-    <button :class="stepClass" :aria-label="t('common.previous')" @click="emit('prev')">
+    <button
+      type="button"
+      :class="stepClass"
+      :aria-label="t('common.previous')"
+      @click="emit('prev')"
+    >
       <SkipBack :size="sz.skip" fill="currentColor" />
     </button>
     <div class="relative">
       <div v-if="showGlow" :class="['absolute inset-0 rounded-full', glowClass]" />
       <button
+        type="button"
         :class="playBtnClass"
         :aria-label="isPlaying ? t('common.pause') : t('common.play')"
         @click="emit('playPause')"
@@ -127,10 +135,11 @@ const repeatLabel = computed(() =>
         <Play v-else :size="sz.play" :class="[playIconClass, 'ml-0.5']" fill="currentColor" />
       </button>
     </div>
-    <button :class="stepClass" :aria-label="t('common.next')" @click="emit('next')">
+    <button type="button" :class="stepClass" :aria-label="t('common.next')" @click="emit('next')">
       <SkipForward :size="sz.skip" fill="currentColor" />
     </button>
     <button
+      type="button"
       :class="[toggleClass, repeat !== 'none' ? activeClass : '']"
       :title="t('common.repeat')"
       :aria-label="repeatLabel"

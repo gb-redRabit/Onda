@@ -103,6 +103,7 @@ function onDragOver(event: DragEvent): void {
       <span class="flex-1" />
       <button
         v-if="items.length"
+        type="button"
         class="text-2xs text-base-content/50 hover:text-error transition-colors"
         data-testid="compact-clear-queue"
         @click="player.clearQueue()"
@@ -155,6 +156,7 @@ function onDragOver(event: DragEvent): void {
           @drop="onDrop(row.index)"
         >
           <button
+            type="button"
             class="grid place-items-center w-5 h-7 rounded-field text-base-content/25 hover:text-base-content/70 cursor-grab shrink-0"
             :title="$t('compact.reorderHint')"
             :aria-label="$t('compact.reorderHint')"
@@ -165,6 +167,7 @@ function onDragOver(event: DragEvent): void {
             <GripVertical :size="13" />
           </button>
           <button
+            type="button"
             class="w-7 h-7 rounded overflow-hidden bg-base-300 shrink-0 group relative"
             :title="$t('compact.playNow')"
             :aria-label="$t('compact.playNow')"
@@ -177,7 +180,7 @@ function onDragOver(event: DragEvent): void {
               <Play :size="11" />
             </span>
           </button>
-          <button class="min-w-0 flex-1 text-left" @click="playNow(row.index)">
+          <button type="button" class="min-w-0 flex-1 text-left" @click="playNow(row.index)">
             <span class="block text-[12px] truncate">
               {{ trackTitle(items[row.index]?.track) }}
             </span>
@@ -186,6 +189,7 @@ function onDragOver(event: DragEvent): void {
             </span>
           </button>
           <button
+            type="button"
             class="grid place-items-center w-6 h-6 rounded-field text-base-content/35 hover:text-error hover:bg-error/10 shrink-0"
             :title="$t('compact.remove')"
             :aria-label="$t('compact.remove')"

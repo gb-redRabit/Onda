@@ -125,6 +125,7 @@ function onInstall(): void {
         <button
           v-for="option in intervalOptions"
           :key="option.id"
+          type="button"
           class="fx-noise px-3 py-1.5 rounded-field text-xs font-medium transition-colors whitespace-nowrap"
           :class="
             settings.updates.checkInterval === option.id
@@ -150,6 +151,7 @@ function onInstall(): void {
         {{ $t('settings.updateAvailable') }} v{{ state.version }}
       </div>
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
         @click="onDownload"
       >
@@ -173,6 +175,7 @@ function onInstall(): void {
     <div v-else-if="state.status === 'downloaded'" class="flex items-center justify-between py-1">
       <div class="text-sm text-success">{{ $t('settings.updateReady') }} v{{ state.version }}</div>
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
         @click="onInstall"
       >
@@ -193,6 +196,7 @@ function onInstall(): void {
     </div>
 
     <button
+      type="button"
       class="fx-noise mt-4 flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
       :disabled="!state.enabled || state.status === 'checking' || state.status === 'downloading'"
       @click="onCheck"

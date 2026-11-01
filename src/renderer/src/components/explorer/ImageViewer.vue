@@ -90,6 +90,7 @@ async function openImageStudio(): Promise<void> {
       <div class="absolute inset-0 flex items-center justify-center overflow-hidden contain-layout">
         <button
           v-if="hasPrev && !slideshowActive"
+          type="button"
           data-testid="image-viewer-prev"
           class="ui-icon-button absolute left-3 z-10 rounded-full bg-base-300 p-2"
           :title="$t('imageViewer.previous')"
@@ -143,6 +144,7 @@ async function openImageStudio(): Promise<void> {
 
         <button
           v-if="hasNext && !slideshowActive"
+          type="button"
           data-testid="image-viewer-next"
           class="ui-icon-button absolute right-3 z-10 mr-12 rounded-full bg-base-300 p-2"
           :title="$t('imageViewer.next')"

@@ -83,12 +83,13 @@ onUnmounted(() => grid.destroy());
       <div class="flex items-center gap-1.5">
         <select
           v-model="sortKey"
-          class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus:border-primary focus:outline-hidden"
+          class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus-visible:border-primary focus-visible:outline-hidden"
         >
           <option value="name">{{ $t('library.sortArtist') }} Aâ†’Z</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
         </select>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
@@ -101,6 +102,7 @@ onUnmounted(() => grid.destroy());
           <LayoutList :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
@@ -177,6 +179,7 @@ onUnmounted(() => grid.destroy());
             <button
               v-for="[name, tracks] in row.artists"
               :key="name"
+              type="button"
               class="flex-1 min-w-0 flex flex-col items-center p-4 fx-depth rounded-box fx-noise bg-base-100 border border-hairline hover:bg-base-content/10 transition text-center"
               @click="emit('playTracks', tracks)"
             >

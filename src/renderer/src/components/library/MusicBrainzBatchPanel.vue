@@ -38,6 +38,7 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
     <div class="flex gap-2">
       <button
         v-if="!running"
+        type="button"
         class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
         @click="emit('start')"
       >
@@ -45,6 +46,7 @@ const emit = defineEmits<{ start: []; cancel: [] }>();
       </button>
       <button
         v-else
+        type="button"
         class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-error text-error-content hover:bg-error/90 transition-colors"
         @click="emit('cancel')"
       >

@@ -237,6 +237,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
     <div class="flex items-center justify-between px-4 py-3 border-b border-hairline">
       <h3 class="text-sm font-semibold">{{ $t('subtitles.title') }}</h3>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
         data-testid="subtitle-panel-close"
         :aria-label="$t('common.close')"
@@ -251,6 +252,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
       <div class="py-1.5">
         <button
           v-if="player.subtitleTracks.length > 0"
+          type="button"
           class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
           :class="{ 'text-primary-text': !player.activeSubtitleId }"
           @click="selectTrack(null)"
@@ -267,6 +269,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             v-for="track in embeddedTracks"
             :key="track.id"
+            type="button"
             class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
             :class="{ 'text-primary-text': player.activeSubtitleId === track.id }"
             @click="selectTrack(track.id)"
@@ -284,6 +287,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             v-for="track in externalTracks"
             :key="track.id"
+            type="button"
             class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
             :class="{ 'text-primary-text': player.activeSubtitleId === track.id }"
             @click="selectTrack(track.id)"
@@ -301,6 +305,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             v-for="track in customTracks"
             :key="track.id"
+            type="button"
             class="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors flex items-center gap-2"
             :class="{ 'text-primary-text': player.activeSubtitleId === track.id }"
             @click="selectTrack(track.id)"
@@ -312,6 +317,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </template>
 
         <button
+          type="button"
           class="mt-1 w-full px-4 py-2 text-left text-sm text-primary-text hover:bg-primary/10 transition-colors flex items-center gap-2"
           @click="uploadSubtitles"
         >
@@ -326,6 +332,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         </div>
         <div class="flex items-center gap-2">
           <button
+            type="button"
             class="p-1.5 rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 transition-colors"
             data-testid="subtitle-delay-down"
             :aria-label="$t('subtitles.delayEarlier')"
@@ -335,6 +342,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             <Minus :size="14" />
           </button>
           <button
+            type="button"
             class="min-w-20 px-2 py-1.5 rounded-field border border-hairline font-mono text-xs text-center text-base-content/80 hover:bg-base-content/10 transition-colors"
             data-testid="subtitle-delay-value"
             :aria-label="$t('subtitles.delayReset')"
@@ -344,6 +352,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             {{ formattedDelay }}
           </button>
           <button
+            type="button"
             class="p-1.5 rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 transition-colors"
             data-testid="subtitle-delay-up"
             :aria-label="$t('subtitles.delayLater')"
@@ -375,6 +384,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
             <option value="en">EN</option>
           </select>
           <button
+            type="button"
             class="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise disabled:opacity-50"
             data-testid="subtitle-online-search"
             :disabled="!searchQuery.trim()"
@@ -389,6 +399,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
           <button
             v-for="result in results"
             :key="resultKey(result)"
+            type="button"
             class="flex items-center gap-2 rounded-field px-2 py-1.5 text-left text-xs hover:bg-primary/10 hover:text-primary-text transition-colors disabled:opacity-50"
             :disabled="downloading !== null"
             @click="downloadResult(result)"

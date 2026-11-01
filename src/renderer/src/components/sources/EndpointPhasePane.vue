@@ -59,6 +59,7 @@ function buildPreview(): string {
         :aria-label="t('sources.level')"
       >
         <button
+          type="button"
           class="px-2.5 py-1.5 font-medium transition-colors"
           :class="
             model.type === 'list'
@@ -71,6 +72,7 @@ function buildPreview(): string {
           {{ t('sources.typeList') }}
         </button>
         <button
+          type="button"
           class="px-2.5 py-1.5 font-medium transition-colors"
           :class="
             model.type === 'page'
@@ -104,6 +106,7 @@ function buildPreview(): string {
         <button
           v-for="v in viewOptions"
           :key="v.id"
+          type="button"
           class="fx-noise flex items-center gap-1 px-2.5 py-1.5 font-medium transition-colors"
           :class="
             model.view === v.id
@@ -149,6 +152,7 @@ function buildPreview(): string {
 
     <div class="flex items-center gap-2 pt-0.5">
       <button
+        type="button"
         class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
         data-testid="endpoint-test"
         :disabled="testing"

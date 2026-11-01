@@ -10,6 +10,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
 <template>
   <div class="flex items-center justify-end pb-2">
     <button
+      type="button"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
       :disabled="refreshing"
       @click="refreshAll"
@@ -56,6 +57,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
           <template v-if="dep.installing">
             <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
             <button
+              type="button"
               class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
               @click="cancelInstall(dep)"
             >
@@ -86,6 +88,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
             <div class="flex items-center gap-2">
               <button
                 v-if="!dep.installed || dep.broken"
+                type="button"
                 class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
                 @click="runInstall(dep, false)"
               >
@@ -93,6 +96,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
               </button>
               <button
                 v-if="dep.installed && dep.tool === 'yt-dlp' && dep.updateAvailable"
+                type="button"
                 class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
                 @click="runInstall(dep, true)"
               >
@@ -100,6 +104,7 @@ const { deps, refreshing, refreshAll, runInstall, uninstallDependency, cancelIns
               </button>
               <button
                 v-if="dep.installed"
+                type="button"
                 class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-error/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
                 @click="uninstallDependency(dep)"
               >

@@ -29,12 +29,14 @@ const showBulkPlaylist = ref(false);
     <span class="font-medium text-primary-text">{{ count }} {{ $t('common.selected') }}</span>
     <div class="flex items-center gap-1 ml-auto">
       <button
+        type="button"
         class="px-2.5 py-1 rounded-field bg-primary text-primary-content hover:bg-primary/90 flex items-center gap-1 fx-depth fx-noise"
         @click="emit('play')"
       >
         <Play :size="12" /> {{ $t('common.play') }}
       </button>
       <button
+        type="button"
         class="px-2.5 py-1 rounded-field bg-base-100 border border-hairline hover:bg-base-200"
         @click="emit('queue')"
       >
@@ -43,6 +45,7 @@ const showBulkPlaylist = ref(false);
       </button>
       <div class="relative">
         <button
+          type="button"
           class="px-2.5 py-1 rounded-field bg-base-100 border border-hairline hover:bg-base-200"
           @click="showBulkPlaylist = !showBulkPlaylist"
         >
@@ -55,6 +58,7 @@ const showBulkPlaylist = ref(false);
           <button
             v-for="p in playlists"
             :key="p.id"
+            type="button"
             class="w-full text-left px-3 py-1.5 text-xs hover:bg-base-content/10 truncate"
             @click="emit('add-to-playlist', p.id)"
           >
@@ -69,6 +73,7 @@ const showBulkPlaylist = ref(false);
         </div>
       </div>
       <button
+        type="button"
         data-testid="library-selection-clear"
         class="p-1 rounded-field hover:bg-base-300 text-base-content/60"
         :aria-label="$t('common.clear')"

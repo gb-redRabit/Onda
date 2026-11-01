@@ -232,6 +232,7 @@ onBeforeUnmount(() => {
       <div class="flex-1 overflow-auto p-4 space-y-4">
         <div class="inline-flex rounded-field border border-hairline bg-base-100 p-1">
           <button
+            type="button"
             data-testid="tools-kind-audio"
             class="flex items-center gap-1.5 rounded-field px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             :class="kind === 'audio' ? 'bg-primary text-primary-content' : 'text-base-content/60'"
@@ -242,6 +243,7 @@ onBeforeUnmount(() => {
             {{ t('tools.audio') }}
           </button>
           <button
+            type="button"
             data-testid="tools-kind-video"
             class="flex items-center gap-1.5 rounded-field px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             :class="kind === 'video' ? 'bg-primary text-primary-content' : 'text-base-content/60'"
@@ -268,6 +270,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="flex items-center gap-1.5">
                 <button
+                  type="button"
                   data-testid="tools-add-files"
                   class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="busy"
@@ -277,6 +280,7 @@ onBeforeUnmount(() => {
                   {{ t('tools.addFiles') }}
                 </button>
                 <button
+                  type="button"
                   class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                   :disabled="busy || files.length === 0"
                   @click="clearFiles"
@@ -309,6 +313,7 @@ onBeforeUnmount(() => {
                   fileName(path)
                 }}</span>
                 <button
+                  type="button"
                   class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
                   :title="t('tools.remove')"
                   :aria-label="t('tools.remove')"
@@ -330,7 +335,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="audioFormat"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="mp3">MP3</option>
                   <option value="flac">FLAC</option>
@@ -349,7 +354,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model.number="audioBitrate"
                   :disabled="busy || bitrateDisabled"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option :value="128">{{ t('tools.bitrateOption', { value: 128 }) }}</option>
                   <option :value="192">{{ t('tools.bitrateOption', { value: 192 }) }}</option>
@@ -366,7 +371,7 @@ onBeforeUnmount(() => {
                   v-model="videoContainer"
                   data-testid="tools-video-format"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="mp4">{{ t('tools.mp4') }}</option>
                   <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -381,7 +386,7 @@ onBeforeUnmount(() => {
                 <select
                   v-model="videoQuality"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="high">{{ t('tools.qualityHigh') }}</option>
                   <option value="medium">{{ t('tools.qualityMedium') }}</option>
@@ -402,6 +407,7 @@ onBeforeUnmount(() => {
                     class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   />
                   <button
+                    type="button"
                     class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                     :disabled="busy"
                     :title="t('tools.chooseFolder')"
@@ -416,6 +422,7 @@ onBeforeUnmount(() => {
 
             <section class="rounded-box border border-hairline bg-base-100/70 p-4 space-y-2">
               <button
+                type="button"
                 data-testid="tools-convert"
                 class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
                 :disabled="busy || files.length === 0"
@@ -426,6 +433,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 v-if="busy"
+                type="button"
                 class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
                 @click="cancelConvert"
               >
@@ -469,6 +477,7 @@ onBeforeUnmount(() => {
               </span>
               <button
                 v-if="job.outputPath"
+                type="button"
                 class="fx-noise shrink-0 rounded-field p-1 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
                 :title="t('tools.openOutput')"
                 :aria-label="t('tools.openOutput')"

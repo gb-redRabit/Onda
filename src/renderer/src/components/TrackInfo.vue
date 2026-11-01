@@ -173,6 +173,7 @@ onMounted(checkOverflow);
     </div>
     <button
       v-if="showHeart"
+      type="button"
       class="mx-auto flex items-center gap-1.5 transition-colors"
       :class="isFavorite ? 'text-error' : 'text-base-content/50 hover:text-error'"
       :aria-pressed="isFavorite"

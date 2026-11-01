@@ -67,6 +67,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
         <div :key="currentIndex" class="flex flex-col items-center gap-1">
           <button
             v-if="currentLine"
+            type="button"
             data-testid="lyrics-current"
             class="w-full whitespace-pre-line text-center font-semibold leading-snug text-primary-text transition-colors"
             @click="lyrics.seekToLine(currentIndex)"
@@ -75,6 +76,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
           </button>
           <button
             v-if="nextLine"
+            type="button"
             data-testid="lyrics-next"
             class="w-full whitespace-pre-line text-center text-[0.78em] leading-snug text-base-content/45 transition-colors hover:text-base-content/70"
             @click="lyrics.seekToLine(currentIndex + 1)"
@@ -90,6 +92,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
       :class="props.variant === 'minimal' ? 'border-transparent' : 'border-hairline/60'"
     >
       <button
+        type="button"
         class="fx-noise rounded-field p-1 hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"
         :title="t('lyrics.zoomOut')"
         :aria-label="t('lyrics.zoomOut')"
@@ -99,6 +102,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
         <ZoomOut :size="12" />
       </button>
       <button
+        type="button"
         class="fx-noise rounded-field p-1 hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"
         :title="t('lyrics.zoomIn')"
         :aria-label="t('lyrics.zoomIn')"
@@ -111,6 +115,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
       <span class="mx-1 h-4 w-px bg-base-content/15" aria-hidden="true" />
 
       <button
+        type="button"
         class="fx-noise rounded-field p-1 hover:bg-base-content/10 hover:text-base-content"
         :title="t('lyrics.earlier')"
         :aria-label="t('lyrics.earlier')"
@@ -119,6 +124,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
         <Minus :size="12" />
       </button>
       <button
+        type="button"
         class="fx-noise min-w-16 rounded-field px-2 py-0.5 font-mono tabular-nums hover:bg-base-content/10 hover:text-base-content"
         :title="t('lyrics.resetOffset')"
         :aria-label="t('lyrics.resetOffset')"
@@ -127,6 +133,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
         {{ formatLyricsDelay(lyrics.delayMs) }}
       </button>
       <button
+        type="button"
         class="fx-noise rounded-field p-1 hover:bg-base-content/10 hover:text-base-content"
         :title="t('lyrics.later')"
         :aria-label="t('lyrics.later')"
@@ -135,6 +142,7 @@ const nextLine = computed(() => lyrics.lines[currentIndex.value + 1] ?? null);
         <Plus :size="12" />
       </button>
       <button
+        type="button"
         class="fx-noise ml-1 rounded-field p-1 hover:bg-base-content/10 hover:text-base-content"
         :title="t('lyrics.resetOffset')"
         :aria-label="t('lyrics.resetOffset')"

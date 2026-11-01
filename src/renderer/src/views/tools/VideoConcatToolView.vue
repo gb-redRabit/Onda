@@ -199,6 +199,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="flex items-center gap-1.5">
             <button
+              type="button"
               data-testid="concat-add"
               class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
@@ -208,6 +209,7 @@ onBeforeUnmount(() => {
               {{ t('tools.addFiles') }}
             </button>
             <button
+              type="button"
               class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
               :disabled="busy || files.length === 0"
               @click="clearFiles"
@@ -237,6 +239,7 @@ onBeforeUnmount(() => {
             </span>
             <span class="min-w-0 flex-1 truncate text-xs" :title="path">{{ fileName(path) }}</span>
             <button
+              type="button"
               class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"
               :disabled="busy || index === 0"
               :aria-label="t('tools.concatMoveUp')"
@@ -245,6 +248,7 @@ onBeforeUnmount(() => {
               <ChevronUp :size="12" />
             </button>
             <button
+              type="button"
               class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"
               :disabled="busy || index === files.length - 1"
               :aria-label="t('tools.concatMoveDown')"
@@ -253,6 +257,7 @@ onBeforeUnmount(() => {
               <ChevronDown :size="12" />
             </button>
             <button
+              type="button"
               class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
               :disabled="busy"
               :aria-label="t('tools.remove')"
@@ -273,7 +278,7 @@ onBeforeUnmount(() => {
             v-model="container"
             data-testid="concat-container"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option value="mp4">{{ t('tools.mp4') }}</option>
             <option value="mkv">{{ t('tools.mkv') }}</option>
@@ -287,7 +292,7 @@ onBeforeUnmount(() => {
           <select
             v-model="mode"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option value="copy">{{ t('tools.clipModeCopy') }}</option>
             <option value="exact">{{ t('tools.clipModeExact') }}</option>
@@ -300,7 +305,7 @@ onBeforeUnmount(() => {
           <select
             v-model="audio"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
             <option value="mute">{{ t('tools.clipAudioMute') }}</option>
@@ -323,6 +328,7 @@ onBeforeUnmount(() => {
               class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             />
             <button
+              type="button"
               class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
               :title="t('tools.chooseFolder')"
@@ -338,6 +344,7 @@ onBeforeUnmount(() => {
 
       <section class="flex flex-wrap items-center gap-2">
         <button
+          type="button"
           data-testid="concat-export"
           class="fx-noise flex items-center justify-center gap-1.5 rounded-field bg-primary px-4 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
           :disabled="!canConcat"
@@ -348,6 +355,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           v-if="busy"
+          type="button"
           data-testid="concat-cancel"
           class="fx-noise flex items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
           @click="cancelConcat"
@@ -382,6 +390,7 @@ onBeforeUnmount(() => {
           </span>
           <button
             v-if="outputPath"
+            type="button"
             class="fx-noise shrink-0 rounded-field p-1 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
             :title="t('tools.openOutput')"
             :aria-label="t('tools.openOutput')"

@@ -146,6 +146,7 @@ function onFileDrop(e: DragEvent) {
       <div class="flex items-center gap-1">
         <button
           v-if="player.displayQueue.length"
+          type="button"
           data-testid="queue-clear"
           class="text-2xs text-base-content/50 hover:text-error transition-colors px-2 py-1"
           @click="confirmClearQueue"
@@ -153,6 +154,7 @@ function onFileDrop(e: DragEvent) {
           {{ $t('queue.clear') }}
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :aria-label="$t('common.close')"
           :title="$t('common.close')"
@@ -246,6 +248,7 @@ function onFileDrop(e: DragEvent) {
               formatDuration(player.displayQueue[v.index].duration || 0)
             }}</span>
             <button
+              type="button"
               class="fx-noise p-1 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition"
               :aria-label="$t('queue.removeFromQueue')"
               :title="$t('queue.removeFromQueue')"

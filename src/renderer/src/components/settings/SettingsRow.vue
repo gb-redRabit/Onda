@@ -58,6 +58,7 @@ const valueLabel = computed(() => {
     >
       <button
         v-if="modified"
+        type="button"
         class="p-1 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :title="$t('settings.resetSetting')"
         :aria-label="$t('settings.resetSetting')"

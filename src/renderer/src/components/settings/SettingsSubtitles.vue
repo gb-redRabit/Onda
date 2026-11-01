@@ -57,6 +57,7 @@ onMounted(loadStats);
     </SettingsRow>
     <div class="pt-3">
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="clearCache"
       >

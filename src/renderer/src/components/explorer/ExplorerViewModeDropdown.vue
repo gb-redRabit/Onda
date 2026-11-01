@@ -30,6 +30,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
 <template>
   <div ref="viewModeRef" class="relative">
     <button
+      type="button"
       class="fx-noise p-1.5 fx-depth rounded-field transition-colors text-base-content/50 hover:text-base-content hover:bg-base-content/10"
       :title="$t('explorer.viewMode')"
       :aria-label="$t('explorer.viewMode')"
@@ -51,6 +52,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', handleClickOutsi
       <button
         v-for="mode in VIEW_MODES_LIST"
         :key="mode.key"
+        type="button"
         class="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left transition-colors whitespace-nowrap"
         :class="
           explorer.viewMode === mode.key

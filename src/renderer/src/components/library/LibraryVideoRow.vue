@@ -61,6 +61,7 @@ function onDragStart(e: DragEvent) {
     <div class="relative shrink-0 w-16 h-9 rounded-field overflow-hidden bg-base-100">
       <MediaCover :cover="cover" :size="14" fallback="film" />
       <button
+        type="button"
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/40 transition-colors"
         :aria-label="$t('common.play')"
         @click="playNow"
@@ -90,6 +91,7 @@ function onDragStart(e: DragEvent) {
       class="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
     >
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"
         :title="$t('common.addToQueue')"
         @click.stop="player.addToQueue(props.track)"

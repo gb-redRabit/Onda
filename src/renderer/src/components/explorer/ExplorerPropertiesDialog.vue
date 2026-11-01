@@ -89,6 +89,7 @@ async function applyProperties() {
         {{ $t('explorer.properties') }}
       </h3>
       <button
+        type="button"
         class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :aria-label="$t('common.close')"
         @click="closeProperties"
@@ -139,12 +140,14 @@ async function applyProperties() {
     </div>
     <div class="flex justify-end gap-2 px-4 py-3 border-t border-hairline">
       <button
+        type="button"
         class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="closeProperties"
       >
         {{ $t('common.cancel') }}
       </button>
       <button
+        type="button"
         class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs bg-primary text-primary-content hover:bg-primary/90 transition-colors"
         @click="applyProperties"
       >

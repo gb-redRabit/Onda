@@ -151,6 +151,7 @@ function confirm() {
         <p class="text-xs text-base-content/50 truncate">{{ props.channel.channelTitle }}</p>
       </div>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :aria-label="$t('common.close')"
         @click="close"
@@ -243,12 +244,14 @@ function confirm() {
     <!-- Stopka -->
     <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-hairline shrink-0">
       <button
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="close"
       >
         {{ $t('youtube.cancel') }}
       </button>
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
         @click="confirm"
       >

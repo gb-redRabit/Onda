@@ -59,6 +59,7 @@ function isRowSelected(item: SourceItem): boolean {
           class="flex items-center gap-2"
         >
           <button
+            type="button"
             class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors disabled:opacity-70"
             :class="
               downloaded
@@ -87,6 +88,7 @@ function isRowSelected(item: SourceItem): boolean {
         <div class="flex-1" />
         <button
           v-if="downloadable && rows.length"
+          type="button"
           class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-2xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.downloadAllRows')"
           @click="emit('download-all', rows)"
@@ -146,6 +148,7 @@ function isRowSelected(item: SourceItem): boolean {
         <button
           v-for="(row, i) in rows"
           :key="row.id || `${i}`"
+          type="button"
           class="group relative text-left fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border transition-colors"
           :class="
             isRowSelected(row)

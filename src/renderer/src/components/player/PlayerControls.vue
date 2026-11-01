@@ -221,6 +221,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
       <div class="flex items-center gap-4">
         <!-- przewiń wstecz -->
         <button
+          type="button"
           class="text-neutral-content/60 hover:text-neutral-content transition-colors"
           :aria-label="$t('playerView.seekBackward')"
           @click="emit('skip', -10)"
@@ -240,6 +241,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         <PlayerSpeedMenu :speed="speed" @set-speed="emit('setSpeed', $event)" />
         <!-- przewiń w przód -->
         <button
+          type="button"
           class="text-neutral-content/60 hover:text-neutral-content transition-colors"
           :aria-label="$t('playerView.seekForward')"
           @click="emit('skip', 10)"
@@ -253,6 +255,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         <AbRepeatButton :current-time="player.currentTime" />
         <VideoFilterDropdown />
         <button
+          type="button"
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary-text!': fx.nightMode }"
           data-night-mode
@@ -264,6 +267,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           <Moon :size="16" />
         </button>
         <button
+          type="button"
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           data-capture-frame
           :title="$t('player.captureFrame')"
@@ -273,6 +277,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           <Camera :size="16" />
         </button>
         <button
+          type="button"
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary-text!': fx.equalizerVisible }"
           data-eq-toggle
@@ -282,6 +287,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
           <SlidersHorizontal :size="16" />
         </button>
         <button
+          type="button"
           class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
           :class="{ 'text-primary-text!': player.queueVisible }"
           :aria-label="$t('common.queue')"
@@ -291,6 +297,7 @@ function onVolumeKeydown(e: KeyboardEvent) {
         </button>
         <SubtitleButton />
         <button
+          type="button"
           class="text-neutral-content/50 hover:text-neutral-content transition-colors"
           :aria-label="$t('common.mute')"
           @click="player.toggleMute"

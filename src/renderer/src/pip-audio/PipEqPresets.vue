@@ -19,6 +19,7 @@ defineProps<{
     <button
       v-for="p in EQ_PRESETS.slice(0, 4)"
       :key="p.id"
+      type="button"
       :data-testid="'pip-eq-' + p.id"
       :class="[EQ_BTN, eqPreset === p.id ? EQ_BTN_ON : '']"
       @click.stop="selectEqPreset(p.id)"

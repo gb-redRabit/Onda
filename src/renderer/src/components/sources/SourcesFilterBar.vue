@@ -25,6 +25,7 @@ const { t } = useI18n();
       />
       <button
         v-if="filterText"
+        type="button"
         class="ui-icon-button absolute right-1.5 top-1/2 -translate-y-1/2 p-1"
         :aria-label="t('sources.clearFilter')"
         :title="t('sources.clearFilter')"
@@ -35,7 +36,7 @@ const { t } = useI18n();
     </div>
     <select
       v-model="sortMode"
-      class="shrink-0 px-2 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+      class="shrink-0 px-2 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/20"
       :title="t('sources.sortBy')"
       :aria-label="t('sources.sortBy')"
     >

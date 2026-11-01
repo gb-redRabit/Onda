@@ -15,6 +15,7 @@ const emit = defineEmits<{
     <AlertCircle :size="40" class="text-error mb-3" />
     <p class="text-sm text-base-content/70 mb-1">{{ message }}</p>
     <button
+      type="button"
       class="fx-noise mt-3 px-4 py-1.5 fx-depth rounded-field bg-base-content/10 border border-hairline text-xs text-base-content hover:bg-base-100 transition-colors"
       @click="emit('retry')"
     >

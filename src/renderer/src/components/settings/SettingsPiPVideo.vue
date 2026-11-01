@@ -82,6 +82,7 @@ onBeforeUnmount(() => {
     <div class="flex items-center justify-between pb-4 border-b border-hairline">
       <SettingsSectionTitle :title="$t('settings.videoPipSection')" class="mb-0!" />
       <button
+        type="button"
         data-testid="pip-video-preview-toggle"
         class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
         :aria-pressed="pipPreviewOpen"

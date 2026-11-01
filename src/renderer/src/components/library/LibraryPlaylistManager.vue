@@ -170,6 +170,7 @@ const playlistVirtualizer = useVirtualList({
           @keyup.enter="createPlaylist"
         />
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field bg-primary text-primary-content hover:bg-primary/90 transition-colors"
           :disabled="!newName.trim()"
           :aria-label="$t('library.playlistCreate')"
@@ -184,6 +185,7 @@ const playlistVirtualizer = useVirtualList({
         <button
           v-for="p in library.playlists"
           :key="p.id"
+          type="button"
           class="fx-noise w-full flex items-center gap-2 px-2 py-1.5 text-xs fx-depth rounded-field transition-colors text-left"
           :class="
             selectedPlaylistId === p.id
@@ -217,6 +219,7 @@ const playlistVirtualizer = useVirtualList({
         </div>
         <div class="flex items-center gap-2">
           <button
+            type="button"
             class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             :disabled="selectedPlaylist.tracks.length === 0"
             @click="playAll"
@@ -224,6 +227,7 @@ const playlistVirtualizer = useVirtualList({
             <Play :size="12" /> {{ $t('library.playAll') }}
           </button>
           <button
+            type="button"
             class="fx-noise p-1.5 fx-depth rounded-field text-error hover:text-error/80 hover:bg-base-100 transition-colors"
             :aria-label="$t('library.deletePlaylist')"
             @click="deleteSelected"

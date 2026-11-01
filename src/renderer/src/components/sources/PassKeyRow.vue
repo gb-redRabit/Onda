@@ -40,7 +40,7 @@ function update(patch: Partial<DraftPassKey>): void {
     <select
       :value="modelValue.type"
       :aria-label="t('sources.passKeyType')"
-      class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden"
+      class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden"
       @change="update({ type: ($event.target as HTMLSelectElement).value as 'string' | 'number' })"
     >
       <option value="string">{{ t('sources.keyString') }}</option>

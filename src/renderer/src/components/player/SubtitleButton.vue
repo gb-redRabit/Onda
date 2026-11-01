@@ -7,6 +7,7 @@ const player = usePlayerStore();
 
 <template>
   <button
+    type="button"
     data-testid="subtitle-button"
     class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors"
     :class="{ 'text-primary-text!': player.subtitlePanelVisible || !!player.activeSubtitleId }"

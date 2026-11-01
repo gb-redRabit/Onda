@@ -30,12 +30,14 @@ defineEmits<{
       </div>
     </div>
     <button
+      type="button"
       class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-neutral-content/15 hover:bg-neutral-content/25 text-neutral-content text-xs font-medium transition-colors"
       @click="$emit('continue')"
     >
       {{ $t('resume.continue') }}
     </button>
     <button
+      type="button"
       class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary hover:bg-primary/90 text-primary-content text-xs font-medium transition-colors"
       @click="$emit('start')"
     >

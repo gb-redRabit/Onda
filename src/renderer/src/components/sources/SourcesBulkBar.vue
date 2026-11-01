@@ -17,6 +17,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
     }}</span>
     <span class="flex-1" />
     <button
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!count"
       :title="$t('sources.downloadAll')"
@@ -26,6 +27,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       {{ $t('sources.downloadAll') }}
     </button>
     <button
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!playableCount"
       :title="$t('sources.addToQueue')"
@@ -35,6 +37,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       {{ $t('sources.addToQueue') }}
     </button>
     <button
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!playableCount"
       :title="$t('sources.playNow')"

@@ -97,6 +97,7 @@ function toggleActive(id: string, active: boolean) {
           @update:model-value="toggleActive(k.id, $event)"
         />
         <button
+          type="button"
           class="px-2 py-1 rounded-field text-xs border border-hairline hover:bg-base-200"
           @click="removeKey(k.id)"
         >
@@ -107,6 +108,7 @@ function toggleActive(id: string, active: boolean) {
     <div class="mt-4 flex gap-2">
       <button
         v-if="!showAdd"
+        type="button"
         class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise"
         @click="showAdd = true"
       >
@@ -142,12 +144,14 @@ function toggleActive(id: string, active: boolean) {
         />
         <div class="flex gap-2">
           <button
+            type="button"
             class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-sm fx-depth fx-noise"
             @click="addKey"
           >
             {{ $t('common.save') }}
           </button>
           <button
+            type="button"
             class="px-3 py-1.5 rounded-field border border-hairline text-sm"
             @click="showAdd = false"
           >

@@ -84,6 +84,7 @@ function onSeekKeydown(e: KeyboardEvent): void {
     />
     <div class="flex items-center gap-1">
       <button
+        type="button"
         class="p-1.5 text-base-content/70 hover:text-base-content transition-colors"
         :aria-label="$t('common.previous')"
         @click="player.prevTrack"
@@ -91,6 +92,7 @@ function onSeekKeydown(e: KeyboardEvent): void {
         <SkipBack :size="14" fill="currentColor" />
       </button>
       <button
+        type="button"
         class="w-8 h-8 rounded-full bg-base-content flex items-center justify-center hover:scale-105 active:scale-95 transition-[transform,opacity]"
         :aria-label="audio.isPlaying.value ? $t('common.pause') : $t('common.play')"
         @click="emit('toggle-play')"
@@ -99,6 +101,7 @@ function onSeekKeydown(e: KeyboardEvent): void {
         <Play v-else :size="14" class="text-base-200 ml-0.5" fill="currentColor" />
       </button>
       <button
+        type="button"
         class="p-1.5 text-base-content/70 hover:text-base-content transition-colors"
         :aria-label="$t('common.next')"
         @click="player.nextTrack"
@@ -113,6 +116,7 @@ function onSeekKeydown(e: KeyboardEvent): void {
       formatDuration(audio.currentTime.value)
     }}</span>
     <button
+      type="button"
       data-testid="mini-always-on-top"
       class="p-1.5 transition-colors"
       :class="pinned ? 'text-primary-text' : 'text-base-content/50 hover:text-base-content'"
@@ -124,6 +128,7 @@ function onSeekKeydown(e: KeyboardEvent): void {
       <Pin v-if="pinned" :size="13" /><PinOff v-else :size="13" />
     </button>
     <button
+      type="button"
       class="p-1.5 text-base-content/50 hover:text-primary-text transition-colors"
       :title="$t('common.audioView')"
       :aria-label="$t('common.audioView')"
@@ -132,6 +137,7 @@ function onSeekKeydown(e: KeyboardEvent): void {
       <Disc3 :size="13" />
     </button>
     <button
+      type="button"
       class="p-1.5 text-base-content/50 hover:text-base-content transition-colors"
       :title="$t('common.miniPlayer')"
       :aria-label="$t('common.miniPlayer')"

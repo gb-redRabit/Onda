@@ -19,6 +19,7 @@ const { t } = useI18n();
 <template>
   <div class="space-y-3">
     <button
+      type="button"
       class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors"
       data-testid="sources-phase-test-run"
       @click="emit('test')"

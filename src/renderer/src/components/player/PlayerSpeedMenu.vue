@@ -59,6 +59,7 @@ function onSpeedPreset(v: number) {
 <template>
   <div ref="speedContainer" class="relative flex items-center">
     <button
+      type="button"
       class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-mono transition-colors cursor-pointer select-none"
       :class="
         speed !== 1
@@ -91,6 +92,7 @@ function onSpeedPreset(v: number) {
           <button
             v-for="step in speedSteps"
             :key="step"
+            type="button"
             class="fx-noise px-2 py-1.5 fx-depth rounded-field text-2xs font-mono transition-colors"
             :class="
               speed === step
@@ -126,6 +128,7 @@ function onSpeedPreset(v: number) {
         <div class="flex items-center justify-between mt-2.5 pt-2.5 border-t border-hairline">
           <span class="text-2xs text-base-content/60">{{ $t('player.speedHint') }}</span>
           <button
+            type="button"
             class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :class="{ 'pointer-events-none opacity-40': speed === 1 && isPresetSpeed }"
             :disabled="speed === 1 && isPresetSpeed"

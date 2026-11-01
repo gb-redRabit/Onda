@@ -211,6 +211,7 @@ async function save() {
     <div class="flex items-center justify-between px-5 py-4 border-b border-hairline">
       <h2 id="track-tag-editor-title" class="text-base font-bold">{{ $t('tags.title') }}</h2>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
         :aria-label="$t('common.close')"
         @click="emit('close')"
@@ -227,6 +228,7 @@ async function save() {
           <MediaCover :cover="coverObj" :size="32" fallback="music" />
         </div>
         <button
+          type="button"
           class="fx-noise flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field text-xs font-medium bg-primary/10 text-primary-text hover:bg-primary hover:text-primary-content transition-colors"
           :disabled="uploadingCover"
           @click="pickCover"
@@ -292,12 +294,14 @@ async function save() {
 
     <div class="flex justify-end gap-2 px-5 py-4 border-t border-hairline">
       <button
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="emit('close')"
       >
         {{ $t('common.cancel') }}
       </button>
       <button
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors disabled:opacity-50"
         :disabled="saving || uploadingCover"
         @click="save"

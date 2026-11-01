@@ -24,6 +24,7 @@ const { showImageMenu } = useLibraryContextMenu();
       <button
         v-for="img in meta.directImages.slice(0, 24)"
         :key="img.path"
+        type="button"
         class="aspect-square rounded-field overflow-hidden bg-base-200 border border-hairline hover:border-primary/30 transition-colors"
         @click="emit('open-image', childName, img.path)"
         @contextmenu.prevent="
@@ -48,6 +49,7 @@ const { showImageMenu } = useLibraryContextMenu();
       />
       <button
         v-if="meta.directAudio.length > 50"
+        type="button"
         class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors"
         @click="() => {}"
       >

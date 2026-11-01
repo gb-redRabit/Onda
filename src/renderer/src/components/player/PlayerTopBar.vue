@@ -22,6 +22,7 @@ const emit = defineEmits<{
     :class="{ 'opacity-0': !showControls }"
   >
     <button
+      type="button"
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       :aria-label="$t('playerView.back')"
       @click="emit('back')"
@@ -35,6 +36,7 @@ const emit = defineEmits<{
       <p class="text-neutral-content/70 text-2xs">{{ track?.metadata?.artist || '' }}</p>
     </div>
     <button
+      type="button"
       data-testid="player-always-on-top"
       class="fx-noise p-2 fx-depth rounded-field mr-2 transition-colors"
       :class="
@@ -50,6 +52,7 @@ const emit = defineEmits<{
       <Pin v-if="pinned" :size="18" /><PinOff v-else :size="18" />
     </button>
     <button
+      type="button"
       data-testid="player-pip"
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 mr-2 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       :aria-label="$t('playerView.pip')"
@@ -58,6 +61,7 @@ const emit = defineEmits<{
       <PictureInPicture :size="18" />
     </button>
     <button
+      type="button"
       class="fx-noise p-2 fx-depth rounded-field bg-neutral-content/10 hover:bg-neutral-content/20 text-neutral-content transition-colors"
       :aria-label="$t('playerView.fullscreen')"
       @click="emit('fullscreen')"

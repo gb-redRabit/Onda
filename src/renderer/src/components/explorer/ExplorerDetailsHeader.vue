@@ -30,6 +30,7 @@ function isActive(field: SortBy): boolean {
     <button
       v-for="col in columns"
       :key="col.field"
+      type="button"
       class="flex items-center gap-1 hover:text-base-content"
       :class="col.align === 'right' ? 'text-right justify-end' : 'text-left'"
       @click="emit('sort', col.field)"

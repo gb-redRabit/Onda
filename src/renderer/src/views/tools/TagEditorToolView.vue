@@ -301,6 +301,7 @@ function fieldLabel(field: AudioTagField): string {
         @drop.prevent="onDrop"
       >
         <button
+          type="button"
           data-testid="tools-tag-add"
           class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
           :disabled="saving"
@@ -310,6 +311,7 @@ function fieldLabel(field: AudioTagField): string {
           {{ t('tools.addFiles') }}
         </button>
         <button
+          type="button"
           class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
           :disabled="saving || files.length === 0"
           @click="clearAll"
@@ -326,7 +328,7 @@ function fieldLabel(field: AudioTagField): string {
             v-model="batchField"
             data-testid="tools-tag-batch-field"
             :disabled="saving || selectedCount === 0"
-            class="rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option v-for="field in AUDIO_TAG_FIELDS" :key="field" :value="field">
               {{ fieldLabel(field) }}
@@ -342,6 +344,7 @@ function fieldLabel(field: AudioTagField): string {
             @keydown.enter="applyBatch"
           />
           <button
+            type="button"
             data-testid="tools-tag-apply"
             class="fx-noise rounded-field bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
             :disabled="saving || selectedCount === 0"
@@ -365,6 +368,7 @@ function fieldLabel(field: AudioTagField): string {
           class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
         />
         <button
+          type="button"
           class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
           :disabled="coverBusy"
           @click="pickCoverImage"
@@ -373,6 +377,7 @@ function fieldLabel(field: AudioTagField): string {
           {{ t('tools.tagEditorCoverPick') }}
         </button>
         <button
+          type="button"
           data-testid="tools-tag-cover-apply"
           class="fx-noise rounded-field bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
           :disabled="coverBusy || !coverImagePath.trim() || selectedCount === 0"
@@ -501,6 +506,7 @@ function fieldLabel(field: AudioTagField): string {
               </td>
               <td class="border-b border-hairline/60 px-1.5 py-1.5">
                 <button
+                  type="button"
                   class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
                   :title="t('tools.remove')"
                   :aria-label="t('tools.remove')"
@@ -534,6 +540,7 @@ function fieldLabel(field: AudioTagField): string {
           {{ loading ? t('tools.tagEditorLoading') : t('tools.tagEditorHint') }}
         </span>
         <button
+          type="button"
           data-testid="tools-tag-save"
           class="fx-noise ml-auto flex items-center gap-1.5 rounded-field bg-primary px-4 py-2 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
           :disabled="saving || dirtyRows.length === 0"

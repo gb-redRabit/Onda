@@ -35,6 +35,7 @@ function clearSearch() {
     />
     <button
       v-if="searchQuery"
+      type="button"
       class="fx-noise absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :aria-label="$t('common.clear')"
       @click="clearSearch"

@@ -27,6 +27,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
         <button
           v-for="type in ['http', 'https', 'socks5'] as const"
           :key="type"
+          type="button"
           class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors uppercase"
           :class="
             settings.network.proxy.type === type

@@ -286,6 +286,7 @@ function setSubRef(i: number) {
           @mouseleave="onItemLeave()"
         >
           <button
+            type="button"
             data-testid="context-menu-item"
             role="menuitem"
             tabindex="-1"
@@ -330,6 +331,7 @@ function setSubRef(i: number) {
                 <button
                   v-else
                   :ref="setSubRef(cidx)"
+                  type="button"
                   data-testid="context-menu-subitem"
                   role="menuitem"
                   tabindex="-1"

@@ -93,6 +93,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         <button
           v-for="m in modes"
           :key="m.value"
+          type="button"
           class="fx-noise rounded-field px-2 py-1 text-2xs font-medium fx-depth transition-colors"
           :class="
             viz.mode === m.value
@@ -196,6 +197,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         <button
           v-for="fps in fpsOptions"
           :key="fps"
+          type="button"
           class="fx-noise rounded-field px-2 py-1 text-2xs font-medium tabular-nums fx-depth transition-colors"
           :class="
             viz.fpsCap === fps
@@ -240,6 +242,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
           <button
             v-for="q in qualities"
             :key="q"
+            type="button"
             class="fx-noise rounded-field px-2 py-1 text-2xs font-medium fx-depth transition-colors"
             :class="
               vizQuality === q

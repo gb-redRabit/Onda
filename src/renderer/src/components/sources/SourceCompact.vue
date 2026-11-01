@@ -76,6 +76,7 @@ const typeIcon = {
       }}</span>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
+        type="button"
         class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-2xs transition-colors disabled:opacity-60"
         :class="
           item.id && downloadedIds?.has(item.id)

@@ -97,6 +97,7 @@ const toggles = [
     <div class="mt-3 flex flex-wrap items-center gap-2 px-1">
       <button
         v-if="!loudnessRunning"
+        type="button"
         data-testid="analyze-loudness"
         class="px-3 py-1.5 fx-depth rounded-field text-xs bg-primary/15 text-primary-text hover:bg-primary/25 transition-colors"
         @click="analyzeLoudness"
@@ -105,6 +106,7 @@ const toggles = [
       </button>
       <button
         v-else
+        type="button"
         data-testid="cancel-loudness"
         class="px-3 py-1.5 fx-depth rounded-field text-xs bg-error/15 text-error hover:bg-error/25 transition-colors"
         @click="cancelLoudness"

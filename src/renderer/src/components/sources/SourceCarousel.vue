@@ -130,6 +130,7 @@ const cells = computed(() =>
           </div>
           <button
             v-if="downloadable && (cell.item.mediaUrl || cell.item.playerUrl)"
+            type="button"
             class="fx-noise m-2 flex items-center justify-center gap-1 py-1 fx-depth rounded-field text-2xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-60"
             :disabled="
               !!(cell.item.id && downloadedIds?.has(cell.item.id)) || downloadingItem === cell.item

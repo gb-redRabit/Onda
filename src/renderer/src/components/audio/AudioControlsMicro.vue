@@ -19,6 +19,7 @@ function togglePlay() {
 <template>
   <div class="flex items-center justify-center w-full h-full p-0.5 overflow-hidden">
     <button
+      type="button"
       :class="PLAY_BOX.micro"
       class="relative rounded-full bg-primary/15 backdrop-blur-xl border border-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition shadow-lg shrink-0"
       :aria-label="audio.isPlaying.value ? t('common.pause') : t('common.play')"

@@ -68,12 +68,14 @@ function folderIcon(type: string): string {
 <template>
   <div class="flex items-center gap-3">
     <button
+      type="button"
       class="flex items-center gap-2 px-4 py-2 fx-depth rounded-box fx-noise bg-base-100 border border-hairline text-sm font-medium hover:bg-base-content/10 transition-colors"
       @click="addFolder"
     >
       <FolderPlus :size="16" />{{ $t('settings.libAddFolder') }}
     </button>
     <button
+      type="button"
       class="fx-noise flex items-center gap-2 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
       :disabled="library.isScanning || library.folders.length === 0"
       @click="scan"
@@ -83,6 +85,7 @@ function folderIcon(type: string): string {
     </button>
     <button
       v-if="library.isScanning"
+      type="button"
       class="fx-noise flex items-center gap-2 px-4 py-2 fx-depth rounded-field border border-hairline text-sm font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="library.cancelScan()"
     >
@@ -121,6 +124,7 @@ function folderIcon(type: string): string {
         </div>
       </div>
       <button
+        type="button"
         class="px-2 py-1 text-xs text-error hover:text-error/80 transition-colors shrink-0"
         @click="removeFolder(entry.path)"
       >
@@ -162,6 +166,7 @@ function folderIcon(type: string): string {
     </div>
     <p class="text-2xs text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
     <button
+      type="button"
       class="fx-noise mt-3 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="clearCoverCache"
     >

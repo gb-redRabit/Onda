@@ -195,6 +195,7 @@ const readout = computed(() => {
         <h3 class="text-sm font-semibold text-base-content">{{ t('audioView.layoutPreview') }}</h3>
         <div class="flex items-center gap-1">
           <button
+            type="button"
             class="flex items-center gap-1.5 rounded-field px-2.5 py-1 text-2xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
             :disabled="!history.length"
             :title="$t('common.undo') + ' (Ctrl+Z)'"
@@ -204,6 +205,7 @@ const readout = computed(() => {
             {{ t('common.undo') }}
           </button>
           <button
+            type="button"
             class="flex items-center gap-1.5 rounded-field px-2.5 py-1 text-2xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
             @click="resetLayout"
           >

@@ -158,7 +158,7 @@ onMounted(() => {
             v-if="!sources.navStack.length"
             :value="sources.activeEndpointId"
             :aria-label="$t('sources.level')"
-            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="shrink-0 px-2.5 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
             @change="onEndpointChange(($event.target as HTMLSelectElement).value)"
           >
             <option v-for="e in activeSource.endpoints" :key="e.id" :value="e.id">
@@ -172,6 +172,7 @@ onMounted(() => {
               class="flex items-center gap-1"
             >
               <button
+                type="button"
                 class="text-base-content/50 hover:text-base-content/70 transition-colors"
                 :disabled="sources.loading"
                 @click="sources.goBackTo(i).then(scrollToTop)"
@@ -337,6 +338,7 @@ onMounted(() => {
 
       <EmptyState v-else :title="$t('sources.emptyList')" :icon="Globe" class="m-auto">
         <button
+          type="button"
           class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium bg-primary text-primary-content fx-depth"
           data-testid="sources-empty-add"
           @click="openAdd"

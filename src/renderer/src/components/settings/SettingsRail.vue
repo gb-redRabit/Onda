@@ -38,6 +38,7 @@ const activeSectionId = computed(
   >
     <template v-for="section in sections" :key="section.id">
       <button
+        type="button"
         class="flex items-center gap-2.5 px-2 h-8 rounded-field transition-colors shrink-0"
         :class="
           activeSectionId === section.id
@@ -59,6 +60,7 @@ const activeSectionId = computed(
         <button
           v-for="tab in tabsOf(section.id)"
           :key="tab.id"
+          type="button"
           class="flex items-center gap-2 pl-2 pr-2 h-8 rounded-field text-[13px] text-left transition-colors"
           :class="
             activeTab === tab.id
@@ -76,6 +78,7 @@ const activeSectionId = computed(
 
     <div class="mt-auto pt-3 border-t border-hairline/50">
       <button
+        type="button"
         class="flex items-center gap-2 px-2 h-8 w-full rounded-field text-[12px] text-base-content/50 hover:text-error hover:bg-error/10 transition-colors"
         :title="$t('settings.reset')"
         data-testid="settings-reset"

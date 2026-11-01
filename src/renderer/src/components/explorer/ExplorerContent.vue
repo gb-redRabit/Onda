@@ -113,6 +113,7 @@ defineExpose({ reveal });
         }"
       >
         <button
+          type="button"
           :draggable="!explorer.isDriveList"
           :data-file-path="files[virtualRow.index].path"
           :data-folder-path="

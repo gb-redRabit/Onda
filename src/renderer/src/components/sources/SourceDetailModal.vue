@@ -53,6 +53,7 @@ function browserUrl(item: SourceItem): string {
           {{ props.item.title || $t('sources.untitled') }}
         </h2>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           :aria-label="$t('common.close')"
           @click="emit('close')"
@@ -148,6 +149,7 @@ function browserUrl(item: SourceItem): string {
           <div class="flex flex-col gap-2">
             <button
               v-if="isSourceItemPlayable(props.item)"
+              type="button"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
               data-testid="source-play-now"
               :title="$t('sources.playNow')"
@@ -158,6 +160,7 @@ function browserUrl(item: SourceItem): string {
             </button>
             <button
               v-if="isSourceItemPlayable(props.item)"
+              type="button"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors flex items-center justify-center gap-1.5"
               :title="$t('sources.addToQueue')"
               @click="emit('queue', props.item)"
@@ -167,6 +170,7 @@ function browserUrl(item: SourceItem): string {
             </button>
             <button
               v-if="props.downloadable"
+              type="button"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs font-medium transition-colors flex items-center justify-center gap-1.5 disabled:opacity-70"
               :class="
                 props.downloaded
@@ -182,6 +186,7 @@ function browserUrl(item: SourceItem): string {
             </button>
             <button
               v-if="props.downloaded"
+              type="button"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors flex items-center justify-center gap-1.5"
               :title="$t('sources.unmarkDownloaded')"
               @click="emit('unmark', props.item)"

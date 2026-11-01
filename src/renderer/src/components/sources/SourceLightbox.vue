@@ -73,6 +73,7 @@ function onKeydown(event: KeyboardEvent): void {
           </span>
           <button
             v-if="current && isSourceItemPlayable(current)"
+            type="button"
             class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-white/10 transition-colors text-xs"
             :title="$t('sources.playNow')"
             @click="emit('play', current)"
@@ -81,6 +82,7 @@ function onKeydown(event: KeyboardEvent): void {
           </button>
           <button
             v-if="downloadable && (current?.mediaUrl || current?.playerUrl)"
+            type="button"
             class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field transition-colors text-xs disabled:opacity-50"
             :class="isDownloaded ? 'text-success' : 'hover:bg-white/10'"
             :disabled="isDownloaded || downloadingItem === current"
@@ -90,6 +92,7 @@ function onKeydown(event: KeyboardEvent): void {
             <Download :size="14" />
           </button>
           <button
+            type="button"
             class="fx-noise shrink-0 p-1.5 rounded-field hover:bg-white/10 transition-colors"
             :aria-label="$t('common.close')"
             @click="emit('close')"
@@ -101,6 +104,7 @@ function onKeydown(event: KeyboardEvent): void {
         <!-- Scena -->
         <div class="flex-1 min-h-0 relative flex items-center justify-center px-12">
           <button
+            type="button"
             class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
             :aria-label="$t('common.previous')"
             @click="go(-1)"
@@ -108,6 +112,7 @@ function onKeydown(event: KeyboardEvent): void {
             <ChevronLeft :size="22" />
           </button>
           <button
+            type="button"
             class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
             :aria-label="$t('common.next')"
             @click="go(1)"
@@ -162,6 +167,7 @@ function onKeydown(event: KeyboardEvent): void {
           <button
             v-for="(item, i) in items"
             :key="item.id || i"
+            type="button"
             class="shrink-0 w-16 h-10 rounded-field overflow-hidden border-2 transition-colors"
             :class="i === index ? 'border-primary' : 'border-transparent hover:border-white/40'"
             :title="item.title"

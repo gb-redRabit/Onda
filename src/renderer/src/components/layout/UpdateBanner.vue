@@ -48,6 +48,7 @@ function openUpdates(): void {
     </div>
     <button
       v-if="status === 'available'"
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
       @click="download"
     >
@@ -55,18 +56,21 @@ function openUpdates(): void {
     </button>
     <button
       v-else-if="status === 'downloaded'"
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
       @click="install"
     >
       <RotateCw :size="14" />{{ $t('settings.restartInstall') }}
     </button>
     <button
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
       @click="openUpdates"
     >
       {{ $t('settings.updateManage') }}<ArrowRight :size="14" />
     </button>
     <button
+      type="button"
       class="shrink-0 p-1 rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
       :aria-label="$t('common.close')"
       @click="dismiss"

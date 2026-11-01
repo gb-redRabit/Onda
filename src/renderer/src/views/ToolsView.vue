@@ -128,6 +128,7 @@ async function openTool(id: ToolId): Promise<void> {
             <button
               v-for="card in group.cards"
               :key="card.id"
+              type="button"
               :data-testid="`tools-card-${card.id}`"
               class="group flex items-start gap-3 rounded-box border border-hairline/80 bg-base-100 p-4 text-left fx-depth transition hover:border-primary/40 hover:bg-base-content/4 disabled:cursor-wait disabled:opacity-60"
               :disabled="opening !== null"

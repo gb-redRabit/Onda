@@ -255,7 +255,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioFormat"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
               defaultAudioFormat: readSelect($event, AUDIO_FORMATS)
@@ -270,7 +270,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-else
           :value="settings.download.defaultVideoQuality"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
               defaultVideoQuality: readSelect($event, VIDEO_QUALITIES)
@@ -283,7 +283,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'video'"
           :value="settings.download.defaultVideoContainer"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
               defaultVideoContainer: readSelect($event, VIDEO_CONTAINERS)
@@ -296,7 +296,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioQuality"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
               defaultAudioQuality: readSelect($event, AUDIO_QUALITIES)

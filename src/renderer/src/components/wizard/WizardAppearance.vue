@@ -14,6 +14,7 @@ const settings = useSettingsStore();
       <button
         v-for="name in BUILTIN_THEME_NAMES"
         :key="name"
+        type="button"
         class="p-2.5 fx-depth rounded-box border transition flex flex-col items-start gap-2 hover:shadow-md"
         :class="
           settings.appearance.theme === name

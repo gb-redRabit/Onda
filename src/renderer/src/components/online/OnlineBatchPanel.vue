@@ -47,7 +47,7 @@ const { t } = useI18n();
         <select
           v-if="profiles.length && !hasSc"
           v-model="profileId"
-          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
+          class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
         >
           <option value="">{{ t('youtube.profileNone') }}</option>
           <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>

@@ -9,7 +9,13 @@ import { describe, expect, it } from 'vitest';
 
 const ROOTS = [
   join(process.cwd(), 'src/renderer/src/components'),
-  join(process.cwd(), 'src/renderer/src/views')
+  join(process.cwd(), 'src/renderer/src/views'),
+  // Świadomie poza `components/`/`views/`: chrom aplikacji i osobne renderery
+  // (compact, PiP) mają własne klikalne kontenery, a wcześniej nie były skanowane.
+  join(process.cwd(), 'src/renderer/src/App.vue'),
+  join(process.cwd(), 'src/renderer/src/compact'),
+  join(process.cwd(), 'src/renderer/src/pip-audio'),
+  join(process.cwd(), 'src/renderer/src/pip-video')
 ];
 
 interface ClickableTag {
@@ -41,6 +47,8 @@ function readClickableNonInteractive(file: string): ClickableTag[] {
 }
 
 function walkVue(dir: string): string[] {
+  // Korzenie mogą być pojedynczym plikiem (np. `App.vue`).
+  if (dir.endsWith('.vue')) return [dir];
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);

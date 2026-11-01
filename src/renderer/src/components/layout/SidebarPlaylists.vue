@@ -63,6 +63,7 @@ function playPlaylist(playlistId: string) {
 <template>
   <div class="pt-3">
     <button
+      type="button"
       class="w-full flex items-center gap-2 px-3 py-1.5 text-2xs font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
       @click="expanded = !expanded"
     >
@@ -88,6 +89,7 @@ function playPlaylist(playlistId: string) {
         <span class="truncate flex-1">{{ playlist.name }}</span>
         <span class="text-2xs text-base-content/50">{{ playlist.tracks.length }}</span>
         <button
+          type="button"
           class="fx-noise p-0.5 fx-depth rounded-field opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 text-base-content/50 hover:text-error transition"
           :aria-label="$t('common.delete')"
           @click.stop="library.deletePlaylist(playlist.id)"
@@ -109,6 +111,7 @@ function playPlaylist(playlistId: string) {
       </div>
       <button
         v-else
+        type="button"
         class="fx-noise w-full flex items-center gap-2 px-3 py-2 fx-depth rounded-field text-xs text-base-content/50 hover:bg-base-content/10 hover:text-base-content/70 transition-colors"
         @click="isCreatingPlaylist = true"
       >

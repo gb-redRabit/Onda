@@ -115,6 +115,7 @@ function onVolumeKey(e: KeyboardEvent) {
     />
     <button
       v-else
+      type="button"
       :class="[playBox, PLAY_ICON_CLASS, 'shrink-0']"
       :aria-label="audio.isPlaying.value ? t('common.pause') : t('common.play')"
       @click="togglePlay"
@@ -130,6 +131,7 @@ function onVolumeKey(e: KeyboardEvent) {
 
     <div v-if="showVolume" :class="d.volumeRow">
       <button
+        type="button"
         class="text-base-content/50 hover:text-base-content transition-colors shrink-0"
         :aria-label="player.isMuted ? t('player.unmute') : t('common.mute')"
         @click="player.toggleMute"
@@ -164,6 +166,7 @@ function onVolumeKey(e: KeyboardEvent) {
 
     <div v-if="showExtras" :class="d.extrasRow">
       <button
+        type="button"
         :class="[
           d.extrasButton,
           fx.equalizerVisible ? 'bg-primary/10 text-primary-text' : TOGGLE_OFF
@@ -176,6 +179,7 @@ function onVolumeKey(e: KeyboardEvent) {
         <SlidersHorizontal :size="iconSm" />
       </button>
       <button
+        type="button"
         :class="[
           d.extrasButton,
           player.queueVisible ? 'bg-primary/10 text-primary-text' : TOGGLE_OFF

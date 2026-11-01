@@ -119,6 +119,7 @@ function addFrom(album: AlbumEntry, index: number): void {
             <button
               v-for="cell in rowCells(row.index)"
               :key="cell.index"
+              type="button"
               class="text-left p-1.5 rounded-field hover:bg-base-content/5 transition-colors"
               :data-testid="`compact-album-${cell.index}`"
               @click="selectedKey = albumKey(cell.album)"
@@ -145,6 +146,7 @@ function addFrom(album: AlbumEntry, index: number): void {
     <template v-else>
       <div class="flex items-center gap-2 px-2 py-2 shrink-0">
         <button
+          type="button"
           class="flex items-center gap-1 text-2xs text-base-content/60 hover:text-base-content"
           data-testid="compact-album-back"
           @click="selectedKey = null"
@@ -165,6 +167,7 @@ function addFrom(album: AlbumEntry, index: number): void {
             {{ selected[1][0]?.metadata?.albumArtist || selected[1][0]?.metadata?.artist || '—' }}
           </span>
           <button
+            type="button"
             class="mt-2 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field bg-primary text-primary-content text-2xs font-medium hover:brightness-110"
             data-testid="compact-play-album"
             @click="playAlbum(selected)"
@@ -173,6 +176,7 @@ function addFrom(album: AlbumEntry, index: number): void {
             {{ $t('compact.playAlbum') }}
           </button>
           <button
+            type="button"
             class="mt-2 ml-1.5 inline-grid place-items-center w-7 h-7 rounded-field border border-hairline text-base-content/60 hover:text-primary-text hover:bg-primary/10"
             :title="$t('compact.addAlbumToQueue')"
             :aria-label="$t('compact.addAlbumToQueue')"
@@ -194,6 +198,7 @@ function addFrom(album: AlbumEntry, index: number): void {
             :style="{ transform: `translateY(${row.start}px)` }"
           >
             <button
+              type="button"
               class="flex min-w-0 flex-1 items-center gap-2 text-left"
               :data-testid="`compact-album-track-${row.index}`"
               @click="playFrom(selected, row.index)"
@@ -209,6 +214,7 @@ function addFrom(album: AlbumEntry, index: number): void {
               <Play :size="11" class="text-base-content/30" />
             </button>
             <button
+              type="button"
               class="grid place-items-center w-7 h-7 shrink-0 rounded-field text-base-content/35 hover:text-primary-text hover:bg-primary/10 transition-colors"
               :title="$t('compact.addToQueue')"
               :aria-label="$t('compact.addToQueue')"

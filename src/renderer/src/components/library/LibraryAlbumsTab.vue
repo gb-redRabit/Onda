@@ -88,13 +88,14 @@ onUnmounted(() => grid.destroy());
       <div class="flex items-center gap-1.5">
         <select
           v-model="sortKey"
-          class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus:border-primary focus:outline-hidden"
+          class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus-visible:border-primary focus-visible:outline-hidden"
         >
           <option value="name">{{ $t('library.sortAlbumsByName') }}</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
           <option value="year">{{ $t('library.sortAlbumsByYear') }}</option>
         </select>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
@@ -107,6 +108,7 @@ onUnmounted(() => grid.destroy());
           <LayoutList :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'

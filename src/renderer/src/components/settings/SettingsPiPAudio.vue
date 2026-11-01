@@ -154,6 +154,7 @@ onBeforeUnmount(() => {
     <div class="flex items-center justify-between pb-4 border-b border-hairline">
       <SettingsSectionTitle :title="$t('settings.audioPipSection')" class="mb-0!" />
       <button
+        type="button"
         class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
         :class="
           audioPreviewOpen
@@ -175,6 +176,7 @@ onBeforeUnmount(() => {
               <button
                 v-if="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)"
                 :key="DOCKS.find((d) => d.gridRow === row && d.gridCol === col)!.id"
+                type="button"
                 class="w-11 h-11 rounded-field border flex items-center justify-center transition-colors"
                 :class="
                   settings.appearance.audioPipDock ===
@@ -225,6 +227,7 @@ onBeforeUnmount(() => {
             <button
               v-for="id in ELEMENTS"
               :key="id"
+              type="button"
               class="fx-noise px-2.5 py-1.5 fx-depth rounded-field text-xs font-medium border transition-colors"
               :class="
                 isChecked(id)

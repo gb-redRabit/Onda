@@ -79,6 +79,7 @@ async function onPlayFromStart(): Promise<void> {
           <button
             v-for="a in actions"
             :key="a.labelKey"
+            type="button"
             :data-testid="'home-action-' + a.id"
             class="inline-flex h-8 items-center gap-1.5 rounded-field border border-transparent px-2.5 text-xs font-medium text-base-content/70 transition-colors hover:border-hairline/80 hover:bg-base-content/6 hover:text-base-content"
             :title="$t(a.labelKey)"

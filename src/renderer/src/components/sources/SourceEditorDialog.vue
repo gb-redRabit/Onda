@@ -264,6 +264,7 @@ function runTestTable(idx: number): void {
         {{ props.source ? $t('sources.editSource') : $t('sources.addSource') }}
       </h2>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
         :aria-label="$t('common.close')"
         @click="emit('close')"
@@ -327,6 +328,7 @@ function runTestTable(idx: number): void {
 
     <div class="flex items-center gap-2 px-4 py-3 border-t border-hairline">
       <button
+        type="button"
         class="fx-noise flex items-center gap-1 px-2.5 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
         :disabled="activePhase === 0"
         @click="prevPhase"
@@ -335,6 +337,7 @@ function runTestTable(idx: number): void {
         {{ $t('common.back') }}
       </button>
       <button
+        type="button"
         class="fx-noise flex items-center gap-1 px-2.5 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40"
         :disabled="activePhase >= phasesCount - 1"
         @click="nextPhase"
@@ -344,12 +347,14 @@ function runTestTable(idx: number): void {
       </button>
       <span class="flex-1" />
       <button
+        type="button"
         class="fx-noise px-3 py-1.5 fx-depth rounded-field text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="emit('close')"
       >
         {{ $t('common.cancel') }}
       </button>
       <button
+        type="button"
         class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
         :disabled="saving"
         @click="onSave"

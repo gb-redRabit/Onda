@@ -178,6 +178,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
     <button
       v-for="(tab, idx) in explorer.tabs"
       :key="tab.id"
+      type="button"
       draggable="true"
       class="fx-noise group flex items-center gap-1.5 px-2.5 h-7 text-xs rounded-field transition-colors shrink-0 min-w-0 max-w-44 border"
       :class="{
@@ -212,6 +213,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
       /></span>
     </button>
     <button
+      type="button"
       class="fx-noise shrink-0 p-1 rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="$t('nav.newTab')"
       @click="explorer.addTab(explorer.currentPath || '')"

@@ -36,6 +36,7 @@ function onSourcesFolderChange(e: Event) {
         :placeholder="$t('settings.downloadPathPlaceholder')"
       />
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 shrink-0"
         @click="pickDownloadPath"
       >
@@ -52,6 +53,7 @@ function onSourcesFolderChange(e: Event) {
         :placeholder="$t('settings.sourcesPathPlaceholder')"
       />
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 shrink-0"
         @click="pickSourcesPath"
       >
@@ -77,6 +79,7 @@ function onSourcesFolderChange(e: Event) {
         :placeholder="$t('settings.tempDirPlaceholder')"
       />
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 shrink-0"
         @click="pickTempDir"
       >
@@ -84,6 +87,7 @@ function onSourcesFolderChange(e: Event) {
       </button>
       <button
         v-if="settings.download.tempDir"
+        type="button"
         class="px-3 py-2 text-xs text-base-content/50 hover:text-base-content"
         @click="settings.updateDownload({ tempDir: '' })"
       >

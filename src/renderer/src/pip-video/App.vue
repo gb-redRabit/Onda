@@ -146,6 +146,7 @@ onMounted(() => {
       :style="{ opacity: showOverlay ? 1 : 0 }"
     >
       <button
+        type="button"
         data-testid="pip-video-settings"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs top-btn"
         :title="t('settings')"
@@ -155,6 +156,7 @@ onMounted(() => {
       </button>
       <button
         v-if="!preview"
+        type="button"
         data-testid="pip-video-maximize"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs top-btn"
         :title="t('maximize')"
@@ -164,6 +166,7 @@ onMounted(() => {
       </button>
       <button
         v-if="preview"
+        type="button"
         data-testid="pip-video-preview-close"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs close-btn"
         :title="t('close')"
@@ -174,6 +177,7 @@ onMounted(() => {
       </button>
       <button
         v-else
+        type="button"
         data-testid="pip-video-close"
         class="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition duration-150 text-2xs close-btn"
         :title="t('close')"
@@ -198,6 +202,7 @@ onMounted(() => {
           t('subtitles')
         }}</span>
         <button
+          type="button"
           data-testid="pip-video-subs"
           class="w-8 h-4.5 rounded-full transition-colors relative"
           :class="subsVisible ? 'bg-primary' : ''"

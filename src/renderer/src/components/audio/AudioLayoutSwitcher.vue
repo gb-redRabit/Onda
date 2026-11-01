@@ -26,6 +26,7 @@ function apply(preset: AudioLayoutPreset) {
     <button
       v-for="(preset, key) in AUDIO_LAYOUT_PRESETS"
       :key="key"
+      type="button"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition"
       :class="{
         'text-primary-text bg-primary/10': current === key

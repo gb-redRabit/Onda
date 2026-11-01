@@ -27,6 +27,7 @@ const { t } = useI18n();
     </p>
     <div class="flex gap-1 bg-base-200/(--glass-alpha) rounded-box p-1 w-fit">
       <button
+        type="button"
         class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
         :class="
           coverType !== 'none'
@@ -38,6 +39,7 @@ const { t } = useI18n();
         {{ t('youtube.coverThumbnail') }}
       </button>
       <button
+        type="button"
         class="fx-noise px-4 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
         :class="
           coverType === 'none'
@@ -60,6 +62,7 @@ const { t } = useI18n();
       <button
         v-for="c in ['thumbnail', 'none', 'frame', 'clip', 'custom'] as const"
         :key="c"
+        type="button"
         class="fx-noise px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors"
         :class="
           coverType === c

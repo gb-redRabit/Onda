@@ -94,7 +94,7 @@ watch(format, (value) => {
             v-model="format"
             data-testid="history-export-format"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option value="csv">CSV</option>
             <option value="json">JSON</option>
@@ -109,7 +109,7 @@ watch(format, (value) => {
             v-model="type"
             data-testid="history-export-type"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option value="all">{{ t('tools.historyExportTypeAll') }}</option>
             <option value="audio">{{ t('tools.historyExportTypeAudio') }}</option>
@@ -125,7 +125,7 @@ watch(format, (value) => {
             v-model="sort"
             data-testid="history-export-sort"
             :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option value="lastPlayed">{{ t('tools.historyExportSortLastPlayed') }}</option>
             <option value="playCount">{{ t('tools.historyExportSortPlayCount') }}</option>
@@ -157,6 +157,7 @@ watch(format, (value) => {
               class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             />
             <button
+              type="button"
               class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
               :title="t('tools.chooseFolder')"
@@ -170,6 +171,7 @@ watch(format, (value) => {
       </div>
 
       <button
+        type="button"
         data-testid="history-export-run"
         class="fx-noise mt-4 flex items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
         :disabled="busy"
@@ -192,6 +194,7 @@ watch(format, (value) => {
           })
         }}
         <button
+          type="button"
           class="ml-1 rounded-field border border-hairline px-2 py-0.5 text-base-content/70 hover:bg-base-content/10"
           @click="openOutput"
         >

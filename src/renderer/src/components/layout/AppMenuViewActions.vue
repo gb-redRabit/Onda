@@ -16,6 +16,7 @@ const emit = defineEmits<{
 <template>
   <div v-if="show" class="flex min-w-0 flex-1 items-center justify-center px-3">
     <button
+      type="button"
       class="flex h-7 w-full max-w-md items-center gap-2 rounded-field border border-hairline/70 bg-base-200/50 px-2.5 text-left text-[12px] text-base-content/55 transition-colors hover:border-base-content/25 hover:bg-base-content/8 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       style="-webkit-app-region: no-drag"
       data-testid="titlebar-search"

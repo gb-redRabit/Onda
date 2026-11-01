@@ -14,6 +14,7 @@ const { t } = useI18n();
     </p>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <button
+        type="button"
         class="fx-noise p-3 fx-depth rounded-field border text-left transition"
         :class="
           !downloadAll ? 'border-primary bg-primary/10' : 'border-hairline hover:border-hairline'
@@ -24,6 +25,7 @@ const { t } = useI18n();
         <p class="text-xs text-base-content/50">{{ t('youtube.scopeNewDesc') }}</p>
       </button>
       <button
+        type="button"
         class="fx-noise p-3 fx-depth rounded-field border text-left transition"
         :class="
           downloadAll ? 'border-primary bg-primary/10' : 'border-hairline hover:border-hairline'

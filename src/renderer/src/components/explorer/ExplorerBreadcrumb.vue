@@ -66,6 +66,7 @@ async function onDrop(e: DragEvent, targetPath: string) {
 <template>
   <div class="flex gap-0.5">
     <button
+      type="button"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoBack"
       :aria-label="$t('explorer.back')"
@@ -75,6 +76,7 @@ async function onDrop(e: DragEvent, targetPath: string) {
       <ChevronLeft :size="16" class="pointer-events-none" />
     </button>
     <button
+      type="button"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoForward"
       :aria-label="$t('explorer.forward')"
@@ -84,6 +86,7 @@ async function onDrop(e: DragEvent, targetPath: string) {
       <ChevronRight :size="16" class="pointer-events-none" />
     </button>
     <button
+      type="button"
       class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:bg-base-content/10 disabled:opacity-30 transition-colors"
       :disabled="!explorer.canGoUp"
       :aria-label="$t('explorer.up')"
@@ -99,6 +102,7 @@ async function onDrop(e: DragEvent, targetPath: string) {
     @drop.prevent
   >
     <button
+      type="button"
       class="fx-noise shrink-0 p-0.5 text-base-content/50 hover:text-base-content transition-colors"
       :class="{ 'ring-2 ring-primary bg-primary/50 fx-depth rounded-field': dropTargetIdx === -1 }"
       :aria-label="$t('explorer.home')"
@@ -115,6 +119,7 @@ async function onDrop(e: DragEvent, targetPath: string) {
       <template v-for="seg in segments" :key="seg.path">
         <span v-if="seg.idx > 0" class="text-base-content/50">\</span>
         <button
+          type="button"
           :data-testid="`explorer-crumb-${seg.idx}`"
           :data-crumb-path="seg.path"
           class="fx-noise px-1 py-0.5 fx-depth rounded-field hover:bg-base-content/10 text-base-content/70 hover:text-base-content transition-colors truncate max-w-30"

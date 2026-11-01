@@ -16,6 +16,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
         />
       </div>
       <button
+        type="button"
         class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors disabled:opacity-60"
         :disabled="refreshing"
         @click="refreshAll"
@@ -46,6 +47,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
             <template v-if="dep.installing">
               <span class="text-xs text-base-content/50 font-mono">{{ dep.percent }}%</span>
               <button
+                type="button"
                 class="fx-noise px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
                 @click="cancelInstall(dep)"
               >
@@ -58,6 +60,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
               </span>
               <button
                 v-else
+                type="button"
                 class="fx-noise px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
                 @click="runInstall(dep, false)"
               >

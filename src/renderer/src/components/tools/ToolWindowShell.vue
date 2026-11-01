@@ -67,6 +67,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="flex shrink-0 items-center gap-0.5" style="-webkit-app-region: no-drag">
         <button
+          type="button"
           class="fx-noise rounded-field p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
           :title="$t('window.minimize')"
           :aria-label="$t('window.minimize')"
@@ -75,6 +76,7 @@ onBeforeUnmount(() => {
           <Minus :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise rounded-field p-1.5 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
           :title="$t('window.maximize')"
           :aria-label="$t('window.maximize')"
@@ -84,6 +86,7 @@ onBeforeUnmount(() => {
           <Maximize2 v-else :size="12" />
         </button>
         <button
+          type="button"
           class="fx-noise rounded-field p-1.5 text-base-content/50 transition-colors hover:bg-error/80 hover:text-error-content"
           :title="$t('window.close')"
           :aria-label="$t('window.close')"

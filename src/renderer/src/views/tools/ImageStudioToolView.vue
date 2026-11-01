@@ -981,6 +981,7 @@ onBeforeUnmount(() => {
               :icon="ImageIcon"
             />
             <button
+              type="button"
               data-testid="image-studio-open"
               class="fx-noise mt-4 rounded-field bg-primary px-4 py-2 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90"
               :disabled="loading"
@@ -1031,6 +1032,7 @@ onBeforeUnmount(() => {
                 <button
                   v-for="item in ASPECTS"
                   :key="item.id"
+                  type="button"
                   :data-testid="`image-studio-aspect-${item.id}`"
                   class="rounded-field border px-2 py-1 text-2xs transition-colors"
                   :class="
@@ -1051,6 +1053,7 @@ onBeforeUnmount(() => {
               </p>
               <div class="flex gap-1">
                 <button
+                  type="button"
                   data-testid="image-studio-rotate-left"
                   class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioRotateLeft')"
@@ -1060,6 +1063,7 @@ onBeforeUnmount(() => {
                   <RotateCcw :size="14" class="mx-auto" />
                 </button>
                 <button
+                  type="button"
                   data-testid="image-studio-rotate-right"
                   class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioRotateRight')"
@@ -1069,6 +1073,7 @@ onBeforeUnmount(() => {
                   <RotateCw :size="14" class="mx-auto" />
                 </button>
                 <button
+                  type="button"
                   data-testid="image-studio-flip-h"
                   class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioFlipH')"
@@ -1078,6 +1083,7 @@ onBeforeUnmount(() => {
                   <FlipHorizontal2 :size="14" class="mx-auto" />
                 </button>
                 <button
+                  type="button"
                   data-testid="image-studio-flip-v"
                   class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
                   :title="t('tools.imageStudioFlipV')"
@@ -1112,6 +1118,7 @@ onBeforeUnmount(() => {
                 <button
                   v-for="item in TOOLS"
                   :key="item.id"
+                  type="button"
                   :data-testid="`image-studio-tool-${item.id}`"
                   class="flex flex-col items-center gap-1 rounded-field border px-1 py-1.5 text-3xs transition-colors"
                   :class="
@@ -1159,6 +1166,7 @@ onBeforeUnmount(() => {
               </p>
               <div class="flex gap-1">
                 <button
+                  type="button"
                   class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="undoAnnotation"
@@ -1166,6 +1174,7 @@ onBeforeUnmount(() => {
                   <Undo2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioUndo') }}
                 </button>
                 <button
+                  type="button"
                   data-testid="image-studio-delete"
                   class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="!selectedId"
@@ -1174,6 +1183,7 @@ onBeforeUnmount(() => {
                   <Trash2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioDelete') }}
                 </button>
                 <button
+                  type="button"
                   class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="annotations.length === 0"
                   @click="clearAnnotations"
@@ -1232,6 +1242,7 @@ onBeforeUnmount(() => {
                   {{ estimating ? '…' : formatBytes(estimatedBytes) }}</span
                 >
                 <button
+                  type="button"
                   data-testid="image-studio-estimate"
                   class="rounded-field border border-hairline px-2 py-0.5 hover:bg-base-content/10"
                   :disabled="estimating"
@@ -1250,6 +1261,7 @@ onBeforeUnmount(() => {
                     class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                   />
                   <button
+                    type="button"
                     class="fx-noise shrink-0 rounded-field border border-hairline p-2 hover:bg-base-content/10"
                     :title="t('tools.chooseFolder')"
                     :aria-label="t('tools.chooseFolder')"
@@ -1260,6 +1272,7 @@ onBeforeUnmount(() => {
                 </div>
               </label>
               <button
+                type="button"
                 data-testid="image-studio-save"
                 class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
                 :disabled="saving || !outputPath.trim()"
@@ -1289,6 +1302,7 @@ onBeforeUnmount(() => {
                   class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                 />
                 <button
+                  type="button"
                   class="fx-noise shrink-0 rounded-field border border-hairline p-2 hover:bg-base-content/10"
                   :title="t('tools.imageStudioCoverPick')"
                   :aria-label="t('tools.imageStudioCoverPick')"
@@ -1298,6 +1312,7 @@ onBeforeUnmount(() => {
                 </button>
               </div>
               <button
+                type="button"
                 data-testid="image-studio-cover-set"
                 class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs font-medium hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="!savedPath || !coverAudioPath"

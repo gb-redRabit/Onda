@@ -113,6 +113,7 @@ const autoDownload = computed({
   >
     <div class="flex items-center gap-3">
       <button
+        type="button"
         class="shrink-0 w-12 h-12 rounded-full overflow-hidden bg-base-100"
         :title="sub.channelTitle"
         @click="emit('openChannel', sub.channelId)"
@@ -129,6 +130,7 @@ const autoDownload = computed({
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <button
+            type="button"
             class="text-sm font-semibold text-base-content truncate hover:text-primary-text transition-colors"
             @click="emit('openChannel', sub.channelId)"
           >

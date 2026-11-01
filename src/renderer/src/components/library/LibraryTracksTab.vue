@@ -147,6 +147,7 @@ onUnmounted(() => {
       <span class="text-xs font-medium text-base-content/60">{{ trackCount(tracks.length) }}</span>
       <div class="flex items-center gap-1.5">
         <button
+          type="button"
           data-testid="library-view-list"
           class="p-2 rounded-full transition-colors"
           :class="
@@ -161,6 +162,7 @@ onUnmounted(() => {
           <LayoutList :size="14" />
         </button>
         <button
+          type="button"
           data-testid="library-view-grid"
           class="p-2 rounded-full transition-colors"
           :class="
@@ -176,6 +178,7 @@ onUnmounted(() => {
         </button>
         <div class="w-px h-6 bg-base-300 mx-1"></div>
         <button
+          type="button"
           data-testid="library-play-all"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="emit('playAll')"
@@ -184,6 +187,7 @@ onUnmounted(() => {
           ><span class="sm:hidden">{{ $t('common.play') }}</span>
         </button>
         <button
+          type="button"
           class="p-2 rounded-full bg-base-100 border border-hairline text-base-content/60 hover:text-primary-text hover:border-primary/30 transition-colors"
           :title="$t('library.shuffle')"
           @click="emit('shuffleAll')"

@@ -29,6 +29,7 @@ async function pickDownloadDir() {
           class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm font-mono focus:outline-hidden focus:ring-1 focus:ring-primary"
         />
         <button
+          type="button"
           class="fx-noise shrink-0 px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           @click="pickDownloadDir"
         >

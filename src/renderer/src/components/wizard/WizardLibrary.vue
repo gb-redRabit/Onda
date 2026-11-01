@@ -36,6 +36,7 @@ function removeFolder(path: string) {
         <FolderPlus :size="16" class="text-primary-text/70 shrink-0" />
         <span class="text-sm truncate">{{ folder }}</span>
         <button
+          type="button"
           class="ml-auto p-1 rounded hover:bg-base-content/10 text-base-content/50 hover:text-error transition-colors"
           :aria-label="$t('common.delete')"
           @click="removeFolder(folder)"
@@ -48,6 +49,7 @@ function removeFolder(path: string) {
       </div>
 
       <button
+        type="button"
         class="w-full flex items-center gap-3 p-3 fx-depth rounded-box border border-dashed border-hairline hover:border-primary/60 hover:bg-base-content/5 transition-colors text-left"
         @click="addFolder"
       >
@@ -65,7 +67,7 @@ function removeFolder(path: string) {
           role="switch"
           :aria-checked="scanNow"
           :aria-label="$t('wizard.libraryScanNow')"
-          class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-elevated"
+          class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-elevated"
           :class="scanNow ? 'bg-primary' : 'bg-base-300'"
           @click="emit('update:scanNow', !scanNow)"
         >

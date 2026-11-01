@@ -61,6 +61,9 @@ export default defineConfig(
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-useless-escape': 'off',
       'vue/first-attribute-linebreak': 'error',
+      // Każdy <button> musi mieć jawny type: bez niego przeglądarka traktuje go
+      // jak `submit`, co w formularzach wysyła je przypadkiem.
+      'vue/html-button-has-type': 'error',
       // Vue accepts camelCase props in templates; this project consistently uses that form.
       'vue/attribute-hyphenation': 'off',
       'prettier/prettier': 'off'

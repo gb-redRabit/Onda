@@ -19,6 +19,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
         <button
           v-for="opt in options"
           :key="opt.id"
+          type="button"
           class="fx-depth rounded-box fx-noise text-2xs font-medium transition border flex flex-col items-center justify-center gap-1 min-h-16"
           :class="
             modelValue === opt.id

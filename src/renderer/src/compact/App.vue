@@ -301,6 +301,7 @@ function dismissError(): void {
       }}</span>
       <span class="flex-1" />
       <button
+        type="button"
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
         :class="pinned ? 'text-primary-text' : ''"
         :title="pinned ? $t('compact.unpin') : $t('compact.pin')"
@@ -311,6 +312,7 @@ function dismissError(): void {
         <Pin :size="13" />
       </button>
       <button
+        type="button"
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-base-content hover:bg-base-content/10"
         :title="$t('compact.fullWindow')"
         :aria-label="$t('compact.fullWindow')"
@@ -320,6 +322,7 @@ function dismissError(): void {
         <AppWindow :size="13" />
       </button>
       <button
+        type="button"
         class="grid place-items-center w-6 h-6 rounded-field text-base-content/60 hover:text-error hover:bg-error/10"
         :title="$t('compact.hideToTray')"
         :aria-label="$t('compact.hideToTray')"
@@ -339,6 +342,7 @@ function dismissError(): void {
       <AlertCircle :size="14" class="shrink-0" />
       <span class="min-w-0 flex-1">{{ playbackError }}</span>
       <button
+        type="button"
         class="grid place-items-center w-5 h-5 rounded-field hover:bg-error/10 shrink-0"
         :title="$t('compact.dismiss')"
         :aria-label="$t('compact.dismiss')"
@@ -398,6 +402,7 @@ function dismissError(): void {
 
       <div class="flex items-center gap-1.5 mt-3">
         <button
+          type="button"
           class="grid place-items-center w-8 h-8 rounded-field text-base-content/65 hover:text-base-content hover:bg-base-content/10"
           :class="player.shuffle ? 'text-primary-text' : ''"
           :title="$t('compact.shuffle')"
@@ -409,6 +414,7 @@ function dismissError(): void {
           <Shuffle :size="14" />
         </button>
         <button
+          type="button"
           class="grid place-items-center w-8 h-8 rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10"
           :title="$t('compact.previous')"
           :aria-label="$t('compact.previous')"
@@ -418,6 +424,7 @@ function dismissError(): void {
           <SkipBack :size="15" />
         </button>
         <button
+          type="button"
           class="grid place-items-center w-10 h-10 rounded-full bg-primary text-primary-content hover:brightness-110 transition"
           :title="player.isPlaying ? $t('compact.pause') : $t('compact.play')"
           :aria-label="player.isPlaying ? $t('compact.pause') : $t('compact.play')"
@@ -429,6 +436,7 @@ function dismissError(): void {
           <Play v-else :size="17" class="translate-x-[1px]" />
         </button>
         <button
+          type="button"
           class="grid place-items-center w-8 h-8 rounded-field text-base-content/70 hover:text-base-content hover:bg-base-content/10"
           :title="$t('compact.next')"
           :aria-label="$t('compact.next')"
@@ -438,6 +446,7 @@ function dismissError(): void {
           <SkipForward :size="15" />
         </button>
         <button
+          type="button"
           class="grid place-items-center w-8 h-8 rounded-field text-base-content/65 hover:text-base-content hover:bg-base-content/10"
           :class="player.repeat !== 'none' ? 'text-primary-text' : ''"
           :title="repeatLabel"
@@ -451,6 +460,7 @@ function dismissError(): void {
         </button>
         <span class="flex-1" />
         <button
+          type="button"
           class="grid place-items-center w-6 h-6 rounded-field text-base-content/45 hover:text-base-content hover:bg-base-content/10 shrink-0"
           :title="player.isMuted ? $t('compact.unmute') : $t('compact.mute')"
           :aria-label="player.isMuted ? $t('compact.unmute') : $t('compact.mute')"
@@ -488,6 +498,7 @@ function dismissError(): void {
         ]"
         :id="`compact-tab-${item.id}`"
         :key="item.id"
+        type="button"
         class="compact-tab flex items-center gap-1.5 px-2.5 h-8 rounded-field text-[12px] transition-colors"
         :class="
           tab === item.id

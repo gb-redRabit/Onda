@@ -173,6 +173,7 @@ function close(): void {
       <Sparkles :size="16" class="text-primary-text shrink-0" />
       <h3 id="smart-playlist-dialog-title" class="flex-1 text-sm font-semibold">{{ title }}</h3>
       <button
+        type="button"
         class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :aria-label="$t('common.close')"
         @click="close"
@@ -201,7 +202,7 @@ function close(): void {
           </span>
           <select
             v-model="match"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
           >
             <option value="all">{{ t('library.smartPlaylists.matchAll') }}</option>
             <option value="any">{{ t('library.smartPlaylists.matchAny') }}</option>
@@ -216,6 +217,7 @@ function close(): void {
         <button
           v-for="template in SMART_PLAYLIST_TEMPLATES"
           :key="template.key"
+          type="button"
           class="fx-noise px-2 py-1 fx-depth rounded-field border border-hairline text-2xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
           @click="applyTemplate(template)"
         >
@@ -229,6 +231,7 @@ function close(): void {
             {{ t('library.smartPlaylists.rules') }}
           </span>
           <button
+            type="button"
             data-testid="smart-playlist-add-rule"
             class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field border border-hairline text-2xs text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
             @click="addRule"
@@ -246,7 +249,7 @@ function close(): void {
         >
           <select
             :value="rule.field"
-            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
             :aria-label="t('library.smartPlaylists.field')"
             @change="
               setField(index, ($event.target as HTMLSelectElement).value as SmartPlaylistField)
@@ -259,7 +262,7 @@ function close(): void {
 
           <select
             :value="rule.operator"
-            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
             :aria-label="t('library.smartPlaylists.operator')"
             @change="
               setOperator(
@@ -322,6 +325,7 @@ function close(): void {
           </div>
 
           <button
+            type="button"
             class="fx-noise p-1.5 fx-depth rounded-field text-base-content/40 hover:text-error hover:bg-error/10 transition-colors"
             :title="t('library.smartPlaylists.removeRule')"
             :aria-label="t('library.smartPlaylists.removeRule')"
@@ -339,7 +343,7 @@ function close(): void {
           </span>
           <select
             v-model="sort"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
           >
             <option value="">{{ t('library.smartPlaylists.sortNone') }}</option>
             <option v-for="key in SMART_SORT_KEYS" :key="key" :value="key">
@@ -353,7 +357,7 @@ function close(): void {
           </span>
           <select
             v-model="sortDir"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
           >
             <option value="asc">{{ t('library.smartPlaylists.asc') }}</option>
             <option value="desc">{{ t('library.smartPlaylists.desc') }}</option>
@@ -365,7 +369,7 @@ function close(): void {
           </span>
           <select
             v-model.number="limit"
-            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus:outline-hidden focus:ring-1 focus:ring-primary"
+            class="mt-1 w-full px-2.5 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
           >
             <option :value="0">{{ t('library.smartPlaylists.limitAll') }}</option>
             <option :value="25">25</option>
@@ -386,12 +390,14 @@ function close(): void {
       </span>
       <div class="flex items-center gap-2">
         <button
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
           @click="close"
         >
           {{ $t('common.cancel') }}
         </button>
         <button
+          type="button"
           data-testid="smart-playlist-save"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary hover:bg-primary/90 text-primary-content text-sm font-medium transition-colors disabled:opacity-40"
           :disabled="!canSave"

@@ -67,12 +67,14 @@ function openDependencies(): void {
       </div>
     </div>
     <button
+      type="button"
       class="fx-noise shrink-0 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
       @click="openDependencies"
     >
       <ArrowRight :size="14" />{{ $t('deps.manage') }}
     </button>
     <button
+      type="button"
       class="shrink-0 p-1 rounded-field text-base-content/50 hover:bg-base-content/10 hover:text-base-content transition-colors"
       :title="$t('deps.dismiss')"
       :aria-label="$t('deps.dismiss')"

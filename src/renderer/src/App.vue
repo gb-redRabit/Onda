@@ -480,12 +480,12 @@ function onWindowBlur() {
       <div
         v-if="!isStandaloneWindow && player.queueVisible && isNarrowLayout"
         class="absolute inset-0 z-20 bg-neutral/35"
-        @click="player.toggleQueue"
+        @click.self="player.toggleQueue"
       />
       <div
         v-if="!isStandaloneWindow && player.subtitlePanelVisible && isNarrowLayout"
         class="absolute inset-0 z-20 bg-neutral/35"
-        @click="player.toggleSubtitlePanel"
+        @click.self="player.toggleSubtitlePanel"
       />
     </div>
     <PlayerBar

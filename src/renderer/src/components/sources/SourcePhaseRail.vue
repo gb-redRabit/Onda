@@ -71,6 +71,7 @@ function onKeydown(e: KeyboardEvent, index: number): void {
       <CircleAlert v-else-if="p.status === 'invalid'" :size="13" class="shrink-0 text-warning" />
       <button
         v-if="p.kind === 'endpoint'"
+        type="button"
         class="shrink-0 p-0.5 rounded text-base-content/55 hover:text-error transition-colors"
         :aria-label="t('common.delete')"
         @click.stop="emit('remove', i)"
@@ -79,6 +80,7 @@ function onKeydown(e: KeyboardEvent, index: number): void {
       </button>
     </div>
     <button
+      type="button"
       class="mt-1 w-full flex items-center gap-1.5 px-2.5 py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors"
       data-testid="sources-phase-add"
       @click="emit('add')"

@@ -106,6 +106,7 @@ defineExpose({ focusSearch });
       <AlertTriangle :size="14" class="shrink-0" />
       <span class="min-w-0 flex-1">{{ $t('compact.libraryError') }}</span>
       <button
+        type="button"
         class="inline-flex items-center gap-1 px-2 h-6 rounded-field border border-error/40 hover:bg-error/10 shrink-0"
         :title="$t('compact.retry')"
         :aria-label="$t('compact.retry')"
@@ -131,6 +132,7 @@ defineExpose({ focusSearch });
           {{ $t('compact.addLibraryHint') }}
         </p>
         <button
+          type="button"
           class="mt-1 inline-flex items-center gap-1.5 px-2.5 h-7 rounded-field border border-hairline text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10"
           data-testid="compact-empty-open-full"
           @click="openFullWindow"
@@ -150,6 +152,7 @@ defineExpose({ focusSearch });
           :style="{ transform: `translateY(${row.start}px)`, height: `${row.size}px` }"
         >
           <button
+            type="button"
             class="flex min-w-0 flex-1 items-center gap-2.5 h-full text-left"
             :data-testid="`compact-track-${row.index}`"
             @click="playAt(row.index)"
@@ -178,6 +181,7 @@ defineExpose({ focusSearch });
             />
           </button>
           <button
+            type="button"
             class="grid place-items-center w-7 h-7 shrink-0 rounded-field text-base-content/35 hover:text-primary-text hover:bg-primary/10 transition-colors"
             :title="$t('compact.addToQueue')"
             :aria-label="$t('compact.addToQueue')"

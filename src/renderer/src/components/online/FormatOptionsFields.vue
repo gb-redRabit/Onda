@@ -49,6 +49,7 @@ const trimError = computed(() => {
       <button
         v-for="k in ['audio', 'video'] as const"
         :key="k"
+        type="button"
         class="fx-noise rounded-field px-4 py-1.5 text-xs font-medium fx-depth transition-colors"
         :class="
           kind === k

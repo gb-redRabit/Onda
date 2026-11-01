@@ -164,6 +164,7 @@ function move(index: number, dir: -1 | 1): void {
           class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex items-center gap-0.5"
         >
           <button
+            type="button"
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content disabled:opacity-30"
             :title="$t('sources.moveUp')"
             :aria-label="$t('sources.moveUp')"
@@ -173,6 +174,7 @@ function move(index: number, dir: -1 | 1): void {
             <ChevronUp :size="12" />
           </button>
           <button
+            type="button"
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content disabled:opacity-30"
             :title="$t('sources.moveDown')"
             :aria-label="$t('sources.moveDown')"
@@ -182,6 +184,7 @@ function move(index: number, dir: -1 | 1): void {
             <ChevronDown :size="12" />
           </button>
           <button
+            type="button"
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content"
             :title="$t('common.edit')"
             :aria-label="$t('common.edit')"
@@ -191,6 +194,7 @@ function move(index: number, dir: -1 | 1): void {
             <Pencil :size="12" />
           </button>
           <button
+            type="button"
             class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-error"
             :title="$t('common.delete')"
             :aria-label="$t('common.delete')"

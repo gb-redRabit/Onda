@@ -234,6 +234,7 @@ watch(
             </div>
             <div class="flex items-center gap-1.5">
               <button
+                type="button"
                 data-testid="batch-images-add"
                 class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="busy"
@@ -243,6 +244,7 @@ watch(
                 {{ t('tools.addFiles') }}
               </button>
               <button
+                type="button"
                 data-testid="batch-images-clear"
                 class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                 :disabled="busy || total === 0"
@@ -294,6 +296,7 @@ watch(
                 </span>
                 <button
                   v-if="row.outputPath"
+                  type="button"
                   class="fx-noise shrink-0 rounded-field p-1 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
                   :title="t('tools.openOutput')"
                   :aria-label="t('tools.openOutput')"
@@ -302,6 +305,7 @@ watch(
                   <FolderOpen :size="12" />
                 </button>
                 <button
+                  type="button"
                   class="fx-noise shrink-0 rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
                   :title="t('tools.remove')"
                   :aria-label="t('tools.remove')"
@@ -328,7 +332,7 @@ watch(
                 v-model="format"
                 data-testid="batch-images-format"
                 :disabled="busy"
-                class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
               >
                 <option v-for="item in IMAGE_OUTPUT_FORMATS" :key="item" :value="item">
                   {{ item.toUpperCase() }}
@@ -395,6 +399,7 @@ watch(
                   class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
                 <button
+                  type="button"
                   class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
                   :disabled="busy"
                   :title="t('tools.chooseFolder')"
@@ -409,6 +414,7 @@ watch(
 
           <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
             <button
+              type="button"
               data-testid="batch-images-start"
               class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
               :disabled="busy || total === 0"
@@ -419,6 +425,7 @@ watch(
             </button>
             <button
               v-if="busy"
+              type="button"
               data-testid="batch-images-cancel"
               class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
               @click="cancel"

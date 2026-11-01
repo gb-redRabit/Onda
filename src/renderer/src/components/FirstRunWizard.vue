@@ -111,6 +111,7 @@ function dismiss() {
             {{ t('wizard.title') }}
           </div>
           <button
+            type="button"
             data-testid="wizard-close"
             class="p-1.5 rounded hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
             :title="t('wizard.later')"
@@ -145,6 +146,7 @@ function dismiss() {
 
       <footer class="px-6 pb-5 pt-4 border-t border-hairline flex items-center gap-3">
         <button
+          type="button"
           data-testid="wizard-skip"
           class="px-3 py-2 rounded-field text-sm text-base-content/60 hover:text-base-content hover:bg-base-content/10 transition-colors"
           @click="skipAll"
@@ -155,6 +157,7 @@ function dismiss() {
         <div class="flex-1" />
 
         <button
+          type="button"
           data-testid="wizard-back"
           class="fx-noise px-3 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
           :disabled="isFirst"
@@ -165,6 +168,7 @@ function dismiss() {
         </button>
 
         <button
+          type="button"
           data-testid="wizard-next"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
           @click="next"

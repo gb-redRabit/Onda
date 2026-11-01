@@ -210,6 +210,7 @@ onBeforeUnmount(() => {
         <div class="text-xs text-base-content/70 mt-0.5">
           <button
             v-if="showChannel && channelTarget"
+            type="button"
             class="hover:text-primary-text transition-colors"
             @click.stop="onOpenChannel"
           >

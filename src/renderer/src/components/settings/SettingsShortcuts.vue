@@ -91,6 +91,7 @@ function displayKey(key: string): string {
     >
       <span class="text-sm">{{ labelFor(String(action)) }}</span>
       <button
+        type="button"
         class="fx-noise px-3 py-1 fx-depth rounded-field border text-xs font-mono transition-colors min-w-15 text-center"
         :class="
           recording === action

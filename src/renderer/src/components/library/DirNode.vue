@@ -203,6 +203,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         @dragstart="onFolderDrag($event, childOriginal(sub))"
       >
         <button
+          type="button"
           class="flex items-center gap-2 flex-1 min-w-0 text-left"
           @click="emit('toggle', childOriginal(sub))"
           @contextmenu.prevent="showFolderMenu($event, childOriginal(sub), metaFor(sub).subtree)"
@@ -235,6 +236,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
         </button>
 
         <button
+          type="button"
           class="w-6 h-6 rounded-full bg-base-100 border border-hairline text-base-content/50 hover:text-primary-text hover:border-primary/30 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0"
           :title="$t('library.folderPlay')"
           @click.stop="playDir(childOriginal(sub))"
@@ -242,6 +244,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           <Play :size="10" class="ml-px fill-current" />
         </button>
         <button
+          type="button"
           class="w-6 h-6 rounded-full bg-base-100 border border-hairline text-base-content/60 hover:text-base-content flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0 hidden sm:flex"
           :title="$t('common.showInFolder')"
           @click.stop="openExplorer(childOriginal(sub))"

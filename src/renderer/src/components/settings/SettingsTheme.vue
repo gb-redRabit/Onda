@@ -117,6 +117,7 @@ async function pasteThemeJson() {
             <button
               v-for="seed in BUILTIN_THEME_NAMES"
               :key="seed"
+              type="button"
               :data-testid="'theme-seed-' + seed"
               class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
               :class="
@@ -164,6 +165,7 @@ async function pasteThemeJson() {
             <button
               v-for="act in ['seedDark', 'seedLight', 'copy', 'paste']"
               :key="act"
+              type="button"
               class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border border-hairline bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
               @click="
                 act === 'seedDark'

@@ -143,6 +143,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
   <SettingsGroup :title="t('plugins.title')" :description="t('plugins.description')">
     <div class="flex items-center gap-2 pt-2">
       <button
+        type="button"
         class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium bg-primary text-primary-content fx-depth"
         @click="onInstall"
       >
@@ -150,6 +151,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         {{ t('plugins.installFromFolder') }}
       </button>
       <button
+        type="button"
         class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-hairline hover:bg-base-content/10 hover:text-base-content transition-colors"
         :disabled="loading"
         data-testid="plugins-refresh"
@@ -160,6 +162,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         {{ t('plugins.refresh') }}
       </button>
       <button
+        type="button"
         class="flex items-center gap-1.5 px-3 h-8 rounded-field text-xs font-medium text-base-content/70 bg-base-300 border border-hairline hover:bg-base-content/10 hover:text-base-content transition-colors"
         data-testid="plugins-guide-open"
         @click="guideOpen = true"
@@ -239,6 +242,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         </div>
         <button
           v-if="!isInstalled(ex.id)"
+          type="button"
           class="flex items-center gap-1.5 px-2.5 h-7 rounded-field text-xs font-medium bg-primary text-primary-content fx-depth shrink-0"
           @click="onInstallExample(ex.id)"
         >
@@ -342,6 +346,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
                 (c) => (c as { pluginId?: string }).pluginId === p.id
               )"
               :key="cmd.id"
+              type="button"
               class="flex items-center gap-1 px-2 h-7 rounded-field text-xs border border-hairline hover:bg-base-200"
               @click="testCommand(cmd.id)"
             >
@@ -392,6 +397,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
         </div>
 
         <button
+          type="button"
           class="flex items-center gap-1 text-xs text-base-content/50 hover:text-base-content mt-3"
           @click="toggleLogs(p.id)"
         >

@@ -115,6 +115,7 @@ function revealDupFile(path: string) {
         <Copy :size="14" class="text-primary-text" /> {{ $t('explorer.duplicates') }}
       </h3>
       <button
+        type="button"
         data-testid="explorer-duplicates-close"
         class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :aria-label="$t('common.close')"
@@ -191,6 +192,7 @@ function revealDupFile(path: string) {
       class="flex items-center gap-2 px-3 py-2.5 border-t border-hairline shrink-0"
     >
       <button
+        type="button"
         data-testid="explorer-duplicates-select-all"
         class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-2xs text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition-colors"
         @click="selectAllDuplicates"
@@ -198,6 +200,7 @@ function revealDupFile(path: string) {
         {{ $t('explorer.duplicatesSelectAll') }}
       </button>
       <button
+        type="button"
         data-testid="explorer-duplicates-delete"
         class="fx-noise flex-1 px-2 py-1.5 fx-depth rounded-field text-2xs bg-error/15 text-error hover:bg-error/25 transition-colors flex items-center justify-center gap-1 disabled:opacity-40 disabled:pointer-events-none"
         :disabled="dupSelected.size === 0"

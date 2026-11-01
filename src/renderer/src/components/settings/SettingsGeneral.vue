@@ -84,6 +84,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
       <button
         v-for="lang in languages"
         :key="lang.id"
+        type="button"
         class="flex items-center gap-3 p-4 fx-depth rounded-box fx-noise border transition text-left"
         :class="
           settings.appearance.locale === lang.id
@@ -139,6 +140,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
       anchor="setting-compact-startup"
     >
       <button
+        type="button"
         class="px-2.5 h-7 rounded-field text-2xs font-medium border border-primary/40 text-primary-text hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
         :disabled="switchingToCompact"
         :title="$t('settings.compactSwitchNowHint')"
@@ -162,6 +164,7 @@ async function setCloseToTray(value: boolean): Promise<void> {
         </p>
       </div>
       <button
+        type="button"
         data-testid="settings-open-wizard"
         class="fx-noise px-3 py-2 fx-depth rounded-field text-sm font-medium flex items-center gap-1.5 shrink-0 transition-colors border border-primary/40 text-primary-text hover:bg-primary/10"
         @click="ui.openSetupWizard()"

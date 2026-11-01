@@ -41,6 +41,7 @@ function iconComponent() {
 <template>
   <button
     ref="rootEl"
+    type="button"
     :draggable="!isDriveList"
     :data-file-path="item.path"
     :data-testid="`explorer-item-${item.name}`"

@@ -133,6 +133,7 @@ const { t } = useI18n();
     <div class="flex items-center justify-between pt-1">
       <span class="text-2xs text-base-content/50">{{ t('audioView.elementBg') }}</span>
       <button
+        type="button"
         class="relative w-9 h-5 rounded-full border transition-colors"
         :class="
           element.bg ? 'bg-primary border-primary/50' : 'bg-base-content/10 border-base-content/30'

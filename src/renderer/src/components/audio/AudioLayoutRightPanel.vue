@@ -56,6 +56,7 @@ const decorationOptions = computed(() =>
         <button
           v-for="key in PRESET_KEYS"
           :key="key"
+          type="button"
           class="fx-noise flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 fx-depth rounded-field text-2xs font-medium transition border"
           :class="
             props.currentPreset === key
@@ -79,6 +80,7 @@ const decorationOptions = computed(() =>
       <button
         v-for="tab in TABS"
         :key="tab"
+        type="button"
         class="flex-1 px-2 py-1.5 rounded-field text-2xs font-semibold uppercase tracking-wider transition-colors"
         :class="
           rightTab === tab
@@ -117,6 +119,7 @@ const decorationOptions = computed(() =>
             >L{{ el.layer }}</span
           >
           <button
+            type="button"
             class="p-0.5 rounded hover:bg-base-content/10 transition-colors"
             :title="el.visible ? t('audioView.hideElement') : t('audioView.showElement')"
             :aria-pressed="!el.visible"
@@ -137,6 +140,7 @@ const decorationOptions = computed(() =>
           <button
             v-for="v in VARIANT_KEYS[props.selected.id]"
             :key="v.value"
+            type="button"
             class="px-2.5 py-1.5 rounded-field text-2xs font-medium border transition-colors"
             :class="
               (props.selected.variant ?? VARIANT_DEFAULT[props.selected.id]) === v.value
@@ -167,6 +171,7 @@ const decorationOptions = computed(() =>
             <button
               v-for="opt in decorationOptions"
               :key="opt.value"
+              type="button"
               class="px-2.5 py-1.5 rounded-field text-2xs font-medium border transition-colors"
               :class="
                 (props.selected.decoration ?? 'none') === opt.value

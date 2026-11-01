@@ -131,6 +131,7 @@ async function doDeleteProfile() {
         <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
       </select>
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 disabled:opacity-40 shrink-0"
         :aria-label="$t('settings.profileDelete')"
         :disabled="!selectedProfileId"
@@ -246,6 +247,7 @@ async function doDeleteProfile() {
       </template>
     </div>
     <button
+      type="button"
       class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 disabled:opacity-50 w-fit"
       :disabled="!profileName.trim()"
       @click="doSaveProfile"

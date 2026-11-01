@@ -326,6 +326,7 @@ async function onFactoryReset(): Promise<void> {
     </div>
     <div class="flex flex-wrap items-center gap-3">
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-error/40 text-error text-xs font-medium hover:bg-error/10 transition-colors disabled:opacity-50"
         :disabled="cacheBusy"
         @click="onClearCache"
@@ -347,6 +348,7 @@ async function onFactoryReset(): Promise<void> {
     </div>
     <div class="flex flex-wrap items-center gap-3">
       <button
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-error text-error-content text-xs font-medium hover:bg-error/90 transition-colors disabled:opacity-50"
         :disabled="resetBusy || resetting"
         @click="onFactoryReset"
@@ -361,6 +363,7 @@ async function onFactoryReset(): Promise<void> {
 
   <div class="flex items-center gap-2">
     <button
+      type="button"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
       :disabled="busy"
       @click="refresh"
@@ -368,12 +371,14 @@ async function onFactoryReset(): Promise<void> {
       <RefreshCw :size="14" />{{ $t('settings.depRefresh') }}
     </button>
     <button
+      type="button"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-medium hover:bg-base-content/10 transition-colors"
       @click="onDownload"
     >
       <Download :size="14" />{{ $t('settings.downloadLog') }}
     </button>
     <button
+      type="button"
       class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-error/40 text-error text-xs font-medium hover:bg-error/10 transition-colors"
       @click="onClear"
     >

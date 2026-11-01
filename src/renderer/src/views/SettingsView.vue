@@ -281,6 +281,7 @@ onBeforeUnmount(() => {
           />
           <button
             v-if="search"
+            type="button"
             class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
             :aria-label="t('common.close')"
             @click="search = ''"
@@ -291,6 +292,7 @@ onBeforeUnmount(() => {
 
         <div class="ml-auto flex items-center gap-1.5 shrink-0 relative z-40">
           <button
+            type="button"
             class="ui-icon-button fx-noise fx-depth relative z-40"
             :title="t('settings.more')"
             :aria-label="t('settings.more')"
@@ -318,6 +320,7 @@ onBeforeUnmount(() => {
           @keydown="onMenuKeydown"
         >
           <button
+            type="button"
             role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
             data-testid="settings-export"
@@ -326,6 +329,7 @@ onBeforeUnmount(() => {
             <FileDown :size="14" />{{ t('settings.export') }}
           </button>
           <button
+            type="button"
             role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left hover:bg-base-content/10 transition-colors"
             data-testid="settings-import"
@@ -335,6 +339,7 @@ onBeforeUnmount(() => {
           </button>
           <div class="my-1 h-px bg-base-300" />
           <button
+            type="button"
             role="menuitem"
             class="flex items-center gap-2 w-full px-2.5 h-8 rounded-field text-left text-error hover:bg-error/10 transition-colors"
             data-testid="settings-reset-menu"
@@ -364,6 +369,7 @@ onBeforeUnmount(() => {
           <ul v-else class="space-y-0.5">
             <li v-for="hit in hits" :key="hit.id" data-testid="settings-search-hit">
               <button
+                type="button"
                 class="flex items-center gap-3 w-full px-3 py-2 rounded-field text-left hover:bg-base-content/5 transition-colors"
                 @click="openHit(hit)"
               >
@@ -409,6 +415,7 @@ onBeforeUnmount(() => {
               <button
                 v-for="tab in tabsOfSection(section.id)"
                 :key="tab.id"
+                type="button"
                 class="flex items-start p-4 fx-depth fx-noise rounded-box bg-base-100 border border-hairline text-left transition-colors hover:border-primary/40 hover:bg-base-content/5"
                 :data-testid="`settings-overview-${tab.id}`"
                 @click="openTab(tab.id)"

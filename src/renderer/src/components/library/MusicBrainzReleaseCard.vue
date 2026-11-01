@@ -8,6 +8,7 @@ const emit = defineEmits<{ select: [] }>();
 
 <template>
   <button
+    type="button"
     class="w-full flex items-start gap-3 p-3 hover:bg-base-content/10 transition-colors text-left"
     :class="{ 'bg-primary/10': selected }"
     @click="emit('select')"

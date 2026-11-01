@@ -37,7 +37,7 @@ const { t } = useI18n();
       v-if="channels.length"
       v-model="channelFilter"
       :aria-label="t('downloads.filterChannel')"
-      class="h-7 rounded-field border border-hairline bg-base-100 px-2.5 text-xs focus:border-primary focus:outline-hidden"
+      class="h-7 rounded-field border border-hairline bg-base-100 px-2.5 text-xs focus-visible:border-primary focus-visible:outline-hidden"
     >
       <option value="">{{ t('downloads.filterAllChannels') }}</option>
       <option v-for="[id, title] in channels" :key="id" :value="id">{{ title }}</option>

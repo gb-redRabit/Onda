@@ -240,6 +240,7 @@ onMounted(refresh);
         </div>
         <div class="mt-2 flex flex-wrap gap-2">
           <button
+            type="button"
             data-testid="scrobbling-lastfm-connect"
             class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-xs fx-depth"
             :disabled="busy !== null"
@@ -252,6 +253,7 @@ onMounted(refresh);
             }}
           </button>
           <button
+            type="button"
             data-testid="scrobbling-lastfm-test"
             class="px-3 py-1.5 rounded-field border border-hairline text-xs"
             :disabled="busy !== null"
@@ -292,6 +294,7 @@ onMounted(refresh);
             :aria-label="$t('settings.listenbrainzToken')"
           />
           <button
+            type="button"
             data-testid="scrobbling-listenbrainz-test"
             class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-xs fx-depth"
             :disabled="busy !== null"

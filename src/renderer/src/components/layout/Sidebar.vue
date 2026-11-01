@@ -116,6 +116,7 @@ function onResizeStart(e: MouseEvent) {
         <button
           v-for="item in navItems"
           :key="item.label"
+          type="button"
           class="relative w-full flex items-center gap-3 px-3 py-2.5 rounded-field text-sm font-medium transition-colors"
           :aria-label="item.label"
           :title="collapsed ? item.label : undefined"
@@ -143,6 +144,7 @@ function onResizeStart(e: MouseEvent) {
           <!-- sekcja albumów -->
           <div v-if="settings.appearance.showAlbums" class="pt-1">
             <button
+              type="button"
               class="w-full flex items-center gap-2 px-3 py-1.5 text-2xs font-medium text-base-content/50 uppercase tracking-wider hover:text-base-content/70 transition-colors"
               @click="albumsExpanded = !albumsExpanded"
             >
@@ -172,6 +174,7 @@ function onResizeStart(e: MouseEvent) {
 
       <div class="p-2 space-y-0.5 border-t border-hairline/60">
         <button
+          type="button"
           class="relative w-full flex items-center gap-3 px-3 py-2 rounded-field text-sm font-medium transition-colors"
           :aria-label="$t('nav.settings')"
           :aria-current="route.path === '/settings' ? 'page' : undefined"
@@ -186,6 +189,7 @@ function onResizeStart(e: MouseEvent) {
           <span v-if="!collapsed">{{ $t('nav.settings') }}</span>
         </button>
         <button
+          type="button"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-field text-sm text-base-content/50 hover:bg-base-content/8 hover:text-base-content/75 transition-colors"
           :aria-label="collapsed ? $t('nav.expand') : $t('nav.collapse')"
           @click="collapsed = !collapsed"

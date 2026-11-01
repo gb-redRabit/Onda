@@ -65,6 +65,7 @@ function onSelect(item: SourceItem, event: MouseEvent): void {
     <span class="flex-1 truncate">{{ error }}</span>
     <button
       v-if="isAuthError"
+      type="button"
       class="fx-noise shrink-0 px-2 py-0.5 fx-depth rounded-field border border-error/40 text-error hover:bg-error/10 transition-colors"
       @click="emit('editSource')"
     >
@@ -156,6 +157,7 @@ function onSelect(item: SourceItem, event: MouseEvent): void {
     <EmptyState v-else-if="!loading" :title="t('sources.noItems')" :icon="Globe" class="py-16" />
     <button
       v-if="hasMore && items.length && paginationMode !== 'page'"
+      type="button"
       class="fx-noise mt-4 mx-auto mb-4 block px-4 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="loading"
       @click="emit('fetchMore')"

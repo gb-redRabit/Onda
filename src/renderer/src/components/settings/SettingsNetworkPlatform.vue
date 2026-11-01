@@ -108,6 +108,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
       <button
         v-for="m in methods"
         :key="m.value"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
         :class="
           settings.youtube.method === m.value
@@ -135,6 +136,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
     <div class="flex flex-wrap items-center gap-2 py-2">
       <template v-if="settings.youtube.method === 'electron'">
         <button
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           :disabled="isBusy"
           @click="doLogin"
@@ -142,6 +144,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
           {{ $t('settings.loginWithGoogle') }}
         </button>
         <button
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
           :disabled="isBusy || !status.loggedIn"
           @click="doLogout"
@@ -152,6 +155,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
 
       <template v-else-if="settings.youtube.method === 'manual'">
         <button
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           :disabled="isBusy"
           @click="doImport"
@@ -160,12 +164,14 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         </button>
         <button
           v-if="status.cookiesPath"
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
           @click="doExport"
         >
           {{ $t('settings.exportCookies') }}
         </button>
         <button
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
           :disabled="isBusy || !status.loggedIn"
           @click="doLogout"
@@ -176,7 +182,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
 
       <template v-else-if="settings.youtube.method === 'browser'">
         <select
-          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
+          class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/15 transition"
           :value="settings.youtube.cookiesBrowser"
           @change="onBrowserChange"
         >

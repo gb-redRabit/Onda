@@ -203,6 +203,7 @@ onBeforeUnmount(() => {
     >
       <div class="flex items-center gap-2">
         <button
+          type="button"
           data-testid="image-viewer-thumbnails-toggle"
           class="fx-noise p-1 fx-depth rounded-field transition-colors"
           :class="showThumbs ? 'text-primary-text' : 'text-base-content/70 hover:text-base-content'"

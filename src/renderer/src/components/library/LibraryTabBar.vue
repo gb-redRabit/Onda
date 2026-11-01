@@ -40,6 +40,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
         v-for="(tabItem, i) in props.tabs"
         :id="'library-tab-' + tabItem.id"
         :key="tabItem.id"
+        type="button"
         role="tab"
         data-tab
         :data-testid="'library-tab-' + tabItem.id"

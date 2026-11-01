@@ -105,6 +105,7 @@ const buttons = computed<TransportButton[]>(() => {
     <button
       v-for="b in buttons"
       :key="b.action"
+      type="button"
       :data-testid="'pip-' + b.action"
       :class="[b.btnClass, b.active ? BTN_ACTIVE : '']"
       :aria-label="b.label"

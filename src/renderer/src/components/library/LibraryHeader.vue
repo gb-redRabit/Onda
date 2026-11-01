@@ -30,6 +30,7 @@ const { fileCount } = useCountLabel();
     <div class="flex items-center gap-1.5 shrink-0">
       <button
         v-if="showShuffle"
+        type="button"
         class="hidden sm:inline-flex h-8 items-center gap-1.5 px-2.5 rounded-field bg-base-200/60 border border-hairline/80 text-xs font-medium text-base-content/75 hover:border-primary/40 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :title="t('library.shuffleAll')"
         @click="emit('shuffle')"
@@ -38,6 +39,7 @@ const { fileCount } = useCountLabel();
         <span class="hidden lg:inline">{{ t('library.shuffle') }}</span>
       </button>
       <button
+        type="button"
         class="grid h-8 w-8 place-items-center rounded-field bg-base-200/60 border border-hairline/80 text-base-content/65 hover:border-primary/40 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :title="t('library.rescan')"
         :aria-label="t('library.rescan')"

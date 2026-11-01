@@ -268,6 +268,7 @@ onBeforeUnmount(() => {
         class="ui-page-toolbar relative z-20 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-hairline bg-base-200/(--glass-alpha)"
       >
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             showNav
@@ -290,6 +291,7 @@ onBeforeUnmount(() => {
         <ExplorerViewModeDropdown />
 
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             pinned
@@ -309,6 +311,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             detailsOpen
@@ -325,6 +328,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             dupPanelOpen
@@ -340,6 +344,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             settings.explorer.showHidden
@@ -357,6 +362,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           data-testid="explorer-new-folder"
           :title="$t('explorer.newFolder')"
@@ -367,6 +373,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           data-testid="explorer-open-window"
           :title="$t('explorer.openInWindow')"

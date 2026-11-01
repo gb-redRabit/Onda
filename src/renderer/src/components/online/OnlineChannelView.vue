@@ -226,6 +226,7 @@ onUnmounted(() => {
                     { key: 'oldest', label: $t('youtube.sortOldest') }
                   ] as const"
                   :key="opt.key"
+                  type="button"
                   class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs font-medium transition-colors"
                   :class="
                     channelSort === opt.key

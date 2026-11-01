@@ -40,6 +40,7 @@ function setFilter(filter: (typeof videoFilters)[0]) {
 <template>
   <div ref="container" class="relative">
     <button
+      type="button"
       class="text-neutral-content/60 hover:text-neutral-content/80 transition-colors mt-1"
       :class="{ 'text-primary-text!': settings.playback.videoFilter !== 'none' }"
       :aria-label="$t('settings.videoFilter')"
@@ -61,6 +62,7 @@ function setFilter(filter: (typeof videoFilters)[0]) {
         <button
           v-for="f in videoFilters"
           :key="f.id"
+          type="button"
           class="w-full px-3 py-1.5 text-left text-sm text-neutral-content/50 hover:text-neutral-content hover:bg-neutral-content/6 transition-colors flex items-center gap-2"
           :class="{ 'text-primary-text!': settings.playback.videoFilter === f.css }"
           @click="setFilter(f)"

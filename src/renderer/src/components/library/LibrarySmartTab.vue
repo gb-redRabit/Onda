@@ -194,6 +194,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
             >
           </button>
           <button
+            type="button"
             class="fx-noise mr-1 rounded-field p-1 opacity-0 transition-opacity hover:bg-base-content/10 group-hover:opacity-100 group-focus-within:opacity-100"
             :class="selected === item.id ? 'hover:bg-primary-content/20' : ''"
             :title="t('library.smartPlaylists.editTitle')"
@@ -203,6 +204,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
             <Pencil :size="11" />
           </button>
           <button
+            type="button"
             class="fx-noise mr-1 rounded-field p-1 opacity-0 transition-opacity hover:bg-error/20 hover:text-error group-hover:opacity-100 group-focus-within:opacity-100"
             :class="selected === item.id ? 'text-primary-content/80' : ''"
             :title="t('common.delete')"
@@ -214,6 +216,7 @@ async function deleteSmart(playlist: SmartPlaylist): Promise<void> {
         </div>
 
         <button
+          type="button"
           data-testid="smart-playlist-new"
           class="fx-noise mt-1 flex w-full items-center gap-2 rounded-field px-2.5 py-2 text-xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
           @click="openCreate"

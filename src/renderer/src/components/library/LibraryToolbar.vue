@@ -30,6 +30,7 @@ const { t } = useI18n();
       />
       <button
         v-if="query"
+        type="button"
         class="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-base-content/10 text-base-content/50 hover:text-base-content transition-colors"
         :aria-label="t('common.close')"
         @click="query = ''"
@@ -43,7 +44,7 @@ const { t } = useI18n();
       <div class="relative">
         <select
           v-model="sortKey"
-          class="appearance-none h-9 pl-2.5 pr-8 rounded-field bg-base-200/70 border border-hairline/80 text-xs font-medium focus:border-primary/50 focus:outline-hidden cursor-pointer"
+          class="appearance-none h-9 pl-2.5 pr-8 rounded-field bg-base-200/70 border border-hairline/80 text-xs font-medium focus-visible:border-primary/50 focus-visible:outline-hidden cursor-pointer"
         >
           <option value="added">{{ t('library.sortAdded') }}</option>
           <option value="title">{{ t('library.sortTitle') }}</option>
@@ -58,6 +59,7 @@ const { t } = useI18n();
         />
       </div>
       <button
+        type="button"
         class="grid h-9 w-9 place-items-center rounded-field bg-base-200/70 border border-hairline/80 hover:border-primary/40 text-base-content/65 hover:text-primary-text transition-colors"
         :title="sortDir === 'asc' ? '↑' : '↓'"
         :aria-label="sortDir === 'asc' ? '↑' : '↓'"
@@ -73,6 +75,7 @@ const { t } = useI18n();
 
     <button
       v-if="tab === 'tracks'"
+      type="button"
       class="hidden md:inline-flex h-9 items-center gap-1.5 px-3 rounded-field bg-primary/10 text-primary-text text-xs font-medium hover:bg-primary/18 transition-colors shrink-0 border border-primary/25"
       :title="t('library.searchInMusicBrainz')"
       @click="emit('openMusicbrainz')"
@@ -90,6 +93,7 @@ const { t } = useI18n();
     <button
       v-for="c in chips"
       :key="c.id"
+      type="button"
       class="h-7 px-3 rounded-full text-xs font-medium whitespace-nowrap border transition-colors duration-150"
       :class="
         chip === c.id

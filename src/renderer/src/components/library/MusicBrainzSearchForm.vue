@@ -69,6 +69,7 @@ const canSearch = computed(
         {{ $t('musicbrainz.emptyFieldsHint') }}
       </div>
       <button
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
         :disabled="loading || !canSearch"
         @click="emit('search')"

@@ -128,7 +128,7 @@ onMounted(async () => {
         <Gauge :size="13" class="text-base-content/50" />
         <select
           :value="settings.network.downloadSpeedLimit"
-          class="h-7 rounded-field border border-hairline bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
+          class="h-7 rounded-field border border-hairline bg-base-100 px-2 text-xs focus-visible:border-primary focus-visible:outline-hidden"
           :title="t('downloads.speedLimit')"
           :aria-label="t('downloads.speedLimit')"
           @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"

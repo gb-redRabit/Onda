@@ -81,6 +81,7 @@ watch(
       </div>
       <div class="flex items-center gap-0.5 shrink-0" style="-webkit-app-region: no-drag">
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-primary-text hover:bg-primary/10 transition-colors"
           :title="$t('explorer.pinAsTab')"
           :aria-label="$t('explorer.pinAsTab')"
@@ -89,6 +90,7 @@ watch(
           <Pin :size="13" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('window.minimize')"
           :aria-label="$t('window.minimize')"
@@ -97,6 +99,7 @@ watch(
           <Minus :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :title="$t('window.maximize')"
           :aria-label="$t('window.maximize')"
@@ -105,6 +108,7 @@ watch(
           <Square :size="12" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-neutral-content hover:bg-error/80 transition-colors"
           :title="$t('window.close')"
           :aria-label="$t('window.close')"

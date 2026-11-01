@@ -196,6 +196,7 @@ function togglePlay() {
         :showFallback="true"
       />
       <button
+        type="button"
         class="shrink-0 p-1.5 transition-colors"
         :class="
           player.currentTrack && player.isFavorite(player.currentTrack.path)
@@ -252,6 +253,7 @@ function togglePlay() {
     <div class="flex items-center gap-1 justify-end w-64 shrink-0 max-lg:w-auto">
       <AbRepeatButton :current-time="audio.currentTime.value" />
       <button
+        type="button"
         class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :class="{ 'bg-primary/15 text-primary-text!': fx.equalizerVisible }"
         data-eq-toggle
@@ -262,6 +264,7 @@ function togglePlay() {
         <SlidersHorizontal :size="15" />
       </button>
       <button
+        type="button"
         class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :class="{ 'bg-primary/15 text-primary-text!': player.queueVisible }"
         data-testid="player-queue"
@@ -271,6 +274,7 @@ function togglePlay() {
         <ListMusic :size="15" />
       </button>
       <button
+        type="button"
         class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :aria-label="$t('common.mute')"
         @click="player.toggleMute"
@@ -303,6 +307,7 @@ function togglePlay() {
         />
       </div>
       <button
+        type="button"
         class="p-1.5 rounded-field text-base-content/55 hover:text-primary-text hover:bg-base-content/8 transition-colors"
         :title="$t('common.audioView')"
         :aria-label="$t('common.audioView')"
@@ -311,6 +316,7 @@ function togglePlay() {
         <Disc3 :size="15" />
       </button>
       <button
+        type="button"
         class="p-1.5 rounded-field text-base-content/55 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :title="$t('common.miniPlayer')"
         :aria-label="$t('common.miniPlayer')"

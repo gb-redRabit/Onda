@@ -106,6 +106,7 @@ function browserUrl(item: SourceItem | null): string {
           </p>
         </div>
         <button
+          type="button"
           class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-200 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.openInModal')"
           @click="emit('activate', current)"
@@ -115,6 +116,7 @@ function browserUrl(item: SourceItem | null): string {
         </button>
         <button
           v-if="downloadable && (current.mediaUrl || current.playerUrl)"
+          type="button"
           class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field text-xs font-medium transition-colors disabled:opacity-70"
           :class="
             isDownloaded
@@ -136,6 +138,7 @@ function browserUrl(item: SourceItem | null): string {
       <button
         v-for="(item, i) in items"
         :key="item.id || i"
+        type="button"
         class="fx-noise w-full flex items-center gap-2 px-2.5 py-2 text-left border-b border-base-200 transition-colors"
         :class="
           selectable && item.id && selectedIds?.has(item.id)

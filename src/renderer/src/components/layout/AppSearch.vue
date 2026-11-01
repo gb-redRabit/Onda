@@ -255,6 +255,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
         />
         <button
           v-if="ui.searchQuery"
+          type="button"
           class="shrink-0 text-base-content/50 hover:text-base-content"
           :aria-label="$t('common.clear')"
           @click="clearQuery"

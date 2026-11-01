@@ -32,6 +32,7 @@ const { showImageMenu } = useLibraryContextMenu();
     />
     <button
       v-if="props.audio.length > props.audioLimit"
+      type="button"
       class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors border-t border-hairline/30"
       @click="emit('more-audio')"
     >
@@ -42,6 +43,7 @@ const { showImageMenu } = useLibraryContextMenu();
     <button
       v-for="img in props.images.slice(0, props.imageLimit)"
       :key="img.path"
+      type="button"
       class="aspect-square rounded-field overflow-hidden bg-base-200 border border-hairline hover:border-primary/30 transition-colors group"
       @click="emit('open-image', img.path)"
       @contextmenu.prevent="showImageMenu($event, img, () => emit('open-image', img.path))"
@@ -55,6 +57,7 @@ const { showImageMenu } = useLibraryContextMenu();
     </button>
     <button
       v-if="props.images.length > props.imageLimit"
+      type="button"
       class="col-span-full py-2 text-xs text-primary-text hover:bg-primary/10 rounded-field transition-colors"
       @click="emit('more-images')"
     >

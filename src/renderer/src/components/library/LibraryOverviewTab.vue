@@ -142,6 +142,7 @@ const sections = computed(() => [
       <span class="text-xs text-base-content/50">{{ trackCount(filteredAll.length) }}</span>
       <button
         v-if="filteredAll.length > 0"
+        type="button"
         class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
         @click="playAll(filteredAll)"
       >
@@ -171,6 +172,7 @@ const sections = computed(() => [
     </div>
     <button
       v-if="displayedSearchTracks.length < filteredAll.length"
+      type="button"
       class="ui-icon-button mx-auto mb-4 min-h-9 px-4 text-xs font-medium"
       @click="searchLimit += 48"
     >
@@ -202,6 +204,7 @@ const sections = computed(() => [
       </div>
       <div class="flex items-center gap-2">
         <button
+          type="button"
           class="w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors fx-depth fx-noise"
           :aria-label="$t('library.playAll')"
           @click="playAll(likedTracks)"
@@ -209,6 +212,7 @@ const sections = computed(() => [
           <Play :size="16" class="ml-0.5 fill-current" />
         </button>
         <button
+          type="button"
           class="p-2 rounded-full hover:bg-base-content/10 text-base-content/60 hover:text-base-content transition-colors"
           :aria-label="$t('library.shuffle')"
           @click="shuffleAll(likedTracks)"
@@ -228,6 +232,7 @@ const sections = computed(() => [
           <div class="flex items-center gap-1">
             <button
               v-if="sec.tracks.length > 1"
+              type="button"
               class="p-1.5 rounded-full hover:bg-base-content/10 text-base-content/60 hover:text-base-content transition-colors"
               :title="$t('library.shuffle')"
               @click="shuffleAll(sec.tracks)"
@@ -236,6 +241,7 @@ const sections = computed(() => [
             </button>
             <button
               v-if="sec.tracks.length > 0"
+              type="button"
               class="text-xs text-primary-text hover:underline px-2 py-1"
               @click="emit('showAll', sec.id)"
             >

@@ -88,6 +88,7 @@ function pick(playlistId: string) {
         <button
           v-for="p in library.playlists"
           :key="p.id"
+          type="button"
           class="fx-noise w-full text-left px-3 py-1.5 text-xs fx-depth rounded-field hover:bg-base-content/10 transition-colors truncate flex items-center gap-2"
           :class="{ 'text-primary-text': mode === 'toggle' && isIn(p.id) }"
           @click="pick(p.id)"

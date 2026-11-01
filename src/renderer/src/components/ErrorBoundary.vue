@@ -24,6 +24,7 @@ onErrorCaptured((err) => {
           error.message
         }}</pre>
         <button
+          type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-error/20 text-error text-sm font-medium hover:bg-error/30 transition-colors"
           @click="error = null"
         >

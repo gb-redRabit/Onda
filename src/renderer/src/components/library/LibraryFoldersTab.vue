@@ -206,6 +206,7 @@ const noMatch = computed(
 
         <div class="flex items-center gap-1 shrink-0">
           <button
+            type="button"
             class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors fx-depth fx-noise"
             :title="$t('library.folderPlay')"
             @click.stop="emit('playFolder', meta.path)"
@@ -213,6 +214,7 @@ const noMatch = computed(
             <Play :size="14" class="ml-0.5 fill-current" />
           </button>
           <button
+            type="button"
             class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-hairline text-base-content/60 hover:text-primary-text hover:border-primary/30 items-center justify-center transition-colors"
             :title="$t('library.folderShuffle')"
             @click.stop="shuffleFolder(meta.path)"
@@ -220,6 +222,7 @@ const noMatch = computed(
             <Shuffle :size="12" />
           </button>
           <button
+            type="button"
             class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-hairline text-base-content/60 hover:text-base-content items-center justify-center transition-colors"
             :title="$t('library.folderShowInExplorer')"
             @click.stop="showInExplorer(meta.path)"
@@ -227,6 +230,7 @@ const noMatch = computed(
             <ExternalLink :size="12" />
           </button>
           <button
+            type="button"
             class="w-8 h-8 rounded-full bg-base-200 border border-hairline flex items-center justify-center hover:bg-base-300 transition-colors ml-1"
             :aria-label="$t('library.expandFolder')"
             :aria-expanded="isExpanded(meta.path)"

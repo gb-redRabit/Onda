@@ -47,6 +47,7 @@ function close() {
         <p v-if="message" class="text-xs text-base-content/70 mt-1">{{ message }}</p>
       </div>
       <button
+        type="button"
         class="fx-noise p-1 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
         :aria-label="$t('common.close')"
         @click="close"
@@ -57,12 +58,14 @@ function close() {
 
     <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-hairline">
       <button
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 transition-colors"
         @click="close"
       >
         {{ cancelText || $t('common.cancel') }}
       </button>
       <button
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium transition-colors"
         :class="
           variant === 'danger'

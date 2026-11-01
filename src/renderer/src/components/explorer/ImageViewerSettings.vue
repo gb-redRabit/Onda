@@ -52,6 +52,7 @@ const emit = defineEmits<{
       <button
         v-for="ms in SLIDESHOW_INTERVALS"
         :key="ms"
+        type="button"
         :data-testid="'iv-interval-' + ms"
         class="fx-noise px-2 py-1 text-xs fx-depth rounded-field transition-colors"
         :class="
@@ -73,6 +74,7 @@ const emit = defineEmits<{
       <button
         v-for="type in TRANSITION_TYPES"
         :key="type"
+        type="button"
         :data-testid="'iv-transition-' + type"
         class="fx-noise px-2 py-1 text-xs fx-depth rounded-field capitalize transition-colors"
         :class="
@@ -93,6 +95,7 @@ const emit = defineEmits<{
       <button
         v-for="d in TRANSITION_DURATIONS"
         :key="d"
+        type="button"
         :data-testid="'iv-duration-' + d"
         class="fx-noise px-2 py-1 text-xs fx-depth rounded-field transition-colors"
         :class="
@@ -111,6 +114,7 @@ const emit = defineEmits<{
         <Repeat :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssLoop') }}
       </div>
       <button
+        type="button"
         data-testid="iv-loop"
         class="w-7 h-4 rounded-full transition-colors relative"
         role="switch"
@@ -131,6 +135,7 @@ const emit = defineEmits<{
         <Shuffle :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssShuffle') }}
       </div>
       <button
+        type="button"
         data-testid="iv-shuffle"
         class="w-7 h-4 rounded-full transition-colors relative"
         role="switch"
@@ -151,6 +156,7 @@ const emit = defineEmits<{
         <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssKenBurns') }}
       </div>
       <button
+        type="button"
         data-testid="iv-ken-burns"
         class="w-7 h-4 rounded-full transition-colors relative"
         role="switch"
@@ -173,6 +179,7 @@ const emit = defineEmits<{
         <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssAutoHide') }}
       </div>
       <button
+        type="button"
         data-testid="iv-auto-hide"
         class="w-7 h-4 rounded-full transition-colors relative"
         role="switch"

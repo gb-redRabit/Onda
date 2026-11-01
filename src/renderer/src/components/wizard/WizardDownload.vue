@@ -28,6 +28,7 @@ async function chooseFolder() {
 
     <div class="mt-5 space-y-5">
       <button
+        type="button"
         class="w-full flex items-center gap-3 p-3 fx-depth rounded-box border border-hairline hover:border-primary/50 transition-colors text-left"
         @click="chooseFolder"
       >
@@ -46,6 +47,7 @@ async function chooseFolder() {
           <button
             v-for="k in kinds"
             :key="k.id"
+            type="button"
             class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 fx-depth rounded-field text-sm font-medium border transition-colors"
             :class="
               settings.download.defaultKind === k.id

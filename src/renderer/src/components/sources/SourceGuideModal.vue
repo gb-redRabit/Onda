@@ -32,6 +32,7 @@ const steps = computed(
         {{ t('sources.guide.title') }}
       </h2>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
         :aria-label="t('common.close')"
         @click="emit('close')"

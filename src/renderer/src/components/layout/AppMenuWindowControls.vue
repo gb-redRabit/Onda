@@ -19,6 +19,7 @@ const { switching, switchToCompact } = useCompactSwitch();
   <div class="flex items-center shrink-0 ml-auto h-10" style="-webkit-app-region: no-drag">
     <div class="w-px h-4 bg-base-300/70 mx-1" role="separator" aria-orientation="vertical" />
     <button
+      type="button"
       class="h-8 my-1 px-3 flex items-center rounded-field hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content disabled:opacity-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       :disabled="switching"
       :title="$t('window.compactMode')"
@@ -30,6 +31,7 @@ const { switching, switchToCompact } = useCompactSwitch();
     </button>
     <div class="w-px h-4 bg-base-300/70 mx-1" role="separator" aria-orientation="vertical" />
     <button
+      type="button"
       class="h-10 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       :aria-label="$t('window.minimize')"
       @click="emit('minimize')"
@@ -37,6 +39,7 @@ const { switching, switchToCompact } = useCompactSwitch();
       <Minus :size="15" />
     </button>
     <button
+      type="button"
       class="h-10 w-11 flex items-center justify-center hover:bg-base-content/10 transition-colors text-base-content/60 hover:text-base-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
       :aria-label="$t('window.maximize')"
       @click="emit('maximize')"
@@ -45,6 +48,7 @@ const { switching, switchToCompact } = useCompactSwitch();
       <Square v-else :size="11" />
     </button>
     <button
+      type="button"
       class="h-10 w-11 flex items-center justify-center hover:bg-error/85 transition-colors text-base-content/60 hover:text-error-content focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-error/40"
       :aria-label="$t('window.close')"
       @click="emit('close')"

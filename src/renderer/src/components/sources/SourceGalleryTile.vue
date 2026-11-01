@@ -108,6 +108,7 @@ const typeIcon = {
     </span>
     <button
       v-else-if="downloadable && (item.mediaUrl || item.playerUrl)"
+      type="button"
       class="fx-noise absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-field bg-neutral/80 px-2 py-1 text-2xs text-neutral-content opacity-0 fx-depth ring-1 ring-inset ring-neutral-content/10 transition-opacity hover:bg-neutral group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-60"
       :title="$t('sources.download')"
       :aria-label="$t('sources.download')"

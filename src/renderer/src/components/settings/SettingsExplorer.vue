@@ -18,6 +18,7 @@ const EXPLORER_SORT_ORDER = ['asc', 'desc'] as const;
       <button
         v-for="mode in ['extraSmall', 'small', 'medium', 'large', 'extraLarge', 'details'] as const"
         :key="mode"
+        type="button"
         class="px-3 py-1.5 rounded-field text-xs font-medium border transition-colors"
         :class="
           settings.explorer.viewMode === mode

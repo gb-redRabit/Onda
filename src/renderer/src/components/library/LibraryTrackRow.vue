@@ -120,6 +120,7 @@ function onDragStart(e: DragEvent) {
     >
       <MediaCover :path="props.track.path" :size="14" :autoplay="hovered" fallback="play" />
       <button
+        type="button"
         data-testid="library-track-play"
         class="absolute inset-0 flex items-center justify-center bg-neutral/0 group-hover:bg-neutral/50 transition-colors"
         :aria-label="$t('common.play')"

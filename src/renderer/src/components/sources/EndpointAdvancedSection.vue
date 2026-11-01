@@ -20,7 +20,7 @@ const model = defineModel<DraftEndpoint>({ required: true });
         <select
           v-model="model.method"
           :aria-label="t('sources.method')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-mono focus:outline-hidden"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs font-mono focus-visible:outline-hidden"
         >
           <option value="GET">GET</option>
           <option value="POST">POST</option>

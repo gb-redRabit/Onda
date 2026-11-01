@@ -83,6 +83,7 @@ function color(type: string) {
         </button>
       </div>
       <button
+        type="button"
         class="p-0.5 shrink-0 text-base-content/50 hover:text-base-content transition-colors"
         :aria-label="$t('common.close')"
         @click="ui.removeNotification(n.id)"

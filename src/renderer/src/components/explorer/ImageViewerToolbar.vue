@@ -53,6 +53,7 @@ const emit = defineEmits<{
     @click.stop
   >
     <button
+      type="button"
       data-testid="image-viewer-close"
       class="ui-icon-button fx-noise fx-depth bg-base-300"
       :title="$t('imageViewer.close')"
@@ -66,6 +67,7 @@ const emit = defineEmits<{
     <div class="flex flex-col items-center gap-1 bg-base-100 rounded-box px-1.5 py-2">
       <div class="flex flex-col">
         <button
+          type="button"
           data-testid="image-viewer-slideshow"
           class="ui-icon-button fx-noise fx-depth"
           :class="
@@ -85,6 +87,7 @@ const emit = defineEmits<{
           <span v-show="slideshowActive"><Pause :size="16" class="pointer-events-none" /></span>
         </button>
         <button
+          type="button"
           data-testid="image-viewer-slideshow-settings"
           class="ui-icon-button fx-noise fx-depth block mx-auto mt-0.5"
           :class="
@@ -118,6 +121,7 @@ const emit = defineEmits<{
       </div>
 
       <button
+        type="button"
         data-testid="image-viewer-fit"
         class="ui-icon-button fx-noise fx-depth"
         :title="$t('imageViewer.fitToScreen')"
@@ -127,6 +131,7 @@ const emit = defineEmits<{
         <Maximize2 :size="16" class="pointer-events-none" />
       </button>
       <button
+        type="button"
         data-testid="image-viewer-zoom-in"
         class="ui-icon-button fx-noise fx-depth"
         :title="$t('imageViewer.zoomIn')"
@@ -136,6 +141,7 @@ const emit = defineEmits<{
         <ZoomIn :size="16" class="pointer-events-none" />
       </button>
       <button
+        type="button"
         data-testid="image-viewer-zoom-out"
         class="ui-icon-button fx-noise fx-depth"
         :title="$t('imageViewer.zoomOut')"
@@ -145,6 +151,7 @@ const emit = defineEmits<{
         <ZoomOut :size="16" class="pointer-events-none" />
       </button>
       <button
+        type="button"
         data-testid="image-viewer-rotate"
         class="ui-icon-button fx-noise fx-depth"
         :title="$t('imageViewer.rotate')"
@@ -154,6 +161,7 @@ const emit = defineEmits<{
         <RotateCw :size="16" class="pointer-events-none" />
       </button>
       <button
+        type="button"
         data-testid="image-viewer-edit"
         class="ui-icon-button fx-noise fx-depth"
         :title="$t('imageViewer.editInStudio')"
@@ -163,6 +171,7 @@ const emit = defineEmits<{
         <Pencil :size="16" class="pointer-events-none" />
       </button>
       <button
+        type="button"
         data-testid="image-viewer-fullscreen"
         class="ui-icon-button fx-noise fx-depth"
         :class="

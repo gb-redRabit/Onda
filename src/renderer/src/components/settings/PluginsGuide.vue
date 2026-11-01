@@ -80,6 +80,7 @@ function clearSearch(): void {
         {{ t('plugins.guide.title') }}
       </h2>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors"
         :aria-label="t('common.close')"
         data-testid="plugins-guide-close"
@@ -105,6 +106,7 @@ function clearSearch(): void {
         />
         <button
           v-if="query"
+          type="button"
           class="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
           :aria-label="t('common.clear')"
           data-testid="plugins-guide-search-clear"
@@ -169,6 +171,7 @@ function clearSearch(): void {
               class="p-3 pe-12 rounded-field bg-base-200 text-2xs leading-relaxed text-base-content/70 overflow-auto whitespace-pre-wrap break-all"
             ><code>{{ braces(code) }}</code></pre>
             <button
+              type="button"
               class="absolute top-1.5 right-1.5 p-1 fx-depth rounded-field text-base-content/50 opacity-60 hover:opacity-100 hover:text-base-content hover:bg-base-content/10 transition-colors focus:opacity-100"
               :aria-label="t('plugins.guide.copyCode')"
               data-testid="plugins-guide-copy"

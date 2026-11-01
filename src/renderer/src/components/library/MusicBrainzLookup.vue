@@ -130,6 +130,7 @@ onMounted(() => {
         <Disc3 :size="18" /> {{ $t('musicbrainz.title') }}
       </h2>
       <button
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field hover:bg-base-content/10 transition-colors text-base-content/50"
         :aria-label="$t('common.close')"
         @click="emit('close')"
@@ -208,6 +209,7 @@ onMounted(() => {
 
             <div v-else class="flex gap-2">
               <button
+                type="button"
                 class="fx-noise flex-1 px-3 py-2 fx-depth rounded-field text-sm font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors"
                 @click="applyTags"
               >

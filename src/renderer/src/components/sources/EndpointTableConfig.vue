@@ -61,6 +61,7 @@ const tableViews = [
       <span class="text-xs text-base-content/70 select-none">{{ t('sources.tableEnable') }}</span>
       <span class="flex-1" />
       <button
+        type="button"
         class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
         :disabled="tableTesting"
         :title="t('sources.testTableHint')"
@@ -84,6 +85,7 @@ const tableViews = [
           <button
             v-for="v in tableViews"
             :key="v.id"
+            type="button"
             class="fx-noise flex items-center gap-1 px-2 py-1 font-medium transition-colors"
             :class="
               model.tableView === v.id
@@ -107,7 +109,7 @@ const tableViews = [
         <select
           v-model="model.tableMode"
           :aria-label="t('sources.tableSource')"
-          class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden"
+          class="px-1.5 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden"
         >
           <option value="endpoint">{{ t('sources.tableSourceEndpoint') }}</option>
           <option value="field">{{ t('sources.tableSourceField') }}</option>
@@ -177,7 +179,7 @@ const tableViews = [
         <select
           v-model="model.tableChildId"
           :aria-label="t('sources.openRow')"
-          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus:outline-hidden focus:ring-1 focus:ring-primary"
+          class="w-full px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
         >
           <option value="">{{ t('sources.noChild') }}</option>
           <option v-for="o in levelOptions" :key="o.id" :value="o.id">{{ o.label }}</option>

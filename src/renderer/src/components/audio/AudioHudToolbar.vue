@@ -66,6 +66,7 @@ const vizModeLabel = computed(() => {
   >
     <div class="flex items-center gap-1 pointer-events-auto">
       <button
+        type="button"
         data-testid="audio-layout-editor"
         class="pointer-events-auto fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition"
         :title="$t('audioView.layoutEditor')"
@@ -81,6 +82,7 @@ const vizModeLabel = computed(() => {
       <button
         v-for="cmd in props.commands"
         :key="cmd.id"
+        type="button"
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition"
         :title="cmd.label"
         @click.stop="emit('run-command', cmd.id)"
@@ -91,6 +93,7 @@ const vizModeLabel = computed(() => {
 
     <div class="flex items-center gap-1 pointer-events-auto">
       <button
+        type="button"
         data-testid="audio-cycle-viz"
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition"
         :title="$t('audioView.vizMode')"
@@ -103,6 +106,7 @@ const vizModeLabel = computed(() => {
         </div>
       </button>
       <button
+        type="button"
         data-testid="audio-viz-settings"
         class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition"
         :class="
@@ -116,6 +120,7 @@ const vizModeLabel = computed(() => {
         <Settings2 :size="12" />
       </button>
       <button
+        type="button"
         data-testid="audio-always-on-top"
         class="fx-noise p-1.5 fx-depth rounded-field backdrop-blur-sm transition"
         :class="
@@ -131,6 +136,7 @@ const vizModeLabel = computed(() => {
         <Pin v-if="props.pinned" :size="12" /><PinOff v-else :size="12" />
       </button>
       <button
+        type="button"
         data-testid="audio-fullscreen"
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition"
         :title="props.isFullscreen ? $t('audioView.exitFullscreen') : $t('audioView.fullscreen')"

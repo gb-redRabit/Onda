@@ -70,6 +70,7 @@ onUnmounted(() => grid.destroy());
       <span class="text-xs text-base-content/50">{{ fileCount(tracks.length) }}</span>
       <div class="flex items-center gap-2">
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'list'
@@ -82,6 +83,7 @@ onUnmounted(() => grid.destroy());
           <LayoutList :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise p-1.5 fx-depth rounded-field transition-colors"
           :class="
             viewMode === 'grid'
@@ -94,6 +96,7 @@ onUnmounted(() => grid.destroy());
           <LayoutGrid :size="14" />
         </button>
         <button
+          type="button"
           class="fx-noise flex items-center gap-1 px-3 py-1 fx-depth rounded-field bg-primary/10 text-primary-text text-xs font-medium hover:bg-primary hover:text-primary-content transition-colors"
           @click="emit('playAll')"
         >

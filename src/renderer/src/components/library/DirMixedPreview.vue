@@ -47,6 +47,7 @@ function fileCountLabel(count: number): string {
     <button
       v-for="sub in folders"
       :key="'prev-f-' + sub"
+      type="button"
       class="flex flex-col items-center gap-2 p-3 rounded-box bg-base-100 border border-hairline hover:border-primary/30 hover:bg-base-200/50 transition-colors text-center"
       @click="emit('toggle', sub)"
     >
@@ -59,6 +60,7 @@ function fileCountLabel(count: number): string {
     <button
       v-for="tr in files"
       :key="'prev-t-' + tr.path"
+      type="button"
       class="rounded-box overflow-hidden bg-base-100 border border-hairline hover:border-primary/30 hover:shadow-sm transition group text-left"
       @click="tr.type === 'image' ? emit('open-image', tr.path) : emit('play', tr.path)"
       @dblclick="tr.type === 'image' ? emit('open-image', tr.path) : emit('play', tr.path)"

@@ -31,6 +31,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <button
         v-for="k in ['audio', 'video'] as const"
         :key="k"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm font-medium transition-colors"
         :class="
           settings.download.defaultKind === k
@@ -49,6 +50,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <button
         v-for="f in audioFormats"
         :key="f"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
         :class="
           settings.download.defaultAudioFormat === f
@@ -67,6 +69,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <button
         v-for="q in audioQualities"
         :key="q"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
         :class="
           settings.download.defaultAudioQuality === q
@@ -85,6 +88,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <button
         v-for="q in videoQualities"
         :key="q"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors"
         :class="
           settings.download.defaultVideoQuality === q
@@ -103,6 +107,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <button
         v-for="c in videoContainers"
         :key="c"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm uppercase border transition-colors font-medium"
         :class="
           settings.download.defaultVideoContainer === c
@@ -121,6 +126,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <button
         v-for="c in coverTypes"
         :key="c"
+        type="button"
         class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border transition-colors font-medium"
         :class="
           settings.download.defaultCover === c
@@ -185,7 +191,7 @@ const coverTypes = ['thumbnail', 'none', 'frame', 'clip'] as const;
       <SettingsSectionTitle :title="$t('settings.clipFormat')" />
       <select
         :value="settings.download.defaultCoverClipFormat"
-        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
+        class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus-visible:border-primary focus-visible:outline-hidden"
         @change="
           settings.updateDownload({
             defaultCoverClipFormat: ($event.target as HTMLSelectElement).value as 'webm' | 'mp4'

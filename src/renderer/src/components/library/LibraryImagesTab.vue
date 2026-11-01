@@ -121,6 +121,7 @@ onUnmounted(() => {
           <button
             v-for="item in row.items"
             :key="item.img.path"
+            type="button"
             class="group fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-hairline hover:border-primary transition-colors text-left flex flex-col shrink-0"
             :style="{ width: imageCellSize + 'px' }"
             :title="item.img.name"

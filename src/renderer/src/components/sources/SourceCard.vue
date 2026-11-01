@@ -94,6 +94,7 @@ const typeIcon = {
       </div>
       <button
         v-if="downloadable && (item.mediaUrl || item.playerUrl)"
+        type="button"
         class="fx-noise absolute bottom-1.5 left-1.5 opacity-60 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 fx-depth rounded-field text-neutral-content text-2xs disabled:opacity-60"
         :class="
           downloaded ? 'bg-success/80 hover:bg-success/80' : 'bg-neutral/70 hover:bg-neutral/90'
