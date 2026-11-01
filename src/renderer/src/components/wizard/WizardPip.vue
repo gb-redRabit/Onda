@@ -19,7 +19,7 @@ const docks = [
 
     <div class="mt-5 space-y-3">
       <div
-        class="flex items-start gap-3 p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
+        class="flex items-start gap-3 p-3 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <span
           class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary-text flex items-center justify-center"
@@ -33,7 +33,7 @@ const docks = [
       </div>
 
       <div
-        class="flex items-start gap-3 p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
+        class="flex items-start gap-3 p-3 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <span
           class="w-9 h-9 shrink-0 rounded-field bg-primary/15 text-primary-text flex items-center justify-center"
@@ -63,7 +63,7 @@ const docks = [
           <button
             v-for="m in docks"
             :key="m.id"
-            class="px-3.5 py-2 fx-depth rounded-field text-sm font-medium border transition-colors"
+            class="px-3 py-2 fx-depth rounded-field text-sm font-medium border transition-colors"
             :class="
               settings.appearance.audioPipDock === m.id
                 ? 'border-primary bg-primary/10 text-primary-text'

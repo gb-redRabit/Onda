@@ -92,7 +92,7 @@ const {
       <PipVolume
         v-if="has('volume')"
         layout="vertical"
-        slider-class="my-5.5 w-14 -rotate-90"
+        slider-class="my-6 w-14 -rotate-90"
         :send="send"
         :volume="volume"
         :vol-label="volLabel"

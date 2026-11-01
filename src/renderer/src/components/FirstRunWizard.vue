@@ -156,7 +156,7 @@ function dismiss() {
 
         <button
           data-testid="wizard-back"
-          class="fx-noise px-3.5 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
+          class="fx-noise px-3 py-2 fx-depth rounded-field border border-base-300 text-sm text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
           :disabled="isFirst"
           @click="back"
         >

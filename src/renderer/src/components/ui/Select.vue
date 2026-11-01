@@ -17,7 +17,7 @@ const attrs = useAttrs();
 const classes = computed(() =>
   cn(
     'w-full rounded-field border bg-base-200/70 text-base-content transition-colors focus:outline-hidden focus:ring-2 focus:ring-primary/20 disabled:opacity-45',
-    props.size === 'sm' ? 'h-8 px-2 pr-7 text-xs' : 'h-9 px-3 pr-8 text-sm',
+    props.size === 'sm' ? 'h-8 px-2 pr-8 text-xs' : 'h-9 px-3 pr-8 text-sm',
     props.invalid
       ? 'border-error focus:border-error'
       : 'border-base-300/80 focus:border-primary/50',

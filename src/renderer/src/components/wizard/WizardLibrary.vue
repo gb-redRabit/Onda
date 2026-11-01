@@ -48,7 +48,7 @@ function removeFolder(path: string) {
       </div>
 
       <button
-        class="w-full flex items-center gap-3 p-3.5 fx-depth rounded-box border border-dashed border-base-300 hover:border-primary/60 hover:bg-base-content/5 transition-colors text-left"
+        class="w-full flex items-center gap-3 p-3 fx-depth rounded-box border border-dashed border-base-300 hover:border-primary/60 hover:bg-base-content/5 transition-colors text-left"
         @click="addFolder"
       >
         <FolderPlus :size="18" class="text-primary-text shrink-0" />

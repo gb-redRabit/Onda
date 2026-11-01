@@ -95,7 +95,7 @@ async function onPlayFromStart(): Promise<void> {
     <div class="flex-1 overflow-y-auto">
       <div class="ui-page-content space-y-6">
         <!-- Bento: hero (8/12) + liczby biblioteki (4/12). -->
-        <div class="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
+        <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
           <HomeContinueCard
             v-if="has('continue') && continueTrack"
             class="lg:col-span-7 xl:col-span-8"

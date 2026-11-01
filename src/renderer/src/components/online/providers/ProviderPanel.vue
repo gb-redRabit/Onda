@@ -321,7 +321,7 @@ async function confirmDownloadFolder(): Promise<void> {
             <div class="flex h-16 items-center justify-center rounded-box bg-primary/10">
               <Folder :size="28" class="text-primary-text" />
             </div>
-            <span class="line-clamp-2 pr-7 text-sm font-medium" :title="item.name">{{
+            <span class="line-clamp-2 pr-8 text-sm font-medium" :title="item.name">{{
               item.name
             }}</span>
             <span class="mt-auto text-xs text-base-content/50">{{ t('providers.folder') }}</span>

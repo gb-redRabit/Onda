@@ -55,7 +55,7 @@ const activeSectionId = computed(
           {{ $t(section.labelKey) }}
         </span>
       </button>
-      <div class="hidden lg:flex flex-col gap-0.5 mb-2 pl-3 ml-3.75 border-l border-base-300/60">
+      <div class="hidden lg:flex flex-col gap-0.5 mb-2 pl-3 ml-4 border-l border-base-300/60">
         <button
           v-for="tab in tabsOf(section.id)"
           :key="tab.id"

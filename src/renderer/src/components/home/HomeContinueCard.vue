@@ -100,7 +100,7 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
       <div class="flex shrink-0 items-center gap-2">
         <button
           type="button"
-          class="fx-noise flex h-8.5 items-center gap-1.5 px-3.5 rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
+          class="fx-noise flex h-8.5 items-center gap-1.5 px-3 rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors"
           :aria-label="`${hasProgress ? $t('home.resume') : $t('common.play')}: ${title}`"
           @click="emit('play')"
         >

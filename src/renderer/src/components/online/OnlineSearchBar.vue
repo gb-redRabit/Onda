@@ -178,7 +178,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           data-testid="online-search-input"
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
-          class="w-full pl-[46px] pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 transition-shadow"
+          class="w-full pl-12 pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-base-300 text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 transition-shadow"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.enter="emit('submit')"
           @dragover.prevent

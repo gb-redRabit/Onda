@@ -28,7 +28,7 @@ async function chooseFolder() {
 
     <div class="mt-5 space-y-5">
       <button
-        class="w-full flex items-center gap-3 p-3.5 fx-depth rounded-box border border-base-300 hover:border-primary/50 transition-colors text-left"
+        class="w-full flex items-center gap-3 p-3 fx-depth rounded-box border border-base-300 hover:border-primary/50 transition-colors text-left"
         @click="chooseFolder"
       >
         <Download :size="18" class="text-primary-text shrink-0" />

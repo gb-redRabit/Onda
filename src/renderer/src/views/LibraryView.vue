@@ -322,7 +322,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
       class="ui-page-header sticky top-0 z-10 bg-base-100/(--glass-alpha) backdrop-blur shrink-0 transition-[border-color,box-shadow]"
       :class="scrolled ? 'border-b border-transparent shadow-md' : 'border-b border-base-300/80'"
     >
-      <div class="px-5 py-3.5">
+      <div class="px-5 py-3">
         <!-- Tytuł chowa się przy przewijaniu; zakładki i pasek filtrów zostają. -->
         <div
           class="grid transition-[grid-template-rows] duration-200"

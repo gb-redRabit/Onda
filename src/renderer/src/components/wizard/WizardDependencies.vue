@@ -29,7 +29,7 @@ const { deps, refreshing, refreshAll, runInstall, cancelInstall } = useDependenc
       <div
         v-for="dep in deps"
         :key="dep.name"
-        class="p-3.5 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
+        class="p-3 fx-depth rounded-box border border-base-300 bg-base-200/(--glass-alpha)"
       >
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">

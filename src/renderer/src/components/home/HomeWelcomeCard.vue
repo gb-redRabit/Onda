@@ -18,7 +18,7 @@ const emit = defineEmits<{
     class="flex flex-col justify-center rounded-box border border-base-300/80 bg-base-100 p-4 sm:p-5"
   >
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-start gap-3.5 min-w-0">
+      <div class="flex items-start gap-3 min-w-0">
         <div
           class="grid h-10 w-10 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text"
         >

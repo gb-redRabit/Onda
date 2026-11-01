@@ -56,7 +56,7 @@ onMounted(async () => {
 
 <template>
   <div class="border-b border-base-300/80 bg-base-100/(--glass-alpha) backdrop-blur">
-    <div class="ui-page-header flex flex-wrap items-center gap-3 px-5 py-3.5">
+    <div class="ui-page-header flex flex-wrap items-center gap-3 px-5 py-3">
       <div
         class="grid h-8 w-8 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text"
       >

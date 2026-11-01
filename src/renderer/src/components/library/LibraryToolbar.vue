@@ -25,7 +25,7 @@ const { t } = useI18n();
       />
       <Input
         v-model="query"
-        class="pl-9 pr-8"
+        class="pl-8 pr-8"
         :placeholder="tab === 'overview' ? t('library.searchPlaceholder') : t('library.search')"
       />
       <button
@@ -43,7 +43,7 @@ const { t } = useI18n();
       <div class="relative">
         <select
           v-model="sortKey"
-          class="appearance-none h-9 pl-2.5 pr-7 rounded-field bg-base-200/70 border border-base-300/80 text-xs font-medium focus:border-primary/50 focus:outline-hidden cursor-pointer"
+          class="appearance-none h-9 pl-2.5 pr-8 rounded-field bg-base-200/70 border border-base-300/80 text-xs font-medium focus:border-primary/50 focus:outline-hidden cursor-pointer"
         >
           <option value="added">{{ t('library.sortAdded') }}</option>
           <option value="title">{{ t('library.sortTitle') }}</option>

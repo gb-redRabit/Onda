@@ -218,7 +218,7 @@ const sections = computed(() => [
       </div>
     </div>
 
-    <div class="px-4 pb-6 space-y-7">
+    <div class="px-4 pb-6 space-y-6">
       <section v-for="sec in sections" :key="sec.id" class="space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="flex items-center gap-2 text-sm font-bold">

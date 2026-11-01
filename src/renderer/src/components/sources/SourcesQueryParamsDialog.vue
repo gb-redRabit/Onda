@@ -48,7 +48,7 @@ function clear(): void {
     @close="emit('close')"
     @escape="emit('close')"
   >
-    <div class="border-b border-base-300 px-5 py-3.5">
+    <div class="border-b border-base-300 px-5 py-3">
       <h3 id="sources-params-title" class="text-sm font-semibold text-base-content">
         {{ t('sources.queryParams') }}
       </h3>
@@ -79,7 +79,7 @@ function clear(): void {
       </details>
     </div>
 
-    <div class="flex items-center justify-end gap-2 border-t border-base-300 px-5 py-3.5">
+    <div class="flex items-center justify-end gap-2 border-t border-base-300 px-5 py-3">
       <Button variant="ghost" size="md" class="mr-auto" @click="clear">
         {{ t('common.clear') }}
       </Button>

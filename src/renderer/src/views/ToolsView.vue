@@ -111,7 +111,7 @@ async function openTool(id: ToolId): Promise<void> {
     <div class="flex-1 overflow-auto ui-page-content">
       <!-- Jedna oś z nagłówkiem: bez wyśrodkowanego kontenera. Siatka dobiera
            kolumny do szerokości, więc nie ma skoku przy 2/3 kolumnach. -->
-      <div class="flex flex-col gap-7">
+      <div class="flex flex-col gap-6">
         <section
           v-for="group in groups"
           :key="group.id"
@@ -124,12 +124,12 @@ async function openTool(id: ToolId): Promise<void> {
           >
             {{ group.label }}
           </h2>
-          <div class="grid gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))]">
+          <div class="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))]">
             <button
               v-for="card in group.cards"
               :key="card.id"
               :data-testid="`tools-card-${card.id}`"
-              class="group flex items-start gap-3.5 rounded-box border border-base-300/80 bg-base-100 p-4 text-left fx-depth transition hover:border-primary/40 hover:bg-base-content/4 disabled:cursor-wait disabled:opacity-60"
+              class="group flex items-start gap-3 rounded-box border border-base-300/80 bg-base-100 p-4 text-left fx-depth transition hover:border-primary/40 hover:bg-base-content/4 disabled:cursor-wait disabled:opacity-60"
               :disabled="opening !== null"
               @click="openTool(card.id)"
             >
