@@ -41,6 +41,7 @@ withDefaults(
       data-testid="pip-mute"
       :class="[VOL_LABEL, 'border-0 bg-transparent font-inherit']"
       :aria-label="muted ? 'Unmute' : 'Mute'"
+      :aria-pressed="muted"
       @click.stop="send('mute')"
     >
       {{ volLabel }}

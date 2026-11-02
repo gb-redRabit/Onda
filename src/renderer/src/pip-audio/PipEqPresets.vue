@@ -22,6 +22,7 @@ defineProps<{
       type="button"
       :data-testid="'pip-eq-' + p.id"
       :class="[EQ_BTN, eqPreset === p.id ? EQ_BTN_ON : '']"
+      :aria-pressed="eqPreset === p.id"
       @click.stop="selectEqPreset(p.id)"
     >
       {{ p.label }}
