@@ -5,6 +5,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { playTrackList } from '@renderer/utils/playTracks';
+import Input from '@renderer/components/ui/Input.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import type { MediaFile } from '@renderer/types/media';
 
@@ -13,7 +14,7 @@ const player = usePlayerStore();
 
 const query = ref('');
 const scrollEl = ref<HTMLElement | null>(null);
-const searchEl = ref<HTMLInputElement | null>(null);
+const searchEl = ref<{ focus: () => void; select: () => void } | null>(null);
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 const audioTracks = computed(() => library.audioTracks.filter((track) => track.type === 'audio'));
@@ -85,13 +86,14 @@ defineExpose({ focusSearch });
           :size="13"
           class="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/40"
         />
-        <input
+        <Input
           ref="searchEl"
           v-model="query"
           type="search"
-          :placeholder="$t('compact.searchPlaceholder')"
+          size="sm"
+          class="pl-8 pr-2"
           :aria-label="$t('compact.searchPlaceholder')"
-          class="w-full h-8 pl-8 pr-2 rounded-field bg-base-100 border border-hairline text-xs outline-hidden focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+          :placeholder="$t('compact.searchPlaceholder')"
           data-testid="compact-search"
         />
       </label>

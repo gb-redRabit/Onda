@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useAttrs } from 'vue';
+import { computed, ref, useAttrs } from 'vue';
 import { cn } from '@renderer/utils/cn';
 
 // Pole tekstowe z jednym wyglądem w całej aplikacji. `class` z zewnątrz
@@ -18,6 +18,15 @@ const props = withDefaults(
 );
 
 const attrs = useAttrs();
+const inputRef = ref<HTMLInputElement | null>(null);
+
+// Ref na komponencie nie daje dostępu do natywnego pola, a konsumenci (np. skrót
+// Ctrl+F w trybie compact) potrzebują ustawić focus. Eksponujemy tylko to.
+defineExpose({
+  focus: (): void => inputRef.value?.focus(),
+  select: (): void => inputRef.value?.select(),
+  blur: (): void => inputRef.value?.blur()
+});
 
 const classes = computed(() =>
   cn(
@@ -38,6 +47,7 @@ const rest = computed(() => {
 
 <template>
   <input
+    ref="inputRef"
     v-bind="rest"
     v-model="model"
     :type="type"

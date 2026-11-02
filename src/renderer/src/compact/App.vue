@@ -31,6 +31,7 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { loadLocaleMessages } from '@renderer/i18n';
 import type { AppearanceSettings } from '@renderer/types/settings';
 import MediaCover from '@renderer/components/MediaCover.vue';
+import Slider from '@renderer/components/ui/Slider.vue';
 import CompactTracks from './CompactTracks.vue';
 import CompactQueue from './CompactQueue.vue';
 import CompactAlbums from './CompactAlbums.vue';
@@ -137,8 +138,8 @@ function onSeekPointerCancel(): void {
   seeking.value = false;
 }
 
-function setVolume(event: Event): void {
-  player.setVolume(Number((event.target as HTMLInputElement).value));
+function setVolume(value: number): void {
+  player.setVolume(Number(value));
 }
 
 async function togglePin(): Promise<void> {
@@ -471,16 +472,16 @@ function dismissError(): void {
           <VolumeX v-if="player.isMuted" :size="14" />
           <Volume2 v-else :size="14" />
         </button>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          :value="player.volume"
-          :aria-label="$t('compact.volume')"
-          class="w-20 accent-primary"
+        <Slider
+          :model-value="player.volume"
+          class="w-20"
           data-testid="compact-volume"
-          @input="setVolume"
+          :label="$t('compact.volume')"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          :value-text="`${Math.round(player.volume * 100)}%`"
+          @update:model-value="setVolume"
         />
       </div>
     </section>
