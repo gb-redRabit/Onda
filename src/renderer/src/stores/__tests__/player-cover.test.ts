@@ -17,6 +17,52 @@ function flush(): Promise<void> {
   return new Promise((r) => setTimeout(r, 0));
 }
 
+describe('usePlayerCover still frames', () => {
+  const apiWithStill = (window as any).api as {
+    getCover: ReturnType<typeof vi.fn>;
+    getCoverStill: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    apiWithStill.getCoverStill.mockReset();
+  });
+
+  it('asks main for the still frame and caches it by track path', async () => {
+    apiWithStill.getCoverStill.mockResolvedValue({
+      type: 'image',
+      data: 'data:image/jpeg;base64,STILL'
+    });
+    const cover = usePlayerCover();
+    cover.loadCoverStill('D:/media/a.mp3', 'D:/media/a.mp4');
+    await flush();
+
+    expect(apiWithStill.getCoverStill).toHaveBeenCalledWith('D:/media/a.mp3');
+    expect(cover.getCoverStill('D:/media/a.mp3')?.data).toBe('data:image/jpeg;base64,STILL');
+  });
+
+  it('keeps processing the queue when one still request hangs', async () => {
+    vi.useFakeTimers();
+    try {
+      apiWithStill.getCoverStill.mockImplementation((path: string) =>
+        path === 'D:/media/stuck.mp3'
+          ? new Promise(() => {})
+          : Promise.resolve({ type: 'image', data: 'data:image/jpeg;base64,OK' })
+      );
+      const cover = usePlayerCover();
+      cover.loadCoverStill('D:/media/stuck.mp3', 'D:/media/stuck.mp4');
+      cover.loadCoverStill('D:/media/stuck2.mp3', 'D:/media/stuck2.mp4');
+      cover.loadCoverStill('D:/media/good.mp3', 'D:/media/good.mp4');
+
+      await vi.advanceTimersByTimeAsync(10_100);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(cover.getCoverStill('D:/media/good.mp3')?.data).toBe('data:image/jpeg;base64,OK');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('usePlayerCover hover pipeline', () => {
   it('caches a sibling-video cover returned by getCover IPC', async () => {
     api.getCover.mockResolvedValue({

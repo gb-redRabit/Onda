@@ -39,7 +39,13 @@ const coverFallback = computed(() => (isVideo.value ? 'film' : 'music'));
       <div
         class="relative h-18 w-18 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-field border border-hairline/70 bg-base-200"
       >
-        <MediaCover :path="track.path" :size="88" :fallback="coverFallback" class="h-full w-full" />
+        <MediaCover
+          :path="track.path"
+          :size="88"
+          :fallback="coverFallback"
+          still
+          class="h-full w-full"
+        />
       </div>
 
       <div class="min-w-0 flex-1">

@@ -37,6 +37,27 @@ export function usePlayerCover() {
   let stillActive = 0;
   const STILL_CONCURRENCY = 2;
   const STILL_CACHE_MAX = 2000;
+  // Main extrahuje klatkę ffmpeg-iem; na uszkodzonym pliku potrafi to wisieć.
+  // Bez limitu dwa zawieszone zadania blokują całą kolejkę i żadna okładka
+  // (także na Stronie głównej) już się nie pojawia.
+  const STILL_WAIT_MS = 10_000;
+
+  function waitOrNull<T>(promise: Promise<T> | undefined, ms: number): Promise<T | null> {
+    if (!promise) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(null), ms);
+      promise.then(
+        (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        () => {
+          clearTimeout(timer);
+          resolve(null);
+        }
+      );
+    });
+  }
 
   function getCoverStill(filePath: string): CoverResult | null {
     return coverStillCache.value[filePath] ?? null;
@@ -58,7 +79,7 @@ export function usePlayerCover() {
         try {
           // Najpierw trwały cache main (ffmpeg + dysk), więc po restarcie nie ma
           // ponownej ekstrakcji; canvas zostaje jako fallback bez ffmpeg.
-          const fromMain = await window.api?.getCoverStill?.(job.path);
+          const fromMain = await waitOrNull(window.api?.getCoverStill?.(job.path), STILL_WAIT_MS);
           let frame: CoverResult | null =
             fromMain?.data != null ? { type: 'image', data: fromMain.data } : null;
           if (!frame?.data) frame = await captureVideoFrame(job.videoPath);

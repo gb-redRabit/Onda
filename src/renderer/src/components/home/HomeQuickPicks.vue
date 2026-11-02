@@ -53,6 +53,7 @@ const emit = defineEmits<{
             :path="pick.track.path"
             :size="40"
             :fallback="pick.track.type === 'video' ? 'film' : 'music'"
+            still
             class="h-full w-full transition-transform duration-300 group-hover:scale-105"
           />
         </span>

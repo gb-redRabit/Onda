@@ -10,6 +10,7 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
   send: vi.fn(),
   on: vi.fn(() => () => {}),
   getCover: vi.fn(),
+  getCoverStill: vi.fn(),
   getDuration: vi.fn(),
   findExternalSubtitles: vi.fn(),
   readSubtitleFile: vi.fn(),
