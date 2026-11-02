@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
+import Slider from '@renderer/components/ui/Slider.vue';
 import { DEFAULT_GEOMETRY, type ThemeGeometry } from '@shared/themeModel';
 
 const settings = useSettingsStore();
@@ -16,112 +17,95 @@ function geomValue(key: keyof ThemeGeometry): number {
   return settings.appearance.geometry?.[key] ?? DEFAULT_GEOMETRY[key];
 }
 
-function onSliderInput(key: 'depth' | 'noise', event: Event): void {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  updateGeometry(key, Number(target.value));
-}
+const radiusKeys = ['radiusBox', 'radiusField', 'radiusSelector'] as const;
+const sizeKeys = ['sizeField', 'sizeSelector'] as const;
 </script>
 
 <template>
   <section>
-    <h3 class="text-sm font-semibold mb-4">{{ $t('creator.geometry') }}</h3>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-5">
-      <div v-for="slider in ['radiusBox', 'radiusField', 'radiusSelector'] as const" :key="slider">
-        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
-          <span>{{ $t(`creator.${slider}`) }}</span>
-          <span v-if="slider === 'radiusBox' && glassActive" class="text-warning">{{
+    <h3 class="mb-4 text-sm font-semibold">{{ $t('creator.geometry') }}</h3>
+    <div class="grid grid-cols-1 gap-x-10 gap-y-5 lg:grid-cols-2">
+      <div v-for="key in radiusKeys" :key="key">
+        <div class="mb-1.5 flex justify-between text-xs text-base-content/60">
+          <span>{{ $t(`creator.${key}`) }}</span>
+          <span v-if="key === 'radiusBox' && glassActive" class="text-warning">{{
             $t('creator.glassLocked')
           }}</span>
-          <span v-else>{{ geomValue(slider as keyof ThemeGeometry) }}px</span>
+          <span v-else>{{ geomValue(key) }}px</span>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="32"
-          :disabled="slider === 'radiusBox' && glassActive"
-          :value="
-            slider === 'radiusBox' && glassActive ? 0 : geomValue(slider as keyof ThemeGeometry)
-          "
-          :aria-label="$t(`creator.${slider}`)"
-          class="w-full"
-          :class="{ 'opacity-40 pointer-events-none': slider === 'radiusBox' && glassActive }"
-          @input="
-            updateGeometry(
-              slider as keyof ThemeGeometry,
-              parseInt(($event.target as HTMLInputElement).value)
-            )
-          "
+        <Slider
+          :model-value="key === 'radiusBox' && glassActive ? 0 : geomValue(key)"
+          :label="$t(`creator.${key}`)"
+          :min="0"
+          :max="32"
+          :disabled="key === 'radiusBox' && glassActive"
+          :value-text="`${geomValue(key)} px`"
+          @update:model-value="updateGeometry(key, $event)"
         />
       </div>
-      <div v-for="sz in ['sizeField', 'sizeSelector'] as const" :key="sz">
-        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
-          <span>{{ $t(`creator.${sz}`) }}</span>
-          <span>×{{ geomValue(sz as keyof ThemeGeometry) }}</span>
+
+      <div v-for="key in sizeKeys" :key="key">
+        <div class="mb-1.5 flex justify-between text-xs text-base-content/60">
+          <span>{{ $t(`creator.${key}`) }}</span>
+          <span>×{{ geomValue(key) }}</span>
         </div>
-        <input
-          type="range"
-          min="1"
-          max="5"
-          step="1"
-          :value="geomValue(sz as keyof ThemeGeometry)"
-          :aria-label="$t(`creator.${sz}`)"
-          class="w-full"
-          @input="
-            updateGeometry(
-              sz as keyof ThemeGeometry,
-              parseInt(($event.target as HTMLInputElement).value)
-            )
-          "
+        <Slider
+          :model-value="geomValue(key)"
+          :label="$t(`creator.${key}`)"
+          :min="1"
+          :max="5"
+          :step="1"
+          :value-text="`×${geomValue(key)}`"
+          @update:model-value="updateGeometry(key, $event)"
         />
       </div>
+
       <div>
-        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
+        <div class="mb-1.5 flex justify-between text-xs text-base-content/60">
           <span>{{ $t('creator.borderWidth') }}</span>
           <span>{{ geomValue('border') }}px</span>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="4"
-          :value="geomValue('border')"
-          :aria-label="$t('creator.borderWidth')"
-          class="w-full"
-          @input="updateGeometry('border', parseInt(($event.target as HTMLInputElement).value))"
+        <Slider
+          :model-value="geomValue('border')"
+          :label="$t('creator.borderWidth')"
+          :min="0"
+          :max="4"
+          :value-text="`${geomValue('border')} px`"
+          @update:model-value="updateGeometry('border', $event)"
         />
       </div>
+
       <div>
-        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
+        <div class="mb-1.5 flex justify-between text-xs text-base-content/60">
           <span>{{ $t('creator.depth') }}</span>
           <span>{{ geomValue('depth').toFixed(1) }}×</span>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="3"
-          step="0.5"
+        <Slider
+          :model-value="geomValue('depth')"
           data-testid="settings-depth-slider"
-          :value="geomValue('depth')"
-          :aria-label="$t('creator.depth')"
-          class="w-full"
-          @input="onSliderInput('depth', $event)"
+          :label="$t('creator.depth')"
+          :min="0"
+          :max="3"
+          :step="0.5"
+          :value-text="`${geomValue('depth').toFixed(1)}×`"
+          @update:model-value="updateGeometry('depth', $event)"
         />
       </div>
+
       <div>
-        <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
+        <div class="mb-1.5 flex justify-between text-xs text-base-content/60">
           <span>{{ $t('creator.noise') }}</span>
           <span>{{ Math.round(geomValue('noise') * 100) }}%</span>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
+        <Slider
+          :model-value="geomValue('noise')"
           data-testid="settings-noise-slider"
-          :value="geomValue('noise')"
-          :aria-label="$t('creator.noise')"
-          class="w-full"
-          @input="onSliderInput('noise', $event)"
+          :label="$t('creator.noise')"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          :value-text="`${Math.round(geomValue('noise') * 100)}%`"
+          @update:model-value="updateGeometry('noise', $event)"
         />
       </div>
     </div>

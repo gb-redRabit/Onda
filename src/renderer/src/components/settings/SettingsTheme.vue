@@ -12,6 +12,9 @@ import {
 import { COLOR_TOKEN_IDS, tokenToCssVar, sanitizeHex, type ColorTokenId } from '@shared/themeModel';
 import SettingsThemePicker from '@renderer/components/settings/SettingsThemePicker.vue';
 import SettingsThemeGeometry from '@renderer/components/settings/SettingsThemeGeometry.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import ColorInput from '@renderer/components/ui/ColorInput.vue';
+import Slider from '@renderer/components/ui/Slider.vue';
 import {
   BASE_TOKENS,
   BRAND_TOKENS,
@@ -137,36 +140,30 @@ async function pasteThemeJson() {
             {{ $t(['creator.baza', 'creator.brand', 'creator.statuses'][gi]) }}
           </h3>
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-3">
-            <label
-              v-for="id in group"
-              :key="id"
-              class="flex items-center gap-4 py-1 cursor-pointer group"
-            >
-              <input
-                type="color"
-                class="w-11 h-10 fx-depth rounded-field bg-transparent border border-hairline cursor-pointer shrink-0"
-                :value="colorValue(id)"
-                @input="updateColor(id, ($event.target as HTMLInputElement).value)"
+            <div v-for="id in group" :key="id" class="flex items-center justify-between gap-3 py-1">
+              <span
+                class="min-w-0 flex-1 truncate text-xs text-base-content/70"
+                :title="tokenLabel(id)"
+                >{{ tokenLabel(id) }}</span
+              >
+              <ColorInput
+                class="shrink-0"
+                :model-value="colorValue(id)"
+                :label="tokenLabel(id)"
+                @update:model-value="updateColor(id, $event)"
               />
-              <span class="text-sm flex-1 min-w-0 truncate">{{ tokenLabel(id) }}</span>
-              <input
-                type="text"
-                class="w-28 px-2.5 py-1.5 fx-depth rounded-field bg-base-200 border border-hairline text-xs font-mono text-base-content/70 focus:border-primary/50 focus:outline-hidden"
-                :value="colorValue(id)"
-                @change="updateColor(id, ($event.target as HTMLInputElement).value)"
-              />
-            </label>
+            </div>
           </div>
         </section>
 
         <section>
           <h3 class="text-sm font-semibold mb-3">{{ $t('creator.actions') }}</h3>
           <div class="flex flex-wrap gap-2">
-            <button
+            <Button
               v-for="act in ['seedDark', 'seedLight', 'copy', 'paste']"
               :key="act"
-              type="button"
-              class="fx-noise px-4 py-2 fx-depth rounded-field text-sm border border-hairline bg-base-100 text-base-content/70 hover:bg-base-content/10 transition-colors"
+              variant="outline"
+              size="sm"
               @click="
                 act === 'seedDark'
                   ? resetCustom('dark')
@@ -178,7 +175,7 @@ async function pasteThemeJson() {
               "
             >
               {{ $t(`creator.${act}`) }}
-            </button>
+            </Button>
           </div>
         </section>
       </template>
@@ -194,37 +191,27 @@ async function pasteThemeJson() {
         <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
           <span>{{ settings.appearance.glassAlpha ?? 100 }}%</span>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          :value="settings.appearance.glassAlpha ?? 100"
-          class="w-full"
-          :aria-label="$t('creator.glass')"
-          @input="
-            settings.updateAppearance({
-              glassAlpha: parseInt(($event.target as HTMLInputElement).value)
-            })
-          "
+        <Slider
+          :model-value="settings.appearance.glassAlpha ?? 100"
+          :label="$t('creator.glass')"
+          :min="0"
+          :max="100"
+          :value-text="`${settings.appearance.glassAlpha ?? 100}%`"
+          @update:model-value="settings.updateAppearance({ glassAlpha: $event })"
         />
         <div class="mt-4">
           <div class="flex justify-between text-xs text-base-content/60 mb-1.5">
             <span>{{ $t('creator.glassBlur') }}</span>
             <span>{{ settings.appearance.glassBlur ?? 14 }}px</span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="32"
+          <Slider
+            :model-value="settings.appearance.glassBlur ?? 14"
             data-testid="settings-glass-blur"
-            :value="settings.appearance.glassBlur ?? 14"
-            :aria-label="$t('creator.glassBlur')"
-            class="w-full"
-            @input="
-              settings.updateAppearance({
-                glassBlur: parseInt(($event.target as HTMLInputElement).value)
-              })
-            "
+            :label="$t('creator.glassBlur')"
+            :min="0"
+            :max="32"
+            :value-text="`${settings.appearance.glassBlur ?? 14} px`"
+            @update:model-value="settings.updateAppearance({ glassBlur: $event })"
           />
           <p class="mt-2 text-xs text-base-content/50">{{ $t('creator.glassBlurHint') }}</p>
         </div>
