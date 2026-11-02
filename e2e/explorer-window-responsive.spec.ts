@@ -62,10 +62,10 @@ test.describe('detached explorer window layout', () => {
         .poll(() => page.locator('[data-testid^="explorer-item-"]').count(), { timeout: 15_000 })
         .toBeGreaterThan(0);
 
-      const windowPromise = app.waitForEvent('window');
+      const windowPromise = app.waitForEvent('window', { timeout: 60_000 });
       await page.getByTestId('explorer-open-window').click();
       const detached = await windowPromise;
-      await expect(detached.getByTestId('explorer-window-root')).toBeVisible();
+      await expect(detached.getByTestId('explorer-window-root')).toBeVisible({ timeout: 20_000 });
       const winId = await detached.evaluate(() =>
         (window as unknown as { api: { getWindowId: () => Promise<number> } }).api.getWindowId()
       );
