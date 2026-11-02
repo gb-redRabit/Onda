@@ -21,6 +21,7 @@ import type { PluginPermissions, PluginSettingField } from '@shared/types/ipc';
 import PluginsGuide from '@renderer/components/settings/PluginsGuide.vue';
 import PluginPermissionDialog from '@renderer/components/settings/PluginPermissionDialog.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import Input from '@renderer/components/ui/Input.vue';
 
 const { t } = useI18n();
 const store = usePluginsStore();
@@ -367,22 +368,26 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
             <label class="text-xs text-base-content/60 min-w-0 flex-1 truncate">{{
               field.label
             }}</label>
-            <input
+            <Input
               v-if="field.type === 'text'"
               type="text"
               :data-testid="`plugin-setting-${p.id}-${field.key}`"
-              class="w-40 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-xs focus:border-primary focus:outline-hidden"
-              :value="String(settingsValue(p.id, field) ?? '')"
+              class="w-40"
+              size="sm"
+              :aria-label="field.label"
+              :model-value="String(settingsValue(p.id, field) ?? '')"
               @change="onSettingChange(p.id, field.key, ($event.target as HTMLInputElement).value)"
             />
-            <input
+            <Input
               v-else-if="field.type === 'number'"
               type="number"
               :data-testid="`plugin-setting-${p.id}-${field.key}`"
-              class="w-24 px-2 py-1 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-xs focus:border-primary focus:outline-hidden"
+              class="w-24"
+              size="sm"
+              :aria-label="field.label"
               :min="field.min"
               :max="field.max"
-              :value="Number(settingsValue(p.id, field))"
+              :model-value="Number(settingsValue(p.id, field))"
               @change="
                 onSettingChange(p.id, field.key, Number(($event.target as HTMLInputElement).value))
               "

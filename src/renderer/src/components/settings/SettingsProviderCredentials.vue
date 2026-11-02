@@ -6,6 +6,7 @@ import { providerLabel } from '@renderer/utils/providerLabels';
 import ProviderIcon from '@renderer/components/online/providers/ProviderIcon.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 import { useUIStore } from '@renderer/stores/ui';
+import Input from '@renderer/components/ui/Input.vue';
 
 // Zbiorczy ekran poświadczeń providerów wymagających lub obsługujących logowanie (cookie) —
 // np. 115/Quark/Baidu/Google Drive. Spójny wizualnie z SettingsNetworkPlatform / SettingsApiKeys.
@@ -143,10 +144,11 @@ async function login(id: string): Promise<void> {
             {{ t('providers.login') }}
           </button>
           <span class="text-xs text-base-content/50">{{ t('providers.loginOrPaste') }}</span>
-          <input
+          <Input
             v-model="editing[row.id]"
             type="text"
-            class="min-w-0 flex-1 rounded-field border border-hairline bg-base-200/(--glass-alpha) px-3 py-1.5 text-xs text-base-content fx-depth transition focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15"
+            size="sm"
+            class="min-w-0 flex-1"
             :aria-label="t('providers.cookiePlaceholder')"
             :placeholder="t('providers.cookiePlaceholder')"
             @keydown.enter="save(row.id)"

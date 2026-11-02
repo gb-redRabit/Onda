@@ -8,6 +8,7 @@ import { FolderPlus, FolderSearch, Trash2 } from '@lucide/vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
+import Slider from '@renderer/components/ui/Slider.vue';
 
 const library = useLibraryStore();
 const ui = useUIStore();
@@ -147,19 +148,14 @@ function folderIcon(type: string): string {
     :title="`${$t('settings.coverCache')} — ${settings.library.coverCacheMaxEntries ?? 2000}`"
     :description="$t('settings.coverCacheDesc')"
   >
-    <input
-      type="range"
-      min="500"
-      max="10000"
-      step="500"
-      :value="settings.library.coverCacheMaxEntries ?? 2000"
-      :aria-label="$t('settings.coverCache')"
-      class="w-full"
-      @input="
-        settings.updateLibrary({
-          coverCacheMaxEntries: parseInt(($event.target as HTMLInputElement).value) || 2000
-        })
-      "
+    <Slider
+      :model-value="settings.library.coverCacheMaxEntries ?? 2000"
+      :label="$t('settings.coverCache')"
+      :min="500"
+      :max="10000"
+      :step="500"
+      :value-text="String(settings.library.coverCacheMaxEntries ?? 2000)"
+      @update:model-value="settings.updateLibrary({ coverCacheMaxEntries: $event })"
     />
     <div class="flex justify-between text-2xs text-base-content/60 mt-1">
       <span>500</span><span>10 000</span>

@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
 import SettingsToggle from '@renderer/components/settings/SettingsToggle.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import Input from '@renderer/components/ui/Input.vue';
 import type {
   ScrobblingAuthCompleteResult,
   ScrobblingAuthResult,
@@ -219,31 +221,30 @@ onMounted(refresh);
         </div>
 
         <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input
+          <Input
             v-model="lastfmApiKey"
             data-testid="scrobbling-lastfm-api-key"
             type="password"
             autocomplete="off"
-            class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
             :placeholder="lastfmKeyPreview || $t('settings.lastfmApiKey')"
             :aria-label="$t('settings.lastfmApiKey')"
           />
-          <input
+          <Input
             v-model="lastfmApiSecret"
             data-testid="scrobbling-lastfm-api-secret"
             type="password"
             autocomplete="off"
-            class="px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
             :placeholder="lastfmSecretPreview || $t('settings.lastfmApiSecret')"
             :aria-label="$t('settings.lastfmApiSecret')"
           />
         </div>
         <div class="mt-2 flex flex-wrap gap-2">
-          <button
-            type="button"
+          <Button
+            variant="solid"
+            size="sm"
             data-testid="scrobbling-lastfm-connect"
-            class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-xs fx-depth"
             :disabled="busy !== null"
+            :loading="busy === 'lastfm-auth'"
             @click="connectLastfm"
           >
             {{
@@ -251,16 +252,16 @@ onMounted(refresh);
                 ? $t('settings.scrobblingConnecting')
                 : $t('settings.lastfmConnect')
             }}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             data-testid="scrobbling-lastfm-test"
-            class="px-3 py-1.5 rounded-field border border-hairline text-xs"
             :disabled="busy !== null"
             @click="testLastfm"
           >
             {{ $t('settings.scrobblingTest') }}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -284,24 +285,24 @@ onMounted(refresh);
           />
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
-          <input
+          <Input
             v-model="listenbrainzToken"
             data-testid="scrobbling-listenbrainz-token"
             type="password"
             autocomplete="off"
-            class="flex-1 min-w-48 px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
+            class="min-w-48 flex-1"
             :placeholder="listenbrainzPreview || $t('settings.listenbrainzToken')"
             :aria-label="$t('settings.listenbrainzToken')"
           />
-          <button
-            type="button"
+          <Button
+            variant="solid"
+            size="sm"
             data-testid="scrobbling-listenbrainz-test"
-            class="px-3 py-1.5 rounded-field bg-primary text-primary-content text-xs fx-depth"
             :disabled="busy !== null"
             @click="saveAndTestListenbrainz"
           >
             {{ $t('settings.scrobblingTest') }}
-          </button>
+          </Button>
         </div>
       </div>
 
