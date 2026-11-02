@@ -9,6 +9,11 @@ import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDi
 import { AUDIO_FORMATS, VIDEO_QUALITIES, VIDEO_CONTAINERS } from '@shared/constants';
 import type { IpcDownloadConfig } from '@shared/types/ipc';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
+import Input from '@renderer/components/ui/Input.vue';
+import NumberField from '@renderer/components/ui/NumberField.vue';
+import Select from '@renderer/components/ui/Select.vue';
 
 const { t } = useI18n();
 const prompt = usePromptDialog();
@@ -55,8 +60,9 @@ function resetProfileForm() {
   pfClipEnd.value = 30;
   pfClipFormat.value = 'webm';
 }
-function onProfileSelect(e: Event) {
-  const id = (e.target as HTMLSelectElement).value;
+
+function onProfileSelect(value: string | number | undefined) {
+  const id = String(value ?? '');
   selectedProfileId.value = id;
   if (!id) {
     resetProfileForm();
@@ -81,6 +87,7 @@ function onProfileSelect(e: Event) {
     }
   }
 }
+
 function buildProfileConfig(): IpcDownloadConfig {
   const config: IpcDownloadConfig = { kind: pfKind.value, audioQuality: pfAudioQuality.value };
   if (pfKind.value === 'audio') config.format = pfFormat.value;
@@ -100,12 +107,14 @@ function buildProfileConfig(): IpcDownloadConfig {
     };
   return config;
 }
+
 async function doSaveProfile() {
   const name = profileName.value.trim();
   if (!name) return;
   await saveProfile(name, buildProfileConfig(), selectedProfileId.value || undefined);
   resetProfileForm();
 }
+
 async function doDeleteProfile() {
   if (!selectedProfileId.value) return;
   const name = profiles.value.find((p) => p.id === selectedProfileId.value)?.name || '';
@@ -122,140 +131,138 @@ async function doDeleteProfile() {
     :description="$t('settings.profilesSectionDesc')"
   >
     <div class="flex items-center gap-2">
-      <select
-        class="flex-1 min-w-0 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        :value="selectedProfileId"
-        @change="onProfileSelect"
+      <Select
+        :model-value="selectedProfileId"
+        class="min-w-0 flex-1"
+        :aria-label="$t('settings.profilesSection')"
+        @update:model-value="onProfileSelect"
       >
         <option value="">{{ $t('settings.profileNew') }}</option>
         <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
-      </select>
-      <button
-        type="button"
-        class="fx-noise flex items-center gap-1.5 px-3 py-2 fx-depth rounded-field border border-hairline text-sm text-base-content/70 hover:bg-base-content/10 disabled:opacity-40 shrink-0"
-        :aria-label="$t('settings.profileDelete')"
+      </Select>
+      <IconButton
+        :icon="Trash2"
+        :label="$t('settings.profileDelete')"
+        variant="danger"
+        class="shrink-0 border border-hairline"
         :disabled="!selectedProfileId"
         @click="doDeleteProfile"
-      >
-        <Trash2 :size="14" />
-      </button>
+      />
     </div>
-    <input
+
+    <Input
       v-model="profileName"
-      class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
+      :aria-label="$t('settings.profileNamePlaceholder')"
       :placeholder="$t('settings.profileNamePlaceholder')"
     />
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <label class="block text-xs text-base-content/50"
-        >{{ $t('youtube.prefKind')
-        }}<select
-          v-model="pfKind"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        >
+
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <label class="block text-xs text-base-content/50">
+        {{ $t('youtube.prefKind') }}
+        <Select v-model="pfKind" size="sm" class="mt-1">
           <option v-for="k in profileKinds" :key="k.value" :value="k.value">
             {{ $t(k.labelKey) }}
           </option>
-        </select></label
-      >
-      <label v-if="pfKind === 'audio'" class="block text-xs text-base-content/50"
-        >{{ $t('youtube.prefFormat')
-        }}<select
-          v-model="pfFormat"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        >
+        </Select>
+      </label>
+
+      <label v-if="pfKind === 'audio'" class="block text-xs text-base-content/50">
+        {{ $t('youtube.prefFormat') }}
+        <Select v-model="pfFormat" size="sm" class="mt-1">
           <option v-for="f in audioFormats" :key="f" :value="f">
             {{ f === 'best' ? $t('settings.audioNative') : f }}
           </option>
-        </select></label
-      >
-      <label v-if="pfKind === 'video'" class="block text-xs text-base-content/50"
-        >{{ $t('youtube.prefQuality')
-        }}<select
-          v-model="pfQuality"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        >
+        </Select>
+      </label>
+
+      <label v-if="pfKind === 'video'" class="block text-xs text-base-content/50">
+        {{ $t('youtube.prefQuality') }}
+        <Select v-model="pfQuality" size="sm" class="mt-1">
           <option v-for="q in videoQualities" :key="q" :value="q">{{ q }}</option>
-        </select></label
-      >
-      <label v-if="pfKind === 'video'" class="block text-xs text-base-content/50"
-        >{{ $t('youtube.prefContainer')
-        }}<select
-          v-model="pfContainer"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        >
+        </Select>
+      </label>
+
+      <label v-if="pfKind === 'video'" class="block text-xs text-base-content/50">
+        {{ $t('youtube.prefContainer') }}
+        <Select v-model="pfContainer" size="sm" class="mt-1">
           <option v-for="c in videoContainers" :key="c" :value="c">{{ c }}</option>
-        </select></label
-      >
-      <label v-if="pfKind !== 'video'" class="block text-xs text-base-content/50"
-        >{{ $t('settings.defaultAudioQuality')
-        }}<select
-          v-model="pfAudioQuality"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        >
+        </Select>
+      </label>
+
+      <label v-if="pfKind !== 'video'" class="block text-xs text-base-content/50">
+        {{ $t('settings.defaultAudioQuality') }}
+        <Select v-model="pfAudioQuality" size="sm" class="mt-1">
           <option v-for="q in ['best', 'high', 'medium', 'low'] as const" :key="q" :value="q">
             {{ $t('settings.audioQuality.' + q) }}
           </option>
-        </select></label
-      >
-      <label class="block text-xs text-base-content/50"
-        >{{ $t('settings.defaultCover')
-        }}<select
-          v-model="pfCoverType"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        >
+        </Select>
+      </label>
+
+      <label class="block text-xs text-base-content/50">
+        {{ $t('settings.defaultCover') }}
+        <Select v-model="pfCoverType" size="sm" class="mt-1">
           <option value="thumbnail">{{ $t('settings.cover.thumbnail') }}</option>
           <option value="none">{{ $t('settings.cover.none') }}</option>
           <option value="frame">{{ $t('settings.cover.frame') }}</option>
           <option value="clip">{{ $t('settings.cover.clip') }}</option>
-        </select></label
-      >
-      <label v-if="pfCoverType === 'frame'" class="block text-xs text-base-content/50"
-        >{{ $t('youtube.frameTimeLabel')
-        }}<input
-          v-model.number="pfFrameTime"
-          type="number"
-          min="0"
-          class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-      /></label>
+        </Select>
+      </label>
+
+      <label v-if="pfCoverType === 'frame'" class="block text-xs text-base-content/50">
+        {{ $t('youtube.frameTimeLabel') }}
+        <NumberField
+          v-model="pfFrameTime"
+          size="sm"
+          class="mt-1"
+          :label="$t('youtube.frameTimeLabel')"
+          :min="0"
+          unit="s"
+        />
+      </label>
+
       <template v-if="pfCoverType === 'clip'">
-        <label class="block text-xs text-base-content/50"
-          >{{ $t('youtube.clipStartLabel')
-          }}<input
-            v-model.number="pfClipStart"
-            type="number"
-            min="0"
-            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        /></label>
-        <label class="block text-xs text-base-content/50"
-          >{{ $t('youtube.clipEndLabel')
-          }}<input
-            v-model.number="pfClipEnd"
-            type="number"
-            min="1"
-            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        /></label>
-        <label class="block text-xs text-base-content/50"
-          >{{ $t('youtube.clipFormatLabel')
-          }}<select
-            v-model="pfClipFormat"
-            class="mt-1 w-full px-2 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-          >
+        <label class="block text-xs text-base-content/50">
+          {{ $t('youtube.clipStartLabel') }}
+          <NumberField
+            v-model="pfClipStart"
+            size="sm"
+            class="mt-1"
+            :label="$t('youtube.clipStartLabel')"
+            :min="0"
+            unit="s"
+          />
+        </label>
+        <label class="block text-xs text-base-content/50">
+          {{ $t('youtube.clipEndLabel') }}
+          <NumberField
+            v-model="pfClipEnd"
+            size="sm"
+            class="mt-1"
+            :label="$t('youtube.clipEndLabel')"
+            :min="1"
+            unit="s"
+          />
+        </label>
+        <label class="block text-xs text-base-content/50">
+          {{ $t('youtube.clipFormatLabel') }}
+          <Select v-model="pfClipFormat" size="sm" class="mt-1">
             <option value="webm">.webm</option>
             <option value="mp4">.mp4</option>
-          </select></label
-        >
+          </Select>
+        </label>
       </template>
     </div>
-    <button
-      type="button"
-      class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 disabled:opacity-50 w-fit"
+
+    <Button
+      variant="solid"
+      class="w-fit"
+      data-testid="settings-profile-save"
       :disabled="!profileName.trim()"
       @click="doSaveProfile"
     >
-      <Save :size="14" />{{
-        selectedProfileId ? $t('settings.profileSaveUpdate') : $t('settings.profileSaveCreate')
-      }}
-    </button>
+      <template #leading><Save :size="14" /></template>
+      {{ selectedProfileId ? $t('settings.profileSaveUpdate') : $t('settings.profileSaveCreate') }}
+    </Button>
 
     <ExplorerPromptDialog
       :visible="prompt.promptVisible.value"

@@ -39,7 +39,7 @@ function onHex(event: Event): void {
       :value="swatch"
       :disabled="disabled"
       :aria-label="label"
-      class="h-9 w-11 shrink-0 cursor-pointer rounded-field border border-hairline bg-transparent disabled:opacity-45"
+      class="h-9 w-11 shrink-0 cursor-pointer rounded-field border border-base-content/15 bg-transparent disabled:opacity-45"
       @input="onSwatch"
     />
     <input
@@ -49,7 +49,7 @@ function onHex(event: Event): void {
       :aria-label="`${label} (HEX)`"
       spellcheck="false"
       :class="[
-        'rounded-field border border-hairline bg-base-200/70 px-2.5 py-1.5 font-mono text-xs text-base-content/80 focus:outline-hidden focus:ring-2 focus:ring-primary/20 disabled:opacity-45',
+        'rounded-field border border-base-content/15 bg-base-200/70 px-2.5 py-1.5 font-mono text-xs text-base-content/80 focus:outline-hidden focus:ring-2 focus:ring-primary/20 disabled:opacity-45',
         props.wide ? 'w-full' : 'w-28'
       ]"
       @change="onHex"

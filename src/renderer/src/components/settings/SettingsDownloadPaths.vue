@@ -1,25 +1,30 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
 import SettingsDownloadProfiles from '@renderer/components/settings/SettingsDownloadProfiles.vue';
-import { FolderOpen } from '@lucide/vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import Checkbox from '@renderer/components/ui/Checkbox.vue';
+import PathInput from '@renderer/components/ui/PathInput.vue';
+import { pickFolder } from '@renderer/utils/pickFolder';
 
 const settings = useSettingsStore();
 
 async function pickDownloadPath() {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths.length > 0) settings.updateDownload({ defaultPath: paths[0] });
+  const dir = await pickFolder();
+  if (dir) settings.updateDownload({ defaultPath: dir });
 }
+
 async function pickSourcesPath() {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths.length > 0) settings.updateDownload({ sourcesDir: paths[0] });
+  const dir = await pickFolder();
+  if (dir) settings.updateDownload({ sourcesDir: dir });
 }
+
 async function pickTempDir() {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths.length > 0) settings.updateDownload({ tempDir: paths[0] });
+  const dir = await pickFolder();
+  if (dir) settings.updateDownload({ tempDir: dir });
 }
-function onSourcesFolderChange(e: Event) {
-  settings.updateDownload({ sourcesFolder: (e.target as HTMLInputElement).checked });
+
+function onSourcesFolderChange(value: boolean) {
+  settings.updateDownload({ sourcesFolder: value });
 }
 </script>
 
@@ -28,72 +33,39 @@ function onSourcesFolderChange(e: Event) {
     :title="$t('settings.downloadPath')"
     :description="$t('settings.downloadPathDesc')"
   >
-    <div class="flex items-center gap-2">
-      <input
-        :value="settings.download.defaultPath"
-        readonly
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        :placeholder="$t('settings.downloadPathPlaceholder')"
-      />
-      <button
-        type="button"
-        class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 shrink-0"
-        @click="pickDownloadPath"
-      >
-        <FolderOpen :size="14" />{{ $t('settings.chooseFolder') }}
-      </button>
-    </div>
+    <PathInput
+      :model-value="settings.download.defaultPath"
+      :label="$t('settings.downloadPath')"
+      :placeholder="$t('settings.downloadPathPlaceholder')"
+      @browse="pickDownloadPath"
+    />
   </SettingsGroup>
+
   <SettingsGroup :title="$t('settings.sourcesPath')" :description="$t('settings.sourcesPathDesc')">
-    <div class="flex items-center gap-2">
-      <input
-        :value="settings.download.sourcesDir"
-        readonly
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        :placeholder="$t('settings.sourcesPathPlaceholder')"
-      />
-      <button
-        type="button"
-        class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 shrink-0"
-        @click="pickSourcesPath"
-      >
-        <FolderOpen :size="14" />{{ $t('settings.chooseFolder') }}
-      </button>
-    </div>
-    <p class="text-xs text-base-content/50 mt-2">{{ $t('settings.sourcesPathHint') }}</p>
-    <label class="flex items-center gap-2 mt-3 cursor-pointer"
-      ><input
-        type="checkbox"
-        class="accent-primary"
-        :checked="settings.download.sourcesFolder"
-        @change="onSourcesFolderChange"
-      /><span class="text-sm">{{ $t('settings.sourcesFolder') }}</span></label
-    >
+    <PathInput
+      :model-value="settings.download.sourcesDir"
+      :label="$t('settings.sourcesPath')"
+      :placeholder="$t('settings.sourcesPathPlaceholder')"
+      @browse="pickSourcesPath"
+    />
+    <p class="mt-2 text-xs text-base-content/50">{{ $t('settings.sourcesPathHint') }}</p>
+    <Checkbox
+      class="mt-3"
+      :model-value="settings.download.sourcesFolder"
+      :label="$t('settings.sourcesFolder')"
+      @update:model-value="onSourcesFolderChange"
+    />
   </SettingsGroup>
+
   <SettingsGroup :title="$t('settings.tempDir')" :description="$t('settings.tempDirDesc')">
-    <div class="flex items-center gap-2">
-      <input
-        :value="settings.download.tempDir || ''"
-        readonly
-        class="flex-1 px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm"
-        :placeholder="$t('settings.tempDirPlaceholder')"
-      />
-      <button
-        type="button"
-        class="fx-noise flex items-center gap-1.5 px-4 py-2 fx-depth rounded-field bg-primary text-primary-content text-sm font-medium hover:bg-primary/90 shrink-0"
-        @click="pickTempDir"
-      >
-        <FolderOpen :size="14" />{{ $t('settings.chooseFolder') }}
-      </button>
-      <button
-        v-if="settings.download.tempDir"
-        type="button"
-        class="px-3 py-2 text-xs text-base-content/50 hover:text-base-content"
-        @click="settings.updateDownload({ tempDir: '' })"
-      >
-        {{ $t('common.clear') }}
-      </button>
-    </div>
+    <PathInput
+      :model-value="settings.download.tempDir || ''"
+      :label="$t('settings.tempDir')"
+      :placeholder="$t('settings.tempDirPlaceholder')"
+      clearable
+      @browse="pickTempDir"
+    />
   </SettingsGroup>
+
   <SettingsDownloadProfiles />
 </template>

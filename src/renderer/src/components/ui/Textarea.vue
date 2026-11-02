@@ -26,7 +26,7 @@ const classes = computed(() =>
     props.size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm',
     props.invalid
       ? 'border-error focus:border-error'
-      : 'border-hairline/80 focus:border-primary/50',
+      : 'border-base-content/15 focus:border-primary/50',
     attrs.class as string | undefined
   )
 );
