@@ -6,6 +6,7 @@ import { useSettingsStore } from '@renderer/stores/settings';
 import { useI18n } from 'vue-i18n';
 import { FolderPlus, FolderSearch, Trash2 } from '@lucide/vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import Slider from '@renderer/components/ui/Slider.vue';
@@ -144,30 +145,37 @@ function folderIcon(type: string): string {
     {{ library.audioCount }}, {{ $t('home.statVideo') }}: {{ library.videoCount }})
   </div>
 
-  <SettingsGroup
-    :title="`${$t('settings.coverCache')} — ${settings.library.coverCacheMaxEntries ?? 2000}`"
-    :description="$t('settings.coverCacheDesc')"
-  >
-    <Slider
-      :model-value="settings.library.coverCacheMaxEntries ?? 2000"
+  <SettingsGroup :title="$t('settings.coverCache')" :description="$t('settings.coverCacheDesc')">
+    <SettingsRow
       :label="$t('settings.coverCache')"
-      :min="500"
-      :max="10000"
-      :step="500"
-      :value-text="String(settings.library.coverCacheMaxEntries ?? 2000)"
-      @update:model-value="settings.updateLibrary({ coverCacheMaxEntries: $event })"
-    />
-    <div class="flex justify-between text-2xs text-base-content/60 mt-1">
-      <span>500</span><span>10 000</span>
-    </div>
-    <p class="text-2xs text-base-content/50 mt-2">{{ $t('settings.coverCacheHint') }}</p>
-    <button
-      type="button"
-      class="fx-noise mt-3 flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field border border-hairline text-xs font-medium text-base-content/70 hover:bg-base-content/10 transition-colors"
-      @click="clearCoverCache"
+      :description="$t('settings.coverCacheHint')"
+      path="library.coverCacheMaxEntries"
+      wide
     >
-      <Trash2 :size="14" />{{ $t('settings.coverCacheClear') }}
-    </button>
+      <div class="w-full">
+        <Slider
+          :model-value="settings.library.coverCacheMaxEntries ?? 2000"
+          :label="$t('settings.coverCache')"
+          :min="500"
+          :max="10000"
+          :step="500"
+          :value-text="String(settings.library.coverCacheMaxEntries ?? 2000)"
+          @update:model-value="settings.updateLibrary({ coverCacheMaxEntries: $event })"
+        />
+        <div class="mt-1 flex justify-between text-2xs text-base-content/60">
+          <span>500</span><span>10 000</span>
+        </div>
+      </div>
+    </SettingsRow>
+    <div class="flex justify-end py-2">
+      <button
+        type="button"
+        class="fx-noise flex items-center gap-1.5 rounded-field border border-hairline px-3 py-1.5 text-xs font-medium text-base-content/70 transition-colors hover:bg-base-content/10"
+        @click="clearCoverCache"
+      >
+        <Trash2 :size="14" />{{ $t('settings.coverCacheClear') }}
+      </button>
+    </div>
   </SettingsGroup>
 
   <ExplorerPromptDialog

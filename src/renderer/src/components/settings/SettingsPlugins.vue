@@ -21,6 +21,7 @@ import type { PluginPermissions, PluginSettingField } from '@shared/types/ipc';
 import PluginsGuide from '@renderer/components/settings/PluginsGuide.vue';
 import PluginPermissionDialog from '@renderer/components/settings/PluginPermissionDialog.vue';
 import SettingsGroup from '@renderer/components/settings/SettingsGroup.vue';
+import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import Input from '@renderer/components/ui/Input.vue';
 
 const { t } = useI18n();
@@ -360,14 +361,11 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
           <div class="text-xs font-medium text-base-content/70 mb-1.5">
             {{ t('plugins.settings') }}
           </div>
-          <div
+          <SettingsRow
             v-for="field in store.settingFields(p.id)"
             :key="field.key"
-            class="flex items-center justify-between gap-3 py-1"
+            :label="field.label"
           >
-            <label class="text-xs text-base-content/60 min-w-0 flex-1 truncate">{{
-              field.label
-            }}</label>
             <Input
               v-if="field.type === 'text'"
               type="text"
@@ -398,7 +396,7 @@ async function onSettingChange(pId: string, key: string, value: unknown): Promis
               :model-value="settingsValue(p.id, field) === true"
               @update:model-value="onSettingChange(p.id, field.key, $event)"
             />
-          </div>
+          </SettingsRow>
         </div>
 
         <button
