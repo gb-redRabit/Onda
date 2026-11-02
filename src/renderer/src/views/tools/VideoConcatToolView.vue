@@ -16,6 +16,10 @@ import {
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
+import PathInput from '@renderer/components/ui/PathInput.vue';
+import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import type {
@@ -198,24 +202,24 @@ onBeforeUnmount(() => {
             </span>
           </div>
           <div class="flex items-center gap-1.5">
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               data-testid="concat-add"
-              class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
               :disabled="busy"
               @click="pickFiles"
             >
-              <Plus :size="12" />
+              <template #leading><Plus :size="12" /></template>
               {{ t('tools.addFiles') }}
-            </button>
-            <button
-              type="button"
-              class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               :disabled="busy || files.length === 0"
               @click="clearFiles"
             >
               {{ t('tools.clear') }}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -238,131 +242,79 @@ onBeforeUnmount(() => {
               {{ index + 1 }}
             </span>
             <span class="min-w-0 flex-1 truncate text-xs" :title="path">{{ fileName(path) }}</span>
-            <button
-              type="button"
-              class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"
+            <IconButton
+              :icon="ChevronUp"
+              :label="t('tools.concatMoveUp')"
+              :size="12"
               :disabled="busy || index === 0"
-              :aria-label="t('tools.concatMoveUp')"
               @click="moveFile(index, -1)"
-            >
-              <ChevronUp :size="12" />
-            </button>
-            <button
-              type="button"
-              class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-30"
+            />
+            <IconButton
+              :icon="ChevronDown"
+              :label="t('tools.concatMoveDown')"
+              :size="12"
               :disabled="busy || index === files.length - 1"
-              :aria-label="t('tools.concatMoveDown')"
               @click="moveFile(index, 1)"
-            >
-              <ChevronDown :size="12" />
-            </button>
-            <button
-              type="button"
-              class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
+            />
+            <IconButton
+              :icon="Trash2"
+              :label="t('tools.remove')"
+              :size="12"
+              variant="danger"
               :disabled="busy"
-              :aria-label="t('tools.remove')"
               @click="removeFile(index)"
-            >
-              <Trash2 :size="12" />
-            </button>
+            />
           </div>
         </div>
       </section>
 
       <section class="grid gap-4 md:grid-cols-3">
         <label class="block">
-          <span class="text-2xs font-medium text-base-content/60">
+          <span class="mb-1 block text-2xs font-medium text-base-content/60">
             {{ t('tools.clipContainer') }}
           </span>
-          <select
-            v-model="container"
-            data-testid="concat-container"
-            :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
-          >
+          <Select v-model="container" size="sm" data-testid="concat-container" :disabled="busy">
             <option value="mp4">{{ t('tools.mp4') }}</option>
             <option value="mkv">{{ t('tools.mkv') }}</option>
             <option value="webm">{{ t('tools.webm') }}</option>
-          </select>
+          </Select>
         </label>
         <label class="block">
-          <span class="text-2xs font-medium text-base-content/60">
+          <span class="mb-1 block text-2xs font-medium text-base-content/60">
             {{ t('tools.clipMode') }}
           </span>
-          <select
-            v-model="mode"
-            :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
-          >
+          <Select v-model="mode" size="sm" :disabled="busy">
             <option value="copy">{{ t('tools.clipModeCopy') }}</option>
             <option value="exact">{{ t('tools.clipModeExact') }}</option>
-          </select>
+          </Select>
         </label>
         <label class="block">
-          <span class="text-2xs font-medium text-base-content/60">
+          <span class="mb-1 block text-2xs font-medium text-base-content/60">
             {{ t('tools.clipAudio') }}
           </span>
-          <select
-            v-model="audio"
-            :disabled="busy"
-            class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
-          >
+          <Select v-model="audio" size="sm" :disabled="busy">
             <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
             <option value="mute">{{ t('tools.clipAudioMute') }}</option>
             <option value="remove">{{ t('tools.clipAudioRemove') }}</option>
-          </select>
+          </Select>
         </label>
       </section>
 
       <section class="rounded-box border border-hairline bg-base-100/70 p-4">
         <label class="block">
-          <span class="text-2xs font-medium text-base-content/60">
+          <span class="mb-1 block text-2xs font-medium text-base-content/60">
             {{ t('tools.outputFolder') }}
           </span>
-          <div class="mt-1 flex items-center gap-1.5">
-            <input
-              v-model="outputDir"
-              type="text"
-              :disabled="busy"
-              :placeholder="t('tools.outputDefault')"
-              class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
-            />
-            <button
-              type="button"
-              class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
-              :disabled="busy"
-              :title="t('tools.chooseFolder')"
-              :aria-label="t('tools.chooseFolder')"
-              @click="pickOutputDir"
-            >
-              <FolderOpen :size="13" />
-            </button>
-          </div>
+          <PathInput
+            v-model="outputDir"
+            :readonly="false"
+            :label="t('tools.outputFolder')"
+            :placeholder="t('tools.outputDefault')"
+            :disabled="busy"
+            @browse="pickOutputDir"
+          />
         </label>
         <p class="mt-2 text-2xs leading-relaxed text-base-content/45">{{ copyHint }}</p>
-      </section>
-
-      <section class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          data-testid="concat-export"
-          class="fx-noise flex items-center justify-center gap-1.5 rounded-field bg-primary px-4 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
-          :disabled="!canConcat"
-          @click="startConcat"
-        >
-          <Layers :size="14" />
-          {{ busy ? t('tools.concatExporting') : t('tools.concatExport') }}
-        </button>
-        <button
-          v-if="busy"
-          type="button"
-          data-testid="concat-cancel"
-          class="fx-noise flex items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
-          @click="cancelConcat"
-        >
-          <Square :size="12" />
-          {{ t('tools.cancel') }}
-        </button>
       </section>
 
       <section
@@ -388,16 +340,13 @@ onBeforeUnmount(() => {
               <template v-if="speed"> · {{ speed }}</template>
             </template>
           </span>
-          <button
+          <IconButton
             v-if="outputPath"
-            type="button"
-            class="fx-noise shrink-0 rounded-field p-1 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
-            :title="t('tools.openOutput')"
-            :aria-label="t('tools.openOutput')"
+            :icon="FolderOpen"
+            :label="t('tools.openOutput')"
+            :size="12"
             @click="openOutput"
-          >
-            <FolderOpen :size="12" />
-          </button>
+          />
         </div>
         <div
           v-if="status === 'exporting'"
@@ -413,5 +362,22 @@ onBeforeUnmount(() => {
         </p>
       </section>
     </div>
+
+    <template #footer>
+      <Button v-if="busy" variant="outline" data-testid="concat-cancel" @click="cancelConcat">
+        <template #leading><Square :size="12" /></template>
+        {{ t('tools.cancel') }}
+      </Button>
+      <Button
+        variant="solid"
+        data-testid="concat-export"
+        :disabled="!canConcat"
+        :loading="busy"
+        @click="startConcat"
+      >
+        <template #leading><Layers :size="14" /></template>
+        {{ busy ? t('tools.concatExporting') : t('tools.concatExport') }}
+      </Button>
+    </template>
   </ToolWindowShell>
 </template>

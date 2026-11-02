@@ -13,6 +13,8 @@ defineProps<{
   options: SegmentOption[];
   /** Nazwa grupy dla czytnika ekranu. */
   label?: string;
+  /** Prefiks `data-testid` poszczególnych segmentów (`<prefiks>-<wartość>`). */
+  testIdPrefix?: string;
 }>();
 
 const model = defineModel<string>({ required: true });
@@ -25,6 +27,7 @@ const model = defineModel<string>({ required: true });
       :key="option.value"
       type="button"
       :aria-pressed="model === option.value"
+      :data-testid="testIdPrefix ? `${testIdPrefix}-${option.value}` : undefined"
       @click="model = option.value"
     >
       <component :is="option.icon" v-if="option.icon" :size="13" aria-hidden="true" />
