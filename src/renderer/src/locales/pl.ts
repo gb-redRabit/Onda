@@ -2128,7 +2128,8 @@ api.registerCommand({
     audioPlaybackFailed: 'Odtwarzanie dźwięku nie powiodło się',
     audioCodecUnsupported: 'Kodek audio nieobsługiwany — dźwięk może być niesłyszalny',
     transcodingVideo: 'Transkodowanie wideo, proszę czekać…',
-    videoUnsupported: 'Format wideo nieobsługiwany'
+    videoUnsupported: 'Format wideo nieobsługiwany',
+    videoPlaybackFailed: 'Nie udało się odtworzyć wideo: {name}'
   },
   explorer: {
     title: 'Eksplorator',

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Clock, GripHorizontal, Repeat, Shuffle, Maximize2 } from '@lucide/vue';
+import Switch from '@renderer/components/ui/Switch.vue';
 
 const SLIDESHOW_INTERVALS = [1000, 2000, 3000, 5000, 10000] as const;
 const TRANSITION_TYPES = [
@@ -113,63 +114,39 @@ const emit = defineEmits<{
       <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Repeat :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssLoop') }}
       </div>
-      <button
-        type="button"
+      <Switch
+        :model-value="loop"
+        size="sm"
         data-testid="iv-loop"
-        class="w-7 h-4 rounded-full transition-colors relative"
-        role="switch"
-        :aria-label="$t('imageViewer.ssLoop')"
-        :aria-checked="loop"
-        :class="loop ? 'bg-primary' : 'bg-base-content/10'"
-        @click="emit('update:loop', !loop)"
-      >
-        <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
-          :class="loop ? 'translate-x-3.5' : 'translate-x-0.5'"
-        />
-      </button>
+        :label="$t('imageViewer.ssLoop')"
+        @update:model-value="emit('update:loop', $event)"
+      />
     </div>
 
     <div class="flex items-center justify-between mb-1">
       <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Shuffle :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssShuffle') }}
       </div>
-      <button
-        type="button"
+      <Switch
+        :model-value="shuffle"
+        size="sm"
         data-testid="iv-shuffle"
-        class="w-7 h-4 rounded-full transition-colors relative"
-        role="switch"
-        :aria-label="$t('imageViewer.ssShuffle')"
-        :aria-checked="shuffle"
-        :class="shuffle ? 'bg-primary' : 'bg-base-content/10'"
-        @click="emit('update:shuffle', !shuffle)"
-      >
-        <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
-          :class="shuffle ? 'translate-x-3.5' : 'translate-x-0.5'"
-        />
-      </button>
+        :label="$t('imageViewer.ssShuffle')"
+        @update:model-value="emit('update:shuffle', $event)"
+      />
     </div>
 
     <div class="flex items-center justify-between mb-1">
       <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssKenBurns') }}
       </div>
-      <button
-        type="button"
+      <Switch
+        :model-value="kenBurns"
+        size="sm"
         data-testid="iv-ken-burns"
-        class="w-7 h-4 rounded-full transition-colors relative"
-        role="switch"
-        :aria-label="$t('imageViewer.ssKenBurns')"
-        :aria-checked="kenBurns"
-        :class="kenBurns ? 'bg-primary' : 'bg-base-content/10'"
-        @click="emit('update:kenBurns', !kenBurns)"
-      >
-        <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
-          :class="kenBurns ? 'translate-x-3.5' : 'translate-x-0.5'"
-        />
-      </button>
+        :label="$t('imageViewer.ssKenBurns')"
+        @update:model-value="emit('update:kenBurns', $event)"
+      />
     </div>
 
     <div class="border-t border-hairline/20 my-2" />
@@ -178,21 +155,13 @@ const emit = defineEmits<{
       <div class="text-2xs text-base-content/70 flex items-center gap-1">
         <Maximize2 :size="11" class="pointer-events-none" /> {{ $t('imageViewer.ssAutoHide') }}
       </div>
-      <button
-        type="button"
+      <Switch
+        :model-value="autoHide"
+        size="sm"
         data-testid="iv-auto-hide"
-        class="w-7 h-4 rounded-full transition-colors relative"
-        role="switch"
-        :aria-label="$t('imageViewer.ssAutoHide')"
-        :aria-checked="autoHide"
-        :class="autoHide ? 'bg-primary' : 'bg-base-content/10'"
-        @click="emit('update:autoHide', !autoHide)"
-      >
-        <div
-          class="absolute top-0.5 w-3 h-3 rounded-full bg-neutral-content transition-transform"
-          :class="autoHide ? 'translate-x-3.5' : 'translate-x-0.5'"
-        />
-      </button>
+        :label="$t('imageViewer.ssAutoHide')"
+        @update:model-value="emit('update:autoHide', $event)"
+      />
     </div>
 
     <div class="text-2xs text-base-content/60 mt-1.5 leading-relaxed">

@@ -2118,7 +2118,8 @@ api.registerCommand({
     audioPlaybackFailed: 'Audio playback failed',
     audioCodecUnsupported: 'Audio codec not supported, sound may be missing',
     transcodingVideo: 'Transcoding video, please wait…',
-    videoUnsupported: 'Video format not supported'
+    videoUnsupported: 'Video format not supported',
+    videoPlaybackFailed: 'Could not play the video: {name}'
   },
   explorer: {
     title: 'Explorer',

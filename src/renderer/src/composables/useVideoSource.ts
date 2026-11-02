@@ -6,6 +6,7 @@ import type { MediaFile } from '@renderer/types/media';
 import { useVideoCodec } from '@renderer/composables/useVideoCodec';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { logger } from '@shared/logger';
+import { i18n } from '@renderer/i18n';
 import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import {
   attachVideoTranscodeFallback,
@@ -128,6 +129,19 @@ export function useVideoSource(
         checkVideoAudioCodec(track, el);
         attachVideoTranscodeFallback(el, track, player, notify, transcodeState, signal);
       }
+
+      // Ostatnia linia obrony: plik uszkodzony, brak kodeka albo zerwany strumień.
+      // Rejestrowane po fallbacku transkodowania, żeby jego obsługa błędu zdążyła
+      // ustawić `transcodeState` i nie dublować komunikatu.
+      el.addEventListener(
+        'error',
+        () => {
+          if (loadId !== currentLoadId) return;
+          if (transcodeState.attempted === track.path) return;
+          notify(i18n.global.t('player.videoPlaybackFailed', { name: track.name }), 5000);
+        },
+        { once: true, signal }
+      );
       return;
     }
 

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { MediaFile } from '@renderer/types/media';
+import { i18n } from '@renderer/i18n';
+import en from '@renderer/locales/en';
 import { useVideoSource } from '../useVideoSource';
 
 vi.mock('@renderer/modules/audioEngine', () => ({
@@ -74,9 +76,13 @@ describe('useVideoSource subtitle initialization', () => {
   let settings: {
     playback: { playbackSpeed: number; videoFilter: string };
   };
+  let notify: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     onVideoReady = vi.fn();
+    notify = vi.fn();
+    i18n.global.setLocaleMessage('en', en);
+    i18n.global.locale.value = 'en';
     Object.defineProperty(window, 'api', {
       configurable: true,
       value: { grantMediaAccess: vi.fn().mockResolvedValue(undefined) }
@@ -102,7 +108,7 @@ describe('useVideoSource subtitle initialization', () => {
         player: player as never,
         settings: settings as never,
         pip: {} as never,
-        notify: vi.fn()
+        notify: notify as never
       },
       onVideoReady as never
     );
@@ -171,5 +177,20 @@ describe('useVideoSource subtitle initialization', () => {
 
     expect(onVideoReady).toHaveBeenCalledTimes(2);
     expect(onVideoReady).toHaveBeenLastCalledWith(secondVideo);
+  });
+
+  it('tells the user when the video element fails to load', async () => {
+    const source = createSource();
+    const video = createVideoElement();
+    const track = videoTrack('D:/media/broken.mp4');
+    player.currentTrack = track;
+
+    source.onVideoRef(video);
+    await flushSetup();
+    video.dispatchEvent(new Event('error'));
+
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(String(notify.mock.calls[0][0])).toContain('broken.mp4');
+    expect(notify.mock.calls[0][1]).toBe(5000);
   });
 });
