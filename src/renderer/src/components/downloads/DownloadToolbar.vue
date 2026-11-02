@@ -6,6 +6,10 @@ import { useOnlineStore } from '@renderer/stores/online';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import Input from '@renderer/components/ui/Input.vue';
+import PageHeader from '@renderer/components/ui/PageHeader.vue';
+import Select from '@renderer/components/ui/Select.vue';
 
 defineProps<{ activeCount: number; pausedCount: number; hasFinished: boolean }>();
 
@@ -56,69 +60,43 @@ onMounted(async () => {
 
 <template>
   <div class="border-b border-hairline/80 bg-base-100/(--glass-alpha) backdrop-blur">
-    <div class="ui-page-header flex flex-wrap items-center gap-3 px-5 py-3">
-      <div
-        class="grid h-8 w-8 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text"
-      >
-        <Download :size="17" />
-      </div>
-      <h1 class="shrink-0 text-base font-semibold tracking-tight text-base-content">
-        {{ t('downloads.title') }}
-      </h1>
-      <span
-        v-if="activeCount"
-        class="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-medium text-primary-text"
-        >{{ t('downloads.filterActive') }}: {{ activeCount }}</span
-      >
-      <div class="flex-1" />
-      <div class="flex flex-wrap items-center gap-2">
-        <button
+    <PageHeader :title="t('downloads.title')" :icon="Download">
+      <template #actions>
+        <span
           v-if="activeCount"
-          type="button"
-          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
-          :title="t('downloads.pauseAll')"
-          @click="yt.pauseAll"
+          class="rounded-full bg-primary/12 px-2.5 py-0.5 text-xs font-medium text-primary-text"
+          >{{ t('downloads.filterActive') }}: {{ activeCount }}</span
         >
-          <Pause :size="13" />
+        <Button v-if="activeCount" variant="outline" size="sm" @click="yt.pauseAll">
+          <template #leading><Pause :size="13" /></template>
           {{ t('downloads.pauseAll') }}
-        </button>
-        <button
-          v-if="pausedCount"
-          type="button"
-          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
-          :title="t('downloads.resumeAll')"
-          @click="yt.resumeAll"
-        >
-          <Play :size="13" />
+        </Button>
+        <Button v-if="pausedCount" variant="outline" size="sm" @click="yt.resumeAll">
+          <template #leading><Play :size="13" /></template>
           {{ t('downloads.resumeAll') }}
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="hasFinished"
-          type="button"
+          variant="outline"
+          size="sm"
           data-testid="downloads-clear-finished"
-          class="fx-noise flex h-8 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-3 text-xs font-medium text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
           @click="clearFinished"
         >
-          <Trash2 :size="13" />
+          <template #leading><Trash2 :size="13" /></template>
           {{ t('downloads.clearFinished') }}
-        </button>
-        <button
-          type="button"
-          class="fx-noise flex h-8 w-8 items-center justify-center rounded-field border transition-colors"
-          :class="
-            showOptions || scheduledAt || settings.network.downloadSpeedLimit > 0
-              ? 'border-primary/40 bg-primary/14 text-primary-text'
-              : 'border-hairline bg-base-100 text-base-content/65 hover:bg-base-content/8 hover:text-base-content'
-          "
-          :title="t('downloads.speedLimit')"
-          :aria-label="t('downloads.speedLimit')"
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          :pressed="showOptions || !!scheduledAt || settings.network.downloadSpeedLimit > 0"
+          :label="t('downloads.speedLimit')"
           :aria-expanded="showOptions"
           @click="showOptions = !showOptions"
         >
           <SlidersHorizontal :size="14" />
-        </button>
-      </div>
-    </div>
+        </Button>
+      </template>
+    </PageHeader>
 
     <div
       v-show="showOptions"
@@ -126,69 +104,59 @@ onMounted(async () => {
     >
       <div class="flex items-center gap-1.5 text-xs text-base-content/70">
         <Gauge :size="13" class="text-base-content/50" />
-        <select
-          :value="settings.network.downloadSpeedLimit"
-          class="h-7 rounded-field border border-hairline bg-base-100 px-2 text-xs focus-visible:border-primary focus-visible:outline-hidden"
-          :title="t('downloads.speedLimit')"
+        <Select
+          :model-value="settings.network.downloadSpeedLimit"
+          size="sm"
+          class="h-7"
           :aria-label="t('downloads.speedLimit')"
-          @change="setSpeedLimit(Number(($event.target as HTMLSelectElement).value))"
+          @update:model-value="setSpeedLimit(Number($event))"
         >
           <option v-for="kb in SPEED_OPTIONS" :key="kb" :value="kb">
             {{ kb === 0 ? t('settings.speedUnlimited') : `${kb / 1024} MB/s` }}
           </option>
-        </select>
+        </Select>
       </div>
 
       <div class="h-4 w-px bg-base-300/80" />
 
       <div class="flex items-center gap-1.5">
-        <input
+        <Input
           v-model="scheduleTime"
           type="time"
-          class="h-7 rounded-field border border-hairline bg-base-100 px-2 text-xs focus:border-primary focus:outline-hidden"
-          :title="t('downloads.scheduleStart')"
+          size="sm"
+          class="h-7 w-28"
           :aria-label="t('downloads.scheduleStart')"
         />
-        <button
-          type="button"
-          class="fx-noise h-7 rounded-field border border-hairline bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors disabled:opacity-40"
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-7"
           :disabled="!scheduleTime"
           @click="applySchedule"
         >
           {{ t('downloads.scheduleSet') }}
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="scheduledAt"
-          type="button"
-          class="fx-noise flex h-7 w-7 items-center justify-center rounded-field border border-hairline bg-base-100 text-xs text-base-content/70 hover:bg-base-content/8 transition-colors"
-          :title="t('downloads.scheduleClear')"
-          :aria-label="t('downloads.scheduleClear')"
+          variant="ghost"
+          size="icon"
+          :label="t('downloads.scheduleClear')"
           @click="clearSchedule"
         >
           <X :size="12" />
-        </button>
+        </Button>
       </div>
 
       <div class="flex-1" />
 
-      <button
-        type="button"
-        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
-        :title="t('downloads.exportQueue')"
-        @click="yt.exportQueue"
-      >
-        <Upload :size="12" />
+      <Button variant="outline" size="sm" class="h-7" @click="yt.exportQueue">
+        <template #leading><Upload :size="12" /></template>
         {{ t('downloads.exportQueue') }}
-      </button>
-      <button
-        type="button"
-        class="fx-noise flex h-7 items-center gap-1.5 rounded-field border border-hairline bg-base-100 px-2.5 text-xs text-base-content/75 hover:bg-base-content/8 hover:text-base-content transition-colors"
-        :title="t('downloads.importQueue')"
-        @click="yt.importQueue"
-      >
-        <Download :size="12" />
+      </Button>
+      <Button variant="outline" size="sm" class="h-7" @click="yt.importQueue">
+        <template #leading><Download :size="12" /></template>
         {{ t('downloads.importQueue') }}
-      </button>
+      </Button>
     </div>
 
     <ExplorerPromptDialog
