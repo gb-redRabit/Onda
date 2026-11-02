@@ -8,7 +8,6 @@ import {
   Droplets,
   FlipHorizontal2,
   FlipVertical2,
-  FolderOpen,
   Grid2x2,
   Image as ImageIcon,
   RotateCcw,
@@ -21,6 +20,12 @@ import {
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import ColorInput from '@renderer/components/ui/ColorInput.vue';
+import NumberField from '@renderer/components/ui/NumberField.vue';
+import PathInput from '@renderer/components/ui/PathInput.vue';
+import Select from '@renderer/components/ui/Select.vue';
+import Slider from '@renderer/components/ui/Slider.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import {
@@ -1102,12 +1107,13 @@ onBeforeUnmount(() => {
                   <span>{{ t(`tools.${field.label}`) }}</span>
                   <span>{{ adjust[field.id] }}</span>
                 </span>
-                <input
-                  v-model.number="adjust[field.id]"
-                  type="range"
+                <Slider
+                  v-model="adjust[field.id]"
+                  class="mt-1"
+                  :label="t(`tools.${field.label}`)"
                   :min="field.min"
                   :max="field.max"
-                  class="w-full accent-primary"
+                  :value-text="String(adjust[field.id])"
                 />
               </label>
             </section>
@@ -1142,24 +1148,24 @@ onBeforeUnmount(() => {
                 <p class="text-3xs text-base-content/50">{{ t('tools.imageStudioTextHint') }}</p>
               </div>
               <div class="flex items-center gap-2">
-                <input
+                <ColorInput
                   v-model="color"
-                  type="color"
-                  class="h-7 w-9 rounded border border-hairline bg-base-100"
+                  class="shrink-0"
+                  :label="t('tools.imageStudioStroke')"
                 />
-                <label class="flex flex-1 items-center gap-2 text-2xs text-base-content/60">
-                  <span class="shrink-0"
-                    >{{ t('tools.imageStudioStroke') }}: {{ strokeWidth }}</span
-                  >
-                  <input
-                    v-model.number="strokeWidth"
+                <div class="min-w-0 flex-1">
+                  <div class="flex justify-between text-2xs text-base-content/60">
+                    <span>{{ t('tools.imageStudioStroke') }}: {{ strokeWidth }}</span>
+                  </div>
+                  <Slider
+                    v-model="strokeWidth"
                     data-testid="image-studio-stroke"
-                    type="range"
-                    min="2"
-                    max="40"
-                    class="flex-1 accent-primary"
+                    :label="t('tools.imageStudioStroke')"
+                    :min="2"
+                    :max="40"
+                    :value-text="String(strokeWidth)"
                   />
-                </label>
+                </div>
               </div>
               <p class="text-3xs text-base-content/50">
                 {{ t('tools.imageStudioAnnotationHint') }}
@@ -1196,46 +1202,43 @@ onBeforeUnmount(() => {
             <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioOutput') }}</div>
               <label class="block">
-                <span class="text-2xs text-base-content/60">{{
+                <span class="mb-1 block text-2xs text-base-content/60">{{
                   t('tools.imageStudioFormat')
                 }}</span>
-                <select
-                  v-model="outputFormat"
-                  data-testid="image-studio-format"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
-                >
+                <Select v-model="outputFormat" size="sm" data-testid="image-studio-format">
                   <option v-for="format in IMAGE_OUTPUT_FORMATS" :key="format" :value="format">
                     {{ format.toUpperCase() }}
                   </option>
-                </select>
+                </Select>
               </label>
-              <label v-if="outputFormat !== 'png'" class="block">
-                <span class="flex justify-between text-2xs text-base-content/60">
+              <div v-if="outputFormat !== 'png'">
+                <div class="flex justify-between text-2xs text-base-content/60">
                   <span>{{ t('tools.imageStudioQuality') }}</span>
                   <span>{{ quality }}</span>
-                </span>
-                <input
-                  v-model.number="quality"
-                  type="range"
-                  min="1"
-                  max="100"
-                  class="w-full accent-primary"
+                </div>
+                <Slider
+                  v-model="quality"
+                  :label="t('tools.imageStudioQuality')"
+                  :min="1"
+                  :max="100"
+                  :value-text="String(quality)"
                 />
-              </label>
-              <label class="block">
+              </div>
+              <div class="block">
                 <span class="text-2xs text-base-content/60">{{ t('tools.imageStudioWidth') }}</span>
                 <div class="mt-1 flex items-center gap-2">
-                  <input
-                    v-model.number="outputWidth"
+                  <NumberField
+                    v-model="outputWidth"
+                    size="sm"
+                    class="w-24"
                     data-testid="image-studio-width"
-                    type="number"
-                    min="1"
+                    :label="t('tools.imageStudioWidth')"
+                    :min="1"
                     :max="MAX_OUTPUT_DIMENSION"
-                    class="w-24 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
                   />
                   <span class="text-2xs text-base-content/50">→ {{ outputHeight }} px</span>
                 </div>
-              </label>
+              </div>
               <div class="flex items-center justify-between text-2xs text-base-content/60">
                 <span
                   >{{ t('tools.imageStudioEstimated') }}:
@@ -1252,35 +1255,17 @@ onBeforeUnmount(() => {
                 </button>
               </div>
               <label class="block">
-                <span class="text-2xs text-base-content/60">{{ t('tools.imageStudioPath') }}</span>
-                <div class="mt-1 flex items-center gap-1.5">
-                  <input
-                    v-model="outputPath"
-                    data-testid="image-studio-output-path"
-                    type="text"
-                    class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
-                  />
-                  <button
-                    type="button"
-                    class="fx-noise shrink-0 rounded-field border border-hairline p-2 hover:bg-base-content/10"
-                    :title="t('tools.chooseFolder')"
-                    :aria-label="t('tools.chooseFolder')"
-                    @click="pickOutputDir"
-                  >
-                    <FolderOpen :size="13" />
-                  </button>
-                </div>
+                <span class="mb-1 block text-2xs text-base-content/60">{{
+                  t('tools.imageStudioPath')
+                }}</span>
+                <PathInput
+                  v-model="outputPath"
+                  :readonly="false"
+                  data-testid="image-studio-output-path"
+                  :label="t('tools.imageStudioPath')"
+                  @browse="pickOutputDir"
+                />
               </label>
-              <button
-                type="button"
-                data-testid="image-studio-save"
-                class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
-                :disabled="saving || !outputPath.trim()"
-                @click="save"
-              >
-                <Save :size="14" />
-                {{ saving ? t('tools.imageStudioSaving') : t('tools.imageStudioSave') }}
-              </button>
               <p
                 v-if="savedPath"
                 data-testid="image-studio-saved"
@@ -1295,31 +1280,23 @@ onBeforeUnmount(() => {
             <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
               <div class="text-xs font-semibold">{{ t('tools.imageStudioCover') }}</div>
               <div class="flex items-center gap-1.5">
-                <input
+                <PathInput
                   v-model="coverAudioPath"
-                  type="text"
+                  :readonly="false"
+                  :label="t('tools.imageStudioCoverPick')"
                   :placeholder="t('tools.imageStudioCoverPick')"
-                  class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
+                  @browse="pickCoverAudio"
                 />
-                <button
-                  type="button"
-                  class="fx-noise shrink-0 rounded-field border border-hairline p-2 hover:bg-base-content/10"
-                  :title="t('tools.imageStudioCoverPick')"
-                  :aria-label="t('tools.imageStudioCoverPick')"
-                  @click="pickCoverAudio"
-                >
-                  <FolderOpen :size="13" />
-                </button>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                class="w-full"
                 data-testid="image-studio-cover-set"
-                class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs font-medium hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="!savedPath || !coverAudioPath"
                 @click="setAsCover"
               >
                 {{ t('tools.imageStudioCoverSetButton') }}
-              </button>
+              </Button>
               <p
                 v-if="coverStatus"
                 class="text-2xs"
@@ -1332,5 +1309,22 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
+
+    <template #footer>
+      <p v-if="savedPath" class="mr-auto flex items-center gap-1 text-2xs text-success">
+        <Check :size="12" />
+        {{ t('tools.imageStudioSaved', { size: formatBytes(savedBytes) }) }}
+      </p>
+      <Button
+        variant="solid"
+        data-testid="image-studio-save"
+        :disabled="saving || !outputPath.trim()"
+        :loading="saving"
+        @click="save"
+      >
+        <template #leading><Save :size="14" /></template>
+        {{ saving ? t('tools.imageStudioSaving') : t('tools.imageStudioSave') }}
+      </Button>
+    </template>
   </ToolWindowShell>
 </template>
