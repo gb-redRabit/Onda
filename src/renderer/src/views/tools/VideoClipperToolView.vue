@@ -22,6 +22,10 @@ import {
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
+import PathInput from '@renderer/components/ui/PathInput.vue';
+import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
@@ -87,6 +91,10 @@ const clipFormat = ref<VideoClipFormat>('video');
 const audioMode = ref<VideoClipAudio>('keep');
 const rotation = ref<VideoClipRotation>(0);
 const targetSizeMb = ref(0);
+
+function setRotation(value: string | number | undefined): void {
+  rotation.value = Number(value) as VideoClipRotation;
+}
 const outputDir = ref('');
 const status = ref<ClipStatus>('idle');
 const progress = ref(0);
@@ -1352,156 +1360,114 @@ onBeforeUnmount(() => {
                 <span class="text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipFormat') }}
                 </span>
-                <select
+                <Select
                   v-model="clipFormat"
+                  size="sm"
+                  class="mt-1"
                   data-testid="clip-format"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="video">{{ t('tools.clipFormatVideo') }}</option>
                   <option value="gif">{{ t('tools.clipFormatGif') }}</option>
-                </select>
+                </Select>
               </label>
 
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipMode') }}
                 </span>
-                <select
+                <Select
                   v-model="clipMode"
+                  size="sm"
                   data-testid="clip-mode"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="copy">{{ t('tools.clipModeCopy') }}</option>
                   <option value="exact">{{ t('tools.clipModeExact') }}</option>
-                </select>
+                </Select>
               </label>
 
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipContainer') }}
                 </span>
-                <select
+                <Select
                   v-model="container"
+                  size="sm"
                   data-testid="clip-container"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="mp4">{{ t('tools.mp4') }}</option>
                   <option value="mkv">{{ t('tools.mkv') }}</option>
                   <option value="webm">{{ t('tools.webm') }}</option>
-                </select>
+                </Select>
               </label>
 
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipAudio') }}
                 </span>
-                <select
+                <Select
                   v-model="audioMode"
+                  size="sm"
                   data-testid="clip-audio"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
                 >
                   <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
                   <option value="mute">{{ t('tools.clipAudioMute') }}</option>
                   <option value="remove">{{ t('tools.clipAudioRemove') }}</option>
-                </select>
+                </Select>
               </label>
 
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipRotation') }}
                 </span>
-                <select
-                  v-model.number="rotation"
+                <Select
+                  :model-value="rotation"
+                  size="sm"
                   data-testid="clip-rotation"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
+                  @update:model-value="setRotation($event)"
                 >
                   <option :value="0">{{ t('tools.clipRotationNone') }}</option>
                   <option :value="90">90°</option>
                   <option :value="180">180°</option>
                   <option :value="270">270°</option>
-                </select>
+                </Select>
               </label>
 
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.clipTargetSize') }}
                 </span>
-                <select
-                  v-model.number="targetSizeMb"
+                <Select
+                  :model-value="targetSizeMb"
+                  size="sm"
                   data-testid="clip-target-size"
                   :disabled="busy || clipFormat === 'gif'"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
+                  @update:model-value="targetSizeMb = Number($event)"
                 >
                   <option :value="0">{{ t('tools.clipTargetNone') }}</option>
                   <option :value="10">10 MB</option>
                   <option :value="25">25 MB</option>
-                </select>
+                </Select>
               </label>
 
               <label class="block sm:col-span-2">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.outputFolder') }}
                 </span>
-                <div class="mt-1 flex items-center gap-1.5">
-                  <input
-                    v-model="outputDir"
-                    type="text"
-                    :disabled="busy"
-                    :placeholder="t('tools.outputDefault')"
-                    class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
-                  />
-                  <button
-                    type="button"
-                    class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
-                    :disabled="busy"
-                    :title="t('tools.chooseFolder')"
-                    :aria-label="t('tools.chooseFolder')"
-                    @click="pickOutputDir"
-                  >
-                    <FolderOpen :size="13" />
-                  </button>
-                </div>
+                <PathInput
+                  v-model="outputDir"
+                  :readonly="false"
+                  :label="t('tools.outputFolder')"
+                  :placeholder="t('tools.outputDefault')"
+                  :disabled="busy"
+                  @browse="pickOutputDir"
+                />
               </label>
             </div>
-          </section>
-
-          <section class="rounded-box border border-hairline bg-base-100/70 p-4 space-y-2">
-            <button
-              type="button"
-              data-testid="clip-export"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-4 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
-              :disabled="!canExport"
-              @click="startClip"
-            >
-              <Scissors :size="14" />
-              {{ busy ? t('tools.clipExporting') : t('tools.clipExport') }}
-            </button>
-            <button
-              v-if="clips.length"
-              type="button"
-              data-testid="clip-export-list"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/75 transition-colors hover:bg-base-content/10 disabled:opacity-40"
-              :disabled="busy"
-              @click="startClipList"
-            >
-              <Layers :size="12" />
-              {{ t('tools.clipExportList', { count: clips.length }) }}
-            </button>
-            <button
-              v-if="busy"
-              type="button"
-              data-testid="clip-cancel"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
-              @click="cancelClip"
-            >
-              <Square :size="12" />
-              {{ t('tools.cancel') }}
-            </button>
           </section>
 
           <section
@@ -1526,16 +1492,13 @@ onBeforeUnmount(() => {
                   <template v-if="speed"> · {{ speed }}</template>
                 </template>
               </span>
-              <button
+              <IconButton
                 v-if="outputPath"
-                type="button"
-                class="fx-noise shrink-0 rounded-field p-1 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
-                :title="t('tools.openOutput')"
-                :aria-label="t('tools.openOutput')"
+                :icon="FolderOpen"
+                :label="t('tools.openOutput')"
+                :size="12"
                 @click="openOutput"
-              >
-                <FolderOpen :size="12" />
-              </button>
+              />
             </div>
             <div
               v-if="status === 'exporting'"
@@ -1553,5 +1516,32 @@ onBeforeUnmount(() => {
         </aside>
       </div>
     </div>
+
+    <template #footer>
+      <Button v-if="busy" variant="outline" data-testid="clip-cancel" @click="cancelClip">
+        <template #leading><Square :size="12" /></template>
+        {{ t('tools.cancel') }}
+      </Button>
+      <Button
+        v-if="clips.length"
+        variant="outline"
+        data-testid="clip-export-list"
+        :disabled="busy"
+        @click="startClipList"
+      >
+        <template #leading><Layers :size="12" /></template>
+        {{ t('tools.clipExportList', { count: clips.length }) }}
+      </Button>
+      <Button
+        variant="solid"
+        data-testid="clip-export"
+        :disabled="!canExport"
+        :loading="busy"
+        @click="startClip"
+      >
+        <template #leading><Scissors :size="14" /></template>
+        {{ busy ? t('tools.clipExporting') : t('tools.clipExport') }}
+      </Button>
+    </template>
   </ToolWindowShell>
 </template>
