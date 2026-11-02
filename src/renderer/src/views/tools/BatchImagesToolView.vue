@@ -12,8 +12,14 @@ import {
   Square,
   Trash2
 } from '@lucide/vue';
+import Button from '@renderer/components/ui/Button.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
-import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
+import Input from '@renderer/components/ui/Input.vue';
+import NumberField from '@renderer/components/ui/NumberField.vue';
+import Select from '@renderer/components/ui/Select.vue';
+import Slider from '@renderer/components/ui/Slider.vue';
+import ToolWindowShell, { type ToolStatus } from '@renderer/components/tools/ToolWindowShell.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import {
@@ -61,6 +67,9 @@ const cancelRequested = ref(false);
 const jobId = ref('');
 const doneCount = ref(0);
 const errorMsg = ref('');
+const status = computed<ToolStatus | null>(() =>
+  errorMsg.value ? { tone: 'error', text: errorMsg.value } : null
+);
 
 const total = computed(() => files.value.length);
 const doneRows = computed(() => files.value.filter((row) => row.status === 'done').length);
@@ -216,7 +225,7 @@ watch(
 </script>
 
 <template>
-  <ToolWindowShell :title="t('tools.batchImagesTitle')" :icon="ImageIcon">
+  <ToolWindowShell :title="t('tools.batchImagesTitle')" :icon="ImageIcon" :status="status">
     <div
       data-testid="batch-images-view"
       class="flex h-full flex-col"
@@ -233,25 +242,25 @@ watch(
               <span class="ml-1 text-xs font-normal text-base-content/50">{{ total }}</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 data-testid="batch-images-add"
-                class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
                 :disabled="busy"
                 @click="pickFiles"
               >
-                <Plus :size="12" />
+                <template #leading><Plus :size="12" /></template>
                 {{ t('tools.addFiles') }}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 data-testid="batch-images-clear"
-                class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
                 :disabled="busy || total === 0"
                 @click="clearAll"
               >
                 {{ t('tools.clear') }}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -294,26 +303,21 @@ watch(
                   {{ statusLabel(row.status) }}
                   <template v-if="row.bytes"> · {{ formatBytes(row.bytes) }}</template>
                 </span>
-                <button
+                <IconButton
                   v-if="row.outputPath"
-                  type="button"
-                  class="fx-noise shrink-0 rounded-field p-1 text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content"
-                  :title="t('tools.openOutput')"
-                  :aria-label="t('tools.openOutput')"
+                  :icon="FolderOpen"
+                  :label="t('tools.openOutput')"
+                  :size="12"
                   @click="openOutput(row.outputPath)"
-                >
-                  <FolderOpen :size="12" />
-                </button>
-                <button
-                  type="button"
-                  class="fx-noise shrink-0 rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
-                  :title="t('tools.remove')"
-                  :aria-label="t('tools.remove')"
+                />
+                <IconButton
+                  :icon="Trash2"
+                  :label="t('tools.remove')"
+                  :size="12"
+                  variant="danger"
                   :disabled="busy"
                   @click="removeRow(row.path)"
-                >
-                  <Trash2 :size="12" />
-                </button>
+                />
               </div>
               <p v-if="row.error" class="mt-1 text-2xs text-error line-clamp-2" :title="row.error">
                 {{ row.error }}
@@ -325,126 +329,112 @@ watch(
         <aside class="space-y-3">
           <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
             <label class="block">
-              <span class="text-2xs font-medium text-base-content/60">
+              <span class="mb-1 block text-2xs font-medium text-base-content/60">
                 {{ t('tools.batchImagesFormat') }}
               </span>
-              <select
-                v-model="format"
-                data-testid="batch-images-format"
-                :disabled="busy"
-                class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
-              >
+              <Select v-model="format" size="sm" data-testid="batch-images-format" :disabled="busy">
                 <option v-for="item in IMAGE_OUTPUT_FORMATS" :key="item" :value="item">
                   {{ item.toUpperCase() }}
                 </option>
-              </select>
+              </Select>
             </label>
 
-            <label v-if="format !== 'png'" class="block">
-              <span class="flex justify-between text-2xs font-medium text-base-content/60">
+            <div v-if="format !== 'png'">
+              <div class="flex justify-between text-2xs font-medium text-base-content/60">
                 <span>{{ t('tools.batchImagesQuality') }}</span>
                 <span>{{ quality }}</span>
-              </span>
-              <input
-                v-model.number="quality"
+              </div>
+              <Slider
+                v-model="quality"
+                class="mt-1"
                 data-testid="batch-images-quality"
-                type="range"
-                min="1"
-                max="100"
-                class="mt-1 w-full accent-primary"
+                :label="t('tools.batchImagesQuality')"
+                :min="1"
+                :max="100"
+                :value-text="String(quality)"
               />
-            </label>
+            </div>
 
             <div class="grid grid-cols-2 gap-2">
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.batchImagesWidth') }}
                 </span>
-                <input
-                  v-model.number="maxWidth"
+                <NumberField
+                  v-model="maxWidth"
+                  size="sm"
                   data-testid="batch-images-width"
-                  type="number"
-                  min="0"
+                  :label="t('tools.batchImagesWidth')"
+                  :min="0"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
               </label>
               <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
+                <span class="mb-1 block text-2xs font-medium text-base-content/60">
                   {{ t('tools.batchImagesHeight') }}
                 </span>
-                <input
-                  v-model.number="maxHeight"
+                <NumberField
+                  v-model="maxHeight"
+                  size="sm"
                   data-testid="batch-images-height"
-                  type="number"
-                  min="0"
+                  :label="t('tools.batchImagesHeight')"
+                  :min="0"
                   :disabled="busy"
-                  class="mt-1 w-full rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
               </label>
             </div>
             <p class="text-3xs text-base-content/50">{{ t('tools.batchImagesResizeHint') }}</p>
 
             <label class="block">
-              <span class="text-2xs font-medium text-base-content/60">
+              <span class="mb-1 block text-2xs font-medium text-base-content/60">
                 {{ t('tools.outputFolder') }}
               </span>
-              <div class="mt-1 flex items-center gap-1.5">
-                <input
+              <div class="flex items-center gap-1.5">
+                <Input
                   v-model="outputDir"
+                  size="sm"
                   data-testid="batch-images-output"
-                  type="text"
                   :disabled="busy"
                   :placeholder="t('tools.outputDefault')"
-                  class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2.5 py-2 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                 />
-                <button
-                  type="button"
-                  class="fx-noise shrink-0 rounded-field border border-hairline p-2 transition-colors hover:bg-base-content/10 disabled:opacity-40"
+                <IconButton
+                  :icon="FolderOpen"
+                  :label="t('tools.chooseFolder')"
+                  :size="13"
+                  class="shrink-0 border border-hairline"
                   :disabled="busy"
-                  :title="t('tools.chooseFolder')"
-                  :aria-label="t('tools.chooseFolder')"
                   @click="pickOutputDir"
-                >
-                  <FolderOpen :size="13" />
-                </button>
+                />
               </div>
             </label>
-          </section>
-
-          <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
-            <button
-              type="button"
-              data-testid="batch-images-start"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field bg-primary px-3 py-2.5 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
-              :disabled="busy || total === 0"
-              @click="start"
-            >
-              <Play :size="14" />
-              {{ busy ? t('tools.batchImagesProcessing') : t('tools.batchImagesStart') }}
-            </button>
-            <button
-              v-if="busy"
-              type="button"
-              data-testid="batch-images-cancel"
-              class="fx-noise flex w-full items-center justify-center gap-1.5 rounded-field border border-hairline px-3 py-2 text-xs text-base-content/70 transition-colors hover:bg-base-content/10"
-              @click="cancel"
-            >
-              <Square :size="12" />
-              {{ t('tools.cancel') }}
-            </button>
-            <p
-              v-if="busy || processed > 0"
-              data-testid="batch-images-progress"
-              class="text-center text-2xs text-base-content/50"
-            >
-              {{ processed }}/{{ total }} ·
-              {{ t('tools.batchImagesSummary', { done: doneRows, failed: failedRows }) }}
-            </p>
-            <p v-if="errorMsg" class="text-2xs text-error">{{ errorMsg }}</p>
           </section>
         </aside>
       </div>
     </div>
+
+    <template #footer>
+      <p
+        v-if="busy || processed > 0"
+        data-testid="batch-images-progress"
+        class="mr-auto text-2xs text-base-content/50"
+      >
+        {{ processed }}/{{ total }} ·
+        {{ t('tools.batchImagesSummary', { done: doneRows, failed: failedRows }) }}
+      </p>
+      <Button v-if="busy" variant="outline" data-testid="batch-images-cancel" @click="cancel">
+        <template #leading><Square :size="12" /></template>
+        {{ t('tools.cancel') }}
+      </Button>
+      <Button
+        variant="solid"
+        data-testid="batch-images-start"
+        :disabled="busy || total === 0"
+        :loading="busy"
+        @click="start"
+      >
+        <template #leading><Play :size="14" /></template>
+        {{ busy ? t('tools.batchImagesProcessing') : t('tools.batchImagesStart') }}
+      </Button>
+    </template>
   </ToolWindowShell>
 </template>
