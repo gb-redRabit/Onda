@@ -56,8 +56,20 @@ test.describe('legacy profile migration', () => {
       // Klucz magazynu został odtworzony, a konfiguracja ponownie nim zaszyfrowana.
       const key = readFileSync(join(profileDir, 'onda-store-key'), 'utf-8').trim();
       expect(key).toMatch(/^[0-9a-f]{64}$/);
+      // Zapis jest asynchroniczny — czytaj aż plik przestanie być jawnym JSON-em.
+      await expect
+        .poll(
+          () => {
+            try {
+              return readFileSync(join(profileDir, 'config.json'))[0];
+            } catch {
+              return 0x7b;
+            }
+          },
+          { timeout: 10_000 }
+        )
+        .not.toBe(0x7b);
       const config = readFileSync(join(profileDir, 'config.json'));
-      expect(config[0]).not.toBe(0x7b);
       expect(config[16]).toBe(':'.charCodeAt(0));
 
       expect(onda.pageErrors).toEqual([]);

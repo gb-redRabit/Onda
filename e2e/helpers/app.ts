@@ -115,7 +115,13 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
           .catch(() => {});
         await Promise.race([app.close().catch(() => {}), delay(CLOSE_TIMEOUT_MS)]);
         if (!proc.killed) proc.kill('SIGKILL');
-        rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+        // Sprzątanie profilu jest best-effort: Windows potrafi trzymać handle do
+        // katalogu DIPS jeszcze chwilę po zabiciu procesu, a to nie jest błąd testu.
+        try {
+          rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
+        } catch {
+          // zostaw katalog w %TEMP%; system go posprząta
+        }
       }
     };
   } catch (error) {
