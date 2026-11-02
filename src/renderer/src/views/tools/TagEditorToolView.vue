@@ -12,6 +12,10 @@ import {
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
+import Button from '@renderer/components/ui/Button.vue';
+import IconButton from '@renderer/components/ui/IconButton.vue';
+import Input from '@renderer/components/ui/Input.vue';
+import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import {
@@ -300,58 +304,59 @@ function fieldLabel(field: AudioTagField): string {
         @dragover.prevent
         @drop.prevent="onDrop"
       >
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           data-testid="tools-tag-add"
-          class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
           :disabled="saving"
           @click="pickFiles"
         >
-          <Plus :size="12" />
+          <template #leading><Plus :size="12" /></template>
           {{ t('tools.addFiles') }}
-        </button>
-        <button
-          type="button"
-          class="fx-noise rounded-field border border-hairline px-2.5 py-1.5 text-xs text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           :disabled="saving || files.length === 0"
           @click="clearAll"
         >
           {{ t('tools.clear') }}
-        </button>
+        </Button>
 
         <span class="text-2xs text-base-content/50">
           {{ t('tools.tagEditorSelected', { selected: selectedCount, total: files.length }) }}
         </span>
 
         <div class="ml-auto flex flex-wrap items-center gap-1.5">
-          <select
+          <Select
             v-model="batchField"
+            size="sm"
             data-testid="tools-tag-batch-field"
             :disabled="saving || selectedCount === 0"
-            class="rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-40"
           >
             <option v-for="field in AUDIO_TAG_FIELDS" :key="field" :value="field">
               {{ fieldLabel(field) }}
             </option>
-          </select>
-          <input
+          </Select>
+          <Input
             v-model="batchValue"
+            size="sm"
+            class="w-44"
             data-testid="tools-tag-batch-value"
-            type="text"
             :disabled="saving || selectedCount === 0"
+            :aria-label="t('tools.tagEditorBatchValue')"
             :placeholder="t('tools.tagEditorBatchValue')"
-            class="w-44 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
             @keydown.enter="applyBatch"
           />
-          <button
-            type="button"
+          <Button
+            variant="solid"
+            size="sm"
             data-testid="tools-tag-apply"
-            class="fx-noise rounded-field bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
             :disabled="saving || selectedCount === 0"
             @click="applyBatch"
           >
             {{ t('tools.tagEditorApply') }}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -359,32 +364,29 @@ function fieldLabel(field: AudioTagField): string {
         <span class="text-2xs font-medium text-base-content/60">
           {{ t('tools.tagEditorCover') }}
         </span>
-        <input
+        <Input
           v-model="coverImagePath"
+          size="sm"
+          class="min-w-0 flex-1"
           data-testid="tools-tag-cover-path"
-          type="text"
           :disabled="coverBusy"
+          :aria-label="t('tools.tagEditorCover')"
           :placeholder="t('tools.tagEditorCoverPick')"
-          class="min-w-0 flex-1 rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
         />
-        <button
-          type="button"
-          class="fx-noise flex items-center gap-1 rounded-field border border-hairline px-2.5 py-1.5 text-xs transition-colors hover:bg-base-content/10 disabled:opacity-40"
-          :disabled="coverBusy"
-          @click="pickCoverImage"
-        >
-          <ImageIcon :size="12" />
+        <Button variant="outline" size="sm" :disabled="coverBusy" @click="pickCoverImage">
+          <template #leading><ImageIcon :size="12" /></template>
           {{ t('tools.tagEditorCoverPick') }}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="solid"
+          size="sm"
           data-testid="tools-tag-cover-apply"
-          class="fx-noise rounded-field bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
           :disabled="coverBusy || !coverImagePath.trim() || selectedCount === 0"
+          :loading="coverBusy"
           @click="applyCover"
         >
           {{ coverBusy ? t('tools.tagEditorCoverApplying') : t('tools.tagEditorCoverApply') }}
-        </button>
+        </Button>
         <span
           v-if="coverSummary"
           class="text-2xs"
@@ -500,56 +502,54 @@ function fieldLabel(field: AudioTagField): string {
                   type="text"
                   :disabled="saving || !row.writable || !!row.error"
                   :aria-label="`${row.name} ${fieldLabel(field)}`"
-                  class="w-full min-w-24 rounded-field border border-hairline/70 bg-base-100 px-1.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
+                  class="w-full min-w-24 rounded-field border border-base-content/15 bg-base-100 px-1.5 py-1 text-xs focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-40"
                   @input="markDirty(row)"
                 />
               </td>
               <td class="border-b border-hairline/60 px-1.5 py-1.5">
-                <button
-                  type="button"
-                  class="fx-noise rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
-                  :title="t('tools.remove')"
-                  :aria-label="t('tools.remove')"
+                <IconButton
+                  :icon="Trash2"
+                  :label="t('tools.remove')"
+                  :size="12"
+                  variant="danger"
                   :disabled="saving"
                   @click="removeRow(row.path)"
-                >
-                  <Trash2 :size="12" />
-                </button>
+                />
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <div class="flex items-center gap-3 border-t border-hairline px-3 py-2">
-        <p v-if="lastSave" class="flex items-center gap-1.5 text-2xs">
-          <CheckCircle2 v-if="lastSave.failed === 0" :size="13" class="text-success" />
-          <AlertCircle v-else :size="13" class="text-error" />
-          <span :class="lastSave.failed === 0 ? 'text-success' : 'text-error'">
-            {{
-              lastSave.failed === 0
-                ? t('tools.tagEditorSaved', { count: lastSave.ok })
-                : t('tools.tagEditorSaveFailedCount', {
-                    ok: lastSave.ok,
-                    failed: lastSave.failed
-                  })
-            }}
-          </span>
-        </p>
-        <span v-else class="text-2xs text-base-content/45">
-          {{ loading ? t('tools.tagEditorLoading') : t('tools.tagEditorHint') }}
-        </span>
-        <button
-          type="button"
-          data-testid="tools-tag-save"
-          class="fx-noise ml-auto flex items-center gap-1.5 rounded-field bg-primary px-4 py-2 text-xs font-medium text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-40"
-          :disabled="saving || dirtyRows.length === 0"
-          @click="save"
-        >
-          <Save :size="13" />
-          {{ saving ? t('tools.tagEditorSaving') : t('tools.tagEditorSave') }}
-        </button>
-      </div>
     </div>
+
+    <template #footer>
+      <p v-if="lastSave" class="mr-auto flex items-center gap-1.5 text-2xs">
+        <CheckCircle2 v-if="lastSave.failed === 0" :size="13" class="text-success" />
+        <AlertCircle v-else :size="13" class="text-error" />
+        <span :class="lastSave.failed === 0 ? 'text-success' : 'text-error'">
+          {{
+            lastSave.failed === 0
+              ? t('tools.tagEditorSaved', { count: lastSave.ok })
+              : t('tools.tagEditorSaveFailedCount', {
+                  ok: lastSave.ok,
+                  failed: lastSave.failed
+                })
+          }}
+        </span>
+      </p>
+      <span v-else class="mr-auto text-2xs text-base-content/45">
+        {{ loading ? t('tools.tagEditorLoading') : t('tools.tagEditorHint') }}
+      </span>
+      <Button
+        variant="solid"
+        data-testid="tools-tag-save"
+        :disabled="saving || dirtyRows.length === 0"
+        :loading="saving"
+        @click="save"
+      >
+        <template #leading><Save :size="13" /></template>
+        {{ saving ? t('tools.tagEditorSaving') : t('tools.tagEditorSave') }}
+      </Button>
+    </template>
   </ToolWindowShell>
 </template>
