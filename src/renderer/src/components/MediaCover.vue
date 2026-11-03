@@ -79,7 +79,10 @@ const stillCover = computed(() =>
 const hovering = ref(false);
 const shouldPlay = computed(() => props.autoplay || (props.still && hovering.value));
 const animateVideo = computed(() => isVideoLike.value && (!props.still || shouldPlay.value));
-const showStill = computed(() => props.still && !!stillCover.value?.data && !animateVideo.value);
+// Wideo montuje się z `opacity-0` i pojawia się dopiero po pierwszej klatce.
+// Bez tego najechanie na kartę odmontowywało statyczną klatkę i pokazywało
+// puste/black `<video>` do czasu dekodowania — stąd „mignięcie”.
+const videoReady = ref(false);
 
 function maybeLoadStill(): void {
   if (!props.still || !props.path || stillCover.value?.data) return;
@@ -114,6 +117,9 @@ function applyAutoplay(on: boolean) {
 }
 
 watch(shouldPlay, (on) => nextTick(() => applyAutoplay(on)), { immediate: false });
+watch(animateVideo, (on) => {
+  if (!on) videoReady.value = false;
+});
 watch(isVideoLike, (v) => {
   if (v && shouldPlay.value) {
     nextTick(() => applyAutoplay(true));
@@ -206,20 +212,29 @@ onUnmounted(() => {
 <template>
   <div
     ref="el"
-    class="w-full h-full overflow-hidden flex items-center justify-center"
+    class="relative w-full h-full overflow-hidden flex items-center justify-center"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >
-    <img v-if="showStill" alt="" :src="stillCover!.data!" class="w-full h-full object-cover" />
+    <!-- Statyczna klatka zostaje pod wideo aż do pierwszej zdekodowanej klatki,
+         więc najechanie nie zostawia pustego miejsca. -->
+    <img
+      v-if="stillCover?.data"
+      alt=""
+      :src="stillCover.data"
+      class="absolute inset-0 w-full h-full object-cover"
+    />
     <video
-      v-else-if="isVideoLike && animateVideo && inView"
+      v-if="isVideoLike && animateVideo && inView"
       ref="videoRef"
       :src="src"
-      class="w-full h-full object-cover"
+      class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
+      :class="!props.still || videoReady ? 'opacity-100' : 'opacity-0'"
       :autoplay="shouldPlay"
       muted
       preload="auto"
       playsinline
+      @loadeddata="videoReady = true"
       @ended="onVideoEnded"
     />
     <img
@@ -228,6 +243,6 @@ onUnmounted(() => {
       :src="src"
       class="w-full h-full object-cover"
     />
-    <component :is="iconComponent" v-else :size="iconSize" />
+    <component :is="iconComponent" v-else-if="!stillCover?.data" :size="iconSize" />
   </div>
 </template>

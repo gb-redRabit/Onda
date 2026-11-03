@@ -1,52 +1,78 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
+import { nextTick } from 'vue';
+
+// Najechanie na okładkę-wideo w siatce nie może odmontować statycznej klatki:
+// wcześniej karta zostawała pusta do czasu zdekodowania `<video>` (efekt mignięcia).
+// Test pilnuje, że klatka zostaje pod spodem, a wideo pojawia się płynnie.
+
+const covers = vi.hoisted(() => ({
+  getCover: vi.fn(),
+  getCoverStill: vi.fn(),
+  loadCover: vi.fn(),
+  loadCoverStill: vi.fn()
+}));
+
+vi.mock('@renderer/stores/player', () => ({
+  usePlayerStore: () => covers
+}));
+
+vi.mock('@renderer/utils/mediaUrl', () => ({
+  toMediaServerUrl: (path: string) => `media://${path}`
+}));
+
 import MediaCover from '../MediaCover.vue';
-import { usePlayerStore } from '@renderer/stores/player';
 
-describe('MediaCover', () => {
+describe('MediaCover still → video hover', () => {
+  beforeAll(() => {
+    // jsdom nie implementuje odtwarzania: `play()` musi zwracać Promise,
+    // bo komponent gasi odrzucenie autoplay.
+    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    HTMLMediaElement.prototype.pause = vi.fn();
+  });
+
   beforeEach(() => {
-    setActivePinia(createPinia());
-    vi.restoreAllMocks();
+    covers.getCover.mockReturnValue({ type: 'video', data: 'D:/media/a.mp4' });
+    covers.getCoverStill.mockReturnValue({ type: 'image', data: 'data:image/jpeg;base64,STILL' });
   });
 
-  it('loads the cover when the bound path changes', async () => {
-    const player = usePlayerStore();
-    vi.spyOn(player, 'getCover').mockReturnValue({ type: null, data: null });
-    const loadCover = vi.spyOn(player, 'loadCover').mockResolvedValue({ type: null, data: null });
-
+  it('keeps the still frame mounted while the video fades in', async () => {
     const wrapper = mount(MediaCover, {
-      props: { path: '/music/a.mp3' },
-      attachTo: document.body
+      props: { path: 'D:/media/a.mp3', still: true, fallback: 'music' }
     });
     await nextTick();
-    expect(loadCover).toHaveBeenCalledWith('/music/a.mp3');
 
-    loadCover.mockClear();
-    await wrapper.setProps({ path: '/music/b.mp3' });
+    expect(wrapper.find('img[src^="data:image"]').exists()).toBe(true);
+    expect(wrapper.find('video').exists()).toBe(false);
+
+    await wrapper.trigger('mouseenter');
     await nextTick();
 
-    expect(loadCover).toHaveBeenCalledWith('/music/b.mp3');
-    wrapper.unmount();
+    // Klatka nadal jest w DOM, a wideo startuje przezroczyste.
+    expect(wrapper.find('img[src^="data:image"]').exists()).toBe(true);
+    const video = wrapper.get('video');
+    expect(video.classes()).toContain('opacity-0');
+
+    await video.trigger('loadeddata');
+    await nextTick();
+    expect(wrapper.get('video').classes()).toContain('opacity-100');
+    expect(wrapper.find('img[src^="data:image"]').exists()).toBe(true);
   });
 
-  it('uses a cached cover immediately without a duplicate request', async () => {
-    const player = usePlayerStore();
-    vi.spyOn(player, 'getCover').mockReturnValue({
-      type: 'image',
-      data: 'data:image/png;base64,AA=='
-    });
-    const loadCover = vi.spyOn(player, 'loadCover').mockResolvedValue({ type: null, data: null });
-
+  it('hides the video again after the pointer leaves', async () => {
     const wrapper = mount(MediaCover, {
-      props: { path: '/music/cached.mp3' },
-      attachTo: document.body
+      props: { path: 'D:/media/a.mp3', still: true }
     });
     await nextTick();
+    await wrapper.trigger('mouseenter');
+    await nextTick();
+    await wrapper.get('video').trigger('loadeddata');
+    await nextTick();
 
-    expect(wrapper.find('img').attributes('src')).toBe('data:image/png;base64,AA==');
-    expect(loadCover).not.toHaveBeenCalled();
-    wrapper.unmount();
+    await wrapper.trigger('mouseleave');
+    await nextTick();
+
+    expect(wrapper.find('video').exists()).toBe(false);
+    expect(wrapper.find('img[src^="data:image"]').exists()).toBe(true);
   });
 });
