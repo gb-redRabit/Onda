@@ -54,6 +54,8 @@ const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
     'ring',
     'glass',
     'classic',
+    'bare',
+    'waveform',
     'minimal',
     'large',
     'thin',

@@ -62,8 +62,10 @@ export const VARIANT_KEYS: Record<AudioLayoutElementId, { value: string; key: st
   ],
   progress: [
     { value: 'classic', key: 'variant_progress_classic' },
+    { value: 'bare', key: 'variant_progress_bare' },
     { value: 'thin', key: 'variant_progress_thin' },
-    { value: 'neon', key: 'variant_progress_neon' }
+    { value: 'neon', key: 'variant_progress_neon' },
+    { value: 'waveform', key: 'variant_progress_waveform' }
   ],
   controls: [
     { value: 'standard', key: 'variant_controls_standard' },
@@ -81,7 +83,8 @@ export const VARIANT_DEFAULT: Record<AudioLayoutElementId, string> = {
   visualization: 'default',
   cover: 'default',
   trackInfo: 'classic',
-  progress: 'classic',
+  // Domyślnie fala: tak wyglądał widok, gdy waveform był wymuszony w kodzie.
+  progress: 'waveform',
   controls: 'standard',
   lyrics: 'default'
 };

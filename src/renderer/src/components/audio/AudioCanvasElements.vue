@@ -10,7 +10,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { useI18n } from 'vue-i18n';
 import { resolveElementDecoration } from '@renderer/utils/audioView';
 import { elementStyle } from '@renderer/utils/audioElementStyle';
-import { ELEMENT_META } from '@renderer/utils/audioLayoutEditorMeta';
+import { ELEMENT_META, VARIANT_DEFAULT } from '@renderer/utils/audioLayoutEditorMeta';
 import type { AudioLayoutElement } from '@renderer/types/settings';
 
 // Renderer elementów free-canvas wyodrębniony z AudioView (kontynuacja planu 6.3).
@@ -84,7 +84,7 @@ function styleFor(el: AudioLayoutElement) {
       >
         <AudioCover
           size="w-full h-full"
-          :variant="el.variant ?? 'default'"
+          :variant="el.variant ?? VARIANT_DEFAULT[el.id]"
           :decoration="elementDecoration(el)"
         />
       </div>
@@ -100,7 +100,7 @@ function styleFor(el: AudioLayoutElement) {
         <TrackInfo
           :track="player.currentTrack"
           variant="audio"
-          :audio-variant="el.variant ?? 'classic'"
+          :audio-variant="el.variant ?? VARIANT_DEFAULT.trackInfo"
           show-favorite
         />
       </div>
@@ -116,14 +116,14 @@ function styleFor(el: AudioLayoutElement) {
         }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
-        <AudioProgressBar :variant="el.variant ?? 'classic'" :waveform="true" />
+        <AudioProgressBar :variant="el.variant ?? VARIANT_DEFAULT.progress" />
       </div>
     </template>
 
     <!-- Tekst piosenki -->
     <template v-else-if="el.id === 'lyrics'">
       <div class="w-full h-full">
-        <LyricsPanel :variant="el.variant ?? 'default'" />
+        <LyricsPanel :variant="el.variant ?? VARIANT_DEFAULT[el.id]" />
       </div>
     </template>
 
@@ -137,7 +137,7 @@ function styleFor(el: AudioLayoutElement) {
         }"
         @mousedown="emit('element-mousedown', $event, el)"
       >
-        <AudioControls :variant="el.variant ?? 'standard'" />
+        <AudioControls :variant="el.variant ?? VARIANT_DEFAULT.controls" />
       </div>
     </template>
   </div>

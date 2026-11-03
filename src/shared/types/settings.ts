@@ -190,7 +190,7 @@ export interface AudioLayoutElement {
   /**
    * Wariant wyglądu elementu (presety per typ):
    * cover: default|rounded|ring|glass; trackInfo: classic|minimal|large;
-   * progress: classic|thin|neon; controls: standard|compact; visualization: default.
+   * progress: classic|bare|thin|neon|waveform; controls: standard|compact; visualization: default.
    * Nieznane/niedozwolone wartości renderują się jako default dla danego typu.
    */
   variant?: string;

@@ -41,7 +41,10 @@ const bufferedPct = computed(() => audio.buffered.value * 100);
 
 const isThin = computed(() => props.variant === 'thin');
 const isNeon = computed(() => props.variant === 'neon');
-const waveformOn = computed(() => props.waveform === true);
+// „Bez tła”: sam wypełniony pasek, bez toru pod spodem.
+const isBare = computed(() => props.variant === 'bare');
+// Wariant `waveform` (oraz jawne `waveform` z komponentu-rodzica) rysuje falę.
+const waveformOn = computed(() => props.waveform === true || props.variant === 'waveform');
 const waveformPath = computed(() => {
   const track = player.currentTrack;
   if (!track || track.type !== 'audio' || track.id.startsWith('radio:')) return null;
@@ -54,6 +57,7 @@ const trackClass = computed(() => {
     return `${trackBase} h-9 bg-base-content/10 rounded-field overflow-hidden cursor-pointer group`;
   if (isNeon.value) return `${trackBase} h-1.5 bg-base-content/15 rounded-full`;
   if (isThin.value) return `${trackBase} h-0.5 bg-base-content/15 rounded-full`;
+  if (isBare.value) return `${trackBase} h-1 cursor-pointer hover:h-1.5 transition-[height] group`;
   return `${trackBase} h-1 bg-base-content/20 rounded-full cursor-pointer hover:h-1.5 transition-[height] group`;
 });
 
@@ -158,7 +162,7 @@ function onTrackKey(e: KeyboardEvent) {
         :style="{ left: progressPct + '%' }"
       />
       <template v-if="!waveformOn">
-        <div :class="bufferedClass" :style="{ width: bufferedPct + '%' }" />
+        <div v-if="!isBare" :class="bufferedClass" :style="{ width: bufferedPct + '%' }" />
         <div
           v-if="isNeon"
           class="absolute inset-y-0 left-0 rounded-full bg-primary/40 blur-sm"
