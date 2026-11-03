@@ -154,6 +154,21 @@ test.describe('responsive layout', () => {
         expect(tab.name, 'tab has an accessible name').toBeTruthy();
         expect(tab.iconVisible, `icon visible for "${tab.name}"`).toBe(true);
       }
+
+      // Same ikony mają wypełniać pasek, a nie kleić się do lewej krawędzi.
+      const fill = await page.evaluate(() => {
+        const row = document.querySelector('.tab-row') as HTMLElement | null;
+        const tabs = Array.from(
+          document.querySelectorAll<HTMLElement>('[data-testid^="library-tab-"]')
+        ).filter((tab) => tab.offsetParent !== null);
+        if (!row || tabs.length === 0) return null;
+        const rowBox = row.getBoundingClientRect();
+        const lastBox = tabs[tabs.length - 1].getBoundingClientRect();
+        return { count: tabs.length, rightGap: Math.round(rowBox.right - lastBox.right) };
+      });
+      expect(fill).not.toBeNull();
+      expect(fill!.count).toBeGreaterThan(0);
+      expect(fill!.rightGap, 'tabs fill the bar').toBeLessThanOrEqual(12);
     } finally {
       await onda.dispose();
     }

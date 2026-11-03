@@ -117,9 +117,12 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
     display: none;
   }
 
+  /* Ikony rozkładają się na całą szerokość paska (równo), a nie kleją do lewej.
+     `min-width` pilnuje, żeby przy skrajnie wąskim oknie pasek przewinął się,
+     zamiast ściskać ikony do zera. */
   [data-tab] {
-    flex: 0 0 2.5rem;
-    min-width: 0;
+    flex: 1 1 0;
+    min-width: 2.25rem;
     padding-inline: 0;
   }
 }
