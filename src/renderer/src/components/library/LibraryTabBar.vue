@@ -3,9 +3,9 @@ import { nextTick } from 'vue';
 import type { LibraryTab, TabId } from '@renderer/utils/libraryTabs';
 
 // Pasek zakładek. O tym, co się mieści, decydują container queries (patrz
-// <style>): najpierw znikają liczniki, potem ikony, na końcu etykiety. Dzięki
-// temu etykiety nigdy nie są ucinane wielokropkiem niezależnie od szerokości
-// okna, zwinięcia sidebara i języka.
+// <style>): najpierw znikają liczniki, potem etykiety, a ikony zostają do końca.
+// Dzięki temu etykiety nigdy nie są ucinane wielokropkiem, a przy bardzo wąskim
+// oknie pasek nadal ma czytelne ikony (z `aria-label` i `title`).
 const props = defineProps<{
   tabs: readonly LibraryTab[];
   modelValue: TabId;
@@ -99,11 +99,13 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
   display: none;
 }
 
-/* Priorytet: pełny pasek → bez liczników → bez ikon → same ikony.
-   `display: none` (a nie `visibility`) jest konieczne: ukryty element musi
-   oddać miejsce, inaczej etykiety nadal się ucinały. Progi są dobrane pod
-   najdłuższe polskie etykiety, a `min-w-max` na zakładce gwarantuje, że przy
-   szerszym kroju pisma pasek przewinie się zamiast ucinać tekst. */
+/* Priorytet: pełny pasek → bez liczników → bez etykiet (same ikony).
+   Ikony zostają do końca, bo pasek ikon nadal da się rozpoznać i ma `aria-label`
+   oraz `title`; wcześniej przy bardzo wąskim oknie znikały i ikony, i etykiety,
+   więc aktywna zakładka była pustym prostokątem. `display: none` (a nie
+   `visibility`) jest konieczne: ukryty element musi oddać miejsce. Progi są
+   dobrane pod najdłuższe polskie etykiety, a `min-w-max` na zakładce gwarantuje,
+   że przy szerszym kroju pisma pasek przewinie się zamiast ucinać tekst. */
 @container (max-width: 1100px) {
   [data-tab-count] {
     display: none;
@@ -111,12 +113,6 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
 }
 
 @container (max-width: 900px) {
-  [data-tab-icon] {
-    display: none;
-  }
-}
-
-@container (max-width: 700px) {
   [data-tab-label] {
     display: none;
   }
@@ -124,6 +120,7 @@ function onTabKeydown(e: KeyboardEvent, index: number): void {
   [data-tab] {
     flex: 0 0 2.5rem;
     min-width: 0;
+    padding-inline: 0;
   }
 }
 </style>

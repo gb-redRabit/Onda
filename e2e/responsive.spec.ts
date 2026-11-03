@@ -130,6 +130,30 @@ test.describe('responsive layout', () => {
         );
         expect(truncated, `width ${width}`).toEqual([]);
       }
+
+      // Wąskie okno: etykiety znikają, ale ikony zostają — aktywna zakładka nie
+      // może być pustym prostokątem bez treści.
+      await page.setViewportSize({ width: 760, height: 800 });
+      await page.waitForTimeout(300);
+      const compactTabs = await page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="library-tab-"]'))
+          .filter((tab) => tab.offsetParent !== null)
+          .map((tab) => {
+            const label = tab.querySelector<HTMLElement>('[data-tab-label]');
+            const icon = tab.querySelector<SVGElement>('[data-tab-icon] svg');
+            const box = icon?.getBoundingClientRect();
+            return {
+              name: tab.getAttribute('aria-label'),
+              labelHidden: !label || getComputedStyle(label).display === 'none',
+              iconVisible: !!box && box.width > 8 && box.height > 8
+            };
+          })
+      );
+      expect(compactTabs.length).toBeGreaterThan(0);
+      for (const tab of compactTabs) {
+        expect(tab.name, 'tab has an accessible name').toBeTruthy();
+        expect(tab.iconVisible, `icon visible for "${tab.name}"`).toBe(true);
+      }
     } finally {
       await onda.dispose();
     }
