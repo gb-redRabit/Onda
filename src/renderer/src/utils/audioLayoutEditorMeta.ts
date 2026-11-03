@@ -1,7 +1,9 @@
 import {
   AlignVerticalSpaceAround,
+  AudioLines,
   Columns2,
   Disc3,
+  Heart,
   LayoutPanelLeft,
   ListMusic,
   Maximize,
@@ -43,7 +45,9 @@ export const ELEMENT_META: Record<
   trackInfo: { icon: ListMusic, labelKey: 'audioView.elementTrackInfo', defaultLayer: 3 },
   progress: { icon: Play, labelKey: 'audioView.elementProgress', defaultLayer: 3 },
   controls: { icon: SlidersHorizontal, labelKey: 'audioView.elementControls', defaultLayer: 5 },
-  lyrics: { icon: ScrollText, labelKey: 'audioView.elementLyrics', defaultLayer: 4 }
+  lyrics: { icon: ScrollText, labelKey: 'audioView.elementLyrics', defaultLayer: 4 },
+  favorite: { icon: Heart, labelKey: 'audioView.elementFavorite', defaultLayer: 4 },
+  technical: { icon: AudioLines, labelKey: 'audioView.elementTechnical', defaultLayer: 4 }
 };
 
 // ─── Warianty (presety per typ) ───
@@ -76,6 +80,16 @@ export const VARIANT_KEYS: Record<AudioLayoutElementId, { value: string; key: st
     { value: 'minimal', key: 'variant_lyrics_minimal' },
     { value: 'solid', key: 'variant_lyrics_solid' },
     { value: 'gradient', key: 'variant_lyrics_gradient' }
+  ],
+  favorite: [
+    { value: 'icon', key: 'variant_favorite_icon' },
+    { value: 'chip', key: 'variant_favorite_chip' },
+    { value: 'large', key: 'variant_favorite_large' }
+  ],
+  technical: [
+    { value: 'chips', key: 'variant_technical_chips' },
+    { value: 'inline', key: 'variant_technical_inline' },
+    { value: 'minimal', key: 'variant_technical_minimal' }
   ]
 };
 
@@ -86,7 +100,9 @@ export const VARIANT_DEFAULT: Record<AudioLayoutElementId, string> = {
   // Domyślnie fala: tak wyglądał widok, gdy waveform był wymuszony w kodzie.
   progress: 'waveform',
   controls: 'standard',
-  lyrics: 'default'
+  lyrics: 'default',
+  favorite: 'icon',
+  technical: 'chips'
 };
 
 export const SUBTAB_KEYS: Record<RightTab, string> = {

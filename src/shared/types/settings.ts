@@ -168,7 +168,14 @@ export interface AppearanceSettings {
 }
 
 export type AudioLayoutElementId =
-  'visualization' | 'cover' | 'progress' | 'trackInfo' | 'controls' | 'lyrics';
+  | 'visualization'
+  | 'cover'
+  | 'progress'
+  | 'trackInfo'
+  | 'controls'
+  | 'lyrics'
+  | 'favorite'
+  | 'technical';
 
 export type AudioLayoutPreset = 'compact' | 'stacked' | 'split' | 'full' | 'immersive';
 
@@ -190,7 +197,8 @@ export interface AudioLayoutElement {
   /**
    * Wariant wyglądu elementu (presety per typ):
    * cover: default|rounded|ring|glass; trackInfo: classic|minimal|large;
-   * progress: classic|bare|thin|neon|waveform; controls: standard|compact; visualization: default.
+   * progress: classic|bare|thin|neon|waveform; controls: standard|compact; visualization: default;
+   * favorite: icon|chip|large; technical: chips|inline|minimal.
    * Nieznane/niedozwolone wartości renderują się jako default dla danego typu.
    */
   variant?: string;

@@ -21,7 +21,9 @@ export const CONSTRAINTS: Record<
   // więc fallback mieści się dokładnie tam, gdzie rząd pięciu przycisków by się nie zmieścił.
   controls: { minW: 30, minH: 4, maxH: 25 },
   trackInfo: { minW: 25, minH: 6 },
-  lyrics: { minW: 20, minH: 8 }
+  lyrics: { minW: 20, minH: 8 },
+  favorite: { minW: 4, minH: 4, maxH: 20 },
+  technical: { minW: 15, minH: 3, maxH: 12 }
 };
 
 // height% -> width% tak, aby na kontenerze PREVIEW_W×PREVIEW_H krawędzie były w proporcji 16:9.

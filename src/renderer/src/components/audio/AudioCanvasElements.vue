@@ -5,6 +5,8 @@ import TrackInfo from '../TrackInfo.vue';
 import AudioProgressBar from './AudioProgressBar.vue';
 import AudioControls from './AudioControls.vue';
 import LyricsPanel from './LyricsPanel.vue';
+import AudioFavoriteElement from './AudioFavoriteElement.vue';
+import AudioTechnicalInfo from './AudioTechnicalInfo.vue';
 import { usePluginsStore } from '@renderer/stores/plugins';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useI18n } from 'vue-i18n';
@@ -138,6 +140,28 @@ function styleFor(el: AudioLayoutElement) {
         @mousedown="emit('element-mousedown', $event, el)"
       >
         <AudioControls :variant="el.variant ?? VARIANT_DEFAULT.controls" />
+      </div>
+    </template>
+
+    <!-- Ulubione -->
+    <template v-else-if="el.id === 'favorite'">
+      <div
+        class="w-full h-full flex items-center justify-center transition-opacity"
+        :class="{ 'opacity-0 pointer-events-none': props.isFullscreen && !props.uiVisible }"
+        @mousedown="emit('element-mousedown', $event, el)"
+      >
+        <AudioFavoriteElement :variant="el.variant ?? VARIANT_DEFAULT.favorite" />
+      </div>
+    </template>
+
+    <!-- Informacje techniczne -->
+    <template v-else-if="el.id === 'technical'">
+      <div
+        class="w-full h-full flex items-center justify-center transition-opacity"
+        :class="{ 'opacity-0 pointer-events-none': props.isFullscreen && !props.uiVisible }"
+        @mousedown="emit('element-mousedown', $event, el)"
+      >
+        <AudioTechnicalInfo :variant="el.variant ?? VARIANT_DEFAULT.technical" />
       </div>
     </template>
   </div>

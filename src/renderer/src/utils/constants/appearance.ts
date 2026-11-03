@@ -98,6 +98,26 @@ export const DEFAULT_APPEARANCE = {
         opacity: 100,
         layer: 4,
         visible: true
+      },
+      {
+        id: 'favorite' as const,
+        x: 74,
+        y: 6,
+        width: 8,
+        height: 6,
+        opacity: 100,
+        layer: 4,
+        visible: true
+      },
+      {
+        id: 'technical' as const,
+        x: 8,
+        y: 0,
+        width: 84,
+        height: 5,
+        opacity: 100,
+        layer: 4,
+        visible: true
       }
     ],
     preset: 'full' as const,
@@ -154,6 +174,17 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         opacity: 100,
         layer: 4,
         visible: false
+      },
+      { id: 'favorite', x: 4, y: 64, width: 12, height: 8, opacity: 100, layer: 4, visible: false },
+      {
+        id: 'technical',
+        x: 4,
+        y: 74,
+        width: 24,
+        height: 8,
+        opacity: 100,
+        layer: 4,
+        visible: false
       }
     ]
   },
@@ -201,6 +232,26 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         opacity: 100,
         layer: 4,
         visible: false
+      },
+      {
+        id: 'favorite',
+        x: 82,
+        y: 47,
+        width: 10,
+        height: 8,
+        opacity: 100,
+        layer: 4,
+        visible: false
+      },
+      {
+        id: 'technical',
+        x: 22,
+        y: 89,
+        width: 56,
+        height: 6,
+        opacity: 100,
+        layer: 4,
+        visible: false
       }
     ]
   },
@@ -236,6 +287,17 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         y: 12,
         width: 42,
         height: 24,
+        opacity: 100,
+        layer: 4,
+        visible: false
+      },
+      { id: 'favorite', x: 4, y: 2, width: 10, height: 6, opacity: 100, layer: 4, visible: false },
+      {
+        id: 'technical',
+        x: 54,
+        y: 38,
+        width: 42,
+        height: 8,
         opacity: 100,
         layer: 4,
         visible: false
@@ -286,6 +348,17 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         opacity: 100,
         layer: 4,
         visible: true
+      },
+      { id: 'favorite', x: 74, y: 6, width: 8, height: 6, opacity: 100, layer: 4, visible: true },
+      {
+        id: 'technical',
+        x: 8,
+        y: 0,
+        width: 84,
+        height: 5,
+        opacity: 100,
+        layer: 4,
+        visible: true
       }
     ]
   },
@@ -312,6 +385,17 @@ export const AUDIO_LAYOUT_PRESETS: Record<
         y: 38,
         width: 76,
         height: 18,
+        opacity: 90,
+        layer: 4,
+        visible: true
+      },
+      { id: 'favorite', x: 74, y: 10, width: 8, height: 6, opacity: 100, layer: 4, visible: true },
+      {
+        id: 'technical',
+        x: 12,
+        y: 2,
+        width: 76,
+        height: 5,
         opacity: 90,
         layer: 4,
         visible: true

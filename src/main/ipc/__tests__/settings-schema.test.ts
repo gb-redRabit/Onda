@@ -311,9 +311,56 @@ describe('sanitizeSettings', () => {
           opacity: 100,
           layer: 4,
           visible: true
+        },
+        {
+          id: 'favorite',
+          x: 74,
+          y: 6,
+          width: 8,
+          height: 6,
+          opacity: 100,
+          layer: 4,
+          visible: true
+        },
+        {
+          id: 'technical',
+          x: 8,
+          y: 0,
+          width: 84,
+          height: 5,
+          opacity: 100,
+          layer: 4,
+          visible: true
         }
       ]
     });
+  });
+
+  it('adds the favorite and technical elements once and hides them in compact', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        audioLayout: {
+          preset: 'compact',
+          elements: [
+            {
+              id: 'cover',
+              x: 4,
+              y: 18,
+              width: 24,
+              height: 44,
+              opacity: 100,
+              layer: 2,
+              visible: true
+            }
+          ]
+        }
+      }
+    });
+    const elements = sanitized.appearance?.audioLayout?.elements ?? [];
+    expect(elements.filter((el) => el.id === 'favorite')).toHaveLength(1);
+    expect(elements.filter((el) => el.id === 'technical')).toHaveLength(1);
+    expect(elements.find((el) => el.id === 'favorite')).toMatchObject({ visible: false });
+    expect(elements.find((el) => el.id === 'technical')).toMatchObject({ visible: false });
   });
 
   it('does not duplicate the lyrics layout element during migration', () => {

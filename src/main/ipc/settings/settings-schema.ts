@@ -38,7 +38,16 @@ const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
 };
 
 const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
-  id: enumOf(['visualization', 'cover', 'progress', 'trackInfo', 'controls', 'lyrics']),
+  id: enumOf([
+    'visualization',
+    'cover',
+    'progress',
+    'trackInfo',
+    'controls',
+    'lyrics',
+    'favorite',
+    'technical'
+  ]),
   x: numClamped(0, 100),
   y: numClamped(0, 100),
   width: numClamped(1, 100),
@@ -63,7 +72,11 @@ const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
     'standard',
     'compact',
     'solid',
-    'gradient'
+    'gradient',
+    'icon',
+    'chip',
+    'chips',
+    'inline'
   ])
 };
 

@@ -31,32 +31,59 @@ export function pipElementArray(v: unknown): unknown | undefined {
   return out;
 }
 
-const LYRICS_LAYOUT_ELEMENT = {
-  id: 'lyrics',
-  x: 8,
-  y: 47,
-  width: 84,
-  height: 17,
-  opacity: 100,
-  layer: 4,
-  visible: true
-};
+const AUX_LAYOUT_ELEMENTS = [
+  {
+    id: 'lyrics',
+    x: 8,
+    y: 47,
+    width: 84,
+    height: 17,
+    opacity: 100,
+    layer: 4,
+    visible: true
+  },
+  {
+    id: 'favorite',
+    x: 74,
+    y: 6,
+    width: 8,
+    height: 6,
+    opacity: 100,
+    layer: 4,
+    visible: true
+  },
+  {
+    id: 'technical',
+    x: 8,
+    y: 0,
+    width: 84,
+    height: 5,
+    opacity: 100,
+    layer: 4,
+    visible: true
+  }
+] as const;
 
-// Starsze zapisane układy audio nie mają elementu tekstu. Dodajemy go raz przy
-// migracji, żeby nowa funkcja była widoczna bez ręcznego dodawania w edytorze.
-function ensureLyricsLayoutElement(out: Record<string, unknown>): Record<string, unknown> {
+// Starsze zapisane układy audio nie mają nowszych elementów (tekst, ulubione,
+// informacje techniczne). Dodajemy je raz przy migracji, żeby nowe funkcje były
+// widoczne bez ręcznego dodawania w edytorze. W wąskich presetach zostają ukryte.
+function ensureAuxLayoutElements(out: Record<string, unknown>): Record<string, unknown> {
   const layout = out['audioLayout'];
   if (!isPlainObject(layout)) return out;
   const elements = layout['elements'];
   if (!Array.isArray(elements)) return out;
-  if (elements.some((el) => isPlainObject(el) && el['id'] === 'lyrics')) return out;
+  const present = new Set(
+    elements.filter((el) => isPlainObject(el)).map((el) => (el as Record<string, unknown>)['id'])
+  );
+  const missing = AUX_LAYOUT_ELEMENTS.filter((el) => !present.has(el.id));
+  if (!missing.length) return out;
   const preset = layout['preset'];
   const visible = preset !== 'compact' && preset !== 'stacked' && preset !== 'split';
   return {
     ...out,
     audioLayout: {
       ...layout,
-      elements: [...elements, { ...LYRICS_LAYOUT_ELEMENT, visible }]
+      elements: [...elements, ...missing.map((el) => ({ ...el, visible }))]
     }
   };
 }
@@ -65,7 +92,7 @@ export function migrateAppearance(v: unknown): unknown {
   if (!isPlainObject(v)) return v;
   const src = v as Record<string, unknown>;
   let out: Record<string, unknown> = src;
-  out = ensureLyricsLayoutElement(out);
+  out = ensureAuxLayoutElements(out);
   const acc = src['accentColor'];
   const cc = src['customColors'];
   if (
