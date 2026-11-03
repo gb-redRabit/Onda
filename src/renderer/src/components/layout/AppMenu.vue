@@ -35,7 +35,8 @@ const {
 
 // A11y: model klawiaturowy paska menu. Każdy dropdown to role="menu" z
 // dziećmi role="menuitem"; strzałki przenoszą fokus, Escape zamyka i przywraca fokus
-// do wyzwalacza, Tab odrzuca.
+// do wyzwalacza, Tab odrzuca. Handler wisi TYLKO na `document` — wcześniej był też
+// na korzeniu dropdownu, więc jedno naciśnięcie strzałki przesuwało fokus o dwie pozycje.
 function menuItems(name: string): HTMLElement[] {
   const el = document.querySelector<HTMLElement>(`[data-menu="${name}"]`);
   return el ? Array.from(el.querySelectorAll<HTMLElement>('[role="menuitem"]')) : [];
@@ -63,6 +64,11 @@ function onMenuKeydown(e: KeyboardEvent): void {
   }
   const items = menuItems(name);
   if (!items.length) return;
+  // Strzałki/Home/End obsługujemy tylko z wnętrza otwartego dropdownu. Gdy fokus
+  // jest na wyzwalaczu, `openMenu` sam ustawia pierwszą pozycję — a jego fokus
+  // (mikrotask) wyprzedza ten listener, więc bez tego strażnika jedno naciśnięcie
+  // przesuwałoby fokus o dwie pozycje.
+  if (!(e.target as HTMLElement | null)?.closest?.(`[data-menu="${name}"]`)) return;
   const current = items.indexOf(document.activeElement as HTMLElement);
   let next: number;
   if (e.key === 'ArrowDown') next = (current + 1 + items.length) % items.length;
@@ -116,7 +122,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         </button>
         <AppMenuFileDropdown
           v-if="openDropdown === 'file'"
-          @keydown="onMenuKeydown"
           @open-file="
             openFile();
             closeDropdown();
@@ -150,7 +155,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         <AppMenuViewDropdown
           v-if="openDropdown === 'view'"
           :shortcut="shortcut"
-          @keydown="onMenuKeydown"
           @navigate="
             navigateAndClose($event);
             closeDropdown();
@@ -176,7 +180,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         <AppMenuPlaybackDropdown
           v-if="openDropdown === 'playback'"
           :action="actionClose"
-          @keydown="onMenuKeydown"
           @restore-pip="restorePip"
           @close="closeDropdown"
         />
@@ -199,7 +202,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
         </button>
         <AppMenuHelpDropdown
           v-if="openDropdown === 'help'"
-          @keydown="onMenuKeydown"
           @about="navigateSettingsTab('about')"
           @shortcuts="navigateSettingsTab('shortcuts')"
         />

@@ -42,13 +42,57 @@ describe('useContextMenu.build', () => {
     expect(build(defs, { kind: 'file', count: 1 })[0].disabled).toBeUndefined();
   });
 
-  it('keeps separators and plain items', () => {
+  it('keeps separators between items', () => {
     const { build } = useContextMenu();
-    const defs: ContextMenuAction<Ctx>[] = [{ separator: true, label: '' }, { label: 'Item' }];
+    const defs: ContextMenuAction<Ctx>[] = [
+      { label: 'A' },
+      { separator: true, label: '' },
+      { label: 'B' }
+    ];
     const items = build(defs, { kind: 'file', count: 1 });
-    expect(items).toHaveLength(2);
-    expect(items[0].separator).toBe(true);
-    expect(items[1].label).toBe('Item');
+    expect(items.map((i) => i.label)).toEqual(['A', '', 'B']);
+    expect(items[1].separator).toBe(true);
+  });
+
+  it('drops leading, trailing and doubled separators', () => {
+    const { build } = useContextMenu();
+    const defs: ContextMenuAction<Ctx>[] = [
+      { separator: true, label: '' },
+      { label: 'A' },
+      { separator: true, label: '' },
+      { separator: true, label: '' },
+      { label: 'B' },
+      { separator: true, label: '' }
+    ];
+    const items = build(defs, { kind: 'file', count: 1 });
+    expect(items.map((i) => i.label)).toEqual(['A', '', 'B']);
+  });
+
+  it('drops a separator that became trailing after filtering', () => {
+    const { build } = useContextMenu();
+    const defs: ContextMenuAction<Ctx>[] = [
+      { label: 'A' },
+      { separator: true, label: '' },
+      { label: 'Hidden', when: (c) => c.count > 5 }
+    ];
+    const items = build(defs, { kind: 'file', count: 1 });
+    expect(items.map((i) => i.label)).toEqual(['A']);
+  });
+
+  it('sanitizes separators inside submenu children', () => {
+    const { build } = useContextMenu();
+    const defs: ContextMenuAction<Ctx>[] = [
+      {
+        label: 'Group',
+        children: [
+          { separator: true, label: '' },
+          { label: 'Child' },
+          { separator: true, label: '' }
+        ]
+      }
+    ];
+    const items = build(defs, { kind: 'file', count: 1 });
+    expect(items[0].children?.map((c) => c.label)).toEqual(['Child']);
   });
 
   it('maps ctx actions and recursively filters children', () => {

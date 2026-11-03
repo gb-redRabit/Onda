@@ -28,7 +28,6 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
       :key="r.path"
       :icon="r.icon"
       @click="$emit('navigate', r.path)"
-      @keydown="$emit('navigate', r.path)"
     >
       {{ $t(r.label) }}
       <template v-if="r.shortcut && shortcut(r.shortcut)" #hint>{{
@@ -47,7 +46,6 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
     <AppMenuItem
       :icon="PanelBottom"
       @click="settings.updateStatusBar({ visible: !settings.statusBar.visible })"
-      @keydown="settings.updateStatusBar({ visible: !settings.statusBar.visible })"
     >
       {{ $t('menu.statusBar') }}
       <template v-if="settings.statusBar.visible" #hint>✓</template>

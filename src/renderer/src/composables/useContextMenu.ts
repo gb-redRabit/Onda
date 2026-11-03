@@ -42,8 +42,37 @@ export function useContextMenu() {
     };
   }
 
+  // Separatory wynikają z warunków `when`, więc po odfiltrowaniu pozycji mogą
+  // zostać na początku, na końcu albo parami. Normalizujemy je w jednym miejscu,
+  // żeby żadne menu (Biblioteka, Pobrania, wtyczki) nie rysowało „wiszącej kreski”.
+  function sanitizeSeparators(items: ContextMenuItem[]): ContextMenuItem[] {
+    const out: ContextMenuItem[] = [];
+    for (const item of items) {
+      if (item.separator) {
+        if (!out.length || out[out.length - 1].separator) continue;
+        out.push(item);
+        continue;
+      }
+      if (item.children) {
+        const children = sanitizeSeparators(item.children);
+        if (children.length) {
+          out.push({ ...item, children });
+        } else {
+          const withoutChildren = { ...item };
+          delete withoutChildren.children;
+          out.push(withoutChildren);
+        }
+        continue;
+      }
+      out.push(item);
+    }
+    while (out.length && out[out.length - 1].separator) out.pop();
+    return out;
+  }
+
   function build<T>(defs: ContextMenuAction<T>[], ctx: T): ContextMenuItem[] {
-    return defs.map((d) => toItem(d, ctx)).filter((i): i is ContextMenuItem => i !== null);
+    const items = defs.map((d) => toItem(d, ctx)).filter((i): i is ContextMenuItem => i !== null);
+    return sanitizeSeparators(items);
   }
 
   function open<T>(e: MouseEvent, defs: ContextMenuAction<T>[], ctx: T) {

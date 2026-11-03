@@ -126,7 +126,13 @@ export function createLibraryMenuDefs(deps: LibraryMenuDeps) {
           else player.addToQueue(c.track);
         }
       },
-      { label: t('common.editTags'), action: () => opts?.onEdit?.() },
+      {
+        label: t('common.editTags'),
+        // Pozycja bez handlera nic nie robi — wideo i widoki bez edytora tagów
+        // nie mogą jej pokazywać (wcześniej była martwym kliknięciem).
+        when: () => !!opts?.onEdit,
+        action: () => opts?.onEdit?.()
+      },
       {
         label: t('ctx.musicBrainzSearch'),
         when: (c) => c.track.type === 'audio',
@@ -180,7 +186,11 @@ export function createLibraryMenuDefs(deps: LibraryMenuDeps) {
       },
       {
         label: t('explorer.copyPath'),
-        action: (c) => navigator.clipboard?.writeText(c.name)
+        when: (c) => c.tracks.length > 0,
+        action: (c) => {
+          const path = c.tracks[0]?.path;
+          if (path) copyPathToClipboard(path);
+        }
       }
     ];
     return { defs, ctx: { name, tracks } };

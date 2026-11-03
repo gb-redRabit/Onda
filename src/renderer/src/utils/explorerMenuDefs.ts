@@ -51,7 +51,10 @@ interface MenuCtx {
 }
 
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
-const MEDIA_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS, ...IMAGE_EXTS]);
+// Obrazy mają własne „Otwórz obraz” i nie należą do kolejki odtwarzacza —
+// wcześniej `isMedia` obejmował je, więc menu obrazu miało martwe „Odtwórz”
+// i „Dodaj do kolejki”.
+const PLAYABLE_EXT_SET = new Set([...AUDIO_EXTS, ...VIDEO_EXTS]);
 
 // Buildery definicji menu Eksploratora wydzielone z
 // `composables/useExplorerContextMenu.ts` (plan 2.8). Zwracają `{ defs, menuCtx }`,
@@ -131,7 +134,6 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
       },
       {
         label: t('explorer.copyPath'),
-        shortcut: 'Ctrl+C',
         action: (c) => {
           if (c.item) copyPathViaMain(c.item.path);
         }
@@ -172,12 +174,12 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
       {
         label: t('common.play'),
         shortcut: 'Enter',
-        when: (c) => isMedia(c.item),
+        when: (c) => isPlayable(c.item),
         action: (c) => c.item != null && ctx.playItem(c.item)
       },
       {
         label: t('common.addToQueue'),
-        when: (c) => isMedia(c.item),
+        when: (c) => isPlayable(c.item),
         action: (c) => c.item != null && ctx.addToQueueItem(c.item)
       },
       {
@@ -216,8 +218,8 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
   function isImage(item: FileItem | null): boolean {
     return !!item?.extension && IMAGE_EXT_SET.has(item.extension);
   }
-  function isMedia(item: FileItem | null): boolean {
-    return !!item?.extension && MEDIA_EXT_SET.has(item.extension);
+  function isPlayable(item: FileItem | null): boolean {
+    return !!item?.extension && PLAYABLE_EXT_SET.has(item.extension);
   }
 
   function emptyMenu(): { defs: ContextMenuAction<MenuCtx>[]; menuCtx: MenuCtx } {
