@@ -27,11 +27,13 @@ test('favorite and technical elements render and can be edited', async () => {
     });
     await page.getByTestId('library-tab-tracks').click();
     await page.getByTestId('library-track-play').first().click();
-    await page.waitForTimeout(800);
+    await expect(page.locator('[data-testid="player-bar"][data-playing="true"]')).toBeVisible({
+      timeout: 20_000
+    });
     await page.evaluate(() => {
       window.location.hash = '#/audio';
     });
-    await page.waitForTimeout(1200);
+    await expect(page.locator('[role="slider"]').first()).toBeVisible({ timeout: 15_000 });
 
     // Ulubione: klik przełącza stan i jest widoczny w atrybucie dla czytników.
     const favorite = page.getByTestId('audio-favorite').getByRole('button');

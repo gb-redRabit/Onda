@@ -168,8 +168,28 @@ const PATH_RESOLVE_TTL_MS = 2000;
 const MAX_PATH_RESOLVE_ENTRIES = 512;
 const pathResolveCache = new Map<string, { at: number; resolution: MediaPathResolution }>();
 
+// `stat` przy każdym żądaniu Range jest tanie, ale seek generuje ich dziesiątki.
+// Krótki TTL (2 s) wystarcza, żeby nie czytać metadanych w kółko, a nadal
+// zauważa podmianę pliku w rozsądnym czasie.
+const STAT_TTL_MS = 2000;
+const MAX_STAT_ENTRIES = 512;
+const statCache = new Map<string, { size: number; at: number }>();
+
+async function statSize(filePath: string): Promise<number> {
+  const cached = statCache.get(filePath);
+  if (cached && Date.now() - cached.at < STAT_TTL_MS) return cached.size;
+  const s = await fs.promises.stat(filePath);
+  statCache.set(filePath, { size: s.size, at: Date.now() });
+  if (statCache.size > MAX_STAT_ENTRIES) {
+    const oldest = statCache.keys().next().value;
+    if (oldest !== undefined) statCache.delete(oldest);
+  }
+  return s.size;
+}
+
 function clearPathResolveCache(): void {
   pathResolveCache.clear();
+  statCache.clear();
 }
 
 async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolution> {
@@ -277,10 +297,10 @@ export function createMediaServer(): Promise<MediaServer> {
             return;
           }
           try {
-            const stat = await fs.promises.stat(resolved.path);
+            const size = await statSize(resolved.path);
             res.writeHead(200, {
               'content-type': getMimeType(resolved.path),
-              'content-length': String(stat.size),
+              'content-length': String(size),
               'accept-ranges': 'bytes'
             });
             res.end();
@@ -317,8 +337,7 @@ export function createMediaServer(): Promise<MediaServer> {
         }
         const realPath = resolved.path;
 
-        const stat = await fs.promises.stat(realPath);
-        const fileSize = stat.size;
+        const fileSize = await statSize(realPath);
         const contentType = getMimeType(realPath);
         const range = req.headers.range;
 

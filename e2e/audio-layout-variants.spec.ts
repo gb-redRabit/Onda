@@ -27,17 +27,19 @@ test('progress variants from the editor reach the live view', async () => {
     });
     await page.getByTestId('library-tab-tracks').click();
     await page.getByTestId('library-track-play').first().click();
-    await page.waitForTimeout(800);
+    await expect(page.locator('[data-testid="player-bar"][data-playing="true"]')).toBeVisible({
+      timeout: 20_000
+    });
     await page.evaluate(() => {
       window.location.hash = '#/audio';
     });
-    await page.waitForTimeout(1200);
+    await expect(page.locator('[role="slider"]').first()).toBeVisible({ timeout: 15_000 });
 
     const readSlider = () =>
       page.evaluate(() => document.querySelector('[role="slider"]')?.className ?? '');
 
     // Domyślnie fala (tak jak przed zmianą).
-    expect(await readSlider()).toContain('h-9');
+    await expect.poll(readSlider).toContain('h-9');
 
     const pickVariant = async (name: string) => {
       await page.getByTestId('audio-layout-editor').click();
@@ -46,22 +48,24 @@ test('progress variants from the editor reach the live view', async () => {
       await page.getByRole('button', { name: 'Wariant' }).click();
       await page.getByRole('button', { name }).click();
       await page.getByRole('button', { name: 'Gotowe' }).click();
-      await page.waitForTimeout(600);
     };
 
     await pickVariant('Neon');
+    await expect.poll(readSlider).toContain('h-1.5');
     console.log('NEON', await readSlider());
-    expect(await readSlider()).toContain('h-1.5');
 
     await pickVariant('Bez tła');
+    await expect
+      .poll(async () => {
+        const cls = await readSlider();
+        return cls.includes('bg-base-content/20') || cls.includes('bg-base-content/15');
+      })
+      .toBe(false);
     console.log('BARE', await readSlider());
-    const bare = await readSlider();
-    expect(bare).not.toContain('bg-base-content/20');
-    expect(bare).not.toContain('bg-base-content/15');
 
     await pickVariant('Klasyk');
+    await expect.poll(readSlider).toContain('bg-base-content/20');
     console.log('CLASSIC', await readSlider());
-    expect(await readSlider()).toContain('bg-base-content/20');
   } finally {
     await onda.dispose();
     rmSync(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
