@@ -23,7 +23,8 @@ describe('cover cache initialisation', () => {
     expect(seedRoots).toMatch(
       /import \{[^}]*initCoverCache[^}]*\} from '\.\.\/ipc\/cover\/cover-cache'/
     );
-    expect(seedRoots).toMatch(/await initCoverCache\(\)/);
+    // Czyszczenie jest odroczone poza ścieżkę startu okna, ale nadal uruchamiane.
+    expect(seedRoots).toMatch(/setTimeout\(\(\) => \{\s*void initCoverCache\(\);/);
     // Wydzielony seed musi być faktycznie wywołany z sekwencji startowej.
     expect(index).toMatch(/seedMediaServerAndSettings\(\)/);
   });

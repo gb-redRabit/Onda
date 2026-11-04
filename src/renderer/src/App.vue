@@ -64,7 +64,7 @@ const library = useLibraryStore();
 const pluginsStore = usePluginsStore();
 const route = useRoute();
 const router = useRouter();
-const audioPip = useAudioPiP();
+const audioPip = useAudioPiP({ prewarm: 'track' });
 useNewVideoNotifications();
 useUpdater();
 const mediaSession = useMediaSession();

@@ -28,6 +28,8 @@ function getCoverMapFile(): string {
 
 let coverMapData: Record<string, { cacheFile: string; mtime: number }> | null = null;
 let coverMapWriteLock: Promise<void> | null = null;
+let coverMapWriteTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingCoverMapWrite: Record<string, { cacheFile: string; mtime: number }> | null = null;
 
 export async function readCoverMap(): Promise<
   Record<string, { cacheFile: string; mtime: number }>
@@ -55,9 +57,18 @@ export async function readCoverMap(): Promise<
   return coverMapData!;
 }
 
+/**
+ * Zapisuje mapę natychmiast (migracje, czyszczenie cache). Anuluje oczekujący
+ * zapis debounce'owany, żeby starsze dane nie wskrzesiły wyczyszczonej mapy.
+ */
 export async function writeCoverMap(
   data: Record<string, { cacheFile: string; mtime: number }>
 ): Promise<void> {
+  if (coverMapWriteTimer) {
+    clearTimeout(coverMapWriteTimer);
+    coverMapWriteTimer = null;
+  }
+  pendingCoverMapWrite = null;
   while (coverMapWriteLock) await coverMapWriteLock;
   let resolveLock: () => void;
   coverMapWriteLock = new Promise((r) => {
@@ -76,4 +87,23 @@ export async function writeCoverMap(
     coverMapWriteLock = null;
     resolveLock!();
   }
+}
+
+/**
+ * Zapisuje mapę po 500 ms bezczynności. `savePersistentEntry` woła to po każdej
+ * nowej okładce; bez debounce'u mapa (rosnąca z biblioteką) była serializowana
+ * w całości przy każdym pliku.
+ */
+export function scheduleCoverMapWrite(
+  data: Record<string, { cacheFile: string; mtime: number }>
+): void {
+  pendingCoverMapWrite = data;
+  if (coverMapWriteTimer) return;
+  coverMapWriteTimer = setTimeout(() => {
+    coverMapWriteTimer = null;
+    const pending = pendingCoverMapWrite;
+    pendingCoverMapWrite = null;
+    if (pending) void writeCoverMap(pending);
+  }, 500);
+  coverMapWriteTimer.unref?.();
 }

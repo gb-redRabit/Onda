@@ -10,7 +10,7 @@ import { clearDirContents } from '../../utils/clear-dir';
 import { runCommand } from '../../utils/exec';
 import { resolveBin } from '../../binaries';
 import { logger } from '../../../shared/logger';
-import { readCoverMap, writeCoverMap } from './cover-map';
+import { readCoverMap, scheduleCoverMapWrite, writeCoverMap } from './cover-map';
 
 export { getStore } from './cover-store';
 export { COVER_CACHE_MAP_KEY } from './cover-map';
@@ -37,6 +37,9 @@ const durationCache = new Map<string, CachedDuration>();
 const coverCacheLocks = new Map<string, Array<() => void>>();
 
 const DEFAULT_CACHE_MAX_SIZE = 5000;
+// Okładki to data URL-e (~50 KB po resize). Sam limit 5000 wpisów pozwalał
+// cache urosnąć do ~250 MB; 96 MB pokrywa kilkadziesiąt ekranów siatek.
+const DEFAULT_CACHE_MAX_BYTES = 96 * 1024 * 1024;
 
 // `library.coverCacheMaxEntries` (Ustawienia → Biblioteka). Stosowane przy starcie i gdy
 // ustawienie się zmieni, aby suwak faktycznie zmieniał rozmiar cache okładek w pamięci.
@@ -46,14 +49,20 @@ export function applyCoverCacheSettings(maxEntries?: number): void {
   if (typeof maxEntries === 'number' && maxEntries > 0) cacheMaxSize = Math.round(maxEntries);
 }
 
+function coverBytes(value: { result: { data: string | null } }): number {
+  return value.result.data?.length ?? 0;
+}
+
 function cacheSet<T>(
   map: Map<string, T>,
   key: string,
   value: T,
-  maxSize: number = cacheMaxSize
+  maxSize: number = cacheMaxSize,
+  maxBytes?: number,
+  sizeOf?: (value: T) => number
 ): void {
   map.set(key, value);
-  evictCache(map as Map<string, unknown>, maxSize);
+  evictCache(map, maxSize, maxBytes, sizeOf);
 }
 
 /** Unieważnia okładkę w pamięci dla jednego pliku (np. po przepisaniu jego tagów). */
@@ -128,7 +137,9 @@ async function savePersistentEntry(
     const cacheMap = await readCoverMap();
     const s = await stat(sourcePath).catch(() => null);
     cacheMap[mapKey] = { cacheFile, mtime: s?.mtimeMs ?? Date.now() };
-    await writeCoverMap(cacheMap);
+    // Debounce: mapa rośnie z biblioteką, więc pełna serializacja po każdej
+    // okładce była O(n²) przy pierwszym przeglądaniu dużej kolekcji.
+    scheduleCoverMapWrite(cacheMap);
   } catch (e) {
     logger.warn('cover', `savePersistentCover failed for ${mapKey}`, e);
   }
@@ -323,11 +334,18 @@ export async function extractAndCacheCover(
       result = { type: null, data: null };
     }
 
-    cacheSet(coverResultCache, filePath, {
-      result,
-      mtimeMs: fileStat?.mtimeMs ?? Date.now(),
-      checkedAt: Date.now()
-    });
+    cacheSet(
+      coverResultCache,
+      filePath,
+      {
+        result,
+        mtimeMs: fileStat?.mtimeMs ?? Date.now(),
+        checkedAt: Date.now()
+      },
+      cacheMaxSize,
+      DEFAULT_CACHE_MAX_BYTES,
+      coverBytes
+    );
 
     if (result.type === 'image' && result.data?.startsWith('data:')) {
       const match = result.data.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -378,6 +396,9 @@ async function getCachedCover(
 ): Promise<{ type: 'video' | 'image' | null; data: string | null } | null> {
   const memCached = coverResultCache.get(filePath);
   if (memCached) {
+    // LRU: odśwież kolejność w Map, żeby eviction usuwał najdawniej używane wpisy.
+    coverResultCache.delete(filePath);
+    coverResultCache.set(filePath, memCached);
     // Wystarczająco świeże — pomiń wywołanie systemowe stat().
     if (Date.now() - memCached.checkedAt < COVER_STAT_TTL_MS) return memCached.result;
     try {
@@ -395,11 +416,18 @@ async function getCachedCover(
   const diskCached = await getPersistentCover(filePath);
   if (diskCached) {
     const s = await stat(filePath).catch(() => null);
-    cacheSet(coverResultCache, filePath, {
-      result: diskCached,
-      mtimeMs: s?.mtimeMs ?? Date.now(),
-      checkedAt: Date.now()
-    });
+    cacheSet(
+      coverResultCache,
+      filePath,
+      {
+        result: diskCached,
+        mtimeMs: s?.mtimeMs ?? Date.now(),
+        checkedAt: Date.now()
+      },
+      cacheMaxSize,
+      DEFAULT_CACHE_MAX_BYTES,
+      coverBytes
+    );
     return diskCached;
   }
 

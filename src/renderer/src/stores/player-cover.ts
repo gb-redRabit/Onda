@@ -37,6 +37,10 @@ export function usePlayerCover() {
   let stillActive = 0;
   const STILL_CONCURRENCY = 2;
   const STILL_CACHE_MAX = 2000;
+  // Limit bajtów obok limitu wpisów: 2000 okładek po ~50 KB to ~100 MB, a wpisy
+  // bez okładki (null) nie powinny wypychać tych z danymi. 48 MB pokrywa kilka
+  // ekranów siatek i zostawia miejsce na resztę UI.
+  const STILL_CACHE_MAX_BYTES = 48 * 1024 * 1024;
   // Main extrahuje klatkę ffmpeg-iem; na uszkodzonym pliku potrafi to wisieć.
   // Bez limitu dwa zawieszone zadania blokują całą kolejkę i żadna okładka
   // (także na Stronie głównej) już się nie pojawia.
@@ -65,9 +69,16 @@ export function usePlayerCover() {
 
   function evictStills(): void {
     const keys = Object.keys(coverStillCache.value);
-    if (keys.length <= STILL_CACHE_MAX) return;
+    let bytes = 0;
+    for (const key of keys) bytes += coverStillCache.value[key]?.data?.length ?? 0;
+    if (keys.length <= STILL_CACHE_MAX && bytes <= STILL_CACHE_MAX_BYTES) return;
     const next = { ...coverStillCache.value };
-    for (const key of keys.slice(0, keys.length - STILL_CACHE_MAX)) delete next[key];
+    for (let i = 0; i < keys.length; i++) {
+      if (keys.length - i <= STILL_CACHE_MAX && bytes <= STILL_CACHE_MAX_BYTES) break;
+      const key = keys[i];
+      bytes -= next[key]?.data?.length ?? 0;
+      delete next[key];
+    }
     coverStillCache.value = next;
   }
 
@@ -107,6 +118,9 @@ export function usePlayerCover() {
   let coverFlushScheduled = false;
   let coverProcessing = false;
   const COVER_CACHE_MAX = 2000;
+  // Jak dla klatek `still`: limit wpisów nie wystarcza, bo okładka to data URL
+  // (~50 KB), a null-e zajmują miejsce w limicie. 48 MB to kilka ekranów siatek.
+  const COVER_CACHE_MAX_BYTES = 48 * 1024 * 1024;
   // Wynik "brak okładki" jest buforowany krótko (tanio — main zwraca natychmiast z
   // własnego cache w pamięci) i sondowany ponownie później, więc przejściowy błąd IPC lub
   // plik chwilowo nieobecny nigdy nie zatrują cache.
@@ -154,16 +168,20 @@ export function usePlayerCover() {
   function evictCoverCache(): void {
     const max = coverCacheMax();
     const keys = Object.keys(coverCache.value);
-    if (keys.length <= max) return;
+    let bytes = 0;
+    for (const key of keys) bytes += coverCache.value[key]?.data?.length ?? 0;
+    if (keys.length <= max && bytes <= COVER_CACHE_MAX_BYTES) return;
     // Sortuj po czasie ostatniego użycia (starsze = do usunięcia); wpisy bez
     // znacznika traktuj jako najstarsze.
     const byAge = keys.sort((a, b) => (coverLastUsed.get(a) ?? 0) - (coverLastUsed.get(b) ?? 0));
-    const excess = keys.length - max;
-    for (let i = 0; i < excess; i++) {
-      const path = byAge[i];
+    let remaining = keys.length;
+    for (const path of byAge) {
+      if (remaining <= max && bytes <= COVER_CACHE_MAX_BYTES) break;
+      bytes -= coverCache.value[path]?.data?.length ?? 0;
       delete coverCache.value[path];
       coverSealedAt.delete(path);
       coverLastUsed.delete(path);
+      remaining--;
     }
   }
 

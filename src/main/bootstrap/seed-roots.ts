@@ -2,6 +2,7 @@ import { app } from 'electron';
 import { join } from 'path';
 import os from 'os';
 import { logger } from '../../shared/logger';
+import { markBootPhase } from '../boot-timeline';
 import { applyCoverCacheSettings, getStore, initCoverCache } from '../ipc/cover/cover-cache';
 import { setMainLocale } from '../i18n-main';
 import {
@@ -37,11 +38,18 @@ export async function seedMediaServerAndSettings(): Promise<{ folders: number; r
   setAllowedRadioHostPredicate(isAllowedRadioHost);
   try {
     const store = await getStore();
+    markBootPhase('settings store ready');
     // Rozmiar cache okładek z Ustawienia → Biblioteka. Wartości pochodzą z pliku
     // JSON na dysku, więc są walidowane, a nie rzutowane.
     const library = store.get('library') as Record<string, unknown> | undefined;
     applyCoverCacheSettings(asPositiveNumber(library?.coverCacheMaxEntries));
-    await initCoverCache();
+    // Jednorazowe czyszczenie starego cache to migracja, nie warunek startu okna.
+    // Wykonujemy je po pierwszym malowaniu, żeby nie blokować bootu na readdir/rm
+    // (na dużym cache trwało to sekundy).
+    setTimeout(() => {
+      void initCoverCache();
+    }, 500).unref();
+    markBootPhase('cover settings applied');
     // Zapisane locale UI napędza teraz pozostałe komunikaty procesu głównego.
     const appearance = store.get('appearance') as Record<string, unknown> | undefined;
     setMainLocale(asNonEmptyString(appearance?.locale));
@@ -50,6 +58,7 @@ export async function seedMediaServerAndSettings(): Promise<{ folders: number; r
     if (Array.isArray(folders)) {
       await setAllowedRoots(folders);
     }
+    markBootPhase('media roots ready');
     // Utrwala korzenie przyznane w czasie działania (katalogi wyjściowe pobierania,
     // otwarte pliki), aby pobrane media pozostały odtwarzalne po restarcie.
     let rootsPersistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -92,6 +101,7 @@ export async function seedMediaServerAndSettings(): Promise<{ folders: number; r
     if (general?.autoLaunch !== undefined) {
       setAutoLaunch({ enabled: !!general.autoLaunch, hidden: !!general.startMinimized });
     }
+    markBootPhase('settings applied');
   } catch (e) {
     logger.warn('main', 'seeding media server roots from library folders failed', e);
   }

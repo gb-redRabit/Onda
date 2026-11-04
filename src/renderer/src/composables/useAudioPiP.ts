@@ -77,15 +77,18 @@ function handleProgressClick(percent: number): void {
 
 let registered = false;
 
-export function useAudioPiP(options: { prewarm?: boolean } = {}) {
+export function useAudioPiP(options: { prewarm?: boolean | 'track' } = {}) {
   if (!registered) {
     registered = true;
 
     onMounted(() => {
       if (!window.api) return;
-      // Prewarm okna PiP — w compactcie można go wyłączyć, żeby nie trzymać
-      // ukrytego renderera od startu.
-      if (options.prewarm !== false) void window.api?.audioPipPrewarm?.();
+      // Prewarm okna PiP: `track` odkłada koszt (~100 MB renderera) do momentu,
+      // gdy jest już co pokazać, `false` wyłącza go w compactcie, `true`
+      // zachowuje stare, natychmiastowe zachowanie.
+      if (options.prewarm === true) {
+        void window.api?.audioPipPrewarm?.();
+      }
 
       const removeClosed = window.api.on('audio-pip:closed', () => {
         isActive.value = false;
@@ -107,6 +110,11 @@ export function useAudioPiP(options: { prewarm?: boolean } = {}) {
 
       const player = usePlayerStore();
       const onTrackChange = () => {
+        // Pierwszy utwór to pierwsza realna intencja PiP: dopiero wtedy tworzymy
+        // ukryty renderer, zamiast trzymać ~100 MB od startu aplikacji.
+        if (options.prewarm === 'track' && player.currentTrack) {
+          void window.api?.audioPipPrewarm?.();
+        }
         if (isActive.value) {
           const state = buildAudioPipState();
           runtime.sendUpdate(state);

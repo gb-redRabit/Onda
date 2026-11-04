@@ -7,14 +7,32 @@ import { AUDIO_EXTS, VIDEO_EXTS } from '../../../shared/constants';
 
 export { uniqueId } from '../../utils/ids';
 
-export function evictCache(map: Map<string, unknown>, maxSize: number): void {
-  if (map.size <= maxSize) return;
-  const toDelete = map.size - maxSize;
-  let i = 0;
-  for (const key of map.keys()) {
-    if (i >= toDelete) break;
+/**
+ * Usuwa najstarsze wpisy (kolejność wstawienia) aż do spełnienia limitu wpisów
+ * i opcjonalnego limitu bajtów. `sizeOf` jest wymagane tylko dla drugiego limitu.
+ */
+export function evictCache<T>(
+  map: Map<string, T>,
+  maxSize: number,
+  maxBytes?: number,
+  sizeOf?: (value: T) => number
+): void {
+  if (map.size > maxSize) {
+    const toDelete = map.size - maxSize;
+    let i = 0;
+    for (const key of map.keys()) {
+      if (i >= toDelete) break;
+      map.delete(key);
+      i++;
+    }
+  }
+  if (!maxBytes || !sizeOf) return;
+  let total = 0;
+  for (const value of map.values()) total += sizeOf(value);
+  for (const [key, value] of map) {
+    if (total <= maxBytes) break;
     map.delete(key);
-    i++;
+    total -= sizeOf(value);
   }
 }
 

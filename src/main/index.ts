@@ -402,7 +402,13 @@ app.whenReady().then(async () => {
   registerIPC({ getMainWindow: () => activeShell() });
   registerMediaUrlHandler();
 
-  const mediaServer = await createMediaServer();
+  // Serwer mediów i odczyt ustawień są niezależne: start serwera nie potrzebuje
+  // korzeni, a seeding nie potrzebuje nasłuchującego portu. Uruchamiamy je
+  // równolegle, żeby import electron-store nie dokładał się do czasu startu serwera.
+  const mediaServerPromise = createMediaServer();
+  const seedingPromise = seedMediaServerAndSettings();
+
+  const mediaServer = await mediaServerPromise;
   setMediaServerUrl(`http://127.0.0.1:${mediaServer.port}/${mediaServer.token}`);
   logger.info(
     'boot',
@@ -411,7 +417,7 @@ app.whenReady().then(async () => {
 
   splash.send(mainMessages().bootRestoringSettings, 25);
 
-  const { folders: bootFolders, roots: bootRoots } = await seedMediaServerAndSettings();
+  const { folders: bootFolders, roots: bootRoots } = await seedingPromise;
 
   // Tryb startu: plik `compact-window-state.json` (wybór użytkownika), a `ONDA_COMPACT`
   // tylko nadpisuje go w dev/testach bez zapisu.

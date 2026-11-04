@@ -37,10 +37,15 @@ const { trackCount } = useCountLabel();
 // Zaznaczenie w store (współdzielone z menu kontekstowym).
 const selection = useLibrarySelectionStore();
 const selectedCount = computed(() => selection.count);
-const selectedTracks = computed(() => props.tracks.filter((t) => selection.has(t.path)));
+// Filtrujemy dopiero w akcji (play/queue/playlista). Wcześniej `computed`
+// przeliczał całą listę po KAŻDYM kliknięciu zaznaczenia — przy 50 tys. utworów
+// to O(n) na klik, mimo że wynik był potrzebny tylko po wybraniu akcji.
+function getSelectedTracks(): MediaFile[] {
+  return props.tracks.filter((t) => selection.has(t.path));
+}
 function playSelected() {
-  if (selectedTracks.value.length === 0) return;
-  const t = selectedTracks.value;
+  const t = getSelectedTracks();
+  if (t.length === 0) return;
   player.clearQueue();
   if (t.length > 1) player.addToQueueMultiple(t.slice(1));
   player.setTrack(t[0]);
@@ -48,11 +53,11 @@ function playSelected() {
   clearSelection();
 }
 function queueSelected() {
-  selectedTracks.value.forEach((tr) => player.addToQueue(tr));
+  getSelectedTracks().forEach((tr) => player.addToQueue(tr));
   clearSelection();
 }
 function addSelectedToPlaylist(pid: string) {
-  for (const tr of selectedTracks.value) library.addToPlaylist(pid, tr);
+  for (const tr of getSelectedTracks()) library.addToPlaylist(pid, tr);
   clearSelection();
 }
 
