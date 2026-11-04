@@ -39,13 +39,34 @@ async function openToolFromExplorer(
 ) {
   await expect(explorer.getByTestId(`explorer-item-${fileName}`)).toBeVisible({ timeout: 15_000 });
   await explorer.getByTestId(`explorer-item-${fileName}`).click({ button: 'right' });
-  await menuItem(explorer, 'Narzędzia').hover();
+  const parentItem = menuItem(explorer, 'Narzędzia');
+  await parentItem.hover();
+  const toolItem = submenuItem(explorer, toolLabel);
+  await expect(toolItem).toBeVisible({ timeout: 10_000 });
+  // Przejdź kursorem przez przerwę między menu a podmenu (jak użytkownik),
+  // powoli — to łapie zbyt agresywne zamykanie podmenu.
+  const parentBox = await parentItem.boundingBox();
+  const box = await toolItem.boundingBox();
+  if (parentBox && box) {
+    const startX = parentBox.x + parentBox.width - 4;
+    const startY = parentBox.y + parentBox.height / 2;
+    const endX = box.x + Math.min(12, box.width / 2);
+    const endY = box.y + box.height / 2;
+    for (let step = 1; step <= 10; step++) {
+      await explorer.mouse.move(
+        startX + ((endX - startX) * step) / 10,
+        startY + ((endY - startY) * step) / 10
+      );
+      await explorer.waitForTimeout(20);
+    }
+  }
+  await expect(toolItem).toBeVisible();
   if (existingTool) {
-    await submenuItem(explorer, toolLabel).click();
+    await toolItem.click();
     return existingTool;
   }
   const windowPromise = onda.app.waitForEvent('window');
-  await submenuItem(explorer, toolLabel).click();
+  await toolItem.click();
   const tool = await windowPromise;
   await dismissWizard(tool);
   return tool;

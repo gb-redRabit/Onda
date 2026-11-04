@@ -19,6 +19,7 @@ const itemRefs = ref<Array<HTMLElement | null>>([]);
 const openSubIndex = ref(-1);
 const activeIndex = ref(-1);
 const subStyle = ref<Record<string, string>>({});
+const subSide = ref<'left' | 'right'>('right');
 // Element, z którego otwarto menu (prawy przycisk lub przycisk `⋯`). Po Esc
 // wracamy do niego fokusem, żeby klawiatura nie zostawała na ciele dokumentu.
 const triggerEl = ref<HTMLElement | null>(null);
@@ -65,8 +66,11 @@ function closeSub() {
 async function openSub(idx: number, el: HTMLElement) {
   openSubIndex.value = idx;
   const rect = el.getBoundingClientRect();
-  const left =
-    rect.right + 8 < window.innerWidth ? rect.right + 8 : Math.max(4, rect.left - SUB_W - 8);
+  // Panel dostaje własny padding od strony menu (mostek hover), więc lewa
+  // krawędź wrappera dotyka menu, a treść zaczyna się 4 px dalej.
+  const openRight = rect.right + 4 + SUB_W <= window.innerWidth;
+  subSide.value = openRight ? 'right' : 'left';
+  const left = openRight ? rect.right : Math.max(4, rect.left - SUB_W - 4);
   // Wstępnie szacujemy, a po wyrenderowaniu mierzymy realną wysokość podmenu —
   // sztywne 320 px wypychało krótkie podmenu poza dolną krawędź.
   subStyle.value = {
@@ -92,24 +96,58 @@ function onItemEnter(idx: number, el: HTMLElement) {
   const item = ui.contextMenu?.items[idx];
   if (item?.children?.length) {
     openTimer = setTimeout(() => void openSub(idx, el), 120);
-  } else {
-    closeSub();
+  } else if (openSubIndex.value >= 0) {
+    // Przejście kursorem nad inną pozycją w drodze do podmenu nie może
+    // zamykać panelu natychmiast — dopiero po chwili bez wejścia w podmenu.
+    scheduleCloseSub(250);
   }
 }
 
 function onItemLeave() {
+  // Samo opuszczenie pozycji nie zamyka podmenu: kursor musi przejść przez
+  // kilkupikselową przerwę do teleportowanego panelu. Zamykamy dopiero po
+  // wyjściu z całego menu/podmenu (onMenuLeave) albo wejściu w inną pozycję.
   if (openTimer) {
     clearTimeout(openTimer);
     openTimer = null;
   }
-  closeTimer = setTimeout(closeSub, 160);
 }
 
-function onSubEnter() {
+/** Wspólny „bezpieczny” czas na przejście między menu a podmenu. */
+const MENU_CLOSE_DELAY_MS = 500;
+
+function scheduleCloseSub(delay = MENU_CLOSE_DELAY_MS): void {
+  if (closeTimer) clearTimeout(closeTimer);
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    // Kursor mógł już dojechać do podmenu (także w jego przezroczysty
+    // mostek) — wtedy panel zostaje otwarty.
+    if (submenuEl.value?.matches(':hover')) return;
+    closeSub();
+  }, delay);
+}
+
+function onMenuEnter(): void {
   if (closeTimer) {
     clearTimeout(closeTimer);
     closeTimer = null;
   }
+}
+
+function onMenuLeave() {
+  if (openTimer) {
+    clearTimeout(openTimer);
+    openTimer = null;
+  }
+  scheduleCloseSub();
+}
+
+function onSubEnter() {
+  if (openTimer) {
+    clearTimeout(openTimer);
+    openTimer = null;
+  }
+  onMenuEnter();
 }
 
 function restoreFocus(): void {
@@ -396,7 +434,8 @@ function setSubRef(i: number) {
       :style="position"
       @click.stop
       @contextmenu.prevent
-      @mouseleave="onItemLeave()"
+      @mouseenter="onMenuEnter()"
+      @mouseleave="onMenuLeave()"
     >
       <template v-for="(item, idx) in ui.contextMenu.items" :key="idx">
         <div v-if="item.separator" class="border-t border-hairline my-1 mx-2" />
@@ -445,39 +484,44 @@ function setSubRef(i: number) {
               id="context-submenu"
               :ref="setSubmenuEl"
               role="menu"
-              class="fixed z-1000 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
+              class="fixed z-1000"
+              :class="subSide === 'right' ? 'pl-1' : 'pr-1'"
               :style="subStyle"
               @mouseenter="onSubEnter()"
-              @mouseleave="onItemLeave()"
+              @mouseleave="onMenuLeave()"
               @click.stop
               @contextmenu.prevent
             >
-              <template v-for="(child, cidx) in item.children" :key="cidx">
-                <div v-if="child.separator" class="border-t border-hairline my-1 mx-2" />
-                <button
-                  v-else
-                  :ref="setSubRef(cidx)"
-                  type="button"
-                  data-testid="context-menu-subitem"
-                  :role="child.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'"
-                  :aria-checked="child.checked !== undefined ? child.checked : undefined"
-                  tabindex="-1"
-                  class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors"
-                  :class="{ 'opacity-40 pointer-events-none': child.disabled }"
-                  :disabled="child.disabled"
-                  @mousemove="subActiveIndex = cidx"
-                  @click.stop="runAction(child)"
-                >
-                  <span v-if="child.icon" class="shrink-0 text-base-content/60">
-                    <component :is="child.icon" :size="14" />
-                  </span>
-                  <span class="flex-1 truncate">{{ child.label }}</span>
-                  <span v-if="child.checked" class="shrink-0 text-primary-text">✓</span>
-                  <span v-if="child.shortcut" class="text-2xs text-base-content/60 font-mono">{{
-                    child.shortcut
-                  }}</span>
-                </button>
-              </template>
+              <div
+                class="bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
+              >
+                <template v-for="(child, cidx) in item.children" :key="cidx">
+                  <div v-if="child.separator" class="border-t border-hairline my-1 mx-2" />
+                  <button
+                    v-else
+                    :ref="setSubRef(cidx)"
+                    type="button"
+                    data-testid="context-menu-subitem"
+                    :role="child.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'"
+                    :aria-checked="child.checked !== undefined ? child.checked : undefined"
+                    tabindex="-1"
+                    class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors"
+                    :class="{ 'opacity-40 pointer-events-none': child.disabled }"
+                    :disabled="child.disabled"
+                    @mousemove="subActiveIndex = cidx"
+                    @click.stop="runAction(child)"
+                  >
+                    <span v-if="child.icon" class="shrink-0 text-base-content/60">
+                      <component :is="child.icon" :size="14" />
+                    </span>
+                    <span class="flex-1 truncate">{{ child.label }}</span>
+                    <span v-if="child.checked" class="shrink-0 text-primary-text">✓</span>
+                    <span v-if="child.shortcut" class="text-2xs text-base-content/60 font-mono">{{
+                      child.shortcut
+                    }}</span>
+                  </button>
+                </template>
+              </div>
             </div>
           </Teleport>
         </div>
