@@ -16,6 +16,16 @@ const subStyle = ref<Record<string, string>>({});
 const triggerEl = ref<HTMLElement | null>(null);
 let openTimer: ReturnType<typeof setTimeout> | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
+let typeAhead = '';
+let typeAheadTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resetTypeAhead(): void {
+  typeAhead = '';
+  if (typeAheadTimer) {
+    clearTimeout(typeAheadTimer);
+    typeAheadTimer = null;
+  }
+}
 
 const MENU_W = CONTEXT_MENU_WIDTH;
 const ITEM_H = 34;
@@ -173,6 +183,7 @@ watch(
   (menu) => {
     activeIndex.value = -1;
     closeSub();
+    resetTypeAhead();
     if (!menu) return;
     const active = document.activeElement;
     triggerEl.value = active instanceof HTMLElement && active !== document.body ? active : null;
@@ -194,6 +205,41 @@ function moveActive(dir: 1 | -1) {
   el?.scrollIntoView({ block: 'nearest' });
 }
 
+/** Wyszukiwanie literą w menu (WAI-ARIA type-ahead). Zwraca true, gdy zużyto klawisz. */
+function onTypeAhead(e: KeyboardEvent): boolean {
+  if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return false;
+  if (!/^[a-z0-9]$/i.test(e.key)) return false;
+  typeAhead += e.key.toLowerCase();
+  if (typeAheadTimer) clearTimeout(typeAheadTimer);
+  typeAheadTimer = setTimeout(resetTypeAhead, 600);
+
+  const inSub = openSubIndex.value >= 0;
+  const items = inSub
+    ? (ui.contextMenu?.items[openSubIndex.value]?.children ?? [])
+    : (ui.contextMenu?.items ?? []);
+  const indexes = navigableIndexes(items);
+  const find = (needle: string): number | undefined =>
+    indexes.find((i) => (items[i]?.label ?? '').toLowerCase().startsWith(needle));
+
+  let match = find(typeAhead);
+  if (match === undefined) {
+    // Po zmianie litery zacznij od nowa, żeby „sa” po „s” nadal trafiało w „San”.
+    typeAhead = e.key.toLowerCase();
+    match = find(typeAhead);
+  }
+  if (match === undefined) return false;
+
+  if (inSub) {
+    subActiveIndex.value = match;
+    subItemRefs.value[match]?.focus();
+  } else {
+    activeIndex.value = match;
+    itemRefs.value[match]?.focus();
+    itemRefs.value[match]?.scrollIntoView({ block: 'nearest' });
+  }
+  return true;
+}
+
 function onKeydown(e: KeyboardEvent) {
   if (!ui.contextMenu) return;
   if (e.key === 'Escape') {
@@ -206,6 +252,10 @@ function onKeydown(e: KeyboardEvent) {
     // Zamykamy menu, ale nie blokujemy przejścia fokusu (to zachowanie Tab).
     closeSub();
     ui.hideContextMenu();
+    return;
+  }
+  if (onTypeAhead(e)) {
+    e.preventDefault();
     return;
   }
   // Gdy fokus jest w podmenu, obsługuje je onSubKeydown (także strzałki i Home/End).
@@ -289,6 +339,7 @@ onBeforeUnmount(() => {
   // w trakcie otwierania podmenu zostawiało timeout sięgający później martwego refa.
   if (openTimer) clearTimeout(openTimer);
   if (closeTimer) clearTimeout(closeTimer);
+  resetTypeAhead();
   openTimer = null;
   closeTimer = null;
 });

@@ -46,5 +46,6 @@ describe('ContextMenu menu semantics', () => {
     expect(MENU).toMatch(/restoreFocus\(/);
     expect(MENU).toMatch(/'Home'/);
     expect(MENU).toMatch(/'End'/);
+    expect(MENU).toMatch(/onTypeAhead\(/);
   });
 });
