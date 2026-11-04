@@ -93,6 +93,7 @@ jobs:
       # tylko na maszynie z `%APPDATA%\onda\bin`. Helper E2E szuka binarek
       # w profilu, resources/ffmpeg i PATH.
       - name: Install FFmpeg for tool E2E
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           set -euo pipefail
@@ -106,12 +107,24 @@ jobs:
           fi
 
       - name: E2E (Electron, Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/'))
         run: xvfb-run -a npm run e2e
 
       - name: E2E (Electron)
-        if: runner.os != 'Linux'
+        if: runner.os != 'Linux' && (github.event_name != 'push' || startsWith(github.ref, 'refs/tags/'))
         run: npm run e2e
+
+      # Pushes to main skip the full E2E suite (runner cost); the smoke test
+      # verifies that the app boots and the IPC bridge works.
+      - name: Smoke E2E (main)
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a npx playwright test e2e/smoke.spec.ts
+          else
+            npx playwright test e2e/smoke.spec.ts
+          fi
 
       - name: Upload E2E report on failure
         if: failure()
