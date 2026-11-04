@@ -36,7 +36,7 @@ export function useContextMenu() {
       ...(def.icon ? { icon: markRaw(def.icon) } : {}),
       ...(def.shortcut ? { shortcut: def.shortcut } : {}),
       ...(def.disabled || (def.disabledWhen && def.disabledWhen(ctx)) ? { disabled: true } : {}),
-      ...(def.checked ? { checked: true } : {}),
+      ...(typeof def.checked === 'boolean' ? { checked: def.checked } : {}),
       ...(def.action ? { action: () => def.action!(ctx) } : {}),
       ...(children?.length ? { children } : {})
     };

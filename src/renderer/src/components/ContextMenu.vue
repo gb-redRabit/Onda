@@ -11,6 +11,9 @@ const itemRefs = ref<Array<HTMLElement | null>>([]);
 const openSubIndex = ref(-1);
 const activeIndex = ref(-1);
 const subStyle = ref<Record<string, string>>({});
+// Element, z którego otwarto menu (prawy przycisk lub przycisk `⋯`). Po Esc
+// wracamy do niego fokusem, żeby klawiatura nie zostawała na ciele dokumentu.
+const triggerEl = ref<HTMLElement | null>(null);
 let openTimer: ReturnType<typeof setTimeout> | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -80,8 +83,16 @@ function onSubEnter() {
   }
 }
 
+function restoreFocus(): void {
+  const el = triggerEl.value;
+  triggerEl.value = null;
+  if (el?.isConnected) el.focus();
+}
+
 function runAction(item: ContextMenuItem) {
+  const trigger = triggerEl.value;
   ui.hideContextMenu();
+  if (trigger?.isConnected) trigger.focus();
   item.action?.();
 }
 
@@ -129,6 +140,13 @@ function onSubKeydown(e: KeyboardEvent) {
     e.preventDefault();
     closeSub();
     itemRefs.value[openSubIndex.value >= 0 ? openSubIndex.value : activeIndex.value]?.focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    const indexes = navigableIndexes(children);
+    if (!indexes.length) return;
+    const next = e.key === 'Home' ? indexes[0] : indexes[indexes.length - 1];
+    subActiveIndex.value = next;
+    subItemRefs.value[next]?.focus();
   }
 }
 
@@ -156,6 +174,8 @@ watch(
     activeIndex.value = -1;
     closeSub();
     if (!menu) return;
+    const active = document.activeElement;
+    triggerEl.value = active instanceof HTMLElement && active !== document.body ? active : null;
     nextTick(() => {
       const first = selectableIndexes()[0];
       activeIndex.value = first ?? -1;
@@ -179,6 +199,18 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     closeSub();
     ui.hideContextMenu();
+    restoreFocus();
+    return;
+  }
+  if (e.key === 'Tab') {
+    // Zamykamy menu, ale nie blokujemy przejścia fokusu (to zachowanie Tab).
+    closeSub();
+    ui.hideContextMenu();
+    return;
+  }
+  // Gdy fokus jest w podmenu, obsługuje je onSubKeydown (także strzałki i Home/End).
+  if (openSubIndex.value >= 0) {
+    onSubKeydown(e);
     return;
   }
   if (e.key === 'ArrowDown') {
@@ -191,9 +223,14 @@ function onKeydown(e: KeyboardEvent) {
     moveActive(-1);
     return;
   }
-  // Gdy fokus jest w podmenu, obsługuje je onSubKeydown.
-  if (openSubIndex.value >= 0) {
-    onSubKeydown(e);
+  if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    const indexes = selectableIndexes();
+    if (!indexes.length) return;
+    const next = e.key === 'Home' ? indexes[0] : indexes[indexes.length - 1];
+    activeIndex.value = next;
+    itemRefs.value[next]?.focus();
+    itemRefs.value[next]?.scrollIntoView({ block: 'nearest' });
     return;
   }
   if (e.key === 'ArrowRight' && activeIndex.value >= 0) {
@@ -223,7 +260,10 @@ function onClickOutside(e: MouseEvent) {
   }
 }
 
-function onScroll() {
+function onScroll(e?: Event) {
+  // Przewijanie samego menu (długie listy) nie może go zamykać.
+  const target = e?.target as Node | null;
+  if (target && rootEl.value?.contains(target)) return;
   ui.hideContextMenu();
 }
 
@@ -234,12 +274,17 @@ onMounted(() => {
   window.addEventListener('keydown', onKeydown);
   window.addEventListener('mousedown', onClickOutside);
   window.addEventListener('blur', onScroll);
+  window.addEventListener('resize', onScroll);
+  // Capture: przewijanie dowolnego kontenera (lista, panel) też zamyka menu.
+  window.addEventListener('scroll', onScroll, true);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown);
   window.removeEventListener('mousedown', onClickOutside);
   window.removeEventListener('blur', onScroll);
+  window.removeEventListener('resize', onScroll);
+  window.removeEventListener('scroll', onScroll, true);
   // W przeciwnym razie timery hover przeżywają komponent: menu odmontowane
   // w trakcie otwierania podmenu zostawiało timeout sięgający później martwego refa.
   if (openTimer) clearTimeout(openTimer);
@@ -288,7 +333,8 @@ function setSubRef(i: number) {
           <button
             type="button"
             data-testid="context-menu-item"
-            role="menuitem"
+            :role="item.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'"
+            :aria-checked="item.checked !== undefined ? item.checked : undefined"
             tabindex="-1"
             :aria-haspopup="item.children?.length ? 'menu' : undefined"
             :aria-expanded="item.children?.length ? openSubIndex === idx : undefined"
@@ -333,7 +379,8 @@ function setSubRef(i: number) {
                   :ref="setSubRef(cidx)"
                   type="button"
                   data-testid="context-menu-subitem"
-                  role="menuitem"
+                  :role="child.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'"
+                  :aria-checked="child.checked !== undefined ? child.checked : undefined"
                   tabindex="-1"
                   class="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm hover:bg-primary/10 hover:text-primary-text transition-colors"
                   :class="{ 'opacity-40 pointer-events-none': child.disabled }"

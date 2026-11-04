@@ -37,6 +37,14 @@ describe('ToastNotification live region', () => {
 describe('ContextMenu menu semantics', () => {
   it('is a menu with menu items', () => {
     expect(MENU).toMatch(/role="menu"/);
-    expect(MENU).toMatch(/role="menuitem"/);
+    expect(MENU).toMatch(/menuitem/);
+  });
+
+  it('marks toggleable items and restores focus on Escape', () => {
+    expect(MENU).toMatch(/menuitemcheckbox/);
+    expect(MENU).toMatch(/aria-checked/);
+    expect(MENU).toMatch(/restoreFocus\(/);
+    expect(MENU).toMatch(/'Home'/);
+    expect(MENU).toMatch(/'End'/);
   });
 });
