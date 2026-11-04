@@ -32,6 +32,9 @@ export function registerDialogHandlers(): void {
               properties: ['openFile'],
               filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
             });
+        if (!result.canceled) {
+          for (const p of result.filePaths) await addAllowedRoot(dirname(p));
+        }
         return { canceled: result.canceled, filePaths: result.filePaths.slice() };
       } catch (e) {
         logger.warn('dialog', 'openImage failed', e);
@@ -58,6 +61,9 @@ export function registerDialogHandlers(): void {
         const result = win
           ? await dialog.showOpenDialog(win, options)
           : await dialog.showOpenDialog(options);
+        if (!result.canceled) {
+          for (const p of result.filePaths) await addAllowedRoot(dirname(p));
+        }
         return { canceled: result.canceled, filePaths: result.filePaths.slice() };
       } catch (e) {
         logger.warn('dialog', 'openSubtitle failed', e);

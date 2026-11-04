@@ -16,6 +16,7 @@ import { safeUnlink } from '../../utils/fs-atomic';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
+import { isReadableMediaPath } from '../../media/read-access';
 import { resolveBin } from '../../binaries';
 import { getThumbnail, batchThumbnails } from './media-thumbnails';
 import { getWaveform } from './waveform';
@@ -236,6 +237,7 @@ export function registerMediaHandlers(): void {
     'media:readCover',
     async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
+      if (!isReadableMediaPath(filePath)) return null;
       try {
         const tags = await NodeID3.Promise.read(filePath);
         // Tylko osadzony bufor obrazu. Tag `image` typu string to ścieżka pliku
@@ -264,6 +266,7 @@ export function registerMediaHandlers(): void {
     'media:checkAudioCodec',
     async (_event, filePath: string): Promise<{ codec: string; supported: boolean } | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
+      if (!isReadableMediaPath(filePath)) return null;
       try {
         const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
         const stdout = await runCommand(
@@ -314,6 +317,7 @@ export function registerMediaHandlers(): void {
       duration: number
     ): Promise<string | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
+      if (!isReadableMediaPath(filePath)) return null;
       return transcodeAudioChunk(filePath, startTime, duration);
     }
   );
@@ -322,6 +326,7 @@ export function registerMediaHandlers(): void {
     'media:transcodeAudio',
     async (_event, filePath: string): Promise<string | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
+      if (!isReadableMediaPath(filePath)) return null;
       return transcodeAudio(filePath);
     }
   );
@@ -330,6 +335,7 @@ export function registerMediaHandlers(): void {
     'media:transcodeVideo',
     async (_event, filePath: string): Promise<string | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
+      if (!isReadableMediaPath(filePath)) return null;
       return transcodeVideo(filePath);
     }
   );
@@ -353,6 +359,9 @@ export function registerMediaHandlers(): void {
       logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
       return false;
     }
+    // Plik z biblioteki jest już objęty rootem; dopisywanie jego katalogu do
+    // `extraRoots` zużywałoby limit 200 bez potrzeby.
+    if (isReadableMediaPath(filePath)) return true;
     // Nadanie dla czegoś, czego nie ma, może tylko rozdąć allowlistę, więc
     // jest odrzucane od razu. Istnienie to także jedyny dowód, jaki ma
     // proces main, że to prawdziwy plik mediów, a nie zgadywanie.
@@ -381,6 +390,7 @@ export function registerMediaHandlers(): void {
 
   ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
     if (!isSafeAbsolutePath(filePath)) return 0;
+    if (!isReadableMediaPath(filePath)) return 0;
     try {
       return await getDuration(filePath);
     } catch (err) {
@@ -393,6 +403,7 @@ export function registerMediaHandlers(): void {
     'media:getWaveform',
     async (_event, filePath: unknown, durationSec?: unknown): Promise<number[]> => {
       if (!isSafeAbsolutePath(filePath)) return [];
+      if (!isReadableMediaPath(filePath)) return [];
       const duration =
         typeof durationSec === 'number' && Number.isFinite(durationSec) ? durationSec : 0;
       try {
@@ -413,7 +424,10 @@ export function registerMediaHandlers(): void {
       const out: Record<string, number> = {};
       if (!Array.isArray(paths)) return out;
       const safe = paths
-        .filter((p): p is string => typeof p === 'string' && isSafeAbsolutePath(p))
+        .filter(
+          (p): p is string =>
+            typeof p === 'string' && isSafeAbsolutePath(p) && isReadableMediaPath(p)
+        )
         .slice(0, 2000);
       let cursor = 0;
       const workers = Array.from({ length: Math.min(8, safe.length) }, async () => {

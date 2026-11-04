@@ -4,6 +4,7 @@ import { basename, dirname, extname, join } from 'path';
 import { resolveBin } from '../../binaries';
 import { runCommand } from '../../utils/exec';
 import { isSafeAbsolutePath } from '../../utils/validate';
+import { isReadableMediaPath } from '../../media/read-access';
 import { logger } from '../../../shared/logger';
 
 // Przewijanie klatka po klatce i zrzut klatki. fps czytamy z ffprobe (raz na plik,
@@ -88,6 +89,7 @@ export async function saveVideoScreenshot(
 export function registerMediaFrameHandlers(): void {
   ipcMain.handle('media:getVideoFps', async (_event, filePath: string): Promise<number> => {
     if (!isSafeAbsolutePath(filePath)) return 0;
+    if (!isReadableMediaPath(filePath)) return 0;
     return getVideoFps(filePath);
   });
 

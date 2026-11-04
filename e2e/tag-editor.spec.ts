@@ -8,6 +8,7 @@ import { launchOnda, dismissWizard } from './helpers/app';
 const iconPath = resolve(__dirname, '..', 'resources', 'icon.png');
 
 interface OndaTestApi {
+  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
   tagEditorRead: (paths: string[]) => Promise<Array<{ tags: Record<string, string> }>>;
   readCover: (path: string) => Promise<{ mime?: string; data?: number[] } | null>;
 }
@@ -76,6 +77,12 @@ test.describe('tag editor tool', () => {
         .toMatchObject({ title: 'Renamed title', artist: 'New artist' });
 
       // Batch okładki: ustaw obraz dla zaznaczonego pliku.
+      // Plik leży poza biblioteką, więc — jak w aplikacji po wybraniu go
+      // w dialogu — jawnie przyznajemy mainowi dostęp do jego katalogu.
+      await page.evaluate(async (path) => {
+        const api = (window as unknown as { api: OndaTestApi }).api;
+        await api.invoke('media:grantAccess', path);
+      }, seedPath);
       await editor.getByTestId('tools-tag-cover-path').fill(iconPath);
       await editor.getByTestId('tools-tag-cover-apply').click();
       await expect

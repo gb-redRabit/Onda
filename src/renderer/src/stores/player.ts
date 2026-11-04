@@ -9,6 +9,7 @@ import { usePlayerQueue } from './player-queue';
 import { usePlayerNavigation } from './player-navigation';
 import { usePlayerAb } from './player-ab';
 import { isCoreShell } from '@renderer/utils/runtimeMode';
+import { dirname } from '@renderer/utils/path';
 import { sendCoreCommand } from '@renderer/core/coreClient';
 import { toPlainTrack } from '@shared/core-state';
 import { logger } from '@shared/logger';
@@ -113,11 +114,35 @@ export const usePlayerStore = defineStore('player', () => {
     });
   }
 
+  // `media:grantAccess` jest idempotentne, ale „zagraj wszystko” na dużej
+  // bibliotece wysyłałoby tysiące IPC. Jedno nadanie na katalog wystarcza,
+  // bo main dodaje root katalogu, a nie pojedynczy plik.
+  const grantedDirs = new Set<string>();
+
+  function grantMedia(track: MediaFile): void {
+    if (track.type === 'stream') return;
+    const dir = dirname(track.path);
+    if (grantedDirs.has(dir)) return;
+    grantedDirs.add(dir);
+    const granted = window.api?.grantMediaAccess?.(track.path);
+    if (!granted) {
+      grantedDirs.delete(dir);
+      return;
+    }
+    void granted
+      .then((ok) => {
+        if (!ok) grantedDirs.delete(dir);
+      })
+      .catch(() => grantedDirs.delete(dir));
+  }
+
   function addToQueue(track: MediaFile): void {
+    grantMedia(track);
     addToQueueBase(track);
     sendQueue();
   }
   function addToQueueMultiple(tracks: MediaFile[]): void {
+    for (const track of tracks) grantMedia(track);
     addToQueueMultipleBase(tracks);
     sendQueue();
   }
@@ -141,6 +166,7 @@ export const usePlayerStore = defineStore('player', () => {
   function setTrack(track: MediaFile, options?: { resume?: boolean }): void {
     // Wybór lokalnego utworu unieważnia trwające rozwiązywanie streamu online.
     streamPending.value = null;
+    grantMedia(track);
     if (isCoreShell()) {
       if (track.type === 'image') {
         logger.warn('core-shell', 'image playback is not supported');
