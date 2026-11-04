@@ -408,10 +408,12 @@ function onGlobalKeydown(e: KeyboardEvent) {
 }
 
 function onGlobalMouseDown(e: MouseEvent) {
-  const el = document.getElementById('context-menu');
-  if (el && !el.contains(e.target as Node)) {
-    ui.hideContextMenu();
-  }
+  const target = e.target as Node;
+  // Podmenu jest teleportowane do body i nie leży w `#context-menu`, więc
+  // mousedown w jego pozycję nie może zamykać menu przed wykonaniem akcji.
+  const inMenu = document.getElementById('context-menu')?.contains(target) ?? false;
+  const inSubmenu = document.getElementById('context-submenu')?.contains(target) ?? false;
+  if (!inMenu && !inSubmenu) ui.hideContextMenu();
 }
 
 function onWindowBlur() {

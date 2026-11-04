@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type ComponentPublicInstance
+} from 'vue';
 import { ChevronRight } from '@lucide/vue';
 import { useUIStore } from '@renderer/stores/ui';
 import type { ContextMenuItem } from '@renderer/stores/ui';
@@ -125,6 +133,12 @@ function navigableIndexes(items: ContextMenuItem[] | undefined): number[] {
 // Fokus podmenu (klawiatura) — by trafić do niego strzałkami/Tabem.
 const subItemRefs = ref<Array<HTMLElement | null>>([]);
 const submenuEl = ref<HTMLElement | null>(null);
+
+// `ref` wewnątrz `v-for` dawał tablicę; funkcja ustawia pojedynczy element
+// aktualnie otwartego podmenu (tylko jedno jest renderowane).
+function setSubmenuEl(el: Element | ComponentPublicInstance | null): void {
+  submenuEl.value = (el as HTMLElement | null) ?? null;
+}
 const subActiveIndex = ref(-1);
 
 function focusSubFirst(): void {
@@ -316,16 +330,17 @@ function onKeydown(e: KeyboardEvent) {
 function onClickOutside(e: MouseEvent) {
   if (!ui.contextMenu) return;
   const target = e.target as Node;
-  if (!rootEl.value?.contains(target)) {
-    closeSub();
-    ui.hideContextMenu();
-  }
+  // Podmenu jest teleportowane poza `rootEl`; bez tego klik w jego pozycję
+  // zamykał menu na `mousedown` i akcja nigdy nie odpalała.
+  if (rootEl.value?.contains(target) || submenuEl.value?.contains(target)) return;
+  closeSub();
+  ui.hideContextMenu();
 }
 
 function onScroll(e?: Event) {
-  // Przewijanie samego menu (długie listy) nie może go zamykać.
+  // Przewijanie samego menu (długie listy) i podmenu nie może go zamykać.
   const target = e?.target as Node | null;
-  if (target && rootEl.value?.contains(target)) return;
+  if (target && (rootEl.value?.contains(target) || submenuEl.value?.contains(target))) return;
   ui.hideContextMenu();
 }
 
@@ -427,7 +442,8 @@ function setSubRef(i: number) {
           <Teleport to="body">
             <div
               v-if="openSubIndex === idx && item.children?.length"
-              ref="submenuEl"
+              id="context-submenu"
+              :ref="setSubmenuEl"
               role="menu"
               class="fixed z-1000 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
               :style="subStyle"
