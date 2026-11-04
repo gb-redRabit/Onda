@@ -36,6 +36,18 @@ let activeScanController: AbortController | null = null;
 let activeLoudnessController: AbortController | null = null;
 let currentLibraryFolders: string[] = [];
 
+// Store bywa niedostępny w czystych testach node; brak ustawień oznacza domyślne
+// zachowanie (`fastScan: false`), a nie wyjątek przerywający skan.
+async function libraryFastScanEnabled(): Promise<boolean> {
+  try {
+    const store = await getStore();
+    return (store.get('library') as { fastScan?: boolean } | undefined)?.fastScan === true;
+  } catch (err) {
+    logger.warn('library', `fast scan setting unavailable: ${err}`);
+    return false;
+  }
+}
+
 // Dodaje folder do biblioteki (idempotentnie), aktualizując rooty serwera mediów i
 // watcher plików. Używane przez funkcję automatycznego dodawania folderu pobierania,
 // aby pobranie trafiające poza bibliotekę było nadal przeglądalne/odtwarzalne.
@@ -136,7 +148,8 @@ export function registerLibraryHandlers(): void {
         }
       }
 
-      const scanned = await scanFilePaths(usable, existing);
+      const fastScan = await libraryFastScanEnabled();
+      const scanned = await scanFilePaths(usable, existing, fastScan);
       if (scanned.length === 0) return { added: 0, skipped: total, total };
 
       const merged = mergeAddedFiles(data, scanned);
@@ -172,9 +185,16 @@ export function registerLibraryHandlers(): void {
       previous?.abort();
       try {
         currentLibraryFolders = sanitizeFolderPaths(folderPaths);
-        return await runLibraryScan(currentLibraryFolders, controller.signal, (current, total) => {
-          event.sender.send('library:scan:progress', { current, total });
-        });
+        const fastScan = await libraryFastScanEnabled();
+        return await runLibraryScan(
+          currentLibraryFolders,
+          controller.signal,
+          (current, total) => {
+            event.sender.send('library:scan:progress', { current, total });
+          },
+          false,
+          fastScan
+        );
       } catch (err) {
         logger.error('library', 'scan handler failed', err);
         return { count: 0, folderTypes: {}, aborted: false, truncated: false };
@@ -312,7 +332,8 @@ export function registerLibraryHandlers(): void {
     const controller = new AbortController();
     activeScanController = controller;
     try {
-      await runLibraryScan(currentLibraryFolders, controller.signal, undefined, true);
+      const fastScan = await libraryFastScanEnabled();
+      await runLibraryScan(currentLibraryFolders, controller.signal, undefined, true, fastScan);
     } catch (err) {
       logger.error('library', 'watcher re-scan failed', err);
     } finally {

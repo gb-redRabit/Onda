@@ -10,6 +10,7 @@ import SettingsRow from '@renderer/components/settings/SettingsRow.vue';
 import { usePromptDialog } from '@renderer/composables/usePromptDialog';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import Slider from '@renderer/components/ui/Slider.vue';
+import Switch from '@renderer/components/ui/Switch.vue';
 
 const library = useLibraryStore();
 const ui = useUIStore();
@@ -144,6 +145,22 @@ function folderIcon(type: string): string {
     {{ $t('home.statFiles') }}: {{ library.totalCount }} ({{ $t('home.statAudio') }}:
     {{ library.audioCount }}, {{ $t('home.statVideo') }}: {{ library.videoCount }})
   </div>
+
+  <SettingsGroup :title="$t('settings.libraryScan')" :description="$t('settings.libraryScanHint')">
+    <SettingsRow
+      :label="$t('settings.fastScan')"
+      :description="$t('settings.fastScanHint')"
+      path="library.fastScan"
+      anchor="setting-fast-scan"
+      wide
+    >
+      <Switch
+        :model-value="settings.library.fastScan === true"
+        :label="$t('settings.fastScan')"
+        @update:model-value="settings.updateLibrary({ fastScan: $event })"
+      />
+    </SettingsRow>
+  </SettingsGroup>
 
   <SettingsGroup :title="$t('settings.coverCache')" :description="$t('settings.coverCacheDesc')">
     <SettingsRow

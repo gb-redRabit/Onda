@@ -21,6 +21,7 @@ const ALL_SECTIONS: StatusBarSectionId[] = [
   'playing',
   'separator',
   'viewCounts',
+  'context',
   'downloads',
   'youtube',
   'dependencies',
@@ -236,7 +237,7 @@ function onStatusKeydown(e: KeyboardEvent) {
     <template v-if="hasSection('viewCounts') && viewCounts.length">
       <span v-for="s in viewCounts" :key="s.label">{{ s.label }}: {{ s.count }}</span>
     </template>
-    <template v-if="hasSection('viewCounts') && viewContext.length">
+    <template v-if="hasSection('context') && viewContext.length">
       <span v-for="c in viewContext" :key="c" class="text-base-content/60">{{ c }}</span>
     </template>
     <div class="flex-1" />

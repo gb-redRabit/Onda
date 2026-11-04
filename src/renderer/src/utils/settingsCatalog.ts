@@ -203,6 +203,12 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     keywords: []
   },
   { id: 'setting-lib-title', labelKey: 'settings.libTitle', tab: 'library', keywords: [] },
+  {
+    id: 'setting-fast-scan',
+    labelKey: 'settings.fastScan',
+    tab: 'library',
+    keywords: ['skan', 'scan', 'okladki', 'covers', 'szybki', 'fast']
+  },
   { id: 'setting-enable-proxy', labelKey: 'settings.enableProxy', tab: 'network', keywords: [] },
   {
     id: 'setting-network-section',

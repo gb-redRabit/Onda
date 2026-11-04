@@ -218,7 +218,8 @@ const EXPLORER_FIELDS: Record<string, Sanitizer> = {
 
 const LIBRARY_FIELDS: Record<string, Sanitizer> = {
   viewModes,
-  coverCacheMaxEntries: numClamped(500, 10000)
+  coverCacheMaxEntries: numClamped(500, 10000),
+  fastScan: bool
 };
 
 const DOWNLOAD_FIELDS: Record<string, Sanitizer> = {
@@ -340,6 +341,7 @@ const STATUS_BAR_SECTIONS = [
   'playing',
   'separator',
   'viewCounts',
+  'context',
   'downloads',
   'youtube',
   'dependencies',

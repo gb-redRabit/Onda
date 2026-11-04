@@ -12,6 +12,8 @@ export type SecretStorageStatus = 'strong' | 'weak' | 'unavailable';
 export interface LibrarySettings {
   viewModes: Record<string, 'list' | 'grid'>;
   coverCacheMaxEntries?: number;
+  /** Skan bez odczytu osadzonych okładek (szybszy; `hasCover` uzupełniane później). */
+  fastScan?: boolean;
 }
 
 export interface AppSettings {
@@ -44,6 +46,7 @@ export type StatusBarSectionId =
   | 'playing'
   | 'separator'
   | 'viewCounts'
+  | 'context'
   | 'downloads'
   | 'youtube'
   | 'dependencies'

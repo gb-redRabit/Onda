@@ -32,7 +32,8 @@ const SUBDIR_CONCURRENCY = 16;
 async function getAudioMetadata(
   filePath: string,
   ext: string,
-  s: Stats
+  s: Stats,
+  fastScan = false
 ): Promise<{
   title: string;
   artist: string;
@@ -50,11 +51,11 @@ async function getAudioMetadata(
   size: number;
   replayGainTrackGain?: number;
   replayGainAlbumGain?: number;
-  hasCover: boolean;
+  hasCover?: boolean;
 } | null> {
   try {
     const { parseFile } = await loadMusicMetadata();
-    const meta = await parseFile(filePath, { duration: true });
+    const meta = await parseFile(filePath, { duration: true, skipCovers: fastScan });
     const formatInfo = meta.format;
     const gainDb = meta.common.replaygain_track_gain?.dB;
     const albumGainDb = meta.common.replaygain_album_gain?.dB;
@@ -76,7 +77,7 @@ async function getAudioMetadata(
       codec: formatInfo?.codec || undefined,
       isVideo: false,
       size: s.size,
-      hasCover: (meta.common.picture?.length ?? 0) > 0,
+      hasCover: fastScan ? undefined : (meta.common.picture?.length ?? 0) > 0,
       replayGainTrackGain:
         typeof gainDb === 'number' && Number.isFinite(gainDb)
           ? Math.pow(10, gainDb / 20)
@@ -95,7 +96,8 @@ async function getAudioMetadata(
 async function getMetadata(
   filePath: string,
   ext: string,
-  s: Stats
+  s: Stats,
+  fastScan = false
 ): Promise<{
   title: string;
   artist: string;
@@ -119,7 +121,7 @@ async function getMetadata(
     const isVideo = VIDEO_EXTS.includes(ext);
 
     if (!isVideo) {
-      return getAudioMetadata(filePath, ext, s);
+      return getAudioMetadata(filePath, ext, s, fastScan);
     }
 
     return {
@@ -144,7 +146,8 @@ async function processAudioFile(
   fullPath: string,
   entryName: string,
   ext: string,
-  prev?: MediaFile
+  prev?: MediaFile,
+  fastScan = false
 ): Promise<{ file: MediaFile | null }> {
   const s = await stat(fullPath).catch(() => null);
   if (!s) return { file: null };
@@ -156,12 +159,12 @@ async function processAudioFile(
     prev &&
     prev.size === s.size &&
     prev.mtime === s.mtimeMs &&
-    prev.hasCover !== undefined &&
+    (prev.hasCover !== undefined || fastScan) &&
     prev.metadata?.replayGainScanned === true
   ) {
     return { file: prev };
   }
-  const meta = await getMetadata(fullPath, ext, s);
+  const meta = await getMetadata(fullPath, ext, s, fastScan);
   return {
     file: {
       id: fullPath,
@@ -189,7 +192,7 @@ async function processAudioFile(
           }
         : undefined,
       duration: meta?.duration || 0,
-      hasCover: meta?.hasCover,
+      hasCover: meta?.hasCover ?? prev?.hasCover,
       addedAt: s.birthtimeMs ?? Date.now(),
       playCount: 0,
       mtime: s.mtimeMs
@@ -278,13 +281,15 @@ export function createScanBudget(limit: number): ScanBudget {
  */
 export async function scanFilePaths(
   paths: readonly string[],
-  previous?: Map<string, MediaFile>
+  previous?: Map<string, MediaFile>,
+  fastScan = false
 ): Promise<MediaFile[]> {
   const results = await mapLimit(paths, 8, async (fullPath) => {
     const ext = extname(fullPath).toLowerCase();
     const entryName = basename(fullPath);
     if (AUDIO_EXT_SET.has(ext)) {
-      return (await processAudioFile(fullPath, entryName, ext, previous?.get(fullPath))).file;
+      return (await processAudioFile(fullPath, entryName, ext, previous?.get(fullPath), fastScan))
+        .file;
     }
     if (VIDEO_EXT_SET.has(ext)) {
       return (await processVideoFile(fullPath, entryName, ext, previous?.get(fullPath))).file;
@@ -303,7 +308,8 @@ export async function scanDir(
   depth = 0,
   signal?: AbortSignal,
   previous?: Map<string, MediaFile>,
-  budget?: ScanBudget
+  budget?: ScanBudget,
+  fastScan = false
 ): Promise<{ files: MediaFile[]; audioCount: number; videoCount: number; imageCount: number }> {
   if (signal?.aborted || depth > maxDepth) {
     return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
@@ -334,7 +340,9 @@ export async function scanDir(
       if (signal?.aborted) break;
       const fullPath = join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        subDirTasks.push(() => scanDir(fullPath, maxDepth, depth + 1, signal, previous, budget));
+        subDirTasks.push(() =>
+          scanDir(fullPath, maxDepth, depth + 1, signal, previous, budget, fastScan)
+        );
       } else if (entry.isFile()) {
         const ext = extname(entry.name).toLowerCase();
         const isMedia = AUDIO_EXT_SET.has(ext) || VIDEO_EXT_SET.has(ext) || IMAGE_EXT_SET.has(ext);
@@ -351,7 +359,7 @@ export async function scanDir(
         if (AUDIO_EXT_SET.has(ext)) {
           audioCount++;
           audioTasks.push(() =>
-            processAudioFile(fullPath, entry.name, ext, previous?.get(fullPath))
+            processAudioFile(fullPath, entry.name, ext, previous?.get(fullPath), fastScan)
           );
         } else if (VIDEO_EXT_SET.has(ext)) {
           videoCount++;

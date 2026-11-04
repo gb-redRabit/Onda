@@ -1362,6 +1362,11 @@ export default {
     vizPrimary: 'Primary color',
     vizSecondary: 'Secondary color',
     vizSensitivity: 'Sensitivity',
+    libraryScan: 'Library scanning',
+    libraryScanHint: 'How metadata is read during a scan.',
+    fastScan: 'Fast scan without covers',
+    fastScanHint:
+      'Skips reading embedded covers (faster on large libraries). Covers still load when displayed; the “no cover” filter may not know new files until their first read.',
     coverCache: 'Cover cache',
     coverCacheDesc: 'Library cover cache entry limit',
     coverCacheHint:
@@ -1444,6 +1449,7 @@ export default {
       playing: 'Playing',
       separator: 'Separator',
       viewCounts: 'View counts',
+      context: 'View context',
       downloads: 'Downloads',
       youtube: 'YouTube',
       dependencies: 'Dependencies',

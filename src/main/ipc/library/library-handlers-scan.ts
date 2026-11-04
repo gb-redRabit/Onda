@@ -25,7 +25,8 @@ export async function runLibraryScan(
   folderPaths: string[],
   signal: AbortSignal,
   onProgress?: (current: number, total: number) => void,
-  broadcast = false
+  broadcast = false,
+  fastScan = false
 ): Promise<LibraryScanResult> {
   // Budżet jest współdzielony między folderami, więc limit dotyczy całego skanowania
   // i przejście zatrzymuje się tam, gdzie limit zostaje osiągnięty, zamiast czytać
@@ -63,7 +64,7 @@ export async function runLibraryScan(
         folderResults.push(null);
         continue;
       }
-      const result = await scanDir(folderPath, 8, 0, signal, previous, budget);
+      const result = await scanDir(folderPath, 8, 0, signal, previous, budget, fastScan);
       const folderType = classifyFolderType(result);
       folderResults.push({
         folderType,

@@ -1370,6 +1370,11 @@ export default {
     vizPrimary: 'Kolor główny',
     vizSecondary: 'Kolor dodatkowy',
     vizSensitivity: 'Czułość',
+    libraryScan: 'Skanowanie biblioteki',
+    libraryScanHint: 'Sposób odczytu metadanych podczas skanowania.',
+    fastScan: 'Szybki skan bez okładek',
+    fastScanHint:
+      'Pomija odczyt osadzonych okładek (szybszy start dużej biblioteki). Okładki i tak ładują się przy wyświetleniu; filtr „bez okładki” może nie znać nowych plików do pierwszego odczytu.',
     coverCache: 'Cache okładek',
     coverCacheDesc: 'Limit wpisów cache okładek biblioteki',
     coverCacheHint:
@@ -1453,6 +1458,7 @@ export default {
       playing: 'Odtwarzanie',
       separator: 'Separator',
       viewCounts: 'Liczniki widoku',
+      context: 'Kontekst widoku',
       downloads: 'Pobrania',
       youtube: 'YouTube',
       dependencies: 'Zależności',

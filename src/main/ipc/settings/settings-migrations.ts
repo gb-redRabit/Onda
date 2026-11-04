@@ -154,6 +154,20 @@ export function migrateSettingsPayload(v: unknown): Record<string, unknown> {
   // Migracje dla wersji < SETTINGS_VERSION idą tutaj. Appearance jest już
   // aktualizowane per pole przez `migrateAppearance` w schemacie.
 
+  // Stary `viewCounts` sterował licznikami i kontekstem widoku. Rozdzielenie
+  // zachowuje dotychczasowy wygląd: jeśli liczniki były włączone, dołóż kontekst.
+  const statusBar = out['statusBar'];
+  if (isPlainObject(statusBar)) {
+    const sections = statusBar['sections'];
+    if (
+      Array.isArray(sections) &&
+      sections.includes('viewCounts') &&
+      !sections.includes('context')
+    ) {
+      out['statusBar'] = { ...statusBar, sections: [...sections, 'context'] };
+    }
+  }
+
   // Stare dwa przełączniki (`normalization`/`replayGain`) robiły to samo: gain per
   // utwór. Nowy model ma jeden tryb, więc mapujemy każdą włączoną flagę na 'track'.
   const playback = out['playback'];

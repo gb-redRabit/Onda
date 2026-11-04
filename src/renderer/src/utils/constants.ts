@@ -49,7 +49,8 @@ export const DEFAULT_LIBRARY: LibrarySettings = {
     albums: 'grid',
     artists: 'grid'
   },
-  coverCacheMaxEntries: 2000
+  coverCacheMaxEntries: 2000,
+  fastScan: false
 };
 
 export const DEFAULT_EXPLORER: ExplorerSettings = {
@@ -91,6 +92,7 @@ export const DEFAULT_STATUS_BAR: StatusBarSettings = {
     'playing',
     'separator',
     'viewCounts',
+    'context',
     'downloads',
     'youtube',
     'dependencies',
