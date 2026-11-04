@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import { readFile, rename, stat, realpath } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import NodeID3 from 'node-id3';
-import { parseFile } from 'music-metadata';
+import { loadMusicMetadata } from '../../utils/lazy-music-metadata';
 import {
   getCachedDuration,
   setCachedDuration,
@@ -52,6 +52,7 @@ export async function getDuration(filePath: string): Promise<number> {
   }
 
   try {
+    const { parseFile } = await loadMusicMetadata();
     const meta = await parseFile(filePath, { duration: true });
     const duration = meta.format?.duration || 0;
     const s = await stat(filePath).catch(() => null);

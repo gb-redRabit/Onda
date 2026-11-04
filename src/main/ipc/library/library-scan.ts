@@ -1,7 +1,7 @@
 import { readdir, stat } from 'fs/promises';
 import type { Stats } from 'fs';
 import { join, extname, basename } from 'path';
-import { parseFile } from 'music-metadata';
+import { loadMusicMetadata } from '../../utils/lazy-music-metadata';
 import type { MediaFile } from '../../../shared/types/media';
 import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../../shared/constants';
 import { MIME_TYPES } from '../../../shared/mime';
@@ -53,6 +53,7 @@ async function getAudioMetadata(
   hasCover: boolean;
 } | null> {
   try {
+    const { parseFile } = await loadMusicMetadata();
     const meta = await parseFile(filePath, { duration: true });
     const formatInfo = meta.format;
     const gainDb = meta.common.replaygain_track_gain?.dB;

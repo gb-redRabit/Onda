@@ -1,6 +1,6 @@
 import { basename, dirname, extname, join } from 'path';
 import { mkdir, readFile, stat, writeFile } from 'fs/promises';
-import sharp from 'sharp';
+import { loadSharp } from '../utils/lazy-sharp';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { replaceFileAtomic, safeRm } from '../utils/fs-atomic';
@@ -58,13 +58,14 @@ function pngBufferFrom(value: unknown): Buffer {
  * Koduje obraz do wybranego formatu. `maxWidth`/`maxHeight` opcjonalnie zmniejszają
  * obraz (fit: inside, bez powiększania), a `.rotate()` zawsze normalizuje orientację EXIF.
  */
-export function encodeImageBuffer(
+export async function encodeImageBuffer(
   buffer: Buffer,
   format: ImageOutputFormat,
   quality: number,
   maxWidth?: number,
   maxHeight?: number
 ) {
+  const sharp = await loadSharp();
   let pipeline = sharp(buffer).rotate();
   if (maxWidth || maxHeight) {
     pipeline = pipeline.resize({
@@ -97,6 +98,7 @@ export async function readImageForEditing(rawPath: unknown): Promise<ImageStudio
     const info = await stat(rawPath);
     if (!info.isFile()) throw new Error('Not a file');
     const buffer = await readFile(rawPath);
+    const sharp = await loadSharp();
     const meta = await sharp(buffer).metadata();
     const working = await sharp(buffer)
       .rotate()
@@ -140,7 +142,9 @@ export async function saveEditedImage(request: unknown): Promise<ImageStudioSave
   }
   let output: Buffer;
   try {
-    output = await encodeImageBuffer(buffer, req.format, clampQuality(req.quality)).toBuffer();
+    output = await (
+      await encodeImageBuffer(buffer, req.format, clampQuality(req.quality))
+    ).toBuffer();
   } catch (error) {
     return { success: false, error: `Image encoding failed: ${errMsg(error)}` };
   }
@@ -174,10 +178,8 @@ export async function estimateEditedImage(request: unknown): Promise<ImageStudio
     return { success: false, error: errMsg(error) };
   }
   try {
-    const output = await encodeImageBuffer(
-      buffer,
-      req.format,
-      clampQuality(req.quality)
+    const output = await (
+      await encodeImageBuffer(buffer, req.format, clampQuality(req.quality))
     ).toBuffer();
     return { success: true, bytes: output.length };
   } catch (error) {

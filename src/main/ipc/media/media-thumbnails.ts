@@ -2,8 +2,8 @@ import { app, nativeImage } from 'electron';
 import { mkdir, access, readFile, writeFile, rm, mkdtemp } from 'fs/promises';
 import { join, extname } from 'path';
 import { createHash } from 'crypto';
-import sharp from 'sharp';
 import os from 'os';
+import { loadSharp } from '../../utils/lazy-sharp';
 import { AUDIO_EXTS, VIDEO_EXTS, MAX_THUMB_SIZE } from '../../../shared/constants';
 import { extractAndCacheCover } from '../cover/cover-cache';
 import { SharpService } from '../../utils/sharp';
@@ -98,6 +98,7 @@ export async function videoFrameThumbnail(
     if (!ok) return null;
     const raw = await readFile(outPath);
     if (!raw.length) return null;
+    const sharp = await loadSharp();
     return await sharp(raw)
       .resize(maxSize, maxSize, { fit: 'outside', withoutEnlargement: true })
       .jpeg({ quality: 85 })
@@ -151,6 +152,7 @@ async function buildThumbnail(filePath: string, maxSize: number): Promise<Buffer
       buf = Buffer.from(b64, 'base64');
       if (buf.length > 50000) {
         try {
+          const sharp = await loadSharp();
           buf = await sharp(buf)
             .resize(maxSize, maxSize, { fit: 'outside' })
             .jpeg({ quality: 85 })

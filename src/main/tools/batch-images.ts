@@ -83,12 +83,14 @@ async function convertOne(
   if (!info.isFile()) throw new Error('Not a file');
   const buffer = await readFile(inputPath);
   const extension = `.${request.format === 'jpeg' ? 'jpg' : request.format}`;
-  const output = await encodeImageBuffer(
-    buffer,
-    request.format,
-    request.quality,
-    request.maxWidth,
-    request.maxHeight
+  const output = await (
+    await encodeImageBuffer(
+      buffer,
+      request.format,
+      request.quality,
+      request.maxWidth,
+      request.maxHeight
+    )
   ).toBuffer();
   const outputPath = resolveBatchOutputPath(inputPath, request.outputDir, extension);
   await mkdir(dirname(outputPath), { recursive: true });

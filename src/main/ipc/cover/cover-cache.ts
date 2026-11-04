@@ -1,8 +1,8 @@
-import { stat, readFile, writeFile, mkdir, unlink } from 'fs/promises';
+import { readFile, writeFile, mkdir, unlink, stat } from 'fs/promises';
 import { join, extname } from 'path';
 import { BrowserWindow } from 'electron';
-import { parseFile } from 'music-metadata';
-import sharp from 'sharp';
+import { loadMusicMetadata } from '../../utils/lazy-music-metadata';
+import { loadSharp } from '../../utils/lazy-sharp';
 import os from 'os';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../../shared/constants';
 import { evictCache, hashPath, uniqueId, findSiblingVideo, isEnoent } from './cover-cache-helpers';
@@ -151,12 +151,14 @@ async function savePersistentCover(filePath: string, binary: Buffer, ext: string
 
 async function extractAudioCover(filePath: string): Promise<string | null> {
   try {
+    const { parseFile } = await loadMusicMetadata();
     const meta = await parseFile(filePath, { duration: false });
     if (meta.common.picture && meta.common.picture.length > 0) {
       const pic = meta.common.picture[0];
       let buf = Buffer.from(pic.data);
       const imgExt = pic.format === 'image/jpeg' ? 'jpg' : pic.format.replace('image/', '');
       try {
+        const sharp = await loadSharp();
         const resized = await sharp(buf)
           .resize(500, 500, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 85 })

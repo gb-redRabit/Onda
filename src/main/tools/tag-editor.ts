@@ -1,7 +1,8 @@
 import { basename, dirname, extname, join } from 'path';
 import { stat } from 'fs/promises';
 import NodeID3 from 'node-id3';
-import { parseFile, type ICommonTagsResult } from 'music-metadata';
+import type { ICommonTagsResult } from 'music-metadata';
+import { loadMusicMetadata } from '../utils/lazy-music-metadata';
 import { resolveBin } from '../binaries';
 import { runCommand } from '../utils/exec';
 import { isProtectedPath } from '../path-policy';
@@ -116,6 +117,7 @@ export async function readAudioTags(paths: unknown): Promise<TagEditorFile[]> {
     try {
       const info = await stat(filePath);
       if (!info.isFile()) throw new Error('Not a file');
+      const { parseFile } = await loadMusicMetadata();
       const metadata = await parseFile(filePath, { duration: false });
       files.push({
         path: filePath,

@@ -1,6 +1,6 @@
-import { parseFile } from 'music-metadata';
 import type { ILyricsTag } from 'music-metadata';
 import type { LyricsResult } from '../../../shared/types/lyrics';
+import { loadMusicMetadata } from '../../utils/lazy-music-metadata';
 import { parseLrc } from './lrc';
 
 /**
@@ -37,6 +37,7 @@ export function mapEmbeddedLyrics(tags: readonly ILyricsTag[] | undefined): Lyri
 
 export async function readEmbeddedLyrics(filePath: string): Promise<LyricsResult | null> {
   try {
+    const { parseFile } = await loadMusicMetadata();
     const metadata = await parseFile(filePath, { duration: false, skipCovers: true });
     return mapEmbeddedLyrics(metadata.common.lyrics);
   } catch {

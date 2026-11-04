@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import { loadSharp } from './lazy-sharp';
 import { join, extname } from 'path';
 import { mkdir, readFile, writeFile, access } from 'fs/promises';
 import { createHash } from 'crypto';
@@ -37,6 +37,7 @@ export class SharpService {
       const ext = extname(filePath).toLowerCase();
 
       if (IMAGE_EXTS.has(ext)) {
+        const sharp = await loadSharp();
         buf = await sharp(filePath)
           .resize(maxSize, maxSize, { fit: 'outside', withoutEnlargement: true })
           .jpeg({ quality: 85, mozjpeg: true })
@@ -62,6 +63,7 @@ export class SharpService {
       const ext = extname(filePath).toLowerCase();
       if (!IMAGE_EXTS.has(ext)) return null;
 
+      const sharp = await loadSharp();
       return await sharp(filePath)
         .resize(width, undefined, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality, mozjpeg: true })
