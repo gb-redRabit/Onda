@@ -24,6 +24,11 @@ async function restrictWindowsAcl(filePath: string): Promise<void> {
 // jeśli icacls jest niedostępny, plik i tak zostanie zapisany, ale z domyślnymi uprawnieniami.
 export async function writeFileRestricted(filePath: string, content: string): Promise<void> {
   await writeFile(filePath, content, { mode: 0o600 });
+  await restrictFilePermissions(filePath);
+}
+
+/** Dokłada restrykcyjne uprawnienia do istniejącego pliku (np. po `copyFile`). */
+export async function restrictFilePermissions(filePath: string): Promise<void> {
   if (process.platform === 'win32') {
     try {
       await restrictWindowsAcl(filePath);

@@ -78,7 +78,8 @@ win:
   # WITHOUT a code-signing certificate you MUST keep verifyUpdateCodeSignature
   # off (false), otherwise electron-updater refuses to install unsigned builds.
   # Once you own a cert: set CODE_SIGN_PUBLISHER to the certificate subject and
-  # flip verifyUpdateCodeSignature to true — publisherName must match the
+  # the CI "Build installers" step passes --config.win.verifyUpdateCodeSignature=true
+  # plus --config.win.publisherName=<subject>; publisherName must match the
   # subject used to sign the installer.
   verifyUpdateCodeSignature: false
   # publisherName: ${env.CODE_SIGN_PUBLISHER}
@@ -150,10 +151,10 @@ mac:
   # and Gatekeeper shows the normal, bypassable "unidentified developer" prompt.
   #
   # To move to a real Developer ID (removes the warning entirely):
-  #   1. set `identity` to the certificate's common name (or delete this line),
+  #   1. set MAC_IDENTITY (or edit `identity` below) to the certificate's common name,
   #   2. provide CSC_LINK + CSC_KEY_PASSWORD and CSC_IDENTITY_AUTO_DISCOVERY=true,
   #   3. provide APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID and set
-  #      `notarize: true`.
+  #      `notarize: true` (CI does both via --config when MAC_IDENTITY + CSC_LINK exist).
   # See RELEASE.md §6.
   identity: '-'
   # Hardened runtime stays on. Ad-hoc signing cannot satisfy library validation

@@ -1,5 +1,5 @@
 import { BrowserWindow, session } from 'electron';
-import { readFile, unlink, copyFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 import { writeFileRestricted } from '../utils/file-permissions';
 import { isValidCookieFile, type YtAuthConfig } from '../ipc/youtube/youtube-utils';
 import type { YoutubeAuthMethod } from '../../shared/types/settings';
@@ -200,7 +200,10 @@ export async function exportCookiesToFile(
   destPath: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await copyFile(cookiesFilePath(), destPath);
+    // Zapis przez `writeFileRestricted` zamiast `copyFile`: eksport zawiera sesję
+    // YouTube, więc plik od razu dostaje 0600/ACL i nie powstaje kopia z luźnymi uprawnieniami.
+    const content = await readFile(cookiesFilePath(), 'utf-8');
+    await writeFileRestricted(destPath, content);
     return { success: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

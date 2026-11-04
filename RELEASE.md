@@ -124,19 +124,23 @@ zabezpieczeniem dystrybucji jest kanał GitHub Releases + `GH_TOKEN` w CI.
 
 Aby włączyć pełne podpisywanie:
 
-1. Windows — certyfikat Authenticode; ustaw `CSC_LINK` + `CSC_KEY_PASSWORD`,
-   `CODE_SIGN_PUBLISHER` (subject certyfikatu) i przełącz
-   `verifyUpdateCodeSignature: true`. `publisherName` musi być zgodny z subjectem.
-2. macOS — Apple Developer ID; ustaw `CSC_LINK` + `CSC_KEY_PASSWORD`, `APPLE_ID`,
-   `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, zmień `mac.identity` na nazwę
-   certyfikatu (albo usuń tę linię), ustaw `mac.notarize: true` oraz
-   `CSC_IDENTITY_AUTO_DISCOVERY: true` w `build.yml` (bez tego electron-builder nie
-   znajdzie certyfikatu z keychaina).
+1. Windows — certyfikat Authenticode; dodaj sekrety `CSC_LINK` + `CSC_KEY_PASSWORD`
+   oraz `CODE_SIGN_PUBLISHER` (subject certyfikatu). Krok „Build installers"
+   w `build.yml` sam przekazuje wtedy `--config.win.verifyUpdateCodeSignature`
+   i `--config.win.publisherName=<subject>`. `publisherName` musi być zgodny z subjectem.
+2. macOS — Apple Developer ID; dodaj `CSC_LINK` + `CSC_KEY_PASSWORD`, `MAC_IDENTITY`
+   (common name certyfikatu), `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`.
+   CI przekazuje `--config.mac.identity` i `--config.mac.notarize` tylko wtedy,
+   gdy `MAC_IDENTITY` i `CSC_LINK` są ustawione (ad-hoc + notaryzacja i tak by nie
+   przeszła). Bez `APPLE_ID` podpis Developer ID działa, ale bez notaryzacji.
 3. Oba zdarzenia w tej samej zmianie co `verifyUpdateCodeSignature: true` — włączanie
-   weryfikacji podpisu bez certyfikatu odrzuca własne, niespodpisane buildy.
+   weryfikacji podpisu bez certyfikatu odrzuca własne, niespodpisane buildy. Domyślne
+   `electron-builder.yml` zostaje `false`, dopóki `CODE_SIGN_PUBLISHER` nie jest ustawiony.
 
-Nie dodawaj pustych `CSC_LINK` / `CSC_KEY_PASSWORD`: electron-builder traktuje nawet
-pustą `CSC_LINK` jako ścieżkę do certyfikatu i przerywa build (macOS: „not a file").
+Nie dodawaj pustych `CSC_LINK` / `CSC_KEY_PASSWORD`: krok „Build installers" czyści
+puste wartości przed uruchomieniem electron-buildera, ale nie należy ich wpisywać
+na sztywno w innych miejscach — electron-builder traktuje nawet pustą `CSC_LINK`
+jako ścieżkę do certyfikatu i przerywa build (macOS: „not a file").
 
 Krok „Smoke test unpacked app (macOS)" w `build.yml` sprawdza przed publikacją, że
 bundle ma ważny podpis (`codesign --verify --deep --strict`), oba slice'y (`lipo -archs`)

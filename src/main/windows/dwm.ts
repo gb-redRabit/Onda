@@ -1,4 +1,5 @@
 import type { BrowserWindow } from 'electron';
+import { join } from 'path';
 import { logger } from '../../shared/logger';
 
 // Natywne atrybuty DWM (Windows 11). `setShape`/`setAccentColor` nie zmieniają
@@ -18,6 +19,17 @@ type DwmSetWindowAttribute = (
 let dwmFn: DwmSetWindowAttribute | null = null;
 let loading: Promise<DwmSetWindowAttribute | null> | null = null;
 
+/**
+ * Absolutna ścieżka do systemowego `dwmapi.dll`. Ładowanie po nazwie podlega
+ * kolejności wyszukiwania DLL (katalog aplikacji jest zapisywalny w instalacji
+ * per-user), więc wskazujemy System32 jawnie; bez `SystemRoot`/`windir` wracamy
+ * do nazwy, żeby zachować działanie w nietypowych środowiskach.
+ */
+export function resolveDwmDllPath(env: NodeJS.ProcessEnv = process.env): string {
+  const root = env.SystemRoot || env.windir;
+  return root ? join(root, 'System32', 'dwmapi.dll') : 'dwmapi.dll';
+}
+
 function loadDwm(): Promise<DwmSetWindowAttribute | null> {
   if (process.platform !== 'win32') return Promise.resolve(null);
   if (dwmFn) return Promise.resolve(dwmFn);
@@ -25,7 +37,7 @@ function loadDwm(): Promise<DwmSetWindowAttribute | null> {
   loading = (async () => {
     try {
       const koffi = (await import('koffi')).default;
-      const dwmapi = koffi.load('dwmapi.dll');
+      const dwmapi = koffi.load(resolveDwmDllPath());
       dwmFn = dwmapi.func(
         'int DwmSetWindowAttribute(uint64_t hwnd, uint32_t attr, void *value, uint32_t size)'
       ) as unknown as DwmSetWindowAttribute;
