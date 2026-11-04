@@ -44,11 +44,10 @@ export async function seedMediaServerAndSettings(): Promise<{ folders: number; r
     const library = store.get('library') as Record<string, unknown> | undefined;
     applyCoverCacheSettings(asPositiveNumber(library?.coverCacheMaxEntries));
     // Jednorazowe czyszczenie starego cache to migracja, nie warunek startu okna.
-    // Wykonujemy je po pierwszym malowaniu, żeby nie blokować bootu na readdir/rm
-    // (na dużym cache trwało to sekundy).
-    setTimeout(() => {
-      void initCoverCache();
-    }, 500).unref();
+    // Uruchamiamy je bez `await`, żeby readdir/rm nie blokowały bootu; dzięki
+    // temu startuje przed pierwszymi żądaniami okładek (inaczej niż timer 500 ms,
+    // który mógł ścigać się z siatką w pierwszej klatce).
+    void initCoverCache();
     markBootPhase('cover settings applied');
     // Zapisane locale UI napędza teraz pozostałe komunikaty procesu głównego.
     const appearance = store.get('appearance') as Record<string, unknown> | undefined;
