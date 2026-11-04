@@ -352,7 +352,10 @@ onBeforeUnmount(() => {
     </PageHeader>
 
     <div class="flex flex-1 min-h-0">
+      <!-- Rail tylko przy otwartej zakładce: przegląd pokazuje te same sekcje jako
+           karty, więc stały rail byłby drugim menu obok siebie. -->
       <SettingsRail
+        v-if="activeTab"
         :sections="SETTINGS_SECTIONS"
         :tabs="SETTINGS_TABS"
         :active-section="activeSection"

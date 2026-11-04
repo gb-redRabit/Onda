@@ -229,7 +229,25 @@ test.describe('all views — structure', () => {
       await page.keyboard.press('Escape');
       await expect(page.getByTestId('settings-menu')).toHaveCount(0);
 
-      // Rail: każda sekcja i jej zakładki (układ lg je pokazuje).
+      // Przegląd nie pokazuje railu — te same sekcje są kartami, więc rail
+      // pojawia się dopiero po otwarciu zakładki.
+      await expect(page.getByTestId('settings-section-appearance')).toHaveCount(0);
+
+      // Wyszukiwanie zastępuje przegląd trafieniami; wyczyszczenie go przywraca.
+      await page.getByTestId('settings-search').fill('pip');
+      await expect.poll(() => page.getByTestId('settings-search-hit').count()).toBeGreaterThan(0);
+      await expect(page.getByTestId('settings-overview')).toHaveCount(0);
+      await page.getByTestId('settings-search').fill('');
+      await expect(page.getByTestId('settings-overview')).toBeVisible();
+
+      // Przegląd eksponuje kartę na zakładkę; otwarcie jednej opuszcza przegląd
+      // i odsłania rail z sekcjami oraz zakładkami.
+      for (const id of ['playback', 'pip-video', 'theme', 'general', 'plugins']) {
+        await expect(page.getByTestId(`settings-overview-${id}`)).toBeVisible();
+      }
+      await page.getByTestId('settings-overview-pip-video').click();
+      await expect(page.getByTestId('settings-overview')).toHaveCount(0);
+
       for (const id of [
         'appearance',
         'playback',
@@ -243,22 +261,13 @@ test.describe('all views — structure', () => {
       }
       await expect(page.getByTestId('settings-tab-playback')).toBeVisible();
       await expect(page.getByTestId('settings-tab-diagnostics')).toBeVisible();
-
-      // Wyszukiwanie zastępuje przegląd trafieniami; wyczyszczenie go przywraca.
-      await page.getByTestId('settings-search').fill('pip');
-      await expect.poll(() => page.getByTestId('settings-search-hit').count()).toBeGreaterThan(0);
-      await expect(page.getByTestId('settings-overview')).toHaveCount(0);
-      await page.getByTestId('settings-search').fill('');
-      await expect(page.getByTestId('settings-overview')).toBeVisible();
-
-      // Przegląd eksponuje kartę na zakładkę; otwarcie jednej opuszcza przegląd.
-      for (const id of ['playback', 'pip-video', 'theme', 'general', 'plugins']) {
-        await expect(page.getByTestId(`settings-overview-${id}`)).toBeVisible();
-      }
-      await page.getByTestId('settings-overview-pip-video').click();
-      await expect(page.getByTestId('settings-overview')).toHaveCount(0);
       await page.getByTestId('settings-tab-playback').click();
       await expect(page.getByTestId('settings-overview')).toHaveCount(0);
+
+      // Powrót do przeglądu chowa rail ponownie.
+      await page.getByTestId('settings-breadcrumb-home').click();
+      await expect(page.getByTestId('settings-overview')).toBeVisible();
+      await expect(page.getByTestId('settings-section-appearance')).toHaveCount(0);
 
       expect(onda.pageErrors).toEqual([]);
     } finally {

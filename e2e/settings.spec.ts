@@ -15,6 +15,11 @@ test.describe('settings interactions', () => {
       });
       await expect(onda.page.locator('main[data-route]')).toHaveAttribute('data-route', 'settings');
 
+      // Przegląd nie ma railu — otwarcie karty zakładki go odsłania.
+      await expect(onda.page.getByTestId('settings-section-appearance')).toHaveCount(0);
+      await onda.page.getByTestId('settings-overview-general').click();
+      await expect(onda.page.getByTestId('settings-section-appearance')).toBeVisible();
+
       // Rail: sekcja przeskakuje do swojej pierwszej zakładki.
       await onda.page.getByTestId('settings-section-appearance').click();
       await onda.page.waitForFunction(() => window.location.hash.includes('tab=theme'));

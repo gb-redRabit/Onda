@@ -100,8 +100,7 @@ test('switches core-shell main to compact and back without restart', async () =>
     await page.evaluate(() => {
       window.location.hash = '#/settings';
     });
-    await page.getByTestId('settings-section-system').click();
-    await page.getByTestId('settings-tab-general').click();
+    await page.getByTestId('settings-overview-general').click();
     await expect(page.getByTestId('settings-compact-switch-now')).toBeVisible();
 
     // Motyw wybrany w pełnym oknie musi trafić do compactu jeszcze przed
