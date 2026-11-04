@@ -46,6 +46,7 @@ function closeSub() {
   openSubIndex.value = -1;
   subActiveIndex.value = -1;
   subItemRefs.value = [];
+  submenuEl.value = null;
   subStyle.value = {};
   if (closeTimer) {
     clearTimeout(closeTimer);
@@ -53,13 +54,23 @@ function closeSub() {
   }
 }
 
-function openSub(idx: number, el: HTMLElement) {
+async function openSub(idx: number, el: HTMLElement) {
   openSubIndex.value = idx;
   const rect = el.getBoundingClientRect();
   const left =
     rect.right + 8 < window.innerWidth ? rect.right + 8 : Math.max(4, rect.left - SUB_W - 8);
-  const top = Math.min(rect.top, window.innerHeight - 320 - 8);
-  subStyle.value = { left: left + 'px', top: Math.max(4, top) + 'px' };
+  // Wstępnie szacujemy, a po wyrenderowaniu mierzymy realną wysokość podmenu —
+  // sztywne 320 px wypychało krótkie podmenu poza dolną krawędź.
+  subStyle.value = {
+    left: left + 'px',
+    top: Math.max(4, Math.min(rect.top, window.innerHeight - 320 - 8)) + 'px'
+  };
+  await nextTick();
+  const height = submenuEl.value?.getBoundingClientRect().height ?? 0;
+  if (height > 0) {
+    const top = Math.max(4, Math.min(rect.top, window.innerHeight - height - 8));
+    subStyle.value = { left: left + 'px', top: top + 'px' };
+  }
 }
 
 function onItemEnter(idx: number, el: HTMLElement) {
@@ -72,7 +83,7 @@ function onItemEnter(idx: number, el: HTMLElement) {
   }
   const item = ui.contextMenu?.items[idx];
   if (item?.children?.length) {
-    openTimer = setTimeout(() => openSub(idx, el), 120);
+    openTimer = setTimeout(() => void openSub(idx, el), 120);
   } else {
     closeSub();
   }
@@ -113,6 +124,7 @@ function navigableIndexes(items: ContextMenuItem[] | undefined): number[] {
 
 // Fokus podmenu (klawiatura) — by trafić do niego strzałkami/Tabem.
 const subItemRefs = ref<Array<HTMLElement | null>>([]);
+const submenuEl = ref<HTMLElement | null>(null);
 const subActiveIndex = ref(-1);
 
 function focusSubFirst(): void {
@@ -132,7 +144,7 @@ function openSubKeyboard(idx: number) {
   const first = navigableIndexes(item.children)[0];
   if (first === undefined) return;
   subActiveIndex.value = first;
-  openSub(idx, el);
+  void openSub(idx, el);
   focusSubFirst();
 }
 
@@ -415,6 +427,7 @@ function setSubRef(i: number) {
           <Teleport to="body">
             <div
               v-if="openSubIndex === idx && item.children?.length"
+              ref="submenuEl"
               role="menu"
               class="fixed z-1000 bg-neutral border border-neutral-content/20 rounded-box shadow-2xl shadow-scrim/50 py-1.5 min-w-45 max-h-[80vh] overflow-y-auto"
               :style="subStyle"
