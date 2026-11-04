@@ -378,6 +378,10 @@ const api: OndaAPI = {
     const r = await tryInvoke('audio-pip:hide');
     return !!r;
   },
+  audioPipRelease: async (): Promise<boolean> => {
+    const r = await tryInvoke('audio-pip:release');
+    return !!r;
+  },
   audioPipAutoHide: async (): Promise<boolean> => {
     const r = await tryInvoke('audio-pip:autoHide');
     return !!r;

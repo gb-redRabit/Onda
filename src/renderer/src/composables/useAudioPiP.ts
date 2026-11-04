@@ -24,6 +24,30 @@ const runtime = createAudioPipRuntime({
   getState: () => buildAudioPipState()
 });
 
+// Ukryty renderer PiP to ~100 MB. Po 5 min bez aktywnego PiP i bez odtwarzania
+// niszczymy okno; następne show()/prewarm() odtworzy je bez utraty funkcji.
+const RELEASE_IDLE_MS = 5 * 60 * 1000;
+let releaseTimer: number | null = null;
+
+function armReleaseTimer(): void {
+  if (releaseTimer !== null) window.clearTimeout(releaseTimer);
+  releaseTimer = window.setTimeout(() => {
+    releaseTimer = null;
+    if (isActive.value || mediaPlaying.value) {
+      armReleaseTimer();
+      return;
+    }
+    void window.api?.audioPipRelease?.();
+  }, RELEASE_IDLE_MS);
+}
+
+function disarmReleaseTimer(): void {
+  if (releaseTimer !== null) {
+    window.clearTimeout(releaseTimer);
+    releaseTimer = null;
+  }
+}
+
 async function show(): Promise<void> {
   const state = buildAudioPipState();
   if (!state.trackName) return;
@@ -33,6 +57,7 @@ async function show(): Promise<void> {
   runtime.startCoverRetry();
   runtime.startTimeTracking();
   runtime.startVizTracking();
+  armReleaseTimer();
 }
 
 async function hide(): Promise<void> {
@@ -88,6 +113,7 @@ export function useAudioPiP(options: { prewarm?: boolean | 'track' } = {}) {
       // zachowuje stare, natychmiastowe zachowanie.
       if (options.prewarm === true) {
         void window.api?.audioPipPrewarm?.();
+        armReleaseTimer();
       }
 
       const removeClosed = window.api.on('audio-pip:closed', () => {
@@ -114,6 +140,7 @@ export function useAudioPiP(options: { prewarm?: boolean | 'track' } = {}) {
         // ukryty renderer, zamiast trzymać ~100 MB od startu aplikacji.
         if (options.prewarm === 'track' && player.currentTrack) {
           void window.api?.audioPipPrewarm?.();
+          armReleaseTimer();
         }
         if (isActive.value) {
           const state = buildAudioPipState();
@@ -179,6 +206,7 @@ export function useAudioPiP(options: { prewarm?: boolean | 'track' } = {}) {
     });
 
     onUnmounted(() => {
+      disarmReleaseTimer();
       runtime.stopAll();
       cleanups.forEach((fn) => fn());
       cleanups.length = 0;

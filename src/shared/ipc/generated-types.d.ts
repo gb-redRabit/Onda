@@ -268,6 +268,7 @@ export type IpcInvokeChannel =
   | 'pip:previewUpdate'
   | 'audio-pip:show'
   | 'audio-pip:hide'
+  | 'audio-pip:release'
   | 'audio-pip:autoHide'
   | 'audio-pip:prewarm'
   | 'audio-pip:update'

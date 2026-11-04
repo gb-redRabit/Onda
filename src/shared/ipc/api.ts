@@ -128,6 +128,7 @@ export interface OndaAPI {
   // audio PiP
   audioPipShow: BoundIpcMethod<'audio-pip:show'>;
   audioPipHide: BoundIpcMethod<'audio-pip:hide'>;
+  audioPipRelease: BoundIpcMethod<'audio-pip:release'>;
   audioPipAutoHide: BoundIpcMethod<'audio-pip:autoHide'>;
   audioPipPrewarm: BoundIpcMethod<'audio-pip:prewarm'>;
   audioPipUpdate: BoundIpcMethod<'audio-pip:update'>;

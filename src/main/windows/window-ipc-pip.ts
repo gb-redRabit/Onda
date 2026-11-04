@@ -90,6 +90,11 @@ export function registerPipHandlers(context: {
     return true;
   });
 
+  ipcMain.handle('audio-pip:release', () => {
+    audioPipManager.releaseWindow();
+    return true;
+  });
+
   ipcMain.handle('audio-pip:autoHide', () => {
     audioPipManager.autoHideNow();
     return true;

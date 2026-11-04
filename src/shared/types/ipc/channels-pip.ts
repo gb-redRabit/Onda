@@ -29,6 +29,7 @@ export interface PipChannels {
     result: boolean;
   };
   'audio-pip:hide': { args: []; result: boolean };
+  'audio-pip:release': { args: []; result: boolean };
   'audio-pip:autoHide': { args: []; result: boolean };
   'audio-pip:prewarm': { args: []; result: boolean };
   'audio-pip:update': {

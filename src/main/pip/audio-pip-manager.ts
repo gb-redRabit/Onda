@@ -181,6 +181,21 @@ export class AudioPipManager {
     }
   }
 
+  /**
+   * Niszczy ukryte okno, żeby oddać ~100 MB renderera. IPC i listenery ekranu
+   * zostają; następne `show()`/`prewarm()` odtworzy okno przez `ensureWindow()`.
+   * Nie ruszamy aktywnego PiP — wywołujący sprawdza `isActive` po stronie renderera.
+   */
+  releaseWindow(): void {
+    if (this.isPreview) return;
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.destroy();
+    }
+    this.window = null;
+    this.ready = false;
+    this.peek.reset();
+  }
+
   autoHideNow(): void {
     if (this.isPreview) return;
     this.hide();

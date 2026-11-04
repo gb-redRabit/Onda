@@ -31,6 +31,7 @@ const pipManager = {
 const audioPipManager = {
   show: () => {},
   hide: () => {},
+  releaseWindow: () => {},
   autoHideNow: () => {},
   prewarm: () => {},
   showPreview: () => true,
@@ -56,6 +57,7 @@ describe('registerPipHandlers', () => {
         'pip:updateSubtitle',
         'audio-pip:show',
         'audio-pip:hide',
+        'audio-pip:release',
         'audio-pip:autoHide',
         'audio-pip:prewarm',
         'audio-pip:previewStart',
