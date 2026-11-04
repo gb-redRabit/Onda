@@ -97,6 +97,12 @@ test.describe('video clipper', () => {
         window.location.hash = '#/tools';
       });
       await expect(page.getByTestId('tools-hub')).toBeVisible();
+      await onda.app.evaluate(({ dialog }) => {
+        const d = dialog as unknown as {
+          showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+        };
+        d.showOpenDialog = async () => ({ canceled: true, filePaths: [] });
+      });
       const [clipper] = await Promise.all([
         onda.app.waitForEvent('window'),
         page.getByTestId('tools-card-video-clipper').click()

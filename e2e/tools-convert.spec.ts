@@ -68,6 +68,14 @@ test.describe('tools conversion', () => {
         window.location.hash = '#/tools';
       });
       await expect(page.getByTestId('tools-hub')).toBeVisible();
+      // Karta narzędzia otwiera najpierw natywny wybór plików; w teście
+      // anulujemy go, żeby otworzyć puste narzędzie i wrzucić plik drag&drop.
+      await onda.app.evaluate(({ dialog }) => {
+        const d = dialog as unknown as {
+          showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+        };
+        d.showOpenDialog = async () => ({ canceled: true, filePaths: [] });
+      });
       const [converter] = await Promise.all([
         onda.app.waitForEvent('window'),
         page.getByTestId('tools-card-converter').click()

@@ -4,7 +4,14 @@ import { useI18n } from 'vue-i18n';
 import { History, Image as ImageIcon, Layers, Scissors, Tags, Wrench } from '@lucide/vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 import { useUIStore } from '@renderer/stores/ui';
-import type { ToolId } from '@shared/types/tools';
+import { TOOL_INPUTS, type ToolId, type ToolInputKind } from '@shared/types/tools';
+import { filesForTool, inputKindOfPath } from '@shared/tool-input';
+
+const KIND_FILTER_LABEL: Record<ToolInputKind, string> = {
+  audio: 'tools.audio',
+  video: 'tools.video',
+  image: 'tools.images'
+};
 
 const { t } = useI18n();
 const ui = useUIStore();
@@ -88,11 +95,45 @@ const groups = computed<Array<{ id: string; label: string; cards: ToolCard[] }>>
   }
 ]);
 
+async function pickToolFiles(id: ToolId): Promise<string[] | null> {
+  const spec = TOOL_INPUTS[id];
+  if (!spec) return [];
+  const filters = spec.kinds
+    .map((kind) => ({
+      name: t(KIND_FILTER_LABEL[kind]),
+      extensions: [...(spec.extensions[kind] ?? [])]
+    }))
+    .filter((filter) => filter.extensions.length > 0);
+  const result = (await window.api.invoke('dialog:openFile', {
+    properties: spec.multiple ? ['openFile', 'multiSelections'] : ['openFile'],
+    ...(filters.length > 0 ? { filters } : {})
+  })) as { canceled: boolean; filePaths: string[] };
+  if (result.canceled) return null;
+  const accepted = filesForTool(id, result.filePaths);
+  if (accepted.length === 0) {
+    ui.notify('warning', t('tools.unsupportedFiles'), t('tools.unsupportedFilesHint'));
+    return [];
+  }
+  // Konwerter obsługuje audio albo video — jeden rodzaj na uruchomienie.
+  if (id === 'converter') {
+    const firstKind = inputKindOfPath(accepted[0]);
+    return accepted.filter((path) => inputKindOfPath(path) === firstKind);
+  }
+  return accepted;
+}
+
 async function openTool(id: ToolId): Promise<void> {
   if (opening.value) return;
   opening.value = id;
   try {
-    const windowId = await window.api.invoke('tools:openWindow', id);
+    // Narzędzia plikowe pytają o wejście PRZED otwarciem okna. Anulowanie
+    // otwiera puste okno (stare zachowanie), więc drag&drop nadal działa.
+    const paths = TOOL_INPUTS[id] ? await pickToolFiles(id) : [];
+    const windowId = await window.api.invoke(
+      'tools:openWindow',
+      id,
+      paths && paths.length > 0 ? { paths } : undefined
+    );
     if (windowId === null) {
       ui.notify('error', t('app.error'), t('tools.openFailed'));
     }

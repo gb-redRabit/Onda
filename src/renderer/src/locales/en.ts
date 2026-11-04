@@ -410,6 +410,8 @@ export default {
     clipComplete: 'Clip ready',
     openInNewWindow: 'Open in new window',
     openFailed: 'Could not open the tool.',
+    unsupportedFiles: 'Unsupported files',
+    unsupportedFilesHint: 'The selected files do not match this tool.',
     conversionComplete: 'Conversion complete',
     audio: 'Audio',
     video: 'Video',

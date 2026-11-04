@@ -129,6 +129,40 @@ test.describe('tools from the explorer context menu', () => {
     }
   });
 
+  test('asks for files before opening a tool from the hub', async () => {
+    const library = createLibraryFixture(1);
+    const profile = mkdtempSync(join(tmpdir(), 'onda-tools-hub-picker-'));
+    const onda = await launchOnda({ userDataDir: profile });
+    try {
+      await dismissWizard(onda.page);
+      await onda.page.evaluate(() => {
+        window.location.hash = '#/tools';
+      });
+      await expect(onda.page.getByTestId('tools-hub')).toBeVisible();
+
+      // Karta narzędzia najpierw otwiera wybór plików; dopiero wynik otwiera okno.
+      await onda.app.evaluate(({ dialog }, filePath) => {
+        const d = dialog as unknown as {
+          showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+        };
+        d.showOpenDialog = async () => ({ canceled: false, filePaths: [filePath] });
+      }, library.wavPath);
+
+      const [converter] = await Promise.all([
+        onda.app.waitForEvent('window'),
+        onda.page.getByTestId('tools-card-converter').click()
+      ]);
+      await dismissWizard(converter);
+      await expect(converter.getByTestId('tools-converter-view')).toContainText('tone-01.wav', {
+        timeout: 15_000
+      });
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
+
   test('offers tag editor for audio and replaces the open file list', async () => {
     const library = createLibraryFixture(2);
     const profile = mkdtempSync(join(tmpdir(), 'onda-tools-tags-'));
