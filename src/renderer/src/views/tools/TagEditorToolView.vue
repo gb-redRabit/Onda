@@ -17,9 +17,13 @@ import IconButton from '@renderer/components/ui/IconButton.vue';
 import Input from '@renderer/components/ui/Input.vue';
 import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
+import { usePromptDialog } from '@renderer/composables/usePromptDialog';
+import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { filesForTool, toolContextPaths } from '@shared/tool-input';
 import {
   AUDIO_TAG_FIELDS,
+  TAG_AUDIO_EXTS,
   TAG_EDITOR_MAX_FILES,
   type AudioTagField,
   type TagEditorFile
@@ -41,20 +45,7 @@ interface TagRow {
 
 // Odczytać można też formaty, których nie zapisujemy — dlatego lista jest szersza
 // niż `AUDIO_TAG_FIELDS` obsługiwane przez backend zapisu.
-const AUDIO_EXTS = [
-  'mp3',
-  'flac',
-  'm4a',
-  'm4b',
-  'ogg',
-  'oga',
-  'opus',
-  'wav',
-  'aac',
-  'wma',
-  'aiff',
-  'ape'
-];
+const AUDIO_EXTS: readonly string[] = TAG_AUDIO_EXTS;
 
 const FIELD_LABEL_KEYS: Record<AudioTagField, string> = {
   title: 'tools.tagTitle',
@@ -68,6 +59,7 @@ const FIELD_LABEL_KEYS: Record<AudioTagField, string> = {
 };
 
 const { t } = useI18n();
+const prompt = usePromptDialog();
 const { context } = useToolBridge();
 const files = ref<TagRow[]>([]);
 const loading = ref(false);
@@ -162,7 +154,7 @@ async function pickFiles(): Promise<void> {
   if (saving.value) return;
   const result = (await window.api.invoke('dialog:openFile', {
     properties: ['openFile', 'multiSelections'],
-    filters: [{ name: t('tools.audio'), extensions: AUDIO_EXTS }]
+    filters: [{ name: t('tools.audio'), extensions: [...AUDIO_EXTS] }]
   })) as { canceled: boolean; filePaths: string[] };
   if (!result.canceled) addFiles(result.filePaths);
 }
@@ -275,18 +267,24 @@ async function applyCover(): Promise<void> {
   }
 }
 
+let appliedContextKey = '';
+
+// Otwarcie z Eksploratora zastępuje listę. Jeśli są niezapisane zmiany,
+// pytamy przed ich utratą.
 watch(
   () => context.value,
-  (ctx) => {
-    const paths =
-      ctx && ctx.params && Array.isArray(ctx.params.paths)
-        ? ctx.params.paths.filter((path): path is string => typeof path === 'string')
-        : [];
-    if (paths.length > 0) {
-      const existing = new Set(files.value.map((row) => row.path));
-      const fresh = paths.filter((path) => !existing.has(path));
-      if (fresh.length > 0) void loadTags(fresh);
+  async () => {
+    const next = filesForTool('tag-editor', toolContextPaths(context.value));
+    if (next.length === 0) return;
+    const key = next.join('\n');
+    if (key === appliedContextKey) return;
+    if (files.value.some((row) => row.dirty)) {
+      const confirmed = await prompt.showConfirm(t('tools.tagReplaceDirty'));
+      if (!confirmed) return;
     }
+    appliedContextKey = key;
+    files.value = [];
+    void loadTags(next);
   },
   { immediate: true }
 );
@@ -551,5 +549,15 @@ function fieldLabel(field: AudioTagField): string {
         {{ saving ? t('tools.tagEditorSaving') : t('tools.tagEditorSave') }}
       </Button>
     </template>
+
+    <ExplorerPromptDialog
+      :visible="prompt.promptVisible.value"
+      :is-confirm="prompt.promptIsConfirm.value"
+      :message="prompt.promptMessage.value"
+      :value="prompt.promptValue.value"
+      @update:value="prompt.promptValue.value = $event"
+      @confirm="prompt.promptConfirm"
+      @cancel="prompt.promptCancel"
+    />
   </ToolWindowShell>
 </template>

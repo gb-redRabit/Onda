@@ -463,6 +463,8 @@ export default {
     tagEditorApply: 'Zastosuj',
     tagEditorBatchValue: 'Wartość dla zaznaczonych',
     tagEditorHint: 'Edytuj wartości w tabeli lub wypełnij pole dla zaznaczonych, a potem zapisz.',
+    tagReplaceDirty:
+      'Masz niezapisane zmiany w edytorze tagów. Zastąpić listę plików nowym zaznaczeniem?',
     tagEditorLoading: 'Odczyt tagów…',
     tagEditorSave: 'Zapisz zmiany',
     tagEditorSaving: 'Zapisywanie…',
@@ -489,6 +491,7 @@ export default {
     imageStudioDescription:
       'Kadruj, poprawiaj, adnotuj i eksportuj obrazy lub użyj ich jako okładki audio.',
     imageStudioOpen: 'Otwórz obraz',
+    imageStudioChange: 'Zmień obraz',
     imageStudioEmpty: 'Brak otwartego obrazu',
     imageStudioDropHint: 'Przeciągnij obraz tutaj lub otwórz go z dysku.',
     imageStudioLoading: 'Ładowanie…',
@@ -2169,6 +2172,7 @@ api.registerCommand({
     rename: 'Zmień nazwę',
     openImage: 'Otwórz obraz',
     openWithDefaultApp: 'Otwórz domyślną aplikacją',
+    tools: 'Narzędzia',
     deleteConfirm: 'Usuń "{name}"?',
     deleteMultipleConfirm: 'Usunąć te {count} elementów?',
     newFolder: 'Nowy folder',

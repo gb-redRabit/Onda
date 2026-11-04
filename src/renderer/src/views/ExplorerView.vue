@@ -29,6 +29,7 @@ import { useExplorerActions } from '@renderer/composables/useExplorerActions';
 import { useExplorerContextMenu } from '@renderer/composables/useExplorerContextMenu';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
 import type { FileItem } from '@renderer/types/explorer';
+import type { ToolId } from '@shared/types/tools';
 
 const explorer = useExplorerStore();
 const settings = useSettingsStore();
@@ -187,6 +188,15 @@ async function openInWindow() {
   await window.api?.invoke('explorer:create', explorer.currentPath || undefined);
 }
 
+async function openToolWithFiles(toolId: ToolId, paths: string[]): Promise<void> {
+  try {
+    const windowId = await window.api.invoke('tools:openWindow', toolId, { paths });
+    if (windowId === null) ui.notify('error', t('app.error'), t('tools.openFailed'));
+  } catch (error) {
+    ui.notify('error', t('app.error'), error instanceof Error ? error.message : String(error));
+  }
+}
+
 const contextMenu = useExplorerContextMenu({
   explorer,
   fileClipboard,
@@ -204,7 +214,8 @@ const contextMenu = useExplorerContextMenu({
   pasteClipboard: actions.pasteClipboard,
   createNewFolder,
   renameItem: actions.renameItem,
-  deleteItem: actions.deleteItem
+  deleteItem: actions.deleteItem,
+  openToolWithFiles
 });
 
 function onWheel(e: WheelEvent) {

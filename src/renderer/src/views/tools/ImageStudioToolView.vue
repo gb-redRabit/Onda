@@ -28,6 +28,7 @@ import Select from '@renderer/components/ui/Select.vue';
 import Slider from '@renderer/components/ui/Slider.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { filesForTool, toolContextPaths } from '@shared/tool-input';
 import {
   MAX_OUTPUT_DIMENSION,
   annotationBounds,
@@ -929,8 +930,7 @@ async function setAsCover(): Promise<void> {
 watch(
   () => context.value,
   (ctx) => {
-    const path =
-      ctx && ctx.params && typeof ctx.params.path === 'string' ? (ctx.params.path as string) : '';
+    const path = filesForTool('image-studio', toolContextPaths(ctx))[0] ?? '';
     if (path && path !== sourcePath.value) void loadPath(path);
   },
   { immediate: true }
@@ -1020,6 +1020,15 @@ onBeforeUnmount(() => {
               class="flex items-center gap-3 border-t border-hairline px-3 py-2 text-2xs text-base-content/60"
             >
               <span class="truncate" :title="sourcePath">{{ fileName(sourcePath) }}</span>
+              <button
+                type="button"
+                data-testid="image-studio-replace"
+                class="fx-noise shrink-0 rounded-field border border-hairline px-2 py-0.5 text-2xs hover:bg-base-content/10 disabled:cursor-wait disabled:opacity-60"
+                :disabled="loading"
+                @click="pickImage"
+              >
+                {{ t('tools.imageStudioChange') }}
+              </button>
               <span>{{ sourceWidth }}×{{ sourceHeight }} · {{ sourceFormat }}</span>
               <span>{{ t('tools.imageStudioSourceSize') }}: {{ formatBytes(sourceBytes) }}</span>
               <span class="ml-auto"

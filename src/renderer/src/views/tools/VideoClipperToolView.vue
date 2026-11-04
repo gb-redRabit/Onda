@@ -28,6 +28,8 @@ import PathInput from '@renderer/components/ui/PathInput.vue';
 import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { filesForTool, toolContextPaths } from '@shared/tool-input';
+import { VIDEO_TOOL_EXTS } from '@shared/types/tools';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
 import { useVideoThumbnails } from '@renderer/composables/useVideoThumbnails';
 import {
@@ -68,10 +70,10 @@ interface ClipItem {
   error?: string;
 }
 
-const VIDEO_EXTS = new Set(['mp4', 'mkv', 'webm', 'avi', 'mov', 'wmv', 'flv', 'm4v', 'ts']);
+const VIDEO_EXTS = new Set<string>(VIDEO_TOOL_EXTS);
 
 const { t } = useI18n();
-const { sendToMain } = useToolBridge();
+const { context, sendToMain } = useToolBridge();
 const videoEl = ref<HTMLVideoElement | null>(null);
 const timelineEl = ref<HTMLElement | null>(null);
 const timelineScrollEl = ref<HTMLElement | null>(null);
@@ -297,6 +299,21 @@ function clearVideo(): void {
   videoEl.value?.pause();
   void loadVideo('');
 }
+
+let appliedContextKey = '';
+
+// Nowe zaznaczenie w Eksploratorze podmienia wczytany film.
+watch(
+  () => context.value,
+  () => {
+    if (busy.value) return;
+    const path = filesForTool('video-clipper', toolContextPaths(context.value))[0];
+    if (!path || path === appliedContextKey) return;
+    appliedContextKey = path;
+    void loadVideo(path);
+  },
+  { immediate: true }
+);
 
 function onMetadata(): void {
   const value = videoEl.value?.duration;

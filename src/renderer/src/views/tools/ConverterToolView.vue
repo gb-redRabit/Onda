@@ -22,6 +22,8 @@ import SegmentedControl from '@renderer/components/ui/SegmentedControl.vue';
 import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { filesForTool, inputKindOfPath, toolContextPaths } from '@shared/tool-input';
+import { CONVERTER_AUDIO_EXTS, VIDEO_TOOL_EXTS } from '@shared/types/tools';
 import type {
   MediaConvertProgress,
   MediaConvertRequest,
@@ -44,11 +46,11 @@ interface ConvertJob {
   error?: string;
 }
 
-const AUDIO_EXTS = new Set(['mp3', 'flac', 'wav', 'ogg', 'opus', 'aac', 'm4a', 'wma']);
-const VIDEO_EXTS = new Set(['mp4', 'mkv', 'webm', 'avi', 'mov', 'wmv', 'flv', 'm4v', 'ts']);
+const AUDIO_EXTS = new Set<string>(CONVERTER_AUDIO_EXTS);
+const VIDEO_EXTS = new Set<string>(VIDEO_TOOL_EXTS);
 
 const { t } = useI18n();
-const { sendToMain } = useToolBridge();
+const { context, sendToMain } = useToolBridge();
 const kind = ref<ToolMediaKind>('audio');
 const files = ref<string[]>([]);
 const jobs = ref<ConvertJob[]>([]);
@@ -66,11 +68,15 @@ const bitrateDisabled = computed(
   () => kind.value === 'audio' && (audioFormat.value === 'flac' || audioFormat.value === 'wav')
 );
 
-watch(kind, () => {
-  if (busy.value) return;
-  files.value = [];
-  jobs.value = [];
-});
+watch(
+  kind,
+  () => {
+    if (busy.value) return;
+    files.value = [];
+    jobs.value = [];
+  },
+  { flush: 'sync' }
+);
 
 function fileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
@@ -112,6 +118,25 @@ function onDrop(event: DragEvent): void {
   if (busy.value) return;
   addFiles(getDroppedFilePaths(event.dataTransfer));
 }
+
+let appliedContextKey = '';
+
+// Otwarcie z Eksploratora (także gdy okno już żyje) zastępuje listę plików.
+function applyContext(): void {
+  if (busy.value) return;
+  const next = filesForTool('converter', toolContextPaths(context.value));
+  if (next.length === 0) return;
+  const key = next.join('\n');
+  if (key === appliedContextKey) return;
+  appliedContextKey = key;
+  const targetKind = inputKindOfPath(next[0]) === 'video' ? 'video' : 'audio';
+  if (kind.value !== targetKind) kind.value = targetKind;
+  const accepted = targetKind === 'audio' ? AUDIO_EXTS : VIDEO_EXTS;
+  files.value = next.filter((path) => accepted.has(extensionOf(path)));
+  jobs.value = [];
+}
+
+watch(() => context.value, applyContext, { immediate: true });
 
 async function pickOutputDir(): Promise<void> {
   const paths = (await window.api.invoke('dialog:openFolder')) as string[];

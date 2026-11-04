@@ -42,7 +42,13 @@ export function openToolWindow(
   const existing = windows.get(toolId);
   if (existing && !existing.isDestroyed()) {
     const safeParams = normalizeParams(params);
-    if (safeParams) contexts.set(existing.id, { toolId, params: safeParams });
+    if (safeParams) {
+      const context: ToolWindowContext = { toolId, params: safeParams };
+      contexts.set(existing.id, context);
+      // Okno już żyje, więc renderer nie wykona ponownie `tools:getContext`.
+      // Push pozwala podmienić wejście bez zamykania narzędzia.
+      existing.webContents.send('tools:context', context);
+    }
     bringToFront(existing);
     return existing.id;
   }

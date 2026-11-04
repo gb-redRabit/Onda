@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   AlertCircle,
@@ -22,6 +22,8 @@ import PathInput from '@renderer/components/ui/PathInput.vue';
 import Select from '@renderer/components/ui/Select.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { filesForTool, toolContextPaths } from '@shared/tool-input';
+import { VIDEO_TOOL_EXTS } from '@shared/types/tools';
 import type {
   MediaConvertProgress,
   VideoClipAudio,
@@ -32,10 +34,10 @@ import type {
 
 type ConcatStatus = 'idle' | 'exporting' | 'done' | 'error' | 'canceled';
 
-const VIDEO_EXTS = new Set(['mp4', 'mkv', 'webm', 'avi', 'mov', 'wmv', 'flv', 'm4v', 'ts']);
+const VIDEO_EXTS = new Set<string>(VIDEO_TOOL_EXTS);
 
 const { t } = useI18n();
-const { sendToMain } = useToolBridge();
+const { context, sendToMain } = useToolBridge();
 const files = ref<string[]>([]);
 const outputDir = ref('');
 const container = ref<VideoClipContainer>('mp4');
@@ -111,6 +113,26 @@ function clearFiles(): void {
   error.value = '';
   outputPath.value = '';
 }
+
+let appliedContextKey = '';
+
+// Otwarcie z Eksploratora zastępuje listę wejściową nowym zaznaczeniem.
+watch(
+  () => context.value,
+  () => {
+    if (busy.value) return;
+    const next = filesForTool('video-concat', toolContextPaths(context.value));
+    if (next.length === 0) return;
+    const key = next.join('\n');
+    if (key === appliedContextKey) return;
+    appliedContextKey = key;
+    files.value = next;
+    status.value = 'idle';
+    error.value = '';
+    outputPath.value = '';
+  },
+  { immediate: true }
+);
 
 async function pickOutputDir(): Promise<void> {
   const paths = (await window.api.invoke('dialog:openFolder')) as string[];

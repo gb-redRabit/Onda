@@ -76,6 +76,20 @@ export interface ToolMessage extends ToolMessageInput {
 
 export type ToolMediaKind = 'audio' | 'video';
 
+/** Rodzaje plików, które narzędzie przyjmuje na wejściu. */
+export type ToolInputKind = 'audio' | 'video' | 'image';
+
+export interface ToolInputSpec {
+  /** Rodzaje akceptowane przez narzędzie (bez mieszania, chyba że `allowMixedKinds`). */
+  kinds: readonly ToolInputKind[];
+  /** Rozszerzenia bez kropki, per rodzaj. */
+  extensions: Partial<Record<ToolInputKind, readonly string[]>>;
+  multiple: boolean;
+  maxFiles: number;
+  /** Converter obsługuje audio albo video, nigdy oba naraz. */
+  allowMixedKinds?: boolean;
+}
+
 export type ToolAudioFormat = 'mp3' | 'flac' | 'wav' | 'ogg' | 'opus' | 'aac' | 'm4a';
 export type ToolVideoContainer = 'mp4' | 'mkv' | 'webm';
 export type ToolVideoQuality = 'high' | 'medium' | 'low';
@@ -310,3 +324,105 @@ export interface HistoryExportResult {
   bytes?: number;
   error?: string;
 }
+
+// Wspólne listy rozszerzeń wejścia narzędzi. Trzymamy je tutaj, żeby menu
+// kontekstowe Eksploratora i same narzędzia korzystały z jednego źródła.
+export const CONVERTER_AUDIO_EXTS = [
+  'mp3',
+  'flac',
+  'wav',
+  'ogg',
+  'opus',
+  'aac',
+  'm4a',
+  'wma'
+] as const;
+export const VIDEO_TOOL_EXTS = [
+  'mp4',
+  'mkv',
+  'webm',
+  'avi',
+  'mov',
+  'wmv',
+  'flv',
+  'm4v',
+  'ts'
+] as const;
+export const TAG_AUDIO_EXTS = [
+  'mp3',
+  'flac',
+  'm4a',
+  'm4b',
+  'ogg',
+  'oga',
+  'opus',
+  'wav',
+  'aac',
+  'wma',
+  'aiff',
+  'ape'
+] as const;
+export const IMAGE_TOOL_EXTS = [
+  'png',
+  'jpg',
+  'jpeg',
+  'webp',
+  'avif',
+  'gif',
+  'bmp',
+  'tif',
+  'tiff',
+  'heic',
+  'heif'
+] as const;
+
+/** Wejście plikowe narzędzia; brak wpisu = narzędzie nie przyjmuje plików. */
+export const TOOL_INPUTS: Partial<Record<ToolId, ToolInputSpec>> = {
+  converter: {
+    kinds: ['audio', 'video'],
+    extensions: { audio: CONVERTER_AUDIO_EXTS, video: VIDEO_TOOL_EXTS },
+    multiple: true,
+    maxFiles: 500
+  },
+  'video-clipper': {
+    kinds: ['video'],
+    extensions: { video: VIDEO_TOOL_EXTS },
+    multiple: false,
+    maxFiles: 1
+  },
+  'video-concat': {
+    kinds: ['video'],
+    extensions: { video: VIDEO_TOOL_EXTS },
+    multiple: true,
+    maxFiles: 500
+  },
+  'tag-editor': {
+    kinds: ['audio'],
+    extensions: { audio: TAG_AUDIO_EXTS },
+    multiple: true,
+    maxFiles: TAG_EDITOR_MAX_FILES
+  },
+  'image-studio': {
+    kinds: ['image'],
+    extensions: { image: IMAGE_TOOL_EXTS },
+    multiple: false,
+    maxFiles: 1
+  },
+  'batch-images': {
+    kinds: ['image'],
+    extensions: { image: IMAGE_TOOL_EXTS },
+    multiple: true,
+    maxFiles: BATCH_IMAGES_MAX_FILES
+  }
+};
+
+/** Klucze i18n tytułów narzędzi (wspólne dla huba i menu kontekstowego). */
+export const TOOL_TITLE_KEYS: Record<ToolId, string> = {
+  converter: 'tools.converterTitle',
+  'video-clipper': 'tools.videoClipperTitle',
+  'video-concat': 'tools.videoConcatTitle',
+  'tag-editor': 'tools.tagEditorTitle',
+  'image-studio': 'tools.imageStudioTitle',
+  'batch-images': 'tools.batchImagesTitle',
+  'history-export': 'tools.historyExportTitle'
+};

@@ -22,6 +22,8 @@ import Slider from '@renderer/components/ui/Slider.vue';
 import ToolWindowShell, { type ToolStatus } from '@renderer/components/tools/ToolWindowShell.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { filesForTool, toolContextPaths } from '@shared/tool-input';
+import { IMAGE_TOOL_EXTS } from '@shared/types/tools';
 import {
   BATCH_IMAGES_MAX_FILES,
   IMAGE_OUTPUT_FORMATS,
@@ -40,19 +42,7 @@ interface BatchRow {
   error?: string;
 }
 
-const IMAGE_EXTS = [
-  'png',
-  'jpg',
-  'jpeg',
-  'webp',
-  'avif',
-  'gif',
-  'bmp',
-  'tif',
-  'tiff',
-  'heic',
-  'heif'
-];
+const IMAGE_EXTS: readonly string[] = IMAGE_TOOL_EXTS;
 
 const { t } = useI18n();
 const { context } = useToolBridge();
@@ -122,7 +112,7 @@ async function pickFiles(): Promise<void> {
   if (busy.value) return;
   const result = (await window.api.invoke('dialog:openFile', {
     properties: ['openFile', 'multiSelections'],
-    filters: [{ name: t('tools.imageStudioTitle'), extensions: IMAGE_EXTS }]
+    filters: [{ name: t('tools.imageStudioTitle'), extensions: [...IMAGE_EXTS] }]
   })) as { canceled: boolean; filePaths: string[] };
   if (!result.canceled) addFiles(result.filePaths);
 }
@@ -211,14 +201,20 @@ function cancel(): void {
   if (jobId.value) void window.api.cancelBatchImages(jobId.value);
 }
 
+let appliedContextKey = '';
+
+// Otwarcie z Eksploratora zastępuje listę obrazów nowym zaznaczeniem.
 watch(
   () => context.value,
-  (ctx) => {
-    const paths =
-      ctx && ctx.params && Array.isArray(ctx.params.paths)
-        ? ctx.params.paths.filter((path): path is string => typeof path === 'string')
-        : [];
-    if (paths.length > 0) addFiles(paths);
+  () => {
+    if (busy.value) return;
+    const next = filesForTool('batch-images', toolContextPaths(context.value));
+    if (next.length === 0) return;
+    const key = next.join('\n');
+    if (key === appliedContextKey) return;
+    appliedContextKey = key;
+    clearAll();
+    addFiles(next);
   },
   { immediate: true }
 );

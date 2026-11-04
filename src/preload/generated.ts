@@ -328,6 +328,7 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'tools:progress',
   'tools:batchImagesProgress',
   'tools:message',
+  'tools:context',
   'providers:limit',
   'yt:subs:updated',
   'yt:newVideos',

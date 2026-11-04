@@ -459,6 +459,7 @@ export default {
     tagEditorApply: 'Apply',
     tagEditorBatchValue: 'Value for selected',
     tagEditorHint: 'Edit values inline or fill a field for the selected files, then save.',
+    tagReplaceDirty: 'You have unsaved tag edits. Replace the file list with the new selection?',
     tagEditorLoading: 'Reading tags…',
     tagEditorSave: 'Save changes',
     tagEditorSaving: 'Saving…',
@@ -485,6 +486,7 @@ export default {
     imageStudioDescription:
       'Crop, adjust, annotate and export images, or use one as an audio cover.',
     imageStudioOpen: 'Open image',
+    imageStudioChange: 'Change image',
     imageStudioEmpty: 'No image open',
     imageStudioDropHint: 'Drop an image here or open one from disk.',
     imageStudioLoading: 'Loading…',
@@ -2159,6 +2161,7 @@ api.registerCommand({
     rename: 'Rename',
     openImage: 'Open image',
     openWithDefaultApp: 'Open with default app',
+    tools: 'Tools',
     deleteConfirm: 'Delete "{name}"?',
     deleteMultipleConfirm: 'Delete these {count} items?',
     newFolder: 'New folder',

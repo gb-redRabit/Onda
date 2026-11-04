@@ -9,6 +9,8 @@ import { IMAGE_EXTS, VIDEO_EXTS, AUDIO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
 import type { ContextMenuAction } from '@renderer/composables/useContextMenu';
 import { revealInFolder, openWithDefaultApp, openInTerminal, copyPathViaMain } from './menuActions';
+import { filesForTool, toolsForFiles } from '@shared/tool-input';
+import { TOOL_TITLE_KEYS, type ToolId } from '@shared/types/tools';
 
 export interface ExplorerActionCtx {
   explorer: ReturnType<typeof useExplorerStore>;
@@ -28,6 +30,7 @@ export interface ExplorerActionCtx {
   createNewFolder: () => void;
   renameItem: (item: FileItem) => void;
   deleteItem: (item: FileItem) => void;
+  openToolWithFiles: (toolId: ToolId, paths: string[]) => void | Promise<void>;
 }
 
 interface MenuCtx {
@@ -48,6 +51,7 @@ interface MenuCtx {
   createNewFolder: ExplorerActionCtx['createNewFolder'];
   renameItem: ExplorerActionCtx['renameItem'];
   deleteItem: ExplorerActionCtx['deleteItem'];
+  openToolWithFiles: ExplorerActionCtx['openToolWithFiles'];
 }
 
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
@@ -80,7 +84,8 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
       pasteClipboard: ctx.pasteClipboard,
       createNewFolder: ctx.createNewFolder,
       renameItem: ctx.renameItem,
-      deleteItem: ctx.deleteItem
+      deleteItem: ctx.deleteItem,
+      openToolWithFiles: ctx.openToolWithFiles
     };
   }
 
@@ -163,54 +168,82 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
     ];
   }
 
-  function itemDefs(): ContextMenuAction<MenuCtx>[] {
+  function toolMenuDefs(c: MenuCtx): ContextMenuAction<MenuCtx>[] {
+    const paths = selectedToolPaths(c);
+    if (paths.length === 0) return [];
+    const tools = toolsForFiles(paths);
+    if (tools.length === 0) return [];
+    return [
+      {
+        label: t('explorer.tools'),
+        children: tools.map((toolId) => ({
+          label: t(TOOL_TITLE_KEYS[toolId]),
+          action: (menuCtx) => {
+            const files = filesForTool(toolId, selectedToolPaths(menuCtx));
+            if (files.length > 0) void ctx.openToolWithFiles(toolId, files);
+          }
+        }))
+      }
+    ];
+  }
+
+  function selectedToolPaths(c: MenuCtx): string[] {
+    const selected = c.filteredFiles.value
+      .filter((file) => !file.isDirectory && c.explorer.selectedFiles.has(file.path))
+      .map((file) => file.path);
+    if (selected.length > 0) return selected;
+    return c.item && !c.item.isDirectory ? [c.item.path] : [];
+  }
+
+  function itemDefs(c: MenuCtx): ContextMenuAction<MenuCtx>[] {
     return [
       {
         label: t('explorer.open'),
         shortcut: 'Enter',
-        when: (c) => !!c.item?.isDirectory,
-        action: (c) => c.item != null && ctx.navigateTo(c.item.path)
+        when: (ctxItem) => !!ctxItem.item?.isDirectory,
+        action: (ctxItem) => ctxItem.item != null && ctx.navigateTo(ctxItem.item.path)
       },
       {
         label: t('common.play'),
         shortcut: 'Enter',
-        when: (c) => isPlayable(c.item),
-        action: (c) => c.item != null && ctx.playItem(c.item)
+        when: (ctxItem) => isPlayable(ctxItem.item),
+        action: (ctxItem) => ctxItem.item != null && ctx.playItem(ctxItem.item)
       },
       {
         label: t('common.addToQueue'),
-        when: (c) => isPlayable(c.item),
-        action: (c) => c.item != null && ctx.addToQueueItem(c.item)
+        when: (ctxItem) => isPlayable(ctxItem.item),
+        action: (ctxItem) => ctxItem.item != null && ctx.addToQueueItem(ctxItem.item)
       },
       {
         label: t('explorer.openImage'),
         shortcut: 'Enter',
-        when: (c) => isImage(c.item),
-        action: (c) => {
-          if (!c.item) return;
-          const idx = c.filteredFiles.value.findIndex((f) => f.path === c.item!.path);
+        when: (ctxItem) => isImage(ctxItem.item),
+        action: (ctxItem) => {
+          if (!ctxItem.item) return;
+          const idx = ctxItem.filteredFiles.value.findIndex((f) => f.path === ctxItem.item!.path);
           if (idx >= 0) ctx.openImageViewer(idx);
         }
       },
+      ...toolMenuDefs(c),
       {
         label: t('explorer.addToLibrary'),
-        when: (c) => !!c.item?.isDirectory && !isLibraryFolder(c.item.path),
-        action: (c) => c.item != null && library.addFolder(c.item.path)
+        when: (ctxItem) => !!ctxItem.item?.isDirectory && !isLibraryFolder(ctxItem.item.path),
+        action: (ctxItem) => ctxItem.item != null && library.addFolder(ctxItem.item.path)
       },
       {
         label: t('explorer.removeFromLibrary'),
-        when: (c) => !!c.item?.isDirectory && isLibraryFolder(c.item.path),
-        action: (c) => c.item != null && library.removeFolder(c.item.path)
+        when: (ctxItem) => !!ctxItem.item?.isDirectory && isLibraryFolder(ctxItem.item.path),
+        action: (ctxItem) => ctxItem.item != null && library.removeFolder(ctxItem.item.path)
       },
       {
         label: t('explorer.openInTerminal'),
-        when: (c) => !!c.item?.isDirectory,
-        action: (c) => {
-          if (c.item) openInTerminal(c.item.path);
+        when: (ctxItem) => !!ctxItem.item?.isDirectory,
+        action: (ctxItem) => {
+          if (ctxItem.item) openInTerminal(ctxItem.item.path);
         }
       },
       ...fileCommonDefs(),
-      { separator: true, label: '', when: (c) => c.item != null },
+      { separator: true, label: '', when: (ctxItem) => ctxItem.item != null },
       ...renameDeleteDefs()
     ];
   }
@@ -250,10 +283,11 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
   }
 
   function itemMenu(item: FileItem): { defs: ContextMenuAction<MenuCtx>[]; menuCtx: MenuCtx } {
+    const menuCtx = makeCtx(item);
     const defs: ContextMenuAction<MenuCtx>[] = [
       ...clipboardDefs(),
       { separator: true, label: '', when: hasClipboard },
-      ...itemDefs(),
+      ...itemDefs(menuCtx),
       { separator: true, label: '' },
       {
         label: t('explorer.properties'),
@@ -263,7 +297,7 @@ export function createExplorerMenuDefs(ctx: ExplorerActionCtx) {
       { separator: true, label: '' },
       ...selectAllDefs()
     ];
-    return { defs, menuCtx: makeCtx(item) };
+    return { defs, menuCtx };
   }
 
   return { emptyMenu, itemMenu };

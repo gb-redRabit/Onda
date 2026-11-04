@@ -347,6 +347,7 @@ export const RECEIVE_CHANNELS = [
   'tools:progress',
   'tools:batchImagesProgress',
   'tools:message',
+  'tools:context',
   'providers:limit',
   'yt:subs:updated',
   'yt:newVideos',

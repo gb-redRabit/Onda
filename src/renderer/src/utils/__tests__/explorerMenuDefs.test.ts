@@ -21,7 +21,8 @@ function makeCtx() {
     pasteClipboard: vi.fn(),
     createNewFolder: vi.fn(),
     renameItem: vi.fn(),
-    deleteItem: vi.fn()
+    deleteItem: vi.fn(),
+    openToolWithFiles: vi.fn()
   } as unknown as ExplorerActionCtx;
 }
 
@@ -42,7 +43,8 @@ function isVisible<T>(defs: ContextMenuAction<T>[], label: string, ctx: T): bool
   return !!def && (!def.when || def.when(ctx));
 }
 
-const { itemMenu } = createExplorerMenuDefs(makeCtx());
+const ctx = makeCtx();
+const { itemMenu } = createExplorerMenuDefs(ctx);
 
 describe('explorer item menu', () => {
   it('does not offer play or queue for images', () => {
@@ -63,5 +65,26 @@ describe('explorer item menu', () => {
     const { defs } = itemMenu(file('song.mp3', '.mp3'));
     const copyPath = defs.find((d) => d.label === 'explorer.copyPath');
     expect(copyPath?.shortcut).toBeUndefined();
+  });
+
+  it('offers a tools submenu with tools matching the clicked file', () => {
+    const { defs } = itemMenu(file('cover.png', '.png'));
+    const tools = defs.find((d) => d.label === 'explorer.tools');
+    expect(tools?.children?.map((child) => child.label)).toEqual([
+      'tools.imageStudioTitle',
+      'tools.batchImagesTitle'
+    ]);
+  });
+
+  it('hides the tools submenu for unsupported files', () => {
+    const { defs } = itemMenu(file('notes.txt', '.txt'));
+    expect(defs.some((d) => d.label === 'explorer.tools')).toBe(false);
+  });
+
+  it('opens the chosen tool with the clicked file', () => {
+    const { defs, menuCtx } = itemMenu(file('cover.png', '.png'));
+    const tools = defs.find((d) => d.label === 'explorer.tools');
+    tools?.children?.[0]?.action?.(menuCtx);
+    expect(ctx.openToolWithFiles).toHaveBeenCalledWith('image-studio', ['D:/cover.png']);
   });
 });

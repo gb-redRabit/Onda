@@ -326,6 +326,7 @@ export type IpcReceiveChannel =
   | 'tools:progress'
   | 'tools:batchImagesProgress'
   | 'tools:message'
+  | 'tools:context'
   | 'providers:limit'
   | 'yt:subs:updated'
   | 'yt:newVideos'
