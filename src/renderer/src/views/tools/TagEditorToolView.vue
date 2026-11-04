@@ -11,6 +11,7 @@ import {
   Trash2
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import Spinner from '@renderer/components/ui/Spinner.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import Button from '@renderer/components/ui/Button.vue';
 import IconButton from '@renderer/components/ui/IconButton.vue';
@@ -419,11 +420,19 @@ function fieldLabel(field: AudioTagField): string {
         @drop.prevent="onDrop"
       >
         <EmptyState
-          v-if="files.length === 0"
+          v-if="files.length === 0 && !loading"
           :title="t('tools.tagEditorEmpty')"
           :description="t('tools.tagEditorDropHint')"
           :icon="Tags"
         />
+
+        <div
+          v-else-if="files.length === 0 && loading"
+          class="flex h-full items-center justify-center gap-2 p-6 text-sm text-base-content/60"
+        >
+          <Spinner :size="18" />
+          {{ t('tools.tagEditorLoading') }}
+        </div>
 
         <table v-else class="w-full min-w-[980px] border-separate border-spacing-0 text-xs">
           <thead class="sticky top-0 z-10">

@@ -1,6 +1,16 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import type { ToolWindowContext } from '@shared/types/tools';
 
+// Kontekst pobrany w `main.ts` przed montażem widoku. Dzięki temu pierwsze
+// malowanie narzędzia zna już `params` i nie mruga pustym stanem „wybierz plik”.
+let prefetchedContext: ToolWindowContext | null = null;
+let prefetched = false;
+
+export function setPrefetchedToolContext(value: ToolWindowContext | null): void {
+  prefetchedContext = value;
+  prefetched = true;
+}
+
 function isToolWindowContext(value: unknown): value is ToolWindowContext {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const candidate = value as { toolId?: unknown; params?: unknown };
@@ -13,7 +23,8 @@ function isToolWindowContext(value: unknown): value is ToolWindowContext {
 }
 
 export function useToolBridge() {
-  const context = ref<ToolWindowContext | null>(null);
+  const context = ref<ToolWindowContext | null>(prefetchedContext);
+  const skipInitialFetch = prefetched;
   let offContext: (() => void) | null = null;
 
   onMounted(async () => {
@@ -22,6 +33,7 @@ export function useToolBridge() {
     offContext = window.api.on('tools:context', (payload: unknown) => {
       if (isToolWindowContext(payload)) context.value = payload;
     });
+    if (skipInitialFetch) return;
     try {
       const initial = (await window.api.invoke('tools:getContext')) as ToolWindowContext | null;
       if (isToolWindowContext(initial) && !context.value) context.value = initial;

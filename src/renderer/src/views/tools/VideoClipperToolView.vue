@@ -21,6 +21,7 @@ import {
   Video
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import Spinner from '@renderer/components/ui/Spinner.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import Button from '@renderer/components/ui/Button.vue';
 import IconButton from '@renderer/components/ui/IconButton.vue';
@@ -79,6 +80,7 @@ const timelineEl = ref<HTMLElement | null>(null);
 const timelineScrollEl = ref<HTMLElement | null>(null);
 const timelineZoom = ref(1);
 const videoPath = ref('');
+const videoLoading = ref(false);
 const duration = ref(0);
 const videoFps = ref(30);
 const timelineScrollLeft = ref(0);
@@ -247,34 +249,39 @@ function extensionOf(path: string): string {
 }
 
 async function loadVideo(path: string): Promise<void> {
-  if (path) {
-    try {
-      await window.api.invoke('media:grantAccess', path);
-    } catch {
-      // Podgląd może się nie załadować, ale eksport nadal sprawdzi ścieżkę w main.
+  videoLoading.value = path !== '';
+  try {
+    if (path) {
+      try {
+        await window.api.invoke('media:grantAccess', path);
+      } catch {
+        // Podgląd może się nie załadować, ale eksport nadal sprawdzi ścieżkę w main.
+      }
     }
+    cancelThumbnails();
+    cancelFrameStrip();
+    thumbnails.value = [];
+    videoPath.value = path;
+    const ext = extensionOf(path);
+    container.value = ext === 'webm' || ext === 'mkv' ? 'mkv' : 'mp4';
+    duration.value = 0;
+    videoFps.value = 30;
+    timelineScrollLeft.value = 0;
+    timelineWidthPx.value = 0;
+    timelineViewportWidth.value = 0;
+    currentTime.value = 0;
+    startSec.value = 0;
+    endSec.value = 0;
+    status.value = 'idle';
+    progress.value = 0;
+    speed.value = '';
+    error.value = '';
+    outputPath.value = '';
+    previewing.value = false;
+    isPlaying.value = false;
+  } finally {
+    videoLoading.value = false;
   }
-  cancelThumbnails();
-  cancelFrameStrip();
-  thumbnails.value = [];
-  videoPath.value = path;
-  const ext = extensionOf(path);
-  container.value = ext === 'webm' || ext === 'mkv' ? 'mkv' : 'mp4';
-  duration.value = 0;
-  videoFps.value = 30;
-  timelineScrollLeft.value = 0;
-  timelineWidthPx.value = 0;
-  timelineViewportWidth.value = 0;
-  currentTime.value = 0;
-  startSec.value = 0;
-  endSec.value = 0;
-  status.value = 'idle';
-  progress.value = 0;
-  speed.value = '';
-  error.value = '';
-  outputPath.value = '';
-  previewing.value = false;
-  isPlaying.value = false;
 }
 
 async function pickVideo(): Promise<void> {
@@ -856,7 +863,7 @@ onBeforeUnmount(() => {
       @drop.prevent="onDrop"
     >
       <section
-        v-if="!videoPath"
+        v-if="!videoPath && !videoLoading"
         data-testid="clip-dropzone"
         class="flex min-h-72 flex-col items-center justify-center rounded-box border border-hairline bg-base-100/70 p-6"
       >
@@ -875,6 +882,16 @@ onBeforeUnmount(() => {
           {{ t('tools.clipChoose') }}
         </button>
       </section>
+
+      <div
+        v-else-if="!videoPath && videoLoading"
+        class="grid min-h-72 place-items-center rounded-box border border-hairline bg-base-100/70 p-6 text-sm text-base-content/60"
+      >
+        <div class="flex items-center gap-2">
+          <Spinner :size="18" />
+          {{ t('common.loading') }}
+        </div>
+      </div>
 
       <div v-else class="flex flex-col gap-4">
         <section class="flex min-w-0 flex-col gap-3">

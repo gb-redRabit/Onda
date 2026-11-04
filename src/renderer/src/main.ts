@@ -10,6 +10,8 @@ import { usePluginsStore } from './stores/plugins';
 import { usePluginsHooks } from './composables/usePluginsHooks';
 import { ensureMediaServerUrl } from './utils/mediaUrl';
 import { setCoreShellMode } from './utils/runtimeMode';
+import { setPrefetchedToolContext } from './composables/useToolBridge';
+import type { ToolWindowContext } from '@shared/types/tools';
 import { vActivate } from './utils/activateDirective';
 import { logger } from '@shared/logger';
 
@@ -112,7 +114,16 @@ async function bootstrap(): Promise<void> {
     initI18n(),
     moduleManager.initAll(),
     useSettingsStore().load(),
-    ensureMediaServerUrl()
+    ensureMediaServerUrl(),
+    // Okno narzędzia ma od razu znać przekazane pliki: bez tego pierwsze
+    // malowanie pokazywało pusty stan „wybierz plik” i dopiero potem wczytywało
+    // plik z Eksploratora.
+    window.location.hash.startsWith('#/tools/')
+      ? window.api
+          .invoke('tools:getContext')
+          .then((ctx) => setPrefetchedToolContext(ctx as ToolWindowContext | null))
+          .catch(() => setPrefetchedToolContext(null))
+      : Promise.resolve()
   ]);
   app.mount('#app');
   mounted = true;

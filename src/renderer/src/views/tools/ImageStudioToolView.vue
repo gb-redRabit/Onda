@@ -19,6 +19,7 @@ import {
   Undo2
 } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
+import Spinner from '@renderer/components/ui/Spinner.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import Button from '@renderer/components/ui/Button.vue';
 import ColorInput from '@renderer/components/ui/ColorInput.vue';
@@ -978,7 +979,7 @@ onBeforeUnmount(() => {
       @drop.prevent="onDropImage"
     >
       <div class="flex-1 overflow-hidden">
-        <div v-if="!hasImage" class="flex h-full items-center justify-center p-6">
+        <div v-if="!hasImage && !loading" class="flex h-full items-center justify-center p-6">
           <div class="max-w-md text-center">
             <EmptyState
               :title="t('tools.imageStudioEmpty')"
@@ -989,12 +990,19 @@ onBeforeUnmount(() => {
               type="button"
               data-testid="image-studio-open"
               class="fx-noise mt-4 rounded-field bg-primary px-4 py-2 text-sm font-medium text-primary-content transition-colors hover:bg-primary/90"
-              :disabled="loading"
               @click="pickImage"
             >
-              {{ loading ? t('tools.imageStudioLoading') : t('tools.imageStudioOpen') }}
+              {{ t('tools.imageStudioOpen') }}
             </button>
           </div>
+        </div>
+
+        <div
+          v-else-if="!hasImage && loading"
+          class="flex h-full items-center justify-center gap-2 p-6 text-sm text-base-content/60"
+        >
+          <Spinner :size="18" />
+          {{ t('tools.imageStudioLoading') }}
         </div>
 
         <div v-else class="flex h-full min-h-0">
