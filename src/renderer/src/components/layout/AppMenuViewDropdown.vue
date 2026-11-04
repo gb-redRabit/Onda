@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
-import { Home, Library, FolderOpen, Globe2, Download, Settings, PanelBottom } from '@lucide/vue';
+import {
+  AudioLines,
+  Download,
+  FolderOpen,
+  Globe2,
+  Home,
+  Library,
+  MonitorPlay,
+  PanelBottom,
+  Rss,
+  Settings,
+  Tv
+} from '@lucide/vue';
 import AppMenuItem from './AppMenuItem.vue';
 
 // Widok: nawigacja po trasach + przełącznik paska statusu. Skróty czytane z settings.
@@ -13,7 +25,11 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
   { path: '/', label: 'menu.home', shortcut: 'home', icon: Home },
   { path: '/library', label: 'menu.library', shortcut: 'library', icon: Library },
   { path: '/explorer', label: 'menu.explorer', shortcut: 'explorer', icon: FolderOpen },
-  { path: '/online', label: 'menu.online', icon: Globe2 }
+  { path: '/audio', label: 'menu.audioView', icon: AudioLines },
+  { path: '/player', label: 'nav.player', icon: MonitorPlay },
+  { path: '/online', label: 'menu.online', icon: Globe2 },
+  { path: '/sources', label: 'menu.sources', icon: Rss },
+  { path: '/webcast', label: 'menu.webcast', icon: Tv }
 ];
 </script>
 

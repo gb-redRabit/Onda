@@ -31,9 +31,11 @@ const ALL_SECTIONS: StatusBarSectionId[] = [
 const info = ref<AppInfo | null>(null);
 
 onMounted(async () => {
+  // Zegar pokazuje minuty — 1 s to zbędne wybudzenia. 30 s wystarcza, żeby
+  // granica minuty pojawiła się w rozsądnym czasie.
   clockTimer = window.setInterval(() => {
     now.value = new Date();
-  }, 1000);
+  }, 30_000);
   try {
     const i = await window.api?.getAppInfo();
     if (i) info.value = i;
@@ -178,8 +180,8 @@ function toggleSection(id: StatusBarSectionId) {
 
 const { open } = useContextMenu();
 
-function openContextMenu(e: MouseEvent) {
-  const defs: ContextMenuAction<null>[] = [
+function statusMenuDefs(): ContextMenuAction<null>[] {
+  return [
     ...ALL_SECTIONS.map((id): ContextMenuAction<null> => {
       const on = settings.statusBar.sections.includes(id);
       return {
@@ -190,7 +192,28 @@ function openContextMenu(e: MouseEvent) {
     { separator: true, label: '' },
     { label: t('status.hideStatusBar'), action: () => settings.updateStatusBar({ visible: false }) }
   ];
-  open(e, defs, null);
+}
+
+function openContextMenu(e: MouseEvent) {
+  open(e, statusMenuDefs(), null);
+}
+
+function onStatusKeydown(e: KeyboardEvent) {
+  if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return;
+  e.preventDefault();
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  // `open` oczekuje MouseEvent; dla klawiatury podajemy pozycję lewego dolnego
+  // rogu paska, a preventDefault/stopPropagation są no-op.
+  open(
+    {
+      clientX: rect.left + 8,
+      clientY: rect.top - 8,
+      preventDefault: () => {},
+      stopPropagation: () => {}
+    } as MouseEvent,
+    statusMenuDefs(),
+    null
+  );
 }
 </script>
 
@@ -198,8 +221,11 @@ function openContextMenu(e: MouseEvent) {
   <div
     v-if="settings.statusBar.visible"
     data-app-statusbar
-    class="h-6 bg-base-100/(--glass-alpha) border-t border-hairline/80 flex items-center px-3 text-2xs text-base-content/50 shrink-0 gap-4 select-none"
+    tabindex="0"
+    :aria-label="$t('menu.statusBar')"
+    class="h-6 bg-base-100/(--glass-alpha) border-t border-hairline/80 flex items-center px-3 text-2xs text-base-content/50 shrink-0 gap-4 select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
     @contextmenu="openContextMenu"
+    @keydown="onStatusKeydown"
   >
     <template v-if="hasSection('playing')">
       <StatusBarPlaying @open="goTo" />
@@ -256,7 +282,7 @@ function openContextMenu(e: MouseEvent) {
         @click="goTo('/settings?tab=dependencies')"
       >
         <TriangleAlert :size="11" class="shrink-0 text-warning" />
-        {{ depsText }}
+        <span class="truncate max-w-[24vw]">{{ depsText }}</span>
       </button>
     </template>
     <template v-if="hasSection('version') && info">

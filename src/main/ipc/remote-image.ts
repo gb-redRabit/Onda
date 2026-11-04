@@ -18,11 +18,14 @@ import {
 const MAX_BYTES = 4 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
 const CACHE_MAX = 200;
+// Data URL-e potrafią mieć kilka MB; sam limit wpisów pozwalał urosnąć do ~800 MB.
+const CACHE_MAX_BYTES = 24 * 1024 * 1024;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_REDIRECTS = 3;
 const USER_AGENT = CHROME_USER_AGENT;
 
 const cache = new Map<string, { data: string; at: number }>();
+let cacheBytes = 0;
 const inflight = new Map<string, Promise<string | null>>();
 
 export interface RemoteImageResponse {
@@ -82,11 +85,18 @@ function responseHeader(res: RemoteImageResponse, name: string): string | undefi
 }
 
 function remember(url: string, data: string): void {
-  if (cache.size >= CACHE_MAX) {
-    const oldest = cache.keys().next().value;
-    if (oldest) cache.delete(oldest);
-  }
+  const existing = cache.get(url);
+  if (existing) cacheBytes -= existing.data.length;
+  cache.delete(url);
   cache.set(url, { data, at: Date.now() });
+  cacheBytes += data.length;
+  while ((cache.size > CACHE_MAX || cacheBytes > CACHE_MAX_BYTES) && cache.size > 0) {
+    const oldest = cache.keys().next().value;
+    if (!oldest) break;
+    const entry = cache.get(oldest);
+    if (entry) cacheBytes -= entry.data.length;
+    cache.delete(oldest);
+  }
 }
 
 // Podąża za przekierowaniami ręcznie, aby KAŻDY krok był walidowany: przy `redirect: 'follow'`
@@ -180,7 +190,12 @@ export async function getRemoteImage(
   if (!isAllowedRemoteUrl(rawUrl)) return null;
 
   const cached = cache.get(rawUrl);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    // LRU: odśwież kolejność, żeby eviction usuwał najdawniej używane.
+    cache.delete(rawUrl);
+    cache.set(rawUrl, cached);
+    return cached.data;
+  }
   const pending = inflight.get(rawUrl);
   if (pending) return pending;
 
@@ -224,5 +239,6 @@ export function registerRemoteImageHandler(): void {
 export function clearRemoteImageCache(): number {
   const entries = cache.size;
   cache.clear();
+  cacheBytes = 0;
   return entries;
 }

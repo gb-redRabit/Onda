@@ -4,8 +4,16 @@ import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
 
 const error = ref<Error | null>(null);
+// Nowy klucz po „Spróbuj ponownie” wymusza remount slotu — samo wyczyszczenie
+// błędu mogło natychmiast odtworzyć ten sam wyjątek w tej samej instancji.
+const retryKey = ref(0);
 const { t } = useI18n();
 const ui = useUIStore();
+
+function retry(): void {
+  error.value = null;
+  retryKey.value += 1;
+}
 
 onErrorCaptured((err) => {
   error.value = err;
@@ -26,12 +34,12 @@ onErrorCaptured((err) => {
         <button
           type="button"
           class="fx-noise px-4 py-2 fx-depth rounded-field bg-error/20 text-error text-sm font-medium hover:bg-error/30 transition-colors"
-          @click="error = null"
+          @click="retry"
         >
           {{ $t('errorBoundary.retry') }}
         </button>
       </div>
     </div>
-    <slot v-else />
+    <div v-else :key="retryKey" class="contents"><slot /></div>
   </div>
 </template>

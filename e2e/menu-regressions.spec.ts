@@ -47,6 +47,40 @@ test.describe('app menu — view keyboard', () => {
       await onda.dispose();
     }
   });
+
+  test('left/right move between menus and expose existing screens', async () => {
+    const onda = await launchOnda();
+    const { page } = onda;
+    try {
+      await dismissWizard(page);
+      await page.locator('[data-menu-trigger="view"]').click();
+      await expect(page.locator('[data-menu="view"]')).toBeVisible();
+
+      // Bez utworu menu Odtwarzanie jest ukryte, więc z Widoku w prawo trafiamy w Pomoc.
+      await page.keyboard.press('ArrowRight');
+      await expect(page.locator('[data-menu="help"]')).toBeVisible();
+      for (const label of ['Skróty klawiszowe', 'Zależności', 'Aktualizacje', 'Logi']) {
+        await expect(page.getByRole('menuitem', { name: label })).toBeVisible();
+      }
+
+      await page.keyboard.press('ArrowLeft');
+      await expect(page.locator('[data-menu="view"]')).toBeVisible();
+      for (const label of ['Widok audio', 'Odtwarzacz', 'Źródła', 'Webcast']) {
+        await expect(page.getByRole('menuitem', { name: label })).toBeVisible();
+      }
+
+      await page.keyboard.press('Escape');
+      await expect(page.locator('[data-menu="view"]')).toHaveCount(0);
+      await page.locator('[data-menu-trigger="file"]').click();
+      await expect(page.getByRole('menuitem', { name: 'Zakończ' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('[data-menu="file"]')).toHaveCount(0);
+
+      expect(onda.pageErrors).toEqual([]);
+    } finally {
+      await onda.dispose();
+    }
+  });
 });
 
 test.describe('context menu — image item', () => {

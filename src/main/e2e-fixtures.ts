@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import type { IpcDownloadJobInput, IpcDownloadTask, IpcYoutubeVideo } from '../shared/types/ipc';
 import type { ProviderDetectResult, RemoteItem } from '../shared/types/providers';
 
@@ -6,7 +7,9 @@ import type { ProviderDetectResult, RemoteItem } from '../shared/types/providers
 // kompilacje spakowane nigdy ich nie widzą.
 
 export function e2eFixturesEnabled(): boolean {
-  return process.env.ONDA_E2E_FIXTURES === '1';
+  // Hooki są dla rozpakowanych buildów E2E; spakowana aplikacja nie może
+  // podmieniać odpowiedzi providerów przez zmienną środowiskową.
+  return !app.isPackaged && process.env.ONDA_E2E_FIXTURES === '1';
 }
 
 // ── Providerzy linków (PikPak/MEGA…) ─────────────────────────────────────────

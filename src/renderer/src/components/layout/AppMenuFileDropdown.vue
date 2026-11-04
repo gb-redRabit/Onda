@@ -18,6 +18,6 @@ defineEmits<{ openFile: []; openFolder: []; quit: [] }>();
       {{ $t('menu.openFolder') }}
     </AppMenuItem>
     <div class="border-t border-hairline my-1.5 mx-2" role="separator" />
-    <AppMenuItem :icon="LogOut" @click="$emit('quit')">{{ $t('menu.close') }}</AppMenuItem>
+    <AppMenuItem :icon="LogOut" @click="$emit('quit')">{{ $t('menu.quit') }}</AppMenuItem>
   </div>
 </template>

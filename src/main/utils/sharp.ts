@@ -21,6 +21,26 @@ function cachePath(filePath: string, maxSize: number, ext: string = 'jpg'): stri
 
 const IMAGE_EXTS = new Set(SHARED_IMAGE_EXTS);
 
+// libvips dekoduje cały obraz; kilka równoległych miniatur potrafi skokowo
+// podnieść CPU/RSS. Kolejka ogranicza równoległość, nie zmieniając wyników.
+const MAX_CONCURRENT_SHARP = 2;
+let activeSharp = 0;
+const sharpWaiters: Array<() => void> = [];
+
+async function withSharpSlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (activeSharp >= MAX_CONCURRENT_SHARP) {
+    await new Promise<void>((resolve) => sharpWaiters.push(resolve));
+  }
+  activeSharp++;
+  try {
+    return await fn();
+  } finally {
+    activeSharp--;
+    const next = sharpWaiters.shift();
+    if (next) next();
+  }
+}
+
 export class SharpService {
   static async getThumbnail(filePath: string, maxSize: number = 320): Promise<Buffer | null> {
     try {
@@ -38,10 +58,12 @@ export class SharpService {
 
       if (IMAGE_EXTS.has(ext)) {
         const sharp = await loadSharp();
-        buf = await sharp(filePath)
-          .resize(maxSize, maxSize, { fit: 'outside', withoutEnlargement: true })
-          .jpeg({ quality: 85, mozjpeg: true })
-          .toBuffer();
+        buf = await withSharpSlot(() =>
+          sharp(filePath)
+            .resize(maxSize, maxSize, { fit: 'outside', withoutEnlargement: true })
+            .jpeg({ quality: 85, mozjpeg: true })
+            .toBuffer()
+        );
       } else {
         return null;
       }
@@ -64,10 +86,12 @@ export class SharpService {
       if (!IMAGE_EXTS.has(ext)) return null;
 
       const sharp = await loadSharp();
-      return await sharp(filePath)
-        .resize(width, undefined, { fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality, mozjpeg: true })
-        .toBuffer();
+      return await withSharpSlot(() =>
+        sharp(filePath)
+          .resize(width, undefined, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality, mozjpeg: true })
+          .toBuffer()
+      );
     } catch (err) {
       logger.warn('sharp', `resize failed for ${filePath}: ${err}`);
       return null;

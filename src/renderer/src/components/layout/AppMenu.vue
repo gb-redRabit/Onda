@@ -62,6 +62,21 @@ function onMenuKeydown(e: KeyboardEvent): void {
     openDropdown.value = null;
     return;
   }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    // WAI-ARIA menubar: Left/Right przenosi między pozycjami paska i otwiera
+    // ich menu. Lista jest brana z DOM, więc nie wymaga ręcznej synchronizacji
+    // z warunkowo ukrywanym „Odtwarzaniem”.
+    const triggers = Array.from(document.querySelectorAll<HTMLElement>('[data-menu-trigger]'));
+    const current = triggers.findIndex((el) => el.dataset.menuTrigger === name);
+    if (current < 0 || triggers.length === 0) return;
+    const dir = e.key === 'ArrowRight' ? 1 : -1;
+    const nextName =
+      triggers[(current + dir + triggers.length) % triggers.length]?.dataset.menuTrigger;
+    if (!nextName) return;
+    e.preventDefault();
+    void openMenu(nextName);
+    return;
+  }
   const items = menuItems(name);
   if (!items.length) return;
   // Strzałki/Home/End obsługujemy tylko z wnętrza otwartego dropdownu. Gdy fokus
@@ -99,7 +114,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
     style="-webkit-app-region: drag"
   >
     <div class="flex items-center shrink-0 gap-0.5 pl-2" style="-webkit-app-region: no-drag">
-      <div class="flex items-center gap-2 px-2">
+      <div class="flex items-center gap-2 px-2" aria-hidden="true">
         <img :src="appIcon" alt="Onda Logo" class="w-5 h-5 object-contain" />
         <span class="text-ui font-semibold tracking-wide text-base-content/90">Onda</span>
       </div>
@@ -111,6 +126,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
           type="button"
           class="h-8 my-1 px-3 rounded-field text-ui font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'file' }"
+          role="menuitem"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'file'"
           data-menu-trigger="file"
@@ -143,6 +159,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
           type="button"
           class="h-8 my-1 px-3 rounded-field text-ui font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'view' }"
+          role="menuitem"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'view'"
           data-menu-trigger="view"
@@ -168,6 +185,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
           type="button"
           class="h-8 my-1 px-3 rounded-field text-ui font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'playback' }"
+          role="menuitem"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'playback'"
           data-menu-trigger="playback"
@@ -191,6 +209,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
           type="button"
           class="h-8 my-1 px-3 rounded-field text-ui font-medium text-base-content/65 hover:text-base-content hover:bg-base-content/8 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
           :class="{ 'bg-primary/12 text-primary-text': openDropdown === 'help' }"
+          role="menuitem"
           aria-haspopup="true"
           :aria-expanded="openDropdown === 'help'"
           data-menu-trigger="help"
@@ -204,6 +223,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onMenuKeydown));
           v-if="openDropdown === 'help'"
           @about="navigateSettingsTab('about')"
           @shortcuts="navigateSettingsTab('shortcuts')"
+          @dependencies="navigateSettingsTab('dependencies')"
+          @updates="navigateSettingsTab('updates')"
+          @logs="navigateSettingsTab('system-logs')"
         />
       </div>
     </div>
