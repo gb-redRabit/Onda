@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { getCurrentInstance, ref } from 'vue';
 import { useDialogFocus } from '@renderer/composables/useDialogFocus';
 
 /**
@@ -66,13 +66,22 @@ const emit = defineEmits<{
 }>();
 
 const panelRef = ref<HTMLElement | null>(null);
+const instance = getCurrentInstance();
 
 // Focus wchodzi do dialogu przy otwarciu, krąży w nim i wraca do elementu
-// otwierającego przy zamknięciu. Escape emituje `escape`, a nie `close`, aby
-// dialog, którego nie wolno zamknąć (krok kreatora), mógł je odrzucić.
+// otwierającego przy zamknięciu. Escape emituje `escape`; jeśli rodzic go nie
+// obsługuje, domyślnie zamykamy przez `close` — dzięki temu każdy modal korzysta
+// z Escape bez kopiowania handlera.
+//
+// `escape` jest zadeklarowanym emit-em, więc Vue wycina `onEscape` z `$attrs`.
+// Listener trzeba sprawdzić na surowych propsach vnode'a; bez tego każdy modal
+// z własnym `@escape` dostałby dodatkowe `close`.
 useDialogFocus(panelRef, {
   closeOnEscape: props.closeOnEscape,
-  onEscape: () => emit('escape')
+  onEscape: () => {
+    emit('escape');
+    if (!instance?.vnode.props?.onEscape) emit('close');
+  }
 });
 </script>
 
