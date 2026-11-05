@@ -41,6 +41,7 @@ function browserUrl(item: SourceItem): string {
     data-testid="source-detail-modal"
     panel-class="w-full max-w-5xl max-h-full flex flex-col overflow-hidden"
     @close="emit('close')"
+    @escape="emit('close')"
   >
     <template v-if="props.item">
       <div class="flex items-center gap-3 px-4 py-3 border-b border-hairline">

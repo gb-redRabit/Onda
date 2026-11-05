@@ -9,9 +9,7 @@ import {
   type ComponentPublicInstance
 } from 'vue';
 import { ChevronRight } from '@lucide/vue';
-import { useUIStore } from '@renderer/stores/ui';
-import type { ContextMenuItem } from '@renderer/stores/ui';
-import { CONTEXT_MENU_WIDTH } from '@renderer/stores/ui';
+import { CONTEXT_MENU_WIDTH, useUIStore, type ContextMenuItem } from '@renderer/stores/ui';
 
 const ui = useUIStore();
 const rootEl = ref<HTMLElement | null>(null);

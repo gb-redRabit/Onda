@@ -23,10 +23,10 @@ import ToolWindowShell, { type ToolStatus } from '@renderer/components/tools/Too
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { filesForTool, toolContextPaths } from '@shared/tool-input';
-import { IMAGE_TOOL_EXTS } from '@shared/types/tools';
 import {
   BATCH_IMAGES_MAX_FILES,
   IMAGE_OUTPUT_FORMATS,
+  IMAGE_TOOL_EXTS,
   type BatchImageProgress,
   type ImageOutputFormat
 } from '@shared/types/tools';

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { MediaFile } from '@renderer/types/media';
+import { useI18n } from 'vue-i18n';
 import { useLibraryContextMenu } from '@renderer/composables/useLibraryContextMenu';
 import LibraryTrackRow from './LibraryTrackRow.vue';
+
+const { t: translate } = useI18n();
 
 const props = defineProps<{
   audio: MediaFile[];
@@ -36,7 +39,12 @@ const { showImageMenu } = useLibraryContextMenu();
       class="w-full py-2 text-xs text-primary-text hover:bg-primary/10 transition-colors border-t border-hairline/30"
       @click="emit('more-audio')"
     >
-      Pokaż więcej ({{ props.audio.length - props.audioLimit }} z {{ props.audio.length }})
+      {{
+        translate('library.showMoreAudio', {
+          remaining: props.audio.length - props.audioLimit,
+          total: props.audio.length
+        })
+      }}
     </button>
   </div>
   <div v-if="props.images.length > 0" class="grid grid-cols-4 sm:grid-cols-6 gap-2 p-3">
@@ -61,7 +69,9 @@ const { showImageMenu } = useLibraryContextMenu();
       class="col-span-full py-2 text-xs text-primary-text hover:bg-primary/10 rounded-field transition-colors"
       @click="emit('more-images')"
     >
-      Pokaż więcej obrazów ({{ props.images.length - props.imageLimit }})
+      {{
+        translate('library.showMoreImages', { remaining: props.images.length - props.imageLimit })
+      }}
     </button>
   </div>
 </template>

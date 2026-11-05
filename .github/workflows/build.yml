@@ -80,6 +80,9 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      - name: Check duplicate imports
+        run: npm run check:dupes
+
       - name: Check empty catch blocks
         run: npm run check:catch
 

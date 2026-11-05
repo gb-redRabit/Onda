@@ -18,6 +18,7 @@ const { t } = useI18n();
     labelled-by="download-meta-dialog-title"
     panel-class="w-80 max-w-[92vw] overflow-hidden"
     @close="emit('close')"
+    @escape="emit('close')"
   >
     <div class="flex items-center justify-between px-4 py-3 border-b border-hairline">
       <h3 id="download-meta-dialog-title" class="text-sm font-semibold">

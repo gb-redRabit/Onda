@@ -19,7 +19,7 @@ import { useI18n } from 'vue-i18n';
 import LibraryTracksTab from '@renderer/components/library/LibraryTracksTab.vue';
 import SmartPlaylistDialog from './SmartPlaylistDialog.vue';
 
-// ZakĹ‚adka â€žInteligentne": wbudowane foldery + smart playlisty uĹĽytkownika.
+// Zakładka „Inteligentne": wbudowane foldery + smart playlisty uĹĽytkownika.
 // Wszystko liczone na bieĹĽÄ…co z metadanych, statystyk i ulubionych.
 
 const emit = defineEmits<{ edit: [track: MediaFile] }>();

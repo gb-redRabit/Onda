@@ -92,14 +92,14 @@ function iconComponent() {
         isDriveList
           ? item.size > 0
             ? formatFileSize(item.size)
-            : 'â€”'
+            : '—'
           : item.isDirectory
-            ? 'â€”'
+            ? '—'
             : formatFileSize(item.size)
       }}
     </span>
     <span class="text-base-content/50 text-xs">{{
-      item.extension || (isDriveList ? $t('explorer.drive') : 'â€”')
+      item.extension || (isDriveList ? $t('explorer.drive') : '—')
     }}</span>
     <span class="text-base-content/50 text-xs text-right font-mono">{{
       new Date(item.modifiedAt).toLocaleDateString()

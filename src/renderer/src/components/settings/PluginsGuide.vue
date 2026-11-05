@@ -73,6 +73,7 @@ function clearSearch(): void {
     backdrop-testid="plugins-guide-dialog"
     panel-class="w-full max-w-3xl max-h-full flex flex-col overflow-hidden"
     @close="emit('close')"
+    @escape="emit('close')"
   >
     <div class="flex items-center gap-3 px-4 py-3 border-b border-hairline">
       <BookOpen :size="16" class="text-primary-text shrink-0" />

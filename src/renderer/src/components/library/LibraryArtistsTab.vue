@@ -85,7 +85,7 @@ onUnmounted(() => grid.destroy());
           v-model="sortKey"
           class="px-2 py-1 rounded-field bg-base-100 border border-hairline text-xs focus-visible:border-primary focus-visible:outline-hidden"
         >
-          <option value="name">{{ $t('library.sortArtist') }} Aâ†’Z</option>
+          <option value="name">{{ $t('library.sortArtist') }} A→Z</option>
           <option value="count">{{ $t('library.sortAlbumsByCount') }}</option>
         </select>
         <button
@@ -149,7 +149,9 @@ onUnmounted(() => grid.destroy());
                 <Mic2 :size="14" class="text-primary-text" />
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate">{{ sortedArtists[v.index][0] }}</div>
+                <div class="text-sm font-medium truncate">
+                  {{ groupLabel(sortedArtists[v.index][0], t) }}
+                </div>
                 <div class="text-xs text-base-content/50">
                   {{ trackCount(sortedArtists[v.index][1].length) }}
                 </div>

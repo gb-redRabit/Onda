@@ -199,6 +199,8 @@ export default {
     noArtists: 'No artists',
     noAlbums: 'No albums',
     noImages: 'No images',
+    showMoreAudio: 'Show more ({remaining} of {total})',
+    showMoreImages: 'Show more images ({remaining})',
     playAll: 'Play all',
     deletePlaylist: 'Delete playlist',
     removeFromPlaylist: 'Remove from playlist',

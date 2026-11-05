@@ -30,7 +30,7 @@ import { readString, writeString, readStringArray, writeJson } from '@renderer/u
 import { clonePlain } from '@renderer/utils/clone';
 import { shuffled } from '@renderer/utils/shuffle';
 
-// Modale montowane tylko na ĹĽÄ…danie â€” leniwie, ĹĽeby chunk Biblioteki pozostaĹ‚ lekki (3.5).
+// Modale montowane tylko na żądanie — leniwie, żeby chunk Biblioteki pozostał lekki (3.5).
 const TrackTagEditor = defineAsyncComponent(
   () => import('@renderer/components/library/TrackTagEditor.vue')
 );
@@ -107,7 +107,7 @@ const { editingTrack, showingMBLookup, onTagSaved, onMBApply } = useLibraryTagEd
 );
 const mbInitialQuery = ref('');
 const mbBatchTracks = ref<typeof library.tracks | undefined>(undefined);
-// 8.9 â€” odbierz query z menu kontekstowego (track â†’ MusicBrainz)
+// 8.9 — odbierz query z menu kontekstowego (track → MusicBrainz)
 function onMbEvent(e: Event) {
   const ce = e as CustomEvent<{
     query?: string;
@@ -147,7 +147,7 @@ async function onLibraryDrop(e: DragEvent): Promise<void> {
   }
 }
 
-// ZakĹ‚adki â€” domyĹ›lnie przeglÄ…d (Minimal Spotify)
+// Zakładki — domyślnie przegląd (Minimal Spotify)
 const route = useRoute();
 const savedTab = readString('onda.libraryTab');
 const storedTab: TabId = isTabId(route.query.tab)
@@ -170,7 +170,7 @@ function onScrollCapture(event: Event): void {
 watch(tab, () => {
   scrolled.value = false;
 });
-// Nawigacja z innych widokĂłw (np. Pobrane "w bibliotece") przekazuje ?tab=â€¦ .
+// Nawigacja z innych widoków (np. Pobrane "w bibliotece") przekazuje ?tab=… .
 watch(
   () => route.query.tab,
   (q) => {
@@ -339,7 +339,7 @@ function onTrackEdit(tr: (typeof library.tracks)[0]) {
           </div>
         </div>
 
-        <!-- Tab bar â€” jedna linia, reaguje na szerokoĹ›Ä‡: flex-1 + napisy chowane -->
+        <!-- Tab bar — jedna linia, reaguje na szerokość: flex-1 + napisy chowane -->
         <LibraryTabBar v-model="tab" :tabs="tabs" />
 
         <LibraryToolbar
