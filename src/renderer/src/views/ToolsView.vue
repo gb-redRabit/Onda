@@ -3,19 +3,14 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { History, Image as ImageIcon, Layers, Scissors, Tags, Wrench } from '@lucide/vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
+import ToolLaunchPanel from '@renderer/components/tools/ToolLaunchPanel.vue';
 import { useUIStore } from '@renderer/stores/ui';
-import { TOOL_INPUTS, type ToolId, type ToolInputKind } from '@shared/types/tools';
-import { filesForTool, inputKindOfPath } from '@shared/tool-input';
-
-const KIND_FILTER_LABEL: Record<ToolInputKind, string> = {
-  audio: 'tools.audio',
-  video: 'tools.video',
-  image: 'tools.images'
-};
+import { TOOL_INPUTS, type ToolId } from '@shared/types/tools';
 
 const { t } = useI18n();
 const ui = useUIStore();
 const opening = ref<ToolId | null>(null);
+const selectedTool = ref<ToolId | null>(null);
 
 interface ToolCard {
   id: ToolId;
@@ -95,53 +90,40 @@ const groups = computed<Array<{ id: string; label: string; cards: ToolCard[] }>>
   }
 ]);
 
-async function pickToolFiles(id: ToolId): Promise<string[] | null> {
-  const spec = TOOL_INPUTS[id];
-  if (!spec) return [];
-  const filters = spec.kinds
-    .map((kind) => ({
-      name: t(KIND_FILTER_LABEL[kind]),
-      extensions: [...(spec.extensions[kind] ?? [])]
-    }))
-    .filter((filter) => filter.extensions.length > 0);
-  const result = (await window.api.invoke('dialog:openFile', {
-    properties: spec.multiple ? ['openFile', 'multiSelections'] : ['openFile'],
-    ...(filters.length > 0 ? { filters } : {})
-  })) as { canceled: boolean; filePaths: string[] };
-  if (result.canceled) return null;
-  const accepted = filesForTool(id, result.filePaths);
-  if (accepted.length === 0) {
-    ui.notify('warning', t('tools.unsupportedFiles'), t('tools.unsupportedFilesHint'));
-    return [];
-  }
-  // Konwerter obsługuje audio albo video — jeden rodzaj na uruchomienie.
-  if (id === 'converter') {
-    const firstKind = inputKindOfPath(accepted[0]);
-    return accepted.filter((path) => inputKindOfPath(path) === firstKind);
-  }
-  return accepted;
-}
-
-async function openTool(id: ToolId): Promise<void> {
+async function launchTool(id: ToolId, paths: string[]): Promise<void> {
   if (opening.value) return;
   opening.value = id;
   try {
-    // Narzędzia plikowe pytają o wejście PRZED otwarciem okna. Anulowanie
-    // otwiera puste okno (stare zachowanie), więc drag&drop nadal działa.
-    const paths = TOOL_INPUTS[id] ? await pickToolFiles(id) : [];
     const windowId = await window.api.invoke(
       'tools:openWindow',
       id,
-      paths && paths.length > 0 ? { paths } : undefined
+      paths.length > 0 ? { paths } : undefined
     );
     if (windowId === null) {
       ui.notify('error', t('app.error'), t('tools.openFailed'));
+    } else {
+      selectedTool.value = null;
     }
   } catch (error) {
     ui.notify('error', t('app.error'), error instanceof Error ? error.message : String(error));
   } finally {
     opening.value = null;
   }
+}
+
+// Narzędzia plikowe otwierają najpierw etap wyboru w hubie; pozostałe startują
+// od razu. Samo okno narzędzia powstaje dopiero po zatwierdzeniu.
+function chooseTool(id: ToolId): void {
+  if (TOOL_INPUTS[id]) {
+    selectedTool.value = id;
+    return;
+  }
+  void launchTool(id, []);
+}
+
+function onLaunch(paths: string[]): void {
+  if (!selectedTool.value) return;
+  void launchTool(selectedTool.value, paths);
 }
 </script>
 
@@ -150,9 +132,17 @@ async function openTool(id: ToolId): Promise<void> {
     <PageHeader :title="t('tools.title')" :subtitle="t('tools.subtitle')" :icon="Wrench" sticky />
 
     <div class="flex-1 overflow-auto ui-page-content">
+      <ToolLaunchPanel
+        v-if="selectedTool"
+        :tool-id="selectedTool"
+        :busy="opening === selectedTool"
+        @cancel="selectedTool = null"
+        @launch="onLaunch"
+      />
+
       <!-- Jedna oś z nagłówkiem: bez wyśrodkowanego kontenera. Siatka dobiera
            kolumny do szerokości, więc nie ma skoku przy 2/3 kolumnach. -->
-      <div class="flex flex-col gap-6">
+      <div v-else class="flex flex-col gap-6">
         <section
           v-for="group in groups"
           :key="group.id"
@@ -173,7 +163,7 @@ async function openTool(id: ToolId): Promise<void> {
               :data-testid="`tools-card-${card.id}`"
               class="group flex items-start gap-3 rounded-box border border-hairline/80 bg-base-100 p-4 text-left fx-depth transition hover:border-primary/40 hover:bg-base-content/4 disabled:cursor-wait disabled:opacity-60"
               :disabled="opening !== null"
-              @click="openTool(card.id)"
+              @click="chooseTool(card.id)"
             >
               <span
                 class="grid h-10 w-10 shrink-0 place-items-center rounded-field bg-primary/10 text-primary-text transition-colors group-hover:bg-primary/16"

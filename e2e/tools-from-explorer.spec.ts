@@ -135,22 +135,22 @@ test.describe('tools from the explorer context menu', () => {
     const onda = await launchOnda({ userDataDir: profile });
     try {
       await dismissWizard(onda.page);
+      // Panel startuje w katalogu, w którym był Eksplorator.
+      await openExplorerAt(onda, library.dir);
       await onda.page.evaluate(() => {
         window.location.hash = '#/tools';
       });
       await expect(onda.page.getByTestId('tools-hub')).toBeVisible();
 
-      // Karta narzędzia najpierw otwiera wybór plików; dopiero wynik otwiera okno.
-      await onda.app.evaluate(({ dialog }, filePath) => {
-        const d = dialog as unknown as {
-          showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>;
-        };
-        d.showOpenDialog = async () => ({ canceled: false, filePaths: [filePath] });
-      }, library.wavPath);
+      // Karta otwiera etap wyboru (bez systemowego dialogu).
+      await onda.page.getByTestId('tools-card-converter').click();
+      await expect(onda.page.getByTestId('tool-launch-panel')).toBeVisible();
+      await onda.page.getByTestId('tool-launch-item-tone-01.wav').click();
+      await expect(onda.page.getByTestId('tool-launch-selected')).toContainText('tone-01.wav');
 
       const [converter] = await Promise.all([
         onda.app.waitForEvent('window'),
-        onda.page.getByTestId('tools-card-converter').click()
+        onda.page.getByTestId('tool-launch-start').click()
       ]);
       await dismissWizard(converter);
       await expect(converter.getByTestId('tools-converter-view')).toContainText('tone-01.wav', {
