@@ -14,6 +14,8 @@ export interface WindowFactoryOptions extends BrowserWindowConstructorOptions {
   hash?: string;
   /** Dedykowany entry renderera zamiast SPA (np. `pip.html`). */
   htmlFile?: string;
+  /** Absolutna ścieżka lokalnego HTML poza rendererem (np. `resources/splash.html`). */
+  loadFilePath?: string;
   /** Pokaż + skup w `ready-to-show`. Ignorowane, gdy podano `onReadyToShow`. */
   autoShow?: boolean;
   /** Otwieraj http/https/mailto na zewnątrz i odrzucaj nawigację w oknie. */
@@ -26,6 +28,7 @@ export function createWindow(options: WindowFactoryOptions): BrowserWindow {
   const {
     hash,
     htmlFile,
+    loadFilePath,
     autoShow = true,
     openExternal = true,
     icon,
@@ -91,7 +94,9 @@ export function createWindow(options: WindowFactoryOptions): BrowserWindow {
   installNavigationGuard(win);
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];
-  if (htmlFile) {
+  if (loadFilePath) {
+    void win.loadFile(loadFilePath);
+  } else if (htmlFile) {
     if (is.dev && devUrl) void win.loadURL(`${devUrl}/${htmlFile}${hash ? `#${hash}` : ''}`);
     else void win.loadFile(join(__dirname, `../renderer/${htmlFile}`), hash ? { hash } : undefined);
   } else if (is.dev && devUrl) {

@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { join } from 'path';
 import { logger } from '../../shared/logger';
-import { installNavigationGuard } from './navigation-guard';
+import { createWindow } from './window-factory';
 
 // Okno splash przy starcie + bramka "pokaż okno główne, gdy gotowe", wyodrębnione
 // z `main/index.ts` (plan 2.8). Gotowość jest sygnalizowana z trzech niezależnych
@@ -35,7 +35,7 @@ export class SplashController {
 
   start(): void {
     this.startTs = performance.now();
-    const splash = new BrowserWindow({
+    const splash = createWindow({
       width: 400,
       height: 300,
       frame: false,
@@ -43,18 +43,19 @@ export class SplashController {
       alwaysOnTop: true,
       skipTaskbar: true,
       resizable: false,
+      autoShow: false,
+      openExternal: false,
       icon: this.deps.windowIcon(),
       webPreferences: {
         sandbox: true,
         preload: join(__dirname, '../preload/splash.js')
+      },
+      loadFilePath: join(__dirname, '../../resources/splash.html'),
+      onClosed: () => {
+        if (this.win === splash) this.win = null;
       }
     });
 
-    splash.loadFile(join(__dirname, '../../resources/splash.html'));
-    installNavigationGuard(splash);
-    splash.on('closed', () => {
-      if (this.win === splash) this.win = null;
-    });
     this.win = splash;
   }
 
