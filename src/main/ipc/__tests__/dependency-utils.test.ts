@@ -8,11 +8,17 @@ import {
   ytdlpShaUrl,
   ffmpegDownloadUrl,
   ffmpegSha256,
+  ffmpegProbeUrl,
+  ffmpegProbeSha256,
   whichInPath,
   inferPkgManager,
   getMkvExtractCandidates,
   resolveBinary,
   toolFileName,
+  pkgInstallCommand,
+  pkgUninstallCommand,
+  needsSudo,
+  detectPkgManagers,
   YTDLP_PINNED_VERSION
 } from '../dependency/dependency-utils';
 import binaries from '../../../../binaries.json';
@@ -335,5 +341,143 @@ describe('resolveBinary', () => {
 
   it('returns null when no candidate exists', async () => {
     expect(await resolveBinary(binDir, 'ffprobe')).toBeNull();
+  });
+});
+
+describe('ffmpeg probe archive', () => {
+  it('exposes a separate macOS ffprobe archive only where the main one lacks it', () => {
+    const managed = binaries.ffmpeg.managed as Record<
+      string,
+      { probeUrl?: string; probeSha256?: string }
+    >;
+    expect(ffmpegProbeUrl('darwin', 'arm64')).toBe(managed['darwin-arm64'].probeUrl);
+    expect(ffmpegProbeSha256('darwin', 'arm64')).toBe(managed['darwin-arm64'].probeSha256);
+    expect(ffmpegProbeUrl('win32', 'x64')).toBeNull();
+    expect(ffmpegProbeSha256('win32', 'x64')).toBeNull();
+  });
+});
+
+describe('toolFileName', () => {
+  it('adds .exe on Windows only', () => {
+    const suffix = process.platform === 'win32' ? '.exe' : '';
+    for (const tool of ['ffmpeg', 'ffprobe', 'mkvextract'] as const) {
+      expect(toolFileName(tool)).toBe(`${tool}${suffix}`);
+    }
+    expect(toolFileName('yt-dlp')).toBe(`yt-dlp${suffix}`);
+  });
+});
+
+describe('package manager commands', () => {
+  const install = (manager: Parameters<typeof pkgInstallCommand>[0], tool: 'ffmpeg' | 'yt-dlp') =>
+    pkgInstallCommand(manager, tool).argv;
+  const uninstall = (
+    manager: Parameters<typeof pkgUninstallCommand>[0],
+    tool: 'ffmpeg' | 'yt-dlp'
+  ) => pkgUninstallCommand(manager, tool).argv;
+
+  it('builds argv without a shell for every manager', () => {
+    expect(install('winget', 'ffmpeg')).toEqual([
+      'winget',
+      'install',
+      '--id',
+      'Gyan.FFmpeg',
+      '-e',
+      '--silent',
+      '--accept-package-agreements',
+      '--accept-source-agreements',
+      '--disable-interactivity'
+    ]);
+    expect(install('choco', 'ffmpeg')).toEqual([
+      'choco',
+      'install',
+      'ffmpeg',
+      '-y',
+      '--no-progress'
+    ]);
+    expect(install('scoop', 'yt-dlp')).toEqual(['scoop', 'install', 'yt-dlp']);
+    expect(install('brew', 'yt-dlp')).toEqual(['brew', 'install', 'yt-dlp']);
+    expect(install('apt', 'ffmpeg')).toEqual(['sudo', '-n', 'apt-get', 'install', '-y', 'ffmpeg']);
+    expect(install('dnf', 'ffmpeg')).toEqual(['sudo', '-n', 'dnf', 'install', '-y', 'ffmpeg']);
+    expect(install('pacman', 'yt-dlp')).toEqual([
+      'sudo',
+      '-n',
+      'pacman',
+      '-S',
+      '--noconfirm',
+      'yt-dlp'
+    ]);
+  });
+
+  it('maps each tool to its package id', () => {
+    expect(pkgInstallCommand('winget', 'ffprobe').argv).toContain('Gyan.FFmpeg');
+    expect(pkgInstallCommand('winget', 'yt-dlp').argv).toContain('yt-dlp.yt-dlp');
+    expect(pkgInstallCommand('winget', 'mkvextract').argv).toContain('MoritzBunkus.MKVToolNix');
+    expect(pkgInstallCommand('choco', 'mkvextract').argv).toContain('mkvtoolnix');
+  });
+
+  it('builds uninstall argv for every manager', () => {
+    expect(uninstall('winget', 'yt-dlp')).toEqual(['winget', 'uninstall', '--id', 'yt-dlp.yt-dlp']);
+    expect(uninstall('choco', 'ffmpeg')).toEqual(['choco', 'uninstall', 'ffmpeg', '-y']);
+    expect(uninstall('scoop', 'ffmpeg')).toEqual(['scoop', 'uninstall', 'ffmpeg']);
+    expect(uninstall('brew', 'yt-dlp')).toEqual(['brew', 'uninstall', 'yt-dlp']);
+    expect(uninstall('apt', 'ffmpeg')).toEqual(['sudo', '-n', 'apt-get', 'remove', '-y', 'ffmpeg']);
+    expect(uninstall('dnf', 'ffmpeg')).toEqual(['sudo', '-n', 'dnf', 'remove', '-y', 'ffmpeg']);
+    expect(uninstall('pacman', 'yt-dlp')).toEqual([
+      'sudo',
+      '-n',
+      'pacman',
+      '-R',
+      '--noconfirm',
+      'yt-dlp'
+    ]);
+  });
+
+  it('quotes arguments containing spaces in the human-readable command', () => {
+    expect(pkgInstallCommand('winget', 'ffmpeg').cmd).toContain('--id Gyan.FFmpeg');
+    expect(pkgInstallCommand('apt', 'ffmpeg').cmd).toBe('sudo -n apt-get install -y ffmpeg');
+  });
+
+  it('requires sudo only for Linux package managers', () => {
+    expect(needsSudo('apt')).toBe(true);
+    expect(needsSudo('dnf')).toBe(true);
+    expect(needsSudo('pacman')).toBe(true);
+    for (const manager of ['winget', 'choco', 'scoop', 'brew'] as const) {
+      expect(needsSudo(manager)).toBe(false);
+    }
+  });
+});
+
+describe('detectPkgManagers', () => {
+  const original = vi.mocked(runCommand).getMockImplementation();
+
+  afterEach(() => {
+    vi.mocked(runCommand).mockImplementation(original!);
+  });
+
+  function availableCommands(available: string[]): void {
+    vi.mocked(runCommand).mockImplementation(async (cmd: string) => {
+      if (available.includes(cmd)) return 'ok';
+      throw new Error(`${cmd} not found`);
+    });
+  }
+
+  it('returns Windows managers in preference order and skips missing ones', async () => {
+    availableCommands(['choco', 'scoop']);
+    expect(await detectPkgManagers('win32')).toEqual(['choco', 'scoop']);
+  });
+
+  it('returns brew on macOS', async () => {
+    availableCommands(['brew']);
+    expect(await detectPkgManagers('darwin')).toEqual(['brew']);
+  });
+
+  it('returns Linux managers in preference order', async () => {
+    availableCommands(['pacman', 'dnf']);
+    expect(await detectPkgManagers('linux')).toEqual(['dnf', 'pacman']);
+  });
+
+  it('returns an empty list when nothing is installed', async () => {
+    availableCommands([]);
+    expect(await detectPkgManagers('linux')).toEqual([]);
   });
 });
