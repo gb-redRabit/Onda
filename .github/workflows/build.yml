@@ -92,6 +92,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check bundle budget
+        run: npm run check:bundle-size
+
       # Testy narzędzi FFmpeg mają działać także na czystym runnerze, a nie
       # tylko na maszynie z `%APPDATA%\onda\bin`. Helper E2E szuka binarek
       # w profilu, resources/ffmpeg i PATH.
