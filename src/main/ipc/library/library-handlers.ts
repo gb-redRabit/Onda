@@ -25,7 +25,7 @@ import {
   sanitizeFolderPaths,
   withoutSensitivePaths
 } from './library-handlers-paths';
-import { runLibraryScan, type LibraryScanResult } from './library-handlers-scan';
+import { MAX_SCANNED_FILES, runLibraryScan, type LibraryScanResult } from './library-handlers-scan';
 import { registerPlaylistHandlers } from './library-handlers-playlists';
 
 // Rejestracja kanałów biblioteki (skan, foldery, pliki, postęp, watcher).
@@ -35,6 +35,11 @@ import { registerPlaylistHandlers } from './library-handlers-playlists';
 let activeScanController: AbortController | null = null;
 let activeLoudnessController: AbortController | null = null;
 let currentLibraryFolders: string[] = [];
+
+/** Przerywa analizę głośności przy zamykaniu aplikacji. */
+export function cancelLibraryLoudness(): void {
+  activeLoudnessController?.abort();
+}
 
 // Store bywa niedostępny w czystych testach node; brak ustawień oznacza domyślne
 // zachowanie (`fastScan: false`), a nie wyjątek przerywający skan.
@@ -61,6 +66,37 @@ export async function addLibraryFolder(folder: string): Promise<string[]> {
   await setAllowedRoots(clean);
   void startLibraryWatcher(clean);
   return clean;
+}
+
+function sanitizeScannedPayload(input: unknown): {
+  files: MediaFile[];
+  folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+} | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const source = input as { files?: unknown; folderTypes?: unknown };
+  if (!Array.isArray(source.files)) return null;
+  const files = source.files
+    .filter(
+      (file): file is MediaFile =>
+        !!file &&
+        typeof file === 'object' &&
+        typeof (file as MediaFile).path === 'string' &&
+        typeof (file as MediaFile).name === 'string' &&
+        ['audio', 'video', 'image'].includes((file as MediaFile).type)
+    )
+    .slice(0, MAX_SCANNED_FILES);
+  const folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> = {};
+  if (source.folderTypes && typeof source.folderTypes === 'object') {
+    for (const [folder, type] of Object.entries(source.folderTypes)) {
+      if (
+        typeof folder === 'string' &&
+        (type === 'audio' || type === 'video' || type === 'image' || type === 'mixed')
+      ) {
+        folderTypes[folder] = type;
+      }
+    }
+  }
+  return { files, folderTypes };
 }
 
 export function registerLibraryHandlers(): void {
@@ -267,22 +303,18 @@ export function registerLibraryHandlers(): void {
     }
   );
 
-  ipcMain.handle(
-    'library:saveScanned',
-    async (
-      _event,
-      data: {
-        files: MediaFile[];
-        folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+  ipcMain.handle('library:saveScanned', async (_event, data: unknown): Promise<void> => {
+    try {
+      const clean = sanitizeScannedPayload(data);
+      if (!clean) {
+        logger.warn('library', 'saveScanned rejected invalid payload');
+        return;
       }
-    ): Promise<void> => {
-      try {
-        setLibraryScanned(data);
-      } catch (err) {
-        logger.error('library', 'saveScanned failed', err);
-      }
+      setLibraryScanned(clean);
+    } catch (err) {
+      logger.error('library', 'saveScanned failed', err);
     }
-  );
+  });
 
   ipcMain.handle(
     'library:updateStats',

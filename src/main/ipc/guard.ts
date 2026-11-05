@@ -16,6 +16,7 @@ const RATE_LIMITED_CHANNELS = new Set<string>([
   'fs:delete',
   'plugins:installFromFolder',
   'plugins:installExample',
+  'plugins:fetch',
   'coverCache:clear',
   'yt:download:add',
   // Transkodowanie spawnuje ffmpeg (także per-chunk dla nieznanego zakresu), a

@@ -22,6 +22,7 @@ import {
   pluginConsentHash,
   sha256Hex,
   pluginApprovalMatches,
+  pluginDataLock,
   MAX_STORAGE_KEYS
 } from './plugins-core';
 import { runPluginFetch } from './plugins-fetch';
@@ -222,32 +223,32 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle(
     'plugins:storage:set',
-    async (_e, id: string, key: string, value: unknown): Promise<boolean> => {
-      try {
-        const manifest = await approvedManifest(id);
-        if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
-        if (!validStorageKey(key)) return false;
-        const current = await storageData(id);
-        if (
-          !Object.prototype.hasOwnProperty.call(current, key) &&
-          Object.keys(current).length >= MAX_STORAGE_KEYS
-        ) {
+    async (_e, id: string, key: string, value: unknown): Promise<boolean> =>
+      pluginDataLock(async () => {
+        try {
+          const manifest = await approvedManifest(id);
+          if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
+          if (!validStorageKey(key)) return false;
+          const current = await storageData(id);
+          if (
+            !Object.prototype.hasOwnProperty.call(current, key) &&
+            Object.keys(current).length >= MAX_STORAGE_KEYS
+          ) {
+            return false;
+          }
+          const next: Record<string, unknown> = { ...current, [key]: value };
+          if (sanitizeStoredObject(next)[key] === undefined) return false;
+          await writeStorageFile(pluginStorageFile(id), next);
+          return true;
+        } catch (e) {
+          logger.warn('plugins', 'plugins:storage:set failed', e);
           return false;
         }
-        const next: Record<string, unknown> = { ...current, [key]: value };
-        if (sanitizeStoredObject(next)[key] === undefined) return false;
-        await writeStorageFile(pluginStorageFile(id), next);
-        return true;
-      } catch (e) {
-        logger.warn('plugins', 'plugins:storage:set failed', e);
-        return false;
-      }
-    }
+      })
   );
 
-  ipcMain.handle(
-    'plugins:storage:remove',
-    async (_e, id: string, key: string): Promise<boolean> => {
+  ipcMain.handle('plugins:storage:remove', async (_e, id: string, key: string): Promise<boolean> =>
+    pluginDataLock(async () => {
       try {
         const manifest = await approvedManifest(id);
         if (!manifest || !storagePermissionGranted(manifest.permissions)) return false;
@@ -262,7 +263,7 @@ export function registerPluginsHandlers(): void {
         logger.warn('plugins', 'plugins:storage:remove failed', e);
         return false;
       }
-    }
+    })
   );
 
   ipcMain.handle(
@@ -282,26 +283,27 @@ export function registerPluginsHandlers(): void {
 
   ipcMain.handle(
     'plugins:settings:set',
-    async (_e, id: string, key: string, value: unknown): Promise<boolean> => {
-      try {
-        const manifest = await approvedManifest(id);
-        if (!manifest || !validStorageKey(key)) return false;
-        const field = manifest.settings?.find((candidate) => candidate.key === key);
-        if (!field || !pluginSettingValueValid(field, value)) return false;
-        const declared = manifest.settings?.map((field) => field.key);
-        if (!settingWriteAllowed(manifest.permissions, declared, key)) return false;
-        const next: Record<string, unknown> = {
-          ...(await settingsData(id, manifest)),
-          [key]: value
-        };
-        if (sanitizeStoredObject(next)[key] === undefined) return false;
-        await writeStorageFile(pluginSettingsFile(id), next);
-        return true;
-      } catch (e) {
-        logger.warn('plugins', 'plugins:settings:set failed', e);
-        return false;
-      }
-    }
+    async (_e, id: string, key: string, value: unknown): Promise<boolean> =>
+      pluginDataLock(async () => {
+        try {
+          const manifest = await approvedManifest(id);
+          if (!manifest || !validStorageKey(key)) return false;
+          const field = manifest.settings?.find((candidate) => candidate.key === key);
+          if (!field || !pluginSettingValueValid(field, value)) return false;
+          const declared = manifest.settings?.map((field) => field.key);
+          if (!settingWriteAllowed(manifest.permissions, declared, key)) return false;
+          const next: Record<string, unknown> = {
+            ...(await settingsData(id, manifest)),
+            [key]: value
+          };
+          if (sanitizeStoredObject(next)[key] === undefined) return false;
+          await writeStorageFile(pluginSettingsFile(id), next);
+          return true;
+        } catch (e) {
+          logger.warn('plugins', 'plugins:settings:set failed', e);
+          return false;
+        }
+      })
   );
 
   ipcMain.handle(

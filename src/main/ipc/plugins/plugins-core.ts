@@ -1,6 +1,7 @@
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { resolve, sep, normalize } from 'path';
-import { readFile, writeFile, mkdir, rename } from 'fs/promises';
+import { readFile, writeFile, mkdir, rename, unlink } from 'fs/promises';
+import { createWriteLock } from '../../utils/write-queue';
 import type {
   PluginLayoutElement,
   PluginManifest,
@@ -312,10 +313,7 @@ export async function loadStateFile(filePath: string): Promise<PluginStateFile> 
 }
 
 export async function saveStateFile(filePath: string, state: PluginStateFile): Promise<void> {
-  await mkdir(resolve(filePath, '..'), { recursive: true });
-  const tmp = `${filePath}.tmp`;
-  await writeFile(tmp, JSON.stringify(state), 'utf-8');
-  await rename(tmp, filePath).catch(() => writeFile(filePath, JSON.stringify(state), 'utf-8'));
+  await writeTextUnique(filePath, JSON.stringify(state));
 }
 
 export async function readStorageFile(filePath: string): Promise<Record<string, unknown>> {
@@ -339,8 +337,27 @@ export async function writeStorageFile(
   if (Buffer.byteLength(json, 'utf-8') > MAX_STORAGE_BYTES) {
     throw new Error('storage:too-large');
   }
-  await mkdir(resolve(filePath, '..'), { recursive: true });
-  const tmp = `${filePath}.tmp`;
-  await writeFile(tmp, json, 'utf-8');
-  await rename(tmp, filePath).catch(() => writeFile(filePath, json, 'utf-8'));
+  await writeTextUnique(filePath, json);
 }
+
+/**
+ * Zapis JSON przez unikalny plik tymczasowy: równoległe zapisy tego samego
+ * pliku nie walczą o stałe `${path}.tmp` (EPERM/ENOENT na Windows).
+ */
+async function writeTextUnique(filePath: string, text: string): Promise<void> {
+  await mkdir(resolve(filePath, '..'), { recursive: true });
+  const tmp = `${filePath}.${randomBytes(6).toString('hex')}.tmp`;
+  await writeFile(tmp, text, 'utf-8');
+  try {
+    await rename(tmp, filePath);
+  } catch (error) {
+    await writeFile(filePath, text, 'utf-8');
+    await unlink(tmp).catch(() => {
+      // best-effort: plik tymczasowy mógł już zniknąć
+    });
+    throw error;
+  }
+}
+
+/** Serializuje RMW storage/ustawień wtyczek (jeden zapis na raz). */
+export const pluginDataLock = createWriteLock();

@@ -19,6 +19,7 @@ import { sendToWindow } from '../utils/broadcast';
 import { pipWindowIcon } from './pip-icon';
 import { DEFAULT_CORNER_ELEMENTS, DEFAULT_EDGE_ELEMENTS, PREVIEW_STATE } from './pip-defaults';
 import { registerAudioPipIpc, removeAudioPipIpc } from './audio-pip-ipc';
+import { safeAssign } from '../ipc/settings/settings-sanitizers';
 
 export class AudioPipManager {
   private window: BrowserWindow | null = null;
@@ -151,7 +152,11 @@ export class AudioPipManager {
 
   show(state: AudioPipState, opts?: AudioPipLayoutOpts): void {
     if (opts) this.setLayout(opts);
-    Object.assign(this.currentState, state);
+    // Stan pochodzi z renderera: nie pozwól mu podmienić prototypu ani
+    // dopisać nieznanych pól do `currentState`.
+    for (const [key, value] of Object.entries(state)) {
+      safeAssign(this.currentState as unknown as Record<string, unknown>, key, value);
+    }
     this.isPreview = false;
     if (this.previewTimer) {
       clearTimeout(this.previewTimer);
