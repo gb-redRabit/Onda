@@ -34,6 +34,9 @@ function resumeAndPlay() {
 let moduleInitialized = false;
 let remoteInitialized = false;
 let abLoopWatchStarted = false;
+// Watchery modułowe muszą żyć poza zakresem komponentu, który pierwszy wywołał
+// `useAudioPlayer()`; inaczej odmontowanie paska/route’u zabija pętlę A–B.
+const detachedWatchScope = effectScope(true);
 const remoteViz = createVizShim(256);
 let remoteVizActive = false;
 // Kilku konsumentów (główny wizualizator + PiP audio) może potrzebować strumienia
@@ -53,15 +56,17 @@ let sawCoreState = false;
 function ensureAbLoopWatcher(): void {
   if (abLoopWatchStarted) return;
   abLoopWatchStarted = true;
-  watch(currentTime, (time) => {
-    const target = usePlayerStore().abLoopTarget(time);
-    if (target === null) return;
-    if (isCoreShell()) {
-      currentTime.value = target;
-      sendCoreCommand({ type: 'seek', time: target });
-      return;
-    }
-    audioEngine.seek(target);
+  detachedWatchScope.run(() => {
+    watch(currentTime, (time) => {
+      const target = usePlayerStore().abLoopTarget(time);
+      if (target === null) return;
+      if (isCoreShell()) {
+        currentTime.value = target;
+        sendCoreCommand({ type: 'seek', time: target });
+        return;
+      }
+      audioEngine.seek(target);
+    });
   });
 }
 
@@ -80,33 +85,35 @@ function ensureRemoteModule(): void {
     sawCoreState = false;
     if (remoteVizActive) sendCoreCommand({ type: 'viz', active: true });
   });
-  watch(
-    coreState,
-    (state) => {
-      if (!state) {
-        sawCoreState = false;
-        return;
-      }
-      // Po restarcie Core licznik subskrypcji w shellu zostaje, ale timer w Core
-      // wystartował od zera — ponów `viz` przy pierwszym stanie nowej sesji.
-      if (!sawCoreState) {
-        sawCoreState = true;
-        if (remoteVizActive) sendCoreCommand({ type: 'viz', active: true });
-      }
-      // Wideo gra lokalnie w main shellu — refy czasu/duration karmi
-      // `videoElementHandlers`, nie ticki audio z Core.
-      if (state.current?.type === 'video') return;
-      currentTime.value = state.currentTime;
-      duration.value = state.duration;
-      buffered.value = state.buffered;
-      isPlaying.value = state.enginePlaying;
-      volume.value = state.volume;
-      isLoading.value = state.isLoading;
-      error.value = state.error;
-      isReady.value = !!state.current;
-    },
-    { immediate: true }
-  );
+  detachedWatchScope.run(() => {
+    watch(
+      coreState,
+      (state) => {
+        if (!state) {
+          sawCoreState = false;
+          return;
+        }
+        // Po restarcie Core licznik subskrypcji w shellu zostaje, ale timer w Core
+        // wystartował od zera — ponów `viz` przy pierwszym stanie nowej sesji.
+        if (!sawCoreState) {
+          sawCoreState = true;
+          if (remoteVizActive) sendCoreCommand({ type: 'viz', active: true });
+        }
+        // Wideo gra lokalnie w main shellu — refy czasu/duration karmi
+        // `videoElementHandlers`, nie ticki audio z Core.
+        if (state.current?.type === 'video') return;
+        currentTime.value = state.currentTime;
+        duration.value = state.duration;
+        buffered.value = state.buffered;
+        isPlaying.value = state.enginePlaying;
+        volume.value = state.volume;
+        isLoading.value = state.isLoading;
+        error.value = state.error;
+        isReady.value = !!state.current;
+      },
+      { immediate: true }
+    );
+  });
 }
 
 function isVideoMode(): boolean {

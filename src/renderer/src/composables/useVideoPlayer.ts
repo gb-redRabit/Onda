@@ -29,11 +29,10 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
       ensureLocalVideoAudio();
       // Element montuje się przez `:ref="onVideoRef"`, które samo wywołuje
       // setupVideo. Tutaj tylko przygotowujemy audio i stan PiP — bez drugiego
-      // równoległego ładowania tego samego źródła.
+      // równoległego ładowania tego samego źródła. Napisy do PiP ładujemy
+      // dopiero przy włączeniu PiP (togglePiP), nie przy każdym wideo.
       if (player.pipActive) {
         pipCtrl.updatePiPSubtitles(track, true);
-      } else {
-        pipCtrl.updatePiPSubtitles(track, false);
       }
     }
   }
@@ -62,8 +61,6 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
         pipCtrl.updatePiPSubtitles(track, true);
         videoRef.value?.pause();
         player.isPlaying = false;
-      } else {
-        pipCtrl.updatePiPSubtitles(track, false);
       }
 
       const title = track.metadata?.title || track.name;

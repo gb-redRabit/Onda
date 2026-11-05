@@ -107,3 +107,14 @@ export function scheduleCoverMapWrite(
   }, 500);
   coverMapWriteTimer.unref?.();
 }
+
+/** Spłukuje debounce'owany zapis mapy przy zamykaniu aplikacji. */
+export async function flushCoverMapWrite(): Promise<void> {
+  if (coverMapWriteTimer) {
+    clearTimeout(coverMapWriteTimer);
+    coverMapWriteTimer = null;
+  }
+  const pending = pendingCoverMapWrite;
+  pendingCoverMapWrite = null;
+  if (pending) await writeCoverMap(pending);
+}

@@ -94,7 +94,7 @@ export async function startLibraryWatcher(folders: string[]): Promise<void> {
   await starting;
 }
 
-function stopLibraryWatcher(): void {
+export function stopLibraryWatcher(): void {
   generation += 1;
   watched = [];
   if (debounceTimer) {

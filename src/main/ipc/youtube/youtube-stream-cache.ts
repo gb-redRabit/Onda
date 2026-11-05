@@ -61,21 +61,37 @@ function loadStreamCache(): void {
 
 // Debounce'owany zapis, aby seria rozwiązań (play-all, prefetch przy hoverze) zlewała się
 // najwyżej raz na sekundę, a nie raz na rozwiązanie.
+function saveStreamCacheNow(): void {
+  // Nie nadpisuj trwałego cache pustym plikiem, jeśli nigdy go nie wczytano
+  // (np. użytkownik nie użył YouTube w tej sesji, a zamyka aplikację).
+  if (!streamCacheLoaded && streamCache.size === 0) return;
+  try {
+    const now = Date.now();
+    const entries = [...streamCache.entries()]
+      .filter(([, v]) => v.expires > now)
+      .map(([url, v]) => ({ url, streamUrl: v.url, expires: v.expires }));
+    mkdirSync(dirname(streamCacheFile()), { recursive: true });
+    writeFileSync(streamCacheFile(), JSON.stringify(entries));
+  } catch (e) {
+    logger.warn('yt', 'stream cache save failed', String(e));
+  }
+}
+
 function scheduleStreamCacheSave(): void {
   if (streamCacheSaveTimer) return;
   streamCacheSaveTimer = setTimeout(() => {
     streamCacheSaveTimer = null;
-    try {
-      const now = Date.now();
-      const entries = [...streamCache.entries()]
-        .filter(([, v]) => v.expires > now)
-        .map(([url, v]) => ({ url, streamUrl: v.url, expires: v.expires }));
-      mkdirSync(dirname(streamCacheFile()), { recursive: true });
-      writeFileSync(streamCacheFile(), JSON.stringify(entries));
-    } catch (e) {
-      logger.warn('yt', 'stream cache save failed', String(e));
-    }
+    saveStreamCacheNow();
   }, 1000);
+}
+
+/** Spłukuje debounce'owany zapis cache strumieni przy zamykaniu aplikacji. */
+export function flushStreamCache(): void {
+  if (streamCacheSaveTimer) {
+    clearTimeout(streamCacheSaveTimer);
+    streamCacheSaveTimer = null;
+  }
+  saveStreamCacheNow();
 }
 
 // Zwraca żywy wpis cache (aktualizując kolejność LRU) lub undefined; wygasłe
@@ -94,6 +110,7 @@ export function getCachedStream(url: string, now = Date.now()): StreamCacheEntry
 }
 
 export function cacheStream(url: string, streamUrl: string): void {
+  loadStreamCache();
   streamCache.set(url, { url: streamUrl, expires: Date.now() + STREAM_CACHE_TTL_MS });
   if (streamCache.size > STREAM_CACHE_MAX) {
     const oldest = streamCache.keys().next().value;

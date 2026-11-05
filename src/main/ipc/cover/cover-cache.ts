@@ -299,7 +299,10 @@ export async function extractAndCacheCover(
       return { type: null, data: null };
     }
   }
-  const siblingVideo = findSiblingVideo(filePath);
+  // Najpierw sprawdź cache RAM — dopiero przy miss uruchamiaj kosztowne
+  // `findSiblingVideo` (10 synchronicznych `statSync`) i blokadę ekstrakcji.
+  const earlyCached = await getCachedCover(filePath);
+  if (earlyCached) return earlyCached;
 
   // Poprzedni wywołujący może już wyodrębniać ten plik — poczekaj na niego i
   // użyj ponownie zbuforowanego wyniku (nawet wynik "brak okładki" jest buforowany).
@@ -316,6 +319,7 @@ export async function extractAndCacheCover(
   try {
     const cached = await getCachedCover(filePath);
     if (cached) return cached;
+    const siblingVideo = findSiblingVideo(filePath);
     const ext = extname(filePath).toLowerCase();
     let result: { type: 'video' | 'image' | null; data: string | null } = {
       type: null,

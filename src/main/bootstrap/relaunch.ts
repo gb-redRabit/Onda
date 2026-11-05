@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import { spawn } from 'node:child_process';
-import { mkdirSync, openSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import { getLogDir } from '../log-file';
 import { logger } from '../../shared/logger';
@@ -24,13 +24,19 @@ function restartDevCommand(): void {
   const bin = join(app.getAppPath(), 'node_modules', 'electron-vite', 'bin', 'electron-vite.js');
   mkdirSync(getLogDir(), { recursive: true });
   const out = openSync(join(getLogDir(), 'dev-restart.log'), 'a');
-  const child = spawn(node, [bin, 'dev'], {
-    cwd: app.getAppPath(),
-    detached: true,
-    stdio: ['ignore', out, out],
-    windowsHide: true
-  });
-  child.unref();
+  try {
+    const child = spawn(node, [bin, 'dev'], {
+      cwd: app.getAppPath(),
+      detached: true,
+      stdio: ['ignore', out, out],
+      windowsHide: true
+    });
+    child.unref();
+  } finally {
+    // Dziecko dziedziczy deskryptor; rodzic musi zamknąć swój, inaczej fd
+    // zostaje otwarty do końca procesu (dev restart).
+    closeSync(out);
+  }
 }
 
 /**

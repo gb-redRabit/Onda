@@ -11,6 +11,13 @@ import { flushLibraryScanned, flushStats } from '../ipc/library/library-store';
 import { flushPlaybackPositions } from '../ipc/playback-handlers';
 import { flushQueueNow } from '../downloads/download-manager';
 import { flushProviderCache } from '../ipc/providers/provider-cache';
+import { flushCoverMapWrite } from '../ipc/cover/cover-map';
+import { flushStreamCache } from '../ipc/youtube/youtube-stream-cache';
+import { stopLibraryWatcher } from '../ipc/library/library-watcher';
+import { cancelLibraryLoudness } from '../ipc/library/library-handlers';
+import { cancelAllMediaConvert } from '../tools/media-convert';
+import { cancelAllMediaJobs } from '../tools/video-clip-job';
+import { cancelAllBatchImages } from '../tools/batch-images';
 import { jobs, jobAbortControllers } from '../downloads/download-state';
 import { killDownloadProcess } from '../downloads/kill-download-process';
 import { shutdownDiscord } from '../discord/rich-presence';
@@ -45,6 +52,16 @@ export function installGracefulShutdown(deps: ShutdownDeps): void {
         // Zatrzymaj harmonogramy w tle, aby żadne przeglądanie yt-dlp/sieci nie zaczęło się podczas wyjścia.
         stopSubscriptionChecker();
         stopLinkSubsChecker();
+        // Zatrzymaj watcher biblioteki i analizę głośności, zanim zaczniemy
+        // opróżniać persystencję.
+        stopLibraryWatcher();
+        cancelLibraryLoudness();
+        cancelAllMediaConvert();
+        cancelAllMediaJobs();
+        cancelAllBatchImages();
+        // Cache strumieni jest zapisywany synchronicznie; mapa okładek ma
+        // debounce, więc trafia do `flushes` niżej.
+        flushStreamCache();
         deps.getMediaServer()?.close();
         closeLoginWindow();
         closeProviderLoginWindow();
@@ -80,6 +97,7 @@ export function installGracefulShutdown(deps: ShutdownDeps): void {
           flushQueueNow(),
           // Cache providerów (foldery) jest debounce'owany — opróżnij przy wyjściu.
           flushProviderCache(),
+          flushCoverMapWrite(),
           getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
         ]);
         const shutdownTimeout = new Promise<'timeout'>((r) =>

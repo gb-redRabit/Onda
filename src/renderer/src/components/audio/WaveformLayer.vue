@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { downsamplePeaks, waveformColor, waveformPlayedColor } from '@renderer/utils/waveform';
+import { getCachedPeaks, hasCachedPeaks, setCachedPeaks } from '@renderer/utils/peaksCache';
 
 const props = defineProps<{
   path?: string | null;
@@ -10,7 +11,6 @@ const props = defineProps<{
 }>();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
-const peaksCache = new Map<string, number[] | null>();
 const pendingLoads = new Map<string, Promise<number[] | null>>();
 
 let observer: ResizeObserver | null = null;
@@ -18,7 +18,7 @@ let frame = 0;
 let peaks: number[] = [];
 
 function loadPeaks(path: string, duration: number): Promise<number[] | null> {
-  if (peaksCache.has(path)) return Promise.resolve(peaksCache.get(path) ?? null);
+  if (hasCachedPeaks(path)) return Promise.resolve(getCachedPeaks(path));
   const pending = pendingLoads.get(path);
   if (pending) return pending;
   const request = (window.api?.invoke('media:getWaveform', path, duration) ??
@@ -26,7 +26,7 @@ function loadPeaks(path: string, duration: number): Promise<number[] | null> {
   const promise = request
     .then((result) => {
       const value = Array.isArray(result) && result.length > 0 ? result : null;
-      peaksCache.set(path, value);
+      setCachedPeaks(path, value);
       return value;
     })
     .catch(() => null)

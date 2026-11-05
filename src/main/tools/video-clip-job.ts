@@ -150,3 +150,10 @@ export function cancelMediaJob(jobId: string): boolean {
   }
   return true;
 }
+
+/** Anuluje wszystkie aktywne cięcia/łączenia przy zamykaniu aplikacji. */
+export function cancelAllMediaJobs(): number {
+  const ids = [...activeJobs.keys()];
+  for (const id of ids) cancelMediaJob(id);
+  return ids.length;
+}

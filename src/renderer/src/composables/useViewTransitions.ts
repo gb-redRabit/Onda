@@ -1,4 +1,4 @@
-import { nextTick, onBeforeUnmount } from 'vue';
+import { nextTick, getCurrentScope, onScopeDispose } from 'vue';
 import type { Router } from 'vue-router';
 
 // Płynne przejścia między widokami przez View Transitions API (T7).
@@ -60,5 +60,5 @@ export function useViewTransitions(router: Router): void {
     });
   });
 
-  onBeforeUnmount(stop);
+  if (getCurrentScope()) onScopeDispose(stop);
 }

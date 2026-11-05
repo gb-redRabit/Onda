@@ -44,6 +44,9 @@ export function useVideoPiP(
       player.enterPiP(startTime);
       videoRef?.pause();
       syncSubtitlesWithPiP();
+      // Dopiero teraz, gdy PiP jest aktywne, ekstrahujemy napisy i czcionki.
+      // Wcześniej robiono to przy każdym wideo, nawet z wyłączonym PiP.
+      if (player.currentTrack) void updatePiPSubtitles(player.currentTrack);
     }
   }
 
@@ -56,8 +59,9 @@ export function useVideoPiP(
 
   async function updatePiPSubtitles(track: MediaFile, guardPipActive = false): Promise<void> {
     try {
-      const subtitleData = await preparePiPSubtitleData(track.path);
+      // Sprawdź stan PRZED kosztowną ekstrakcją napisów i czcionek FFmpeg.
       if (guardPipActive && !player.pipActive) return;
+      const subtitleData = await preparePiPSubtitleData(track.path);
       lastSubtitleData = subtitleData;
       sendSubtitle(subtitleData);
     } catch {

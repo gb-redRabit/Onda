@@ -370,3 +370,10 @@ export function cancelMediaConvert(jobId: string): boolean {
   }
   return true;
 }
+
+/** Anuluje wszystkie aktywne konwersje przy zamykaniu aplikacji. */
+export function cancelAllMediaConvert(): number {
+  const ids = [...activeJobs.keys()];
+  for (const id of ids) cancelMediaConvert(id);
+  return ids.length;
+}

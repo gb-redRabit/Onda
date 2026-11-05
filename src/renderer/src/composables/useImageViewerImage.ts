@@ -17,8 +17,10 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
   const usingHighRes = ref(false);
   let currentObjectUrl: string | null = null;
   let currentLoadEpoch = 0;
+  let disposed = false;
 
   onScopeDispose(() => {
+    disposed = true;
     stopHighRes();
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl);
@@ -30,9 +32,18 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
     return toMediaServerUrl(file.path);
   }
 
-  async function loadDisplayImage(file: FileItem, maxWidth: number = 1920): Promise<string> {
+  async function loadDisplayImage(
+    file: FileItem,
+    maxWidth: number = 1920,
+    epoch: number = currentLoadEpoch
+  ): Promise<string> {
     try {
       const url = await loadScaledImageUrl(file.path, maxWidth);
+      // Spóźniona odpowiedź po zamknięciu widoku nie może zostawić `blob:`.
+      if (disposed || epoch !== currentLoadEpoch) {
+        URL.revokeObjectURL(url);
+        return '';
+      }
       if (currentObjectUrl) {
         const stale = currentObjectUrl;
         setTimeout(() => URL.revokeObjectURL(stale), 1000);
@@ -61,8 +72,8 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
     deps.currentIndex.value = idx;
     usingHighRes.value = false;
     const epoch = ++currentLoadEpoch;
-    loadDisplayImage(file, 1920).then((url) => {
-      if (epoch === currentLoadEpoch) {
+    loadDisplayImage(file, 1920, epoch).then((url) => {
+      if (epoch === currentLoadEpoch && !disposed) {
         displaySrc.value = url;
       }
     });
@@ -73,8 +84,8 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
     const file = deps.files.value[deps.currentIndex.value];
     if (file) {
       const epoch = ++currentLoadEpoch;
-      loadDisplayImage(file, 1920).then((url) => {
-        if (epoch === currentLoadEpoch) {
+      loadDisplayImage(file, 1920, epoch).then((url) => {
+        if (epoch === currentLoadEpoch && !disposed) {
           displaySrc.value = url;
         }
       });

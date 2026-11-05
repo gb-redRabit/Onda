@@ -203,3 +203,10 @@ export function cancelBatchImages(jobId: string): boolean {
   job.canceled = true;
   return true;
 }
+
+/** Anuluje wszystkie aktywne wsady obrazów przy zamykaniu aplikacji. */
+export function cancelAllBatchImages(): number {
+  const ids = [...activeJobs.keys()];
+  for (const id of ids) cancelBatchImages(id);
+  return ids.length;
+}
