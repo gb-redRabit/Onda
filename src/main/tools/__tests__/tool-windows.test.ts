@@ -78,31 +78,23 @@ describe('tool windows', () => {
     });
   });
 
-  it('owns the tool window and raises it above the app on ready', () => {
-    vi.useFakeTimers();
-    try {
-      const win = fakeWindow(6);
-      const main = fakeWindow(99);
-      createWindow.mockReturnValue(win);
+  it('owns the tool window and keeps it above the app', () => {
+    const win = fakeWindow(6);
+    const main = fakeWindow(99);
+    createWindow.mockReturnValue(win);
 
-      openToolWindow('converter', undefined, main as never);
-      const options = createWindow.mock.calls[0]?.[0] as {
-        parent?: FakeWindow;
-        onReadyToShow: (window: FakeWindow) => void;
-      };
-      expect(options.parent).toBe(main);
+    openToolWindow('converter', undefined, main as never);
+    const options = createWindow.mock.calls[0]?.[0] as {
+      parent?: FakeWindow;
+      onReadyToShow: (window: FakeWindow) => void;
+    };
+    expect(options.parent).toBe(main);
 
-      options.onReadyToShow(win);
-      expect(win.show).toHaveBeenCalled();
-      expect(win.focus).toHaveBeenCalled();
-      expect(win.moveTop).toHaveBeenCalled();
-      expect(win.setAlwaysOnTop).toHaveBeenLastCalledWith(true);
-
-      vi.advanceTimersByTime(250);
-      expect(win.setAlwaysOnTop).toHaveBeenLastCalledWith(false);
-    } finally {
-      vi.useRealTimers();
-    }
+    options.onReadyToShow(win);
+    expect(win.show).toHaveBeenCalled();
+    expect(win.focus).toHaveBeenCalled();
+    expect(win.moveTop).toHaveBeenCalled();
+    expect(win.setAlwaysOnTop).toHaveBeenLastCalledWith(true, 'floating');
   });
 
   it('focuses an existing tool window instead of creating a duplicate', () => {

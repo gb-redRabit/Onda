@@ -26,6 +26,9 @@ function normalizeParams(value: unknown): Record<string, unknown> | undefined {
 function bringToFront(win: BrowserWindow): void {
   if (win.isDestroyed()) return;
   if (win.isMinimized()) win.restore();
+  // Narzędzie ma pozostać nad oknem aplikacji. Wcześniej krótki „boost”
+  // wyłączał always-on-top po 250 ms i okno potrafiło wrócić pod aplikację.
+  win.setAlwaysOnTop(true, 'floating');
   win.show();
   win.focus();
   win.moveTop();
@@ -68,12 +71,6 @@ export function openToolWindow(
       hash: definition.route,
       onReadyToShow: (ready) => {
         bringToFront(ready);
-        // Krótki boost na wierzch pokrywa przypadki, w których Windows nie
-        // podnosi nowego okna mimo focus() (np. main właśnie miał focus).
-        ready.setAlwaysOnTop(true);
-        setTimeout(() => {
-          if (!ready.isDestroyed()) ready.setAlwaysOnTop(false);
-        }, 250);
       },
       onClosed: (closed) => {
         windows.delete(toolId);

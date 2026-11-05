@@ -11,7 +11,11 @@ export function openImageViewer(files: unknown[], index: number): number {
   imageViewerData = { files, index };
   if (imageViewerWindow && !imageViewerWindow.isDestroyed()) {
     imageViewerWindow.webContents.send('imageViewer:files', imageViewerData);
+    // Podgląd ma zostać nad aplikacją — po wcześniejszym „boostcie” window
+    // traciło always-on-top i chowało się pod oknem głównym.
+    imageViewerWindow.setAlwaysOnTop(true, 'floating');
     imageViewerWindow.focus();
+    imageViewerWindow.moveTop();
     return imageViewerWindow.id;
   }
   imageViewerWindow = createWindow({
@@ -32,12 +36,7 @@ export function openImageViewer(files: unknown[], index: number): number {
       win.focus();
       win.moveTop();
       win.setFullScreen(true);
-      win.setAlwaysOnTop(true);
-      // Okno może zostać zamknięte, zanim to zadziała; dotknięcie zniszczonego
-      // BrowserWindow rzuca nieprzechwycony wyjątek w procesie głównym.
-      setTimeout(() => {
-        if (!win.isDestroyed()) win.setAlwaysOnTop(false);
-      }, 100);
+      win.setAlwaysOnTop(true, 'floating');
     },
     onClosed: () => {
       imageViewerWindow = null;
