@@ -25,7 +25,8 @@ import {
   sanitizeFolderPaths,
   withoutSensitivePaths
 } from './library-handlers-paths';
-import { MAX_SCANNED_FILES, runLibraryScan, type LibraryScanResult } from './library-handlers-scan';
+import { runLibraryScan, type LibraryScanResult } from './library-handlers-scan';
+import { sanitizeScannedPayload } from './library-scanned-payload';
 import { registerPlaylistHandlers } from './library-handlers-playlists';
 
 // Rejestracja kanałów biblioteki (skan, foldery, pliki, postęp, watcher).
@@ -66,37 +67,6 @@ export async function addLibraryFolder(folder: string): Promise<string[]> {
   await setAllowedRoots(clean);
   void startLibraryWatcher(clean);
   return clean;
-}
-
-function sanitizeScannedPayload(input: unknown): {
-  files: MediaFile[];
-  folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-} | null {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
-  const source = input as { files?: unknown; folderTypes?: unknown };
-  if (!Array.isArray(source.files)) return null;
-  const files = source.files
-    .filter(
-      (file): file is MediaFile =>
-        !!file &&
-        typeof file === 'object' &&
-        typeof (file as MediaFile).path === 'string' &&
-        typeof (file as MediaFile).name === 'string' &&
-        ['audio', 'video', 'image'].includes((file as MediaFile).type)
-    )
-    .slice(0, MAX_SCANNED_FILES);
-  const folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'> = {};
-  if (source.folderTypes && typeof source.folderTypes === 'object') {
-    for (const [folder, type] of Object.entries(source.folderTypes)) {
-      if (
-        typeof folder === 'string' &&
-        (type === 'audio' || type === 'video' || type === 'image' || type === 'mixed')
-      ) {
-        folderTypes[folder] = type;
-      }
-    }
-  }
-  return { files, folderTypes };
 }
 
 export function registerLibraryHandlers(): void {
