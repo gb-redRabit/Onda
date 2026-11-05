@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import { join, sep, resolve } from 'path';
-import { readdir, readFile, mkdir } from 'fs/promises';
+import { readdir, readFile, mkdir, stat } from 'fs/promises';
 import type { PluginInfo, PluginManifest } from '../../../shared/types/ipc';
 import { logger } from '../../../shared/logger';
 import {
@@ -26,6 +26,11 @@ import type { PluginStateFile } from './plugins-core';
 
 let pluginsDir: string | null = null;
 let pluginsDataDir: string | null = null;
+
+// SHA pliku wejściowego jest liczony przy każdym `approvedManifest` (storage,
+// settings, fetch). Cache po mtime+size eliminuje ponowne czytanie `main.js`,
+// a każda edycja pliku unieważnia wpis.
+const entryDigestCache = new Map<string, { mtimeMs: number; size: number; digest: string }>();
 
 export function getPluginsDir(): string {
   if (!pluginsDir) pluginsDir = join(app.getPath('userData'), 'plugins');
@@ -151,8 +156,29 @@ export async function readEntryDigest(
   id: string,
   manifest?: PluginManifest | null
 ): Promise<string | null> {
-  const code = await readPluginEntry(dir, id, manifest);
-  return code === null ? null : sha256Hex(code);
+  const resolved = manifest ?? (await readManifest(dir, id));
+  if (!resolved) return null;
+  const entryPath = resolve(dir, resolved.entry);
+  if (!isWithin(dir, entryPath)) return null;
+  try {
+    const info = await stat(entryPath);
+    const cached = entryDigestCache.get(entryPath);
+    // Cache jest ważny tylko dla niezmienionego pliku (mtime + rozmiar).
+    if (cached && cached.mtimeMs === info.mtimeMs && cached.size === info.size) {
+      return cached.digest;
+    }
+    const code = await readFile(entryPath, 'utf-8');
+    if (Buffer.byteLength(code, 'utf-8') > MAX_ENTRY_BYTES) return null;
+    const digest = sha256Hex(code);
+    entryDigestCache.set(entryPath, { mtimeMs: info.mtimeMs, size: info.size, digest });
+    if (entryDigestCache.size > 128) {
+      const oldest = entryDigestCache.keys().next().value;
+      if (oldest !== undefined) entryDigestCache.delete(oldest);
+    }
+    return digest;
+  } catch {
+    return null;
+  }
 }
 
 /**

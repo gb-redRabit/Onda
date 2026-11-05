@@ -4,7 +4,7 @@
 
 ### Your music and video, finally in one place. · Twoja muzyka i wideo wreszcie w jednym miejscu.
 
-<img src="https://img.shields.io/badge/Electron-44-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
+<img src="https://img.shields.io/badge/Electron-45-47848f?style=flat&logo=electron&logoColor=white" alt="Electron" />
 <img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3" />
 <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
 <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
@@ -112,10 +112,10 @@
 
 | Layer          | Technology                                                  |
 | -------------- | ----------------------------------------------------------- |
-| Runtime        | Electron 44 (sandbox, contextIsolation, no nodeIntegration) |
+| Runtime        | Electron 45 (sandbox, contextIsolation, no nodeIntegration) |
 | UI             | Vue 3.5 (Composition API, `<script setup>`)                 |
 | Language       | TypeScript 5.9 (strict)                                     |
-| Build          | electron-vite 5 + Vite 7.3                                  |
+| Build          | electron-vite 6 + Vite 8.3                                  |
 | Styling        | Tailwind CSS 4.3 + daisyUI theme values                     |
 | State          | Pinia 4                                                     |
 | Routing        | vue-router 5 (hash history, lazy loading)                   |
@@ -167,7 +167,7 @@ Onda/
 
 ### Quick Start
 
-Requirements: **Node.js ≥ 22.12** and npm ≥ 11. Packaged macOS builds require **macOS 13 (Ventura)** or later (Electron 44).
+Requirements: **Node.js ≥ 22.12** and npm ≥ 11. Packaged macOS builds require **macOS 13 (Ventura)** or later (Electron 45).
 
 ```bash
 npm install
@@ -336,10 +336,10 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 
 | Warstwa        | Technologia                                                   |
 | -------------- | ------------------------------------------------------------- |
-| Runtime        | Electron 44 (sandbox, contextIsolation, brak nodeIntegration) |
+| Runtime        | Electron 45 (sandbox, contextIsolation, brak nodeIntegration) |
 | UI             | Vue 3.5 (Composition API, `<script setup>`)                   |
 | Język          | TypeScript 5.9 (strict)                                       |
-| Build          | electron-vite 5 + Vite 7.3                                    |
+| Build          | electron-vite 6 + Vite 8.3                                    |
 | Style          | Tailwind CSS 4.3 + wartości motywu daisyUI                    |
 | Stan           | Pinia 4                                                       |
 | Routing        | vue-router 5 (hash history, lazy loading)                     |
@@ -391,7 +391,7 @@ Onda/
 
 ### Szybki start
 
-Wymagania: **Node.js ≥ 22.12** i npm ≥ 11. Spakowane buildy dla macOS wymagają **macOS 13 (Ventura)** lub nowszego (Electron 44).
+Wymagania: **Node.js ≥ 22.12** i npm ≥ 11. Spakowane buildy dla macOS wymagają **macOS 13 (Ventura)** lub nowszego (Electron 45).
 
 ```bash
 npm install

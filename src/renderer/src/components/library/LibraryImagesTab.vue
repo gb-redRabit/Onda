@@ -79,11 +79,21 @@ watch(
 
 onMounted(() => {
   updateImageCols();
-  if (imageGridRef.value) {
-    rowObserver = new ResizeObserver(() => updateImageCols());
-    rowObserver.observe(imageGridRef.value);
-  }
 });
+
+watch(
+  imageGridRef,
+  (el) => {
+    rowObserver?.disconnect();
+    rowObserver = null;
+    if (!el) return;
+    rowObserver = new ResizeObserver(() => updateImageCols());
+    rowObserver.observe(el);
+    updateImageCols();
+  },
+  { flush: 'post' }
+);
+
 onUnmounted(() => {
   rowObserver?.disconnect();
   rowObserver = null;
