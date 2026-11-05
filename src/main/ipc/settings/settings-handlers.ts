@@ -10,73 +10,22 @@ import {
   decryptApiKeys,
   maskApiKeys,
   mergeApiKeys,
-  encryptSecret,
   encryptionStatus,
   SecretStorageUnavailableError
 } from './settings-crypto';
+import {
+  encryptProxyPasswords,
+  maskProxyPasswords,
+  restoreProxyPasswords,
+  stripProxyPasswords
+} from './settings-proxy';
 import { syncSubscriptionsScheduler } from '../subscriptions/subscriptions-handlers';
 import { syncLinkSubsScheduler } from '../providers/providers-handlers';
 import { setCloseToTray } from '../../windows/close-behavior';
 import { refreshTray } from '../../windows/tray';
 import { setMainLocale } from '../../i18n-main';
-import type { AppSettings, NetworkSettings } from '../../../shared/types/settings';
+import type { AppSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
-
-// Renderer nigdy nie potrzebuje hasła proxy. Wysyłamy stałą maskę, a przy zapisie
-// maska oznacza „nie zmieniaj" — zapisane hasło jest przywracane z store.
-const PROXY_PASSWORD_MASK = '••••••••';
-type ProxyKey = 'proxy' | 'proxyYoutube' | 'proxySoundcloud';
-const PROXY_KEYS: ProxyKey[] = ['proxy', 'proxyYoutube', 'proxySoundcloud'];
-
-function maskProxyPasswords(network: NetworkSettings | undefined): void {
-  if (!network) return;
-  for (const key of PROXY_KEYS) {
-    const proxy = network[key];
-    if (proxy && typeof proxy.password === 'string' && proxy.password) {
-      proxy.password = PROXY_PASSWORD_MASK;
-    }
-  }
-}
-
-function restoreProxyPasswords(
-  incoming: NetworkSettings | undefined,
-  stored: NetworkSettings | undefined
-): void {
-  if (!incoming) return;
-  for (const key of PROXY_KEYS) {
-    const proxy = incoming[key];
-    if (!proxy) continue;
-    // Maska lub brak pola = „nie zmieniaj"; pusty string = użytkownik czyści hasło.
-    if (proxy.password === PROXY_PASSWORD_MASK || proxy.password === undefined) {
-      proxy.password = stored?.[key]?.password;
-    }
-  }
-}
-
-function stripProxyPasswords(network: NetworkSettings | undefined): void {
-  if (!network) return;
-  for (const key of PROXY_KEYS) {
-    if (network[key]) network[key].password = undefined;
-  }
-}
-
-// Hasła proxy używają tego samego `safeStorage` co klucze API. Gdy keyring jest
-// niedostępny, zostawiamy dotychczasowe zachowanie (electron-store) zamiast
-// blokować cały zapis ustawień.
-function encryptProxyPasswords(network: NetworkSettings | undefined): void {
-  if (!network) return;
-  for (const key of PROXY_KEYS) {
-    const proxy = network[key];
-    if (!proxy || typeof proxy.password !== 'string' || !proxy.password) continue;
-    if (proxy.password === PROXY_PASSWORD_MASK) continue;
-    try {
-      proxy.password = encryptSecret(proxy.password);
-    } catch (e) {
-      if (!(e instanceof SecretStorageUnavailableError)) throw e;
-      logger.warn('settings', 'proxy password kept in store: secure storage unavailable');
-    }
-  }
-}
 
 /**
  * Szyfruje klucze API w miejscu albo usuwa je z ładunku.
