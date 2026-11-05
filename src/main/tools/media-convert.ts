@@ -1,15 +1,13 @@
-﻿import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
-import { existsSync } from 'fs';
-import { mkdir, rm, stat } from 'fs/promises';
+﻿import { existsSync } from 'fs';
+import { mkdir, stat } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import type { WebContents } from 'electron';
 import { resolveBin } from '../binaries';
-import { logger } from '../../shared/logger';
 import { runCommand } from '../utils/exec';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { cancelAllFfmpegJobs, cancelFfmpegJob, runFfmpegJob } from './ffmpeg-job';
 import type {
-  MediaConvertProgress,
   MediaConvertRequest,
   MediaConvertResult,
   ToolAudioFormat,
@@ -19,17 +17,9 @@ import type {
 const AUDIO_FORMATS = new Set<ToolAudioFormat>(['mp3', 'flac', 'wav', 'ogg', 'opus', 'aac', 'm4a']);
 const VIDEO_CONTAINERS = new Set<ToolVideoContainer>(['mp4', 'mkv', 'webm']);
 const AUDIO_BITRATES = new Set([128, 192, 256, 320]);
-const MAX_JOB_MS = 2 * 60 * 60 * 1000;
 export const H264_BITRATES = { high: '8M', medium: '4M', low: '2M' } as const;
 
 export type H264Encoder = 'libx264' | 'libopenh264' | 'h264_mf' | 'mpeg4';
-
-interface ActiveJob {
-  child: ChildProcessWithoutNullStreams;
-  canceled: boolean;
-}
-
-const activeJobs = new Map<string, ActiveJob>();
 
 export function resolveConvertOutputPath(
   inputPath: string,
@@ -161,17 +151,6 @@ export async function detectH264Encoder(): Promise<H264Encoder> {
   return 'mpeg4';
 }
 
-function parseTimeToSeconds(value: string): number {
-  const match = value.match(/^(\d+):(\d{2}):(\d{2}(?:\.\d+)?)$/);
-  if (!match) return 0;
-  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
-}
-
-function sendProgress(sender: WebContents, payload: MediaConvertProgress): void {
-  if (sender.isDestroyed()) return;
-  sender.send('tools:progress', payload);
-}
-
 export async function probeDuration(inputPath: string): Promise<number> {
   try {
     const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
@@ -266,114 +245,24 @@ export async function convertMedia(
   const duration = await probeDuration(request.inputPath);
   const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
 
-  return new Promise<MediaConvertResult>((resolve) => {
-    let child: ChildProcessWithoutNullStreams;
-    try {
-      child = spawn(ffmpeg, args, { windowsHide: true });
-    } catch (error) {
-      resolve({ success: false, error: `Cannot start FFmpeg: ${String(error)}` });
-      return;
-    }
-    const active: ActiveJob = { child, canceled: false };
-    activeJobs.set(request.jobId, active);
-
-    let stdoutBuffer = '';
-    let lastPercent = 0;
-    let stderrTail = '';
-    let settled = false;
-    let timedOut = false;
-
-    const finish = (result: MediaConvertResult): void => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      activeJobs.delete(request.jobId);
-      if (!result.success) {
-        void rm(outputPath, { force: true }).catch(() => undefined);
-      }
-      resolve(result);
-    };
-
-    const timer = setTimeout(() => {
-      timedOut = true;
-      active.canceled = true;
-      try {
-        child.kill();
-      } catch {
-        // proces mĂłgĹ‚ juĹĽ zakoĹ„czyÄ‡ siÄ™
-      }
-      finish({ success: false, canceled: true, error: 'Conversion timed out' });
-    }, MAX_JOB_MS);
-
-    child.stdout.on('data', (chunk: Buffer) => {
-      stdoutBuffer += chunk.toString('utf-8');
-      const lines = stdoutBuffer.split(/\r?\n/);
-      stdoutBuffer = lines.pop() ?? '';
-      for (const line of lines) {
-        const [key, raw] = line.split('=', 2);
-        if (!key) continue;
-        if (key === 'out_time_us' || key === 'out_time_ms') {
-          const micros = Number(raw);
-          if (!Number.isFinite(micros)) continue;
-          const timeSec = micros / 1_000_000;
-          lastPercent = duration > 0 ? Math.min(100, (timeSec / duration) * 100) : -1;
-          sendProgress(sender, { jobId: request.jobId, percent: lastPercent, timeSec });
-        } else if (key === 'out_time') {
-          const timeSec = parseTimeToSeconds(raw);
-          lastPercent = duration > 0 ? Math.min(100, (timeSec / duration) * 100) : -1;
-          sendProgress(sender, { jobId: request.jobId, percent: lastPercent, timeSec });
-        } else if (key === 'speed') {
-          sendProgress(sender, { jobId: request.jobId, percent: lastPercent, speed: raw });
-        }
-      }
-    });
-
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderrTail = (stderrTail + chunk.toString('utf-8')).slice(-4000);
-    });
-
-    child.on('error', (error) => {
-      finish({ success: false, error: `FFmpeg failed: ${error.message}` });
-    });
-
-    child.on('close', (code) => {
-      if (active.canceled) {
-        finish({ success: false, canceled: true });
-        return;
-      }
-      if (timedOut) {
-        finish({ success: false, canceled: true, error: 'Conversion timed out' });
-        return;
-      }
-      if (code === 0 && existsSync(outputPath)) {
-        sendProgress(sender, { jobId: request.jobId, percent: 100 });
-        finish({ success: true, outputPath });
-        return;
-      }
-      logger.warn('tools', `conversion failed (${code}) for ${request.inputPath}`);
-      finish({
-        success: false,
-        error: stderrTail.trim() || `FFmpeg exited with code ${code}`
-      });
-    });
+  return runFfmpegJob({
+    jobId: request.jobId,
+    args,
+    outputPath,
+    durationSec: duration,
+    sender,
+    ffmpeg,
+    timeoutMessage: 'Conversion timed out',
+    label: 'conversion',
+    logContext: request.inputPath
   });
 }
 
 export function cancelMediaConvert(jobId: string): boolean {
-  const job = activeJobs.get(jobId);
-  if (!job) return false;
-  job.canceled = true;
-  try {
-    job.child.kill();
-  } catch {
-    // proces mĂłgĹ‚ juĹĽ zakoĹ„czyÄ‡ siÄ™
-  }
-  return true;
+  return cancelFfmpegJob(jobId);
 }
 
 /** Anuluje wszystkie aktywne konwersje przy zamykaniu aplikacji. */
 export function cancelAllMediaConvert(): number {
-  const ids = [...activeJobs.keys()];
-  for (const id of ids) cancelMediaConvert(id);
-  return ids.length;
+  return cancelAllFfmpegJobs();
 }
