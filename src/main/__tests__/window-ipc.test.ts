@@ -55,22 +55,22 @@ describe('window-ipc imageViewer:open', () => {
     expect(typeof handler).toBe('function');
 
     handler?.({}, ['a.jpg', 'b.jpg'], 1);
-    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg', 'b.jpg'], 1);
+    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg', 'b.jpg'], 1, null);
   });
 
   it('coerces NaN to 0 instead of forwarding it', () => {
     setup();
     handlers.get('imageViewer:open')?.({}, ['a.jpg'], Number.NaN);
-    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg'], 0);
+    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg'], 0, null);
   });
 
   it('coerces negatives and non-numbers to 0', () => {
     setup();
     const handler = handlers.get('imageViewer:open');
     handler?.({}, ['a.jpg'], -5);
-    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg'], 0);
+    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg'], 0, null);
 
     handler?.({}, ['a.jpg'], 'nope');
-    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg'], 0);
+    expect(openImageViewer).toHaveBeenLastCalledWith(['a.jpg'], 0, null);
   });
 });

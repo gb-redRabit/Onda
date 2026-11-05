@@ -127,7 +127,7 @@ export function registerWindowHandlers(context: {
     // później użyty do pocięcia listy plików. Znormalizuj go tutaj, na granicy.
     const safeIndex =
       typeof index === 'number' && Number.isFinite(index) && index >= 0 ? Math.floor(index) : 0;
-    return openImageViewer(files, safeIndex);
+    return openImageViewer(files, safeIndex, getMainWindow());
   });
 
   ipcMain.handle('imageViewer:getData', () => {

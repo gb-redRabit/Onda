@@ -6,16 +6,43 @@ import { createWindow } from './window-factory';
 
 let imageViewerWindow: BrowserWindow | null = null;
 let imageViewerData: { files: unknown[]; index: number } | null = null;
+// Główne okno bywa przypięte (always-on-top); na czas podglądu zdejmujemy ten
+// poziom, żeby pełnoekranowy lightbox nie chował się pod aplikacją.
+let ownerWindow: BrowserWindow | null = null;
+let ownerWasOnTop = false;
 
-export function openImageViewer(files: unknown[], index: number): number {
+function raiseViewer(win: BrowserWindow): void {
+  if (win.isDestroyed()) return;
+  win.setAlwaysOnTop(true, 'floating');
+  win.focus();
+  win.moveTop();
+}
+
+function demoteOwner(owner?: BrowserWindow | null): void {
+  if (!owner || owner.isDestroyed()) return;
+  ownerWindow = owner;
+  ownerWasOnTop = owner.isAlwaysOnTop();
+  if (ownerWasOnTop) owner.setAlwaysOnTop(false);
+}
+
+function restoreOwner(): void {
+  if (ownerWindow && !ownerWindow.isDestroyed() && ownerWasOnTop) {
+    ownerWindow.setAlwaysOnTop(true);
+  }
+  ownerWindow = null;
+  ownerWasOnTop = false;
+}
+
+export function openImageViewer(
+  files: unknown[],
+  index: number,
+  owner?: BrowserWindow | null
+): number {
   imageViewerData = { files, index };
+  demoteOwner(owner);
   if (imageViewerWindow && !imageViewerWindow.isDestroyed()) {
     imageViewerWindow.webContents.send('imageViewer:files', imageViewerData);
-    // Podgląd ma zostać nad aplikacją — po wcześniejszym „boostcie” window
-    // traciło always-on-top i chowało się pod oknem głównym.
-    imageViewerWindow.setAlwaysOnTop(true, 'floating');
-    imageViewerWindow.focus();
-    imageViewerWindow.moveTop();
+    raiseViewer(imageViewerWindow);
     return imageViewerWindow.id;
   }
   imageViewerWindow = createWindow({
@@ -33,13 +60,16 @@ export function openImageViewer(files: unknown[], index: number): number {
     hash: '/image-viewer',
     onReadyToShow: (win) => {
       win.show();
-      win.focus();
-      win.moveTop();
       win.setFullScreen(true);
-      win.setAlwaysOnTop(true, 'floating');
+      raiseViewer(win);
+      // Przejście w pełny ekran potrafi odebrać fokus oknu głównemu; po jego
+      // zakończeniu podnosimy podgląd ponownie.
+      win.once('enter-full-screen', () => raiseViewer(win));
+      setTimeout(() => raiseViewer(win), 250);
     },
     onClosed: () => {
       imageViewerWindow = null;
+      restoreOwner();
     }
   });
   imageViewerWindow.setMenuBarVisibility(false);
