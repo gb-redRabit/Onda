@@ -35,6 +35,7 @@ vi.mock('electron', () => ({
 
 const { registerPluginsHandlers } = await import('../plugins/plugins-handlers');
 const { pluginConsentHash } = await import('../plugins/plugins-core');
+const { readEntryDigest } = await import('../plugins/plugins-store');
 
 const MANIFEST = {
   name: 'Demo',
@@ -86,5 +87,19 @@ describe('plugin manifest reads', () => {
 
     // Jeden parse przy listowaniu folderu + jeden podczas scalania (były dwa).
     expect(parsedIds.filter((parsedId) => parsedId === id)).toHaveLength(2);
+  });
+
+  it('reuses the entry digest until the plugin file changes', async () => {
+    const id = 'digest-cache';
+    await install(id);
+    const dir = join(userData, 'plugins', id);
+
+    const first = await readEntryDigest(dir, id);
+    expect(first).toBeTruthy();
+    expect(await readEntryDigest(dir, id)).toBe(first);
+
+    await writeFile(join(dir, 'index.js'), `${ENTRY}\n// changed`);
+    const changed = await readEntryDigest(dir, id);
+    expect(changed).not.toBe(first);
   });
 });
