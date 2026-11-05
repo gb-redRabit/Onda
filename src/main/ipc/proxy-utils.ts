@@ -1,4 +1,5 @@
 import { getStore } from './cover/cover-cache';
+import { decryptSecret } from './settings/settings-crypto';
 
 interface ProxyConfig {
   enabled?: boolean;
@@ -25,9 +26,8 @@ export type ProxyScope = 'youtube' | 'soundcloud' | 'generic';
 function proxyToArgs(proxy: ProxyConfig | undefined | null): string[] {
   if (!proxy || !proxy.enabled || !proxy.host) return [];
   const scheme = proxy.type === 'socks5' ? 'socks5' : 'http';
-  const auth = proxy.username
-    ? `${proxy.username}${proxy.password ? `:${proxy.password}` : ''}@`
-    : '';
+  const password = proxy.password ? decryptSecret(proxy.password) : undefined;
+  const auth = proxy.username ? `${proxy.username}${password ? `:${password}` : ''}@` : '';
   const port = proxy.port && proxy.port > 0 ? `:${proxy.port}` : '';
   return ['--proxy', `${scheme}://${auth}${proxy.host}${port}`];
 }

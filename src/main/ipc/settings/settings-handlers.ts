@@ -10,6 +10,7 @@ import {
   decryptApiKeys,
   maskApiKeys,
   mergeApiKeys,
+  encryptSecret,
   encryptionStatus,
   SecretStorageUnavailableError
 } from './settings-crypto';
@@ -56,6 +57,24 @@ function stripProxyPasswords(network: NetworkSettings | undefined): void {
   if (!network) return;
   for (const key of PROXY_KEYS) {
     if (network[key]) network[key].password = undefined;
+  }
+}
+
+// Hasła proxy używają tego samego `safeStorage` co klucze API. Gdy keyring jest
+// niedostępny, zostawiamy dotychczasowe zachowanie (electron-store) zamiast
+// blokować cały zapis ustawień.
+function encryptProxyPasswords(network: NetworkSettings | undefined): void {
+  if (!network) return;
+  for (const key of PROXY_KEYS) {
+    const proxy = network[key];
+    if (!proxy || typeof proxy.password !== 'string' || !proxy.password) continue;
+    if (proxy.password === PROXY_PASSWORD_MASK) continue;
+    try {
+      proxy.password = encryptSecret(proxy.password);
+    } catch (e) {
+      if (!(e instanceof SecretStorageUnavailableError)) throw e;
+      logger.warn('settings', 'proxy password kept in store: secure storage unavailable');
+    }
   }
 }
 
@@ -122,6 +141,7 @@ export function registerSettingsHandlers(): void {
       // Hasła proxy również nie wróciły z renderera (maska) — przywróć zapisane.
       const storedNetwork = sanitizeSettings(store.store || {}).sanitized.network;
       restoreProxyPasswords(sanitized.network, storedNetwork);
+      encryptProxyPasswords(sanitized.network);
       const previousAppearance = sanitizeSettings(store.store || {}).sanitized.appearance;
       const secretSaved = encryptKeysOrDrop(sanitized);
       // Jeden zapis zamiast N osobnych `store.set` — każde `set` re-szyfrowało cały
