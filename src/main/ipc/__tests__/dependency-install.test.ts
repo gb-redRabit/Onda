@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   getBinDir: vi.fn(() => ''),
   resolveBinInfo: vi.fn(),
   invalidateBinaries: vi.fn(),
-  runCommand: vi.fn(async () => 'ok'),
+  runCommand: vi.fn(async (_cmd?: string, _args?: string[], _opts?: unknown) => 'ok'),
   dialog: vi.fn(async () => ({ response: 1 })),
   emitProgress: vi.fn(),
   newSignal: vi.fn(() => new AbortController().signal),
@@ -216,6 +216,115 @@ describe('installFfmpegManaged', () => {
     await expect(installFfmpegManaged(sender)).resolves.toEqual({
       success: false,
       cancelled: true
+    });
+  });
+
+  describe('archive extraction', () => {
+    const exe = process.platform === 'win32' ? '.exe' : '';
+
+    // `runCommand` udaje systemowy rozpakowywacz: tworzy pliki w katalogu
+    // docelowym wyciągniętym z argv (PowerShell -DestinationPath, unzip -d,
+    // tar -C), dzięki czemu prawdziwy `findFile` i `copyFile` mają co znaleźć.
+    function destinationFrom(args: string[]): string | null {
+      const joined = args.join(' ');
+      const ps = /-DestinationPath '([^']+)'/.exec(joined);
+      if (ps) return ps[1];
+      for (const flag of ['-d', '-C']) {
+        const index = args.indexOf(flag);
+        if (index >= 0) return args[index + 1] ?? null;
+      }
+      return null;
+    }
+
+    function fakeExtraction(options: {
+      mainProbe?: boolean;
+      probeArchive?: boolean;
+      mainBinary?: boolean;
+    }): void {
+      mocks.runCommand.mockImplementation(async (_cmd?: string, args: string[] = []) => {
+        const dest = destinationFrom(args);
+        if (!dest) return 'ok';
+        if (dest.includes('ffprobe-extract')) {
+          if (options.probeArchive) {
+            mkdirSync(join(dest, 'tool'), { recursive: true });
+            writeFileSync(join(dest, 'tool', `ffprobe${exe}`), 'probe');
+          }
+          return 'ok';
+        }
+        if (options.mainBinary !== false) {
+          mkdirSync(join(dest, 'tool'), { recursive: true });
+          writeFileSync(join(dest, 'tool', `ffmpeg${exe}`), 'ffmpeg-binary');
+          if (options.mainProbe) writeFileSync(join(dest, 'tool', `ffprobe${exe}`), 'probe-binary');
+        }
+        return 'ok';
+      });
+    }
+
+    function withManagedFfmpeg(): void {
+      mocks.ffmpegDownloadUrl.mockReturnValue('https://example.com/ffmpeg.zip');
+      mocks.ffmpegSha256.mockReturnValue('a'.repeat(64));
+    }
+
+    it('extracts both tools, installs them and cleans temporary directories', async () => {
+      withManagedFfmpeg();
+      fakeExtraction({ mainProbe: true });
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result).toEqual({
+        success: true,
+        path: join(binDir, `ffmpeg${exe}`),
+        managed: true
+      });
+      expect(readdirSync(binDir).sort()).toEqual([`ffmpeg${exe}`, `ffprobe${exe}`]);
+      expect(existsSync(join(binDir, 'ffmpeg-extract'))).toBe(false);
+      expect(existsSync(join(binDir, 'ffmpeg-download.zip'))).toBe(false);
+      expect(mocks.invalidateBinaries).toHaveBeenCalled();
+      expect(mocks.emitProgress).toHaveBeenCalledWith(sender, 'ffmpeg', 'done', 100);
+    });
+
+    it('downloads and verifies the separate macOS-style ffprobe archive', async () => {
+      withManagedFfmpeg();
+      mocks.ffmpegProbeUrl.mockReturnValue('https://example.com/ffprobe.zip');
+      mocks.ffmpegProbeSha256.mockReturnValue('b'.repeat(64));
+      fakeExtraction({ mainProbe: false, probeArchive: true });
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(true);
+      expect(mocks.downloadFile).toHaveBeenCalledWith(
+        'https://example.com/ffprobe.zip',
+        join(binDir, 'ffprobe-download.zip'),
+        expect.anything(),
+        expect.any(Function)
+      );
+      expect(mocks.verifyFileSha256).toHaveBeenCalledWith(
+        join(binDir, 'ffprobe-download.zip'),
+        'b'.repeat(64),
+        expect.anything()
+      );
+      expect(readdirSync(binDir).sort()).toEqual([`ffmpeg${exe}`, `ffprobe${exe}`]);
+      expect(existsSync(join(binDir, 'ffprobe-extract'))).toBe(false);
+    });
+
+    it('fails when the archive contains no ffmpeg binary', async () => {
+      withManagedFfmpeg();
+      fakeExtraction({ mainBinary: false });
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain(`Nie znaleziono ffmpeg${exe}`);
+    });
+
+    it('fails when ffprobe is absent and no separate archive is pinned', async () => {
+      withManagedFfmpeg();
+      fakeExtraction({ mainProbe: false });
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain(`Nie znaleziono ffprobe${exe}`);
     });
   });
 });
