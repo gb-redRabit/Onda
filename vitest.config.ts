@@ -50,7 +50,7 @@ export default defineConfig({
           name: 'main',
           environment: 'node',
           globals: true,
-          include: ['src/main/**/*.test.ts', 'scripts/**/*.test.ts']
+          include: ['src/main/**/*.test.ts', 'src/preload/**/*.test.ts', 'scripts/**/*.test.ts']
         }
       },
       {
