@@ -249,12 +249,23 @@ watch(
     if (!menu) return;
     const active = document.activeElement;
     triggerEl.value = active instanceof HTMLElement && active !== document.body ? active : null;
-    nextTick(() => {
-      const first = selectableIndexes()[0];
-      activeIndex.value = first ?? -1;
-      if (first !== undefined) itemRefs.value[first]?.focus();
-    });
-  }
+    const first = selectableIndexes()[0];
+    activeIndex.value = first ?? -1;
+    if (first !== undefined) {
+      // Teleport dopina dzieci po ticku renderu — fokus na jeszcze niedołączonym
+      // elemencie zostałby zignorowany. Kilka prób pokrywa wolniejsze środowiska.
+      const focusFirst = (retries: number): void => {
+        nextTick(() => {
+          if (!ui.contextMenu || activeIndex.value !== first) return;
+          const el = itemRefs.value[first];
+          if (el) el.focus();
+          else if (retries > 0) focusFirst(retries - 1);
+        });
+      };
+      focusFirst(5);
+    }
+  },
+  { flush: 'post' }
 );
 
 function moveActive(dir: 1 | -1) {
@@ -376,7 +387,13 @@ function onClickOutside(e: MouseEvent) {
 function onScroll(e?: Event) {
   // Przewijanie samego menu (długie listy) i podmenu nie może go zamykać.
   const target = e?.target as Node | null;
-  if (target && (rootEl.value?.contains(target) || submenuEl.value?.contains(target))) return;
+  if (
+    target &&
+    target instanceof Node &&
+    (rootEl.value?.contains(target) || submenuEl.value?.contains(target))
+  ) {
+    return;
+  }
   ui.hideContextMenu();
 }
 
@@ -407,16 +424,14 @@ onBeforeUnmount(() => {
   closeTimer = null;
 });
 
-function setRef(i: number) {
-  return (el: unknown) => {
-    itemRefs.value[i] = el as HTMLElement | null;
-  };
+function setRef(i: number, el: unknown) {
+  // `:ref` z inline funkcją jest wywoływany ponownie przy re-renderze; ignorujemy
+  // `null` ze starej funkcji, żeby nie wyczyścić referencji do wciąż żywego elementu.
+  if (el) itemRefs.value[i] = el as HTMLElement;
 }
 
-function setSubRef(i: number) {
-  return (el: unknown) => {
-    subItemRefs.value[i] = el as HTMLElement | null;
-  };
+function setSubRef(i: number, el: unknown) {
+  if (el) subItemRefs.value[i] = el as HTMLElement;
 }
 </script>
 
@@ -439,13 +454,13 @@ function setSubRef(i: number) {
         <div v-if="item.separator" class="border-t border-hairline my-1 mx-2" />
         <div
           v-else
-          :ref="setRef(idx)"
           class="relative"
           :class="{ 'bg-primary/10': activeIndex === idx }"
           @mouseenter="onItemEnter(idx, $event.currentTarget as HTMLElement)"
           @mouseleave="onItemLeave()"
         >
           <button
+            :ref="(el) => setRef(idx, el)"
             type="button"
             data-testid="context-menu-item"
             :role="item.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'"
@@ -497,7 +512,7 @@ function setSubRef(i: number) {
                   <div v-if="child.separator" class="border-t border-hairline my-1 mx-2" />
                   <button
                     v-else
-                    :ref="setSubRef(cidx)"
+                    :ref="(el) => setSubRef(cidx, el)"
                     type="button"
                     data-testid="context-menu-subitem"
                     :role="child.checked !== undefined ? 'menuitemcheckbox' : 'menuitem'"
