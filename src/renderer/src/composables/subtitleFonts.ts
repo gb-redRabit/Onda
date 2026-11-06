@@ -43,17 +43,24 @@ type FontQuery = (options?: {
 
 // lfa-ponyfill dostarcza czysty JS bez deklaracji typów; opisujemy mały
 // zakres, którego używamy (jeden uzasadniony cast na tej granicy).
-let fontQuery: FontQuery | null = null;
-async function loadFontQuery(): Promise<FontQuery> {
-  if (fontQuery) return fontQuery;
-  const mod = (await import('lfa-ponyfill')) as unknown as {
-    default?: FontQuery;
-    queryRemoteFonts?: FontQuery;
-  };
-  const fn = mod.default ?? mod.queryRemoteFonts;
-  if (!fn) throw new Error('lfa-ponyfill: no font query export');
-  fontQuery = fn;
-  return fontQuery;
+let fontQueryPromise: Promise<FontQuery> | null = null;
+function loadFontQuery(): Promise<FontQuery> {
+  if (!fontQueryPromise) {
+    fontQueryPromise = (async () => {
+      const mod = (await import('lfa-ponyfill')) as unknown as {
+        default?: FontQuery;
+        queryRemoteFonts?: FontQuery;
+      };
+      const fn = mod.default ?? mod.queryRemoteFonts;
+      if (!fn) throw new Error('lfa-ponyfill: no font query export');
+      return fn;
+    })().catch((e) => {
+      // Nie zapamiętuj nieudanego importu — kolejne wywołanie może spróbować ponownie.
+      fontQueryPromise = null;
+      throw e;
+    });
+  }
+  return fontQueryPromise;
 }
 
 // Ładuje cztery warianty stylu `family` do `fontMap` pod `mapKey`
