@@ -117,6 +117,7 @@ describe('PeakAccumulator', () => {
   it('computes peaks through computePeaks', async () => {
     const { computePeaks } = await load();
     expect(computePeaks(new Int16Array([32768, 0, 16384, 0]), 2)).toEqual([1, 0.5]);
+    expect(computePeaks(new Int16Array([]), 10)).toEqual([]);
   });
 });
 
