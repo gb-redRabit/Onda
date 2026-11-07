@@ -133,9 +133,10 @@ function behaviorOf(url: string): 'hold' | 'downloading' | 'normal' {
 }
 
 export function e2eAddDownloadTasks(jobs: IpcDownloadJobInput[], emit: Emit): IpcDownloadTask[] {
+  const base = tasks.length;
   const created = jobs.map((job, index) => {
     const task: IpcDownloadTask = {
-      id: `e2e-task-${tasks.length + index + 1}`,
+      id: `e2e-task-${base + index + 1}`,
       url: job.url,
       title: job.title,
       thumbnail: job.thumbnail,
