@@ -79,6 +79,13 @@ const coverObj = computed<{ type: string | null; data: string | null } | undefin
   return { type: 'video', data: coverUrl.value };
 });
 
+// `blob:` URL-e trzeba zwalniać ręcznie. Bez tego każde otwarcie edytora okładki
+// zostawiało blob w pamięci renderera do końca życia okna.
+let coverObjectUrl: string | null = null;
+// Rosnący token: szybkie przełączanie utworów nie może pozwolić wolniejszej,
+// starszej odpowiedzi nadpisać okładki nowszego utworu.
+let coverLoadSeq = 0;
+
 watch(
   () => props.track,
   (t) => {
@@ -98,10 +105,6 @@ watch(
 
 // `blob:` URL-e trzeba zwalniać ręcznie. Bez tego każde otwarcie edytora okładki
 // zostawiało blob w pamięci renderera do końca życia okna.
-let coverObjectUrl: string | null = null;
-// Rosnący token: szybkie przełączanie utworów nie może pozwolić wolniejszej,
-// starszej odpowiedzi nadpisać okładki nowszego utworu.
-let coverLoadSeq = 0;
 
 function setCover(url: string | null, owned = false): void {
   if (coverObjectUrl) URL.revokeObjectURL(coverObjectUrl);
