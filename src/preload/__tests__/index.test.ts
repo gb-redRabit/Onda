@@ -218,4 +218,27 @@ describe('wrappers', () => {
     expect(api.getFilePath({} as File)).toBe('/tmp/file.txt');
     expect(state.getPathForFile).toHaveBeenCalled();
   });
+
+  it('forwards every wrapper through an allowlisted channel', async () => {
+    state.logger.warn.mockClear();
+    const handledElsewhere = new Set([
+      'invoke',
+      'send',
+      'on',
+      'once',
+      'getFilePath',
+      'updateDiscordPresence'
+    ]);
+
+    for (const [name, fn] of Object.entries(api)) {
+      if (handledElsewhere.has(name)) continue;
+      const result = fn(undefined, undefined, undefined);
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        await result;
+      }
+      expect(state.invoke, name).toHaveBeenCalled();
+    }
+
+    expect(state.logger.warn).not.toHaveBeenCalled();
+  });
 });
