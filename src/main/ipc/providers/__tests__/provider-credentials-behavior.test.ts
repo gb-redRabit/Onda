@@ -133,6 +133,13 @@ describe('tokens', () => {
     expect(await getProviderToken('pikpak')).toBe('opaque');
   });
 
+  it('treats a malformed JWT payload as non-expiring', async () => {
+    state.creds = { pikpak: { token: 'enc:a.____.c' } };
+
+    expect(await getProviderToken('pikpak')).toBe('a.____.c');
+    expect(await hasProviderCookie('pikpak')).toBe(true);
+  });
+
   it('returns empty without a token', async () => {
     expect(await getProviderToken('pikpak')).toBe('');
   });
