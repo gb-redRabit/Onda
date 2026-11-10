@@ -1,9 +1,25 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { usePlayerStore } from '../player';
 import { useSettingsStore } from '../settings';
 import { useLibraryStore } from '../library';
 import type { MediaFile } from '@renderer/types/media';
+import { logger } from '@shared/logger';
+
+const core = vi.hoisted(() => ({
+  enabled: false,
+  send: vi.fn()
+}));
+
+vi.mock('@renderer/utils/runtimeMode', () => ({
+  isCoreShell: () => core.enabled,
+  setCoreShellMode: vi.fn()
+}));
+vi.mock('@renderer/core/coreClient', () => ({
+  sendCoreCommand: core.send,
+  coreState: { value: null },
+  initCoreClient: vi.fn()
+}));
 
 function makeTrack(id: string): MediaFile {
   return {
@@ -22,6 +38,8 @@ function makeTrack(id: string): MediaFile {
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.clearAllMocks();
+  core.enabled = false;
+  core.send.mockClear();
 });
 
 describe('setTrack', () => {
@@ -576,5 +594,184 @@ describe('recordPlay (playCount/lastPlayed)', () => {
     expect(library.tracks[0]!.playCount).toBe(2);
     expect(library.tracks[1]!.playCount).toBe(2);
     expect(library.tracks[2]!.playCount).toBe(1);
+  });
+});
+
+describe('core shell bridge', () => {
+  let originalApi: unknown;
+
+  beforeEach(() => {
+    core.enabled = true;
+    originalApi = (window as unknown as { api?: unknown }).api;
+  });
+
+  afterEach(() => {
+    (window as unknown as { api?: unknown }).api = originalApi;
+  });
+
+  it('derives hasTrack and progress', () => {
+    const store = usePlayerStore();
+    expect(store.hasTrack).toBe(false);
+    expect(store.progress).toBe(0);
+
+    store.currentTrack = makeTrack('a');
+    store.duration = 10;
+    store.currentTime = 4;
+
+    expect(store.hasTrack).toBe(true);
+    expect(store.progress).toBeCloseTo(0.4);
+  });
+
+  it('forwards queue mutations to Core', () => {
+    const store = usePlayerStore();
+    const a = makeTrack('a');
+    const b = makeTrack('b');
+
+    store.addToQueue(a);
+    store.addToQueueMultiple([b]);
+    store.reorderQueue(0, 1);
+    store.insertInQueue(0, makeTrack('c'));
+    store.removeFromQueue(0);
+    store.clearQueue();
+
+    const types = core.send.mock.calls.map(([command]) => command.type);
+    expect(types).toEqual(['setQueue', 'setQueue', 'setQueue', 'setQueue', 'setQueue', 'setQueue']);
+    expect(core.send.mock.calls[0][0].queue.map((t: MediaFile) => t.id)).toEqual(['a']);
+  });
+
+  it('sends load commands instead of mutating local state', () => {
+    const store = usePlayerStore();
+    const track = makeTrack('a');
+
+    store.setTrack(track, { resume: true });
+
+    expect(store.currentTrack).toBeNull();
+    expect(core.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'load',
+        resume: true,
+        track: expect.objectContaining({ id: 'a' })
+      })
+    );
+  });
+
+  it('rejects image tracks in core mode', () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const store = usePlayerStore();
+    const image = { ...makeTrack('img'), type: 'image' as const };
+
+    store.setTrack(image);
+
+    expect(core.send).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith('core-shell', 'image playback is not supported');
+    warn.mockRestore();
+  });
+
+  it('forward transport commands to Core and still update local state', () => {
+    const store = usePlayerStore();
+
+    store.clearTrack();
+    store.play();
+    store.pause();
+    store.togglePlay();
+    store.seek(12);
+    store.toggleShuffle();
+    store.cycleRepeat();
+    store.recordExternalPlay(makeTrack('played'));
+    store.setVolume(2);
+    store.toggleMute();
+
+    const types = core.send.mock.calls.map(([command]) => command.type);
+    expect(types).toEqual([
+      'clear',
+      'play',
+      'pause',
+      'toggle',
+      'seek',
+      'toggleShuffle',
+      'cycleRepeat',
+      'setVolume',
+      'toggleMute'
+    ]);
+    expect(core.send).toHaveBeenCalledWith({ type: 'seek', time: 12 });
+    expect(core.send).toHaveBeenCalledWith({ type: 'setVolume', value: 1 });
+    expect(store.volume).toBe(1);
+    expect(store.isMuted).toBe(true);
+  });
+
+  it('seeks the local video element for video tracks', () => {
+    const store = usePlayerStore();
+    const video = document.createElement('video');
+    document.body.append(video);
+    store.currentTrack = { ...makeTrack('v'), type: 'video' };
+
+    store.seek(33);
+
+    expect(video.currentTime).toBe(33);
+    document.body.innerHTML = '';
+  });
+
+  it('returns null for next/prev and forwards history and PiP commands', () => {
+    const store = usePlayerStore();
+
+    expect(store.nextTrack()).toBeNull();
+    expect(store.prevTrack()).toBeNull();
+    store.playFromHistory(3);
+    store.enterPiP(20);
+    store.exitPiP(30);
+    store.toggleSubtitlePanel();
+    store.showResumePrompt('D:/a.mp3', 40);
+    expect(store.resumePrompt).toEqual({ path: 'D:/a.mp3', position: 40 });
+    store.clearResumePrompt();
+    expect(store.resumePrompt).toBeNull();
+
+    expect(core.send).toHaveBeenCalledWith({ type: 'next' });
+    expect(core.send).toHaveBeenCalledWith({ type: 'prev' });
+    expect(core.send).toHaveBeenCalledWith({ type: 'playFromHistory', index: 3 });
+    expect(core.send).toHaveBeenCalledWith({ type: 'setPip', active: true, time: 20 });
+    expect(core.send).toHaveBeenCalledWith({ type: 'setPip', active: false, time: 30 });
+    expect(store.pipActive).toBe(false);
+  });
+
+  it('grants media access once per directory and retries on failure', async () => {
+    const grant = vi.fn().mockResolvedValue(true);
+    (window as unknown as { api?: unknown }).api = { grantMediaAccess: grant };
+    const store = usePlayerStore();
+
+    store.setTrack({ ...makeTrack('a'), path: '/music/a.mp3' });
+    store.setTrack({ ...makeTrack('b'), path: '/music/b.mp3' });
+    expect(grant).toHaveBeenCalledTimes(1);
+
+    grant.mockResolvedValueOnce(false);
+    store.setTrack({ ...makeTrack('c'), path: '/other/c.mp3' });
+    await Promise.resolve();
+    store.setTrack({ ...makeTrack('d'), path: '/other/d.mp3' });
+    expect(grant).toHaveBeenCalledTimes(3);
+  });
+
+  it('retries after a rejected grant and skips streams', async () => {
+    const grant = vi.fn().mockRejectedValueOnce(new Error('denied')).mockResolvedValue(true);
+    (window as unknown as { api?: unknown }).api = { grantMediaAccess: grant };
+    const store = usePlayerStore();
+
+    store.setTrack({ ...makeTrack('a'), path: '/reject/a.mp3' });
+    for (let i = 0; i < 5; i += 1) await Promise.resolve();
+    store.setTrack({ ...makeTrack('b'), path: '/reject/b.mp3' });
+    expect(grant).toHaveBeenCalledTimes(2);
+
+    grant.mockClear();
+    store.setTrack({ ...makeTrack('s'), type: 'stream', path: 'yt:abc' });
+    expect(grant).not.toHaveBeenCalled();
+  });
+
+  it('tolerates a bridge without grantMediaAccess', async () => {
+    (window as unknown as { api?: unknown }).api = {};
+    const store = usePlayerStore();
+
+    store.setTrack({ ...makeTrack('a'), path: '/nogrant/a.mp3' });
+    await Promise.resolve();
+    store.setTrack({ ...makeTrack('b'), path: '/nogrant/b.mp3' });
+
+    expect(core.send).toHaveBeenCalled();
   });
 });
