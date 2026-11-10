@@ -39,7 +39,7 @@ function menuItems() {
 
 let wrapper: VueWrapper | null = null;
 
-function openMenu(items = menuItems(), x = 10, y = 20) {
+function openMenu(items: any[] = menuItems(), x = 10, y = 20) {
   state.ui.contextMenu = { x, y, items };
   return flush();
 }
@@ -97,6 +97,7 @@ describe('rendering', () => {
     wrapper = mount(ContextMenu, { attachTo: document.body });
     await nextTick();
     expect(menuEl()).toBeNull();
+    expect((wrapper.vm as unknown as { position: Record<string, string> }).position).toEqual({});
   });
 
   it('renders items, separators and ARIA state', async () => {
@@ -352,5 +353,268 @@ describe('lifecycle', () => {
     await vi.advanceTimersByTimeAsync(1000);
     // Po odmontowaniu nie ma już reakcji na klawisze ani otwarcia podmenu.
     expect(document.body.querySelector('#context-submenu')).toBeNull();
+  });
+
+  it('clears a pending close timer on unmount', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    wrapper.unmount();
+    wrapper = null;
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(document.body.querySelector('#context-submenu')).toBeNull();
+  });
+
+  it('bails out of focus retries when the menu closes first', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+
+    state.ui.contextMenu = { x: 10, y: 20, items: menuItems() };
+    await nextTick();
+    state.ui.contextMenu = null;
+    await flush();
+
+    expect(menuEl()).toBeNull();
+  });
+});
+
+describe('pointer details', () => {
+  it('ignores keys and clicks without an open menu', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await nextTick();
+
+    window.dispatchEvent(key('Escape'));
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+    expect(state.ui.hideContextMenu).not.toHaveBeenCalled();
+  });
+
+  it('highlights the item under the pointer', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[1].dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    await nextTick();
+
+    expect(items()[1].className).toContain('bg-primary/10');
+  });
+
+  it('ignores Enter on a hovered disabled item', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[2].dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    window.dispatchEvent(key('Enter'));
+    await nextTick();
+
+    expect(state.action).not.toHaveBeenCalled();
+  });
+
+  it('skips navigation when nothing is selectable', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([{ label: 'Only', disabled: true }, { separator: true }]);
+
+    window.dispatchEvent(key('ArrowDown'));
+    window.dispatchEvent(key('Home'));
+    window.dispatchEvent(key('End'));
+    await nextTick();
+
+    expect(items()[0].parentElement!.className).not.toContain('bg-primary/10');
+  });
+
+  it('cancels a pending submenu open when the pointer moves away', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[3].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    await vi.advanceTimersByTimeAsync(200);
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('cancels a pending submenu open when leaving the menu', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[3].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    menuEl()!.dispatchEvent(new MouseEvent('mouseleave'));
+    await vi.advanceTimersByTimeAsync(600);
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('keeps the submenu while hovered and closes it after the delay', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    const sub = document.body.querySelector('#context-submenu')!;
+    const matches = vi.spyOn(sub, 'matches').mockReturnValueOnce(true);
+
+    // Wejście na pozycję bez children planuje zamknięcie…
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    // …wyjście z menu planuje kolejne zamknięcie (czyści poprzedni timer)…
+    menuEl()!.dispatchEvent(new MouseEvent('mouseleave'));
+    // …wejście z powrotem na menu anuluje timer…
+    menuEl()!.dispatchEvent(new MouseEvent('mouseenter'));
+    // …a wejście w podmenu czyści ewentualny timer otwarcia.
+    sub.dispatchEvent(new MouseEvent('mouseenter'));
+    // Wejście na pozycję z podmenu czyści timer zamknięcia.
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    items()[3].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    sub.dispatchEvent(new MouseEvent('mouseenter'));
+
+    sub.dispatchEvent(new MouseEvent('mouseleave'));
+    await vi.advanceTimersByTimeAsync(600);
+    expect(subitems()).toHaveLength(3);
+    expect(matches).toHaveBeenCalledWith(':hover');
+
+    menuEl()!.dispatchEvent(new MouseEvent('mouseleave'));
+    await vi.advanceTimersByTimeAsync(600);
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('closes the submenu from Escape even with a pending close timer', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    window.dispatchEvent(key('Escape'));
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+    expect(state.ui.contextMenu).toBeNull();
+  });
+
+  it('positions the submenu using its measured height', async () => {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: 50,
+      right: 100,
+      left: 10,
+      bottom: 90,
+      width: 90,
+      height: 200,
+      x: 10,
+      y: 50,
+      toJSON: () => ({})
+    } as DOMRect);
+
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    const sub = document.body.querySelector('#context-submenu') as HTMLElement;
+    expect(sub.style.top).toBe('50px');
+  });
+
+  it('navigates a submenu without selectable children', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([
+      { label: 'Sub', children: [{ label: 'A', disabled: true }, { separator: true }] }
+    ]);
+
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+    expect(subitems()).toHaveLength(1);
+
+    window.dispatchEvent(key('ArrowDown'));
+    window.dispatchEvent(key('ArrowUp'));
+    window.dispatchEvent(key('Home'));
+    window.dispatchEvent(key('End'));
+    await nextTick();
+
+    expect(subitems()).toHaveLength(1);
+  });
+
+  it('does not open a submenu without selectable children from the keyboard', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([{ label: 'Sub', children: [{ label: 'X', disabled: true }] }]);
+
+    window.dispatchEvent(key('ArrowRight'));
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('bails out when the submenu children disappear before focusing', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([{ label: 'Sub', children: [{ label: 'A' }] }]);
+
+    window.dispatchEvent(key('ArrowRight'));
+    // Pozycje zmieniają się, zanim wykona się odroczone ustawienie fokusu.
+    (state.ui.contextMenu.items[0] as { children: unknown[] }).children = [];
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('highlights submenu items under the pointer', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    subitems()[2].dispatchEvent(new MouseEvent('mousemove', { bubbles: true }));
+    window.dispatchEvent(key('Home'));
+    await nextTick();
+
+    expect(document.activeElement).toBe(subitems()[0]);
+  });
+});
+
+describe('type-ahead details', () => {
+  it('ignores symbols that are not alphanumeric', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    const symbol = key('-');
+    window.dispatchEvent(symbol);
+    await nextTick();
+
+    expect(symbol.defaultPrevented).toBe(false);
+  });
+
+  it('ignores type-ahead with no matching label', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    const none = key('z');
+    window.dispatchEvent(none);
+    await nextTick();
+
+    expect(none.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(items()[0]);
+  });
+
+  it('matches items inside an open submenu', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+    expect(subitems()).toHaveLength(3);
+
+    const end = key('End');
+    window.dispatchEvent(end);
+    await nextTick();
+    expect(document.activeElement).toBe(subitems()[2]);
+
+    const event = key('c', { cancelable: true });
+    window.dispatchEvent(event);
+    await nextTick();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(subitems()[0]);
   });
 });
