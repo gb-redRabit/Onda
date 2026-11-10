@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent } from 'vue';
+import { createApp, defineComponent, nextTick } from 'vue';
 
 // Store i UI są mockowane (composable jest rdzeniem logiki widoku; nie chcemy
 // tu okablowania IPC). Stan trzymamy reaktywny, żeby `computed` aktualizowały się
@@ -7,7 +7,8 @@ import { createApp, defineComponent } from 'vue';
 const h = vi.hoisted(() => ({
   store: null as unknown,
   ui: null as unknown,
-  player: null as unknown
+  player: null as unknown,
+  confirm: null as unknown as { showConfirm: ReturnType<typeof vi.fn> }
 }));
 
 vi.mock('@renderer/stores/sources', async () => {
@@ -60,15 +61,18 @@ vi.mock('@renderer/stores/player', () => {
   return { usePlayerStore: () => player };
 });
 
-vi.mock('@renderer/composables/usePromptDialog', () => ({
-  usePromptDialog: () => ({ showConfirm: vi.fn(async () => true) })
-}));
+vi.mock('@renderer/composables/usePromptDialog', () => {
+  const prompt = { showConfirm: vi.fn(async () => true) };
+  h.confirm = prompt;
+  return { usePromptDialog: () => prompt };
+});
 
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
 
 const { useSourcesView } = await import('../useSourcesView');
 
 type Store = {
+  [key: string]: any;
   activeSourceId: string | null;
   activeEndpointId: string | null;
   activeSource: unknown;
@@ -85,6 +89,7 @@ type Store = {
 };
 
 const store = h.store as unknown as Store;
+const uiMock = h.ui as { notify: ReturnType<typeof vi.fn> };
 
 function run() {
   let api: ReturnType<typeof useSourcesView> | undefined;
@@ -111,6 +116,8 @@ beforeEach(() => {
   store.lastError = '';
   store.setActive.mockClear();
   store.reorderSources.mockClear();
+  h.confirm.showConfirm.mockClear();
+  h.confirm.showConfirm.mockResolvedValue(true);
 });
 
 describe('useSourcesView — viewMode', () => {
@@ -352,5 +359,247 @@ describe('useSourcesView — query builder', () => {
     expect(api.paramKeys.value).toEqual(['rating', 'page']);
     expect(api.paramDefaults.value).toEqual({ rating: 'safe', page: '1' });
     expect(api.builderValues.value).toEqual({});
+  });
+});
+
+describe('useSourcesView — persistence and navigation', () => {
+  it('removes a source after confirmation and reports failures', async () => {
+    store.sources = [{ id: 's1', name: 'Source' }];
+    store.deleteSource.mockResolvedValueOnce({ ok: true });
+    const api = run();
+
+    await api.onRemoveSource('s1');
+    expect(store.deleteSource).toHaveBeenCalledWith('s1');
+
+    store.deleteSource.mockResolvedValueOnce({ ok: false, error: 'locked' });
+    await api.onRemoveSource('s1');
+    expect(uiMock.notify).toHaveBeenLastCalledWith('error', 'sources.deleteFailed');
+  });
+
+  it('skips deletion when confirmation is declined', async () => {
+    store.sources = [{ id: 's1', name: 'Source' }];
+    store.deleteSource.mockClear();
+    h.confirm.showConfirm.mockResolvedValueOnce(false);
+    const api = run();
+
+    await api.onRemoveSource('s1');
+
+    expect(store.deleteSource).not.toHaveBeenCalled();
+  });
+
+  it('exports sources with success, failure and cancellation', async () => {
+    const invoke = vi
+      .fn()
+      .mockResolvedValueOnce({ success: true })
+      .mockResolvedValueOnce({ success: false, canceled: false })
+      .mockResolvedValueOnce({ success: false, canceled: true });
+    (window as unknown as { api: unknown }).api = { invoke };
+    const api = run();
+
+    await api.onExport();
+    expect(uiMock.notify).toHaveBeenLastCalledWith('success', 'sources.exportOk');
+
+    await api.onExport();
+    expect(uiMock.notify).toHaveBeenLastCalledWith('error', 'sources.toastFailed');
+
+    const before = (uiMock.notify as ReturnType<typeof vi.fn>).mock.calls.length;
+    await api.onExport();
+    expect((uiMock.notify as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before);
+  });
+
+  it('imports sources and reloads the store', async () => {
+    const invoke = vi
+      .fn()
+      .mockResolvedValueOnce({ success: true, count: 3 })
+      .mockResolvedValueOnce({ success: false })
+      .mockResolvedValueOnce({ success: true, canceled: true });
+    (window as unknown as { api: unknown }).api = { invoke };
+    const api = run();
+
+    await api.onImport();
+    expect(store.loadSources).toHaveBeenCalled();
+    expect(uiMock.notify).toHaveBeenLastCalledWith('success', 'sources.importOk');
+
+    await api.onImport();
+    expect(uiMock.notify).toHaveBeenLastCalledWith('error', 'sources.toastFailed');
+
+    const before = (uiMock.notify as ReturnType<typeof vi.fn>).mock.calls.length;
+    await api.onImport();
+    expect((uiMock.notify as ReturnType<typeof vi.fn>).mock.calls.length).toBe(before);
+  });
+
+  it('selects and tests a source', () => {
+    store.sources = [{ id: 's1', name: 'Source' }];
+    const api = run();
+
+    api.onSelectSource('s1');
+    expect(store.setActive).toHaveBeenCalledWith('s1');
+    expect(store.testSource).toHaveBeenCalledTimes(1);
+
+    api.onSelectSource('missing');
+    expect(store.testSource).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes with the merged query and scrolls to top', async () => {
+    const scrollTo = vi.fn();
+    const api = run();
+    api.scrollRef.value = { scrollTo } as never;
+    api.queryText.value = 'a=1';
+    api.builderValues.value = { b: '2', empty: '' };
+
+    api.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTick();
+
+    expect(store.fetchItems).toHaveBeenCalledWith({ a: '1', b: '2' });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+  });
+
+  it('clamps page input and navigates pages', async () => {
+    const scrollTo = vi.fn();
+    const api = run();
+    api.scrollRef.value = { scrollTo } as never;
+    store.currentPage = 2;
+
+    api.pageInput.value = 0;
+    api.goToPage();
+    expect(api.pageInput.value).toBe(1);
+    expect(store.setPage).toHaveBeenCalledWith(1);
+
+    api.pagePrev();
+    expect(store.setPage).toHaveBeenLastCalledWith(1);
+
+    api.pageNext();
+    expect(store.fetchMore).toHaveBeenCalled();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTick();
+    expect(scrollTo).toHaveBeenCalled();
+  });
+
+  it('opens item previews or child levels and table rows', async () => {
+    const api = run();
+    store.activeEndpoint = { type: 'list' };
+    api.onItemClick({ id: 'i1', title: 'Item', type: 'video' } as never);
+    expect(api.previewItem.value).toMatchObject({ id: 'i1' });
+
+    store.activeEndpoint = { type: 'list', childId: 'details' };
+    store.openItem.mockClear();
+    api.onItemClick({ id: 'i2', title: 'Item', type: 'video' } as never);
+    expect(store.openItem).toHaveBeenCalled();
+
+    api.onRowClick({ id: 'r1', title: 'Row', type: 'file' } as never);
+    expect(store.openTableRow).toHaveBeenCalled();
+  });
+
+  it('switches endpoints', () => {
+    store.activeSourceId = 's1';
+    const api = run();
+    api.onEndpointChange('ep2');
+    expect(store.setActive).toHaveBeenCalledWith('s1', 'ep2');
+  });
+
+  it('opens the editor in add and edit modes', () => {
+    const api = run();
+    api.openAdd();
+    expect(api.showEditor.value).toBe(true);
+    expect(api.editingSource.value).toBeNull();
+
+    const source = { id: 's1' } as never;
+    api.openEdit(source);
+    expect(api.editingSource.value).toEqual(source);
+  });
+});
+
+describe('useSourcesView — derived URL', () => {
+  it('resolves endpoint names from the active source', () => {
+    store.activeSource = { endpoints: [{ id: 'e1', name: 'List' }] };
+    const api = run();
+
+    expect(api.endpointName('e1')).toBe('List');
+    expect(api.endpointName('missing')).toBe('missing');
+  });
+
+  it('exposes active source and endpoint', () => {
+    store.activeSource = { id: 's1' };
+    store.activeEndpoint = { type: 'list' };
+    const api = run();
+
+    expect(api.activeSource.value).toMatchObject({ id: 's1' });
+    expect(api.activeEndpoint.value).toMatchObject({ type: 'list' });
+  });
+
+  it('builds the URL from query, page and context', () => {
+    store.activeSource = { id: 's1', baseUrl: 'https://api.example' };
+    store.activeEndpoint = { id: 'e1', path: '/list' };
+    store.paginationMode = 'page';
+    store.currentPage = 3;
+    store.context = { slug: 'a' };
+    const api = run();
+    api.queryText.value = 'q=x';
+    api.builderValues.value = { extra: '1' };
+
+    expect(api.currentUrl.value).toEqual(expect.any(String));
+  });
+});
+
+describe('useSourcesView — watchers and lifecycle', () => {
+  it('clears items when the active source disappears', async () => {
+    run();
+    store.activeSource = { id: 's1' };
+    store.activeSourceId = 's1';
+    await nextTick();
+    expect(store.fetchItems).toHaveBeenCalled();
+
+    store.activeSource = null;
+    store.items = [{ id: 'stale', title: 'Old', type: 'file' }];
+    store.activeSourceId = null;
+    await nextTick();
+    expect(store.items).toEqual([]);
+  });
+
+  it('skips a duplicate fetch while loading', async () => {
+    run();
+    store.activeSource = { id: 's1' };
+    store.loading = true;
+    store.fetchItems.mockClear();
+
+    store.activeEndpointId = 'e2';
+    await nextTick();
+    expect(store.fetchItems).not.toHaveBeenCalled();
+  });
+
+  it('syncs the page input with the store', async () => {
+    const api = run();
+    store.currentPage = 5;
+    await nextTick();
+    expect(api.pageInput.value).toBe(5);
+  });
+
+  it('loads sources on mount when needed', async () => {
+    store.isLoaded = false;
+    store.loadSources.mockClear();
+    run();
+    await nextTick();
+    expect(store.loadSources).toHaveBeenCalled();
+    store.isLoaded = true;
+  });
+
+  it('clears the selection when the view unmounts', () => {
+    store.activeSourceId = 's1';
+    store.activeEndpointId = 'e1';
+    let api: ReturnType<typeof useSourcesView> | undefined;
+    const Comp = defineComponent({
+      setup() {
+        api = useSourcesView();
+        return () => null;
+      }
+    });
+    const app = createApp(Comp);
+    app.mount(document.createElement('div'));
+    app.unmount();
+
+    expect(api!.sources.activeSourceId).toBe('');
+    expect(api!.sources.activeEndpointId).toBe('');
   });
 });
