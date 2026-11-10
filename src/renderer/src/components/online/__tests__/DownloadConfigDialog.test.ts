@@ -5,6 +5,7 @@ import DownloadConfigDialog from '../DownloadConfigDialog.vue';
 
 const state = vi.hoisted(() => ({
   form: null as any,
+  formOptions: null as any,
   notify: vi.fn(),
   invoke: vi.fn(),
   t: vi.fn((key: string) => key),
@@ -16,7 +17,10 @@ vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: state.t }) }));
 vi.mock('@renderer/stores/ui', () => ({ useUIStore: () => ({ notify: state.notify }) }));
 vi.mock('@renderer/stores/settings', () => ({ useSettingsStore: () => state.settings }));
 vi.mock('@renderer/composables/useDownloadConfigForm', () => ({
-  useDownloadConfigForm: () => state.form
+  useDownloadConfigForm: (options: unknown) => {
+    state.formOptions = options;
+    return state.form;
+  }
 }));
 
 const ModalStub = {
@@ -58,6 +62,69 @@ const OutputStub = {
   template: '<div data-testid="output" />'
 };
 const SimpleStub = { template: '<div />' };
+const FormatStub = {
+  props: [
+    'kind',
+    'format',
+    'audioQuality',
+    'quality',
+    'videoContainer',
+    'audioLanguage',
+    'trimStart',
+    'trimEnd',
+    'sponsorBlock',
+    'isSc'
+  ],
+  emits: [
+    'update:kind',
+    'update:format',
+    'update:audioQuality',
+    'update:quality',
+    'update:videoContainer',
+    'update:audioLanguage',
+    'update:trimStart',
+    'update:trimEnd',
+    'update:sponsorBlock'
+  ],
+  template: '<div data-testid="format" />'
+};
+const CoverFieldsStub = {
+  props: [
+    'coverType',
+    'customPath',
+    'frameTime',
+    'clipStart',
+    'clipEnd',
+    'clipFormat',
+    'isSc',
+    'kind'
+  ],
+  emits: [
+    'update:coverType',
+    'update:customPath',
+    'update:frameTime',
+    'update:clipStart',
+    'update:clipEnd',
+    'update:clipFormat'
+  ],
+  template: '<div data-testid="cover-fields" />'
+};
+const MetaFieldsStub = {
+  props: ['artist', 'album', 'year'],
+  emits: ['update:artist', 'update:album', 'update:year'],
+  template: '<div data-testid="meta-fields" />'
+};
+const SubtitlesStub = {
+  props: ['subsEnabled', 'subsLangs', 'subsMode', 'subsFormat', 'subsFolder', 'isSc'],
+  emits: [
+    'update:subsEnabled',
+    'update:subsLangs',
+    'update:subsMode',
+    'update:subsFormat',
+    'update:subsFolder'
+  ],
+  template: '<div data-testid="subtitles" />'
+};
 
 let wrapper: VueWrapper | null = null;
 
@@ -110,12 +177,12 @@ function mountDialog(props: Record<string, unknown> = {}) {
         SegmentedControl: SegmentedStub,
         DownloadPreviewCard: SimpleStub,
         FilenameTemplateFields: FilenameStub,
-        MetadataFieldsSection: SimpleStub,
-        DownloadFormatSection: SimpleStub,
-        CoverOptionsFields: SimpleStub,
+        MetadataFieldsSection: MetaFieldsStub,
+        DownloadFormatSection: FormatStub,
+        CoverOptionsFields: CoverFieldsStub,
         DownloadProfilesSection: ProfilesStub,
         DownloadOutputSection: OutputStub,
-        SubscribeSubtitlesSection: SimpleStub
+        SubscribeSubtitlesSection: SubtitlesStub
       }
     }
   });
@@ -295,6 +362,85 @@ describe('filename preview', () => {
     state.form.year.value = '1999';
     await flush();
     expect(filename.props('preview')).toBe('Video title.mp3');
+  });
+});
+
+describe('field wiring', () => {
+  it('passes prop getters into the form composable', async () => {
+    mountDialog({
+      channelTitle: 'Channel',
+      playlistTitle: 'Playlist',
+      platform: 'soundcloud'
+    });
+    await flush();
+
+    expect(state.formOptions.getChannelTitle()).toBe('Channel');
+    expect(state.formOptions.getPlaylistTitle()).toBe('Playlist');
+    expect(state.formOptions.getPlatform()).toBe('soundcloud');
+  });
+
+  it('writes every section field back to the form', async () => {
+    mountDialog();
+    await flush();
+
+    wrapper!.findComponent(FormatStub).vm.$emit('update:kind', 'video');
+    wrapper!.findComponent(FormatStub).vm.$emit('update:format', 'flac');
+    wrapper!.findComponent(FormatStub).vm.$emit('update:audioQuality', '320');
+    wrapper!.findComponent(FormatStub).vm.$emit('update:quality', '1080');
+    wrapper!.findComponent(FormatStub).vm.$emit('update:videoContainer', 'mkv');
+    wrapper!.findComponent(FormatStub).vm.$emit('update:audioLanguage', 'en');
+    wrapper!.findComponent(FormatStub).vm.$emit('update:trimStart', 5);
+    wrapper!.findComponent(FormatStub).vm.$emit('update:trimEnd', 10);
+    wrapper!.findComponent(FormatStub).vm.$emit('update:sponsorBlock', 'remove');
+
+    wrapper!.findComponent(CoverFieldsStub).vm.$emit('update:coverType', 'custom');
+    wrapper!.findComponent(CoverFieldsStub).vm.$emit('update:customPath', 'D:/c.jpg');
+    wrapper!.findComponent(CoverFieldsStub).vm.$emit('update:frameTime', 15);
+    wrapper!.findComponent(CoverFieldsStub).vm.$emit('update:clipStart', 1);
+    wrapper!.findComponent(CoverFieldsStub).vm.$emit('update:clipEnd', 2);
+    wrapper!.findComponent(CoverFieldsStub).vm.$emit('update:clipFormat', 'mp4');
+
+    wrapper!.findComponent(MetaFieldsStub).vm.$emit('update:artist', 'Artist');
+    wrapper!.findComponent(MetaFieldsStub).vm.$emit('update:album', 'Album');
+    wrapper!.findComponent(MetaFieldsStub).vm.$emit('update:year', '2024');
+
+    wrapper!.findComponent(FilenameStub).vm.$emit('update:filenameTemplate', '{title}');
+    wrapper!.findComponent(OutputStub).vm.$emit('update:folderMode', 'channel');
+    wrapper!.findComponent(OutputStub).vm.$emit('update:outputDir', 'D:/out');
+
+    wrapper!.findComponent(SubtitlesStub).vm.$emit('update:subsEnabled', true);
+    wrapper!.findComponent(SubtitlesStub).vm.$emit('update:subsLangs', 'en,pl');
+    wrapper!.findComponent(SubtitlesStub).vm.$emit('update:subsMode', 'auto');
+    wrapper!.findComponent(SubtitlesStub).vm.$emit('update:subsFormat', 'vtt');
+    wrapper!.findComponent(SubtitlesStub).vm.$emit('update:subsFolder', true);
+    await flush();
+
+    expect(state.form.kind.value).toBe('video');
+    expect(state.form.format.value).toBe('flac');
+    expect(state.form.audioQuality.value).toBe('320');
+    expect(state.form.quality.value).toBe('1080');
+    expect(state.form.videoContainer.value).toBe('mkv');
+    expect(state.form.audioLanguage.value).toBe('en');
+    expect(state.form.trimStart.value).toBe(5);
+    expect(state.form.trimEnd.value).toBe(10);
+    expect(state.form.sponsorBlock.value).toBe('remove');
+    expect(state.form.coverType.value).toBe('custom');
+    expect(state.form.customPath.value).toBe('D:/c.jpg');
+    expect(state.form.frameTime.value).toBe(15);
+    expect(state.form.clipStart.value).toBe(1);
+    expect(state.form.clipEnd.value).toBe(2);
+    expect(state.form.clipFormat.value).toBe('mp4');
+    expect(state.form.artist.value).toBe('Artist');
+    expect(state.form.album.value).toBe('Album');
+    expect(state.form.year.value).toBe('2024');
+    expect(state.form.filenameTemplate.value).toBe('{title}');
+    expect(state.form.folderMode.value).toBe('channel');
+    expect(state.form.outputDir.value).toBe('D:/out');
+    expect(state.form.subsEnabled.value).toBe(true);
+    expect(state.form.subsLangs.value).toBe('en,pl');
+    expect(state.form.subsMode.value).toBe('auto');
+    expect(state.form.subsFormat.value).toBe('vtt');
+    expect(state.form.subsFolder.value).toBe(true);
   });
 });
 
