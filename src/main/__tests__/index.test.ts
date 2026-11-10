@@ -452,6 +452,7 @@ describe('boot', () => {
       testShell: true,
       getShellWindow: expect.any(Function)
     });
+    expect(state.startCore.mock.calls[0][0].getShellWindow()).toBe(state.compactCreated[0]);
     expect(state.ipcHandlers['app:isCoreShell']()).toBe(true);
     expect(state.ipcHandlers['app:getWindowMode']()).toBe('compact');
   });
@@ -751,5 +752,203 @@ describe('close to tray', () => {
     win.handlers['close'](event);
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(win.hide).not.toHaveBeenCalled();
+  });
+});
+
+describe('lazy wiring', () => {
+  it('resolves every service getter against the active shell', async () => {
+    await boot();
+    const main = state.created[0];
+
+    expect(state.registerIPC.mock.calls[0][0].getMainWindow()).toBe(main);
+    expect(state.graceful.mock.calls[0][0].getMediaServer()).toEqual(state.server);
+    expect(state.initAutoUpdater.mock.calls[0][0]()).toBe(main.webContents);
+    expect(state.setupTray.mock.calls[0][0]()).toBe(main);
+    expect(state.setupTray.mock.calls[0][1].canToggleMode()).toBe(true);
+    expect(state.globalShortcuts.mock.calls[0][0]()).toBe(main);
+    expect(state.startWatchdog.mock.calls[0][0].isRendererReady()).toBe(false);
+    expect(state.registerWindowHandlers.mock.calls[0][0].getMainWindow()).toBe(main);
+    const splashOptions = (state.splash as any).options;
+    expect(splashOptions.getMainWindow()).toBe(main);
+    expect(splashOptions.isStartHidden()).toBe(false);
+
+    const forwarder = (state as any).openFilesCtor;
+    expect(forwarder.getShell()).toBe(main);
+    forwarder.addRoot('D:\\media');
+
+    state.appHandlers['browser-window-created']({}, { fake: true });
+    expect(state.watchShortcuts).toHaveBeenCalledWith({ fake: true });
+  });
+
+  it('invokes the recovery fallback and the activate load handler', async () => {
+    await boot();
+    const main = state.created[0];
+    const recovery = state.recovery.mock.calls.find(
+      (call: any[]) => call[0] === main && typeof call[1] === 'function'
+    )!;
+    recovery[1]();
+    expect(state.splash.forceClose).toHaveBeenCalled();
+
+    state.getAllWindows.mockReturnValue([]);
+    state.appHandlers['activate']();
+    const recreated = state.created.at(-1)!;
+    recreated.webHandlers['did-finish-load']();
+    expect(state.splash.onMainReady).toHaveBeenCalled();
+  });
+
+  it('forwards initial media paths from argv', async () => {
+    const argv = process.argv;
+    process.argv = [...argv, 'C:\\movie.mp4'];
+    try {
+      await boot();
+      expect(state.forward).toHaveBeenCalledWith(['C:\\movie.mp4']);
+    } finally {
+      process.argv = argv;
+    }
+  });
+});
+
+describe('console and shell activity', () => {
+  it('logs core-shell messages only in core main mode', async () => {
+    process.env.ONDA_CORE_SHELL = '1';
+    await boot();
+    const main = state.created[0];
+
+    main.webHandlers['console-message']({}, 'info', '[core-shell] hello');
+    main.webHandlers['console-message']({}, 'info', 'unrelated');
+
+    const logged = state.logger.info.mock.calls.filter(([scope]) => scope === 'core-shell');
+    expect(logged).toEqual([['core-shell', 'shell console [info]: [core-shell] hello']]);
+  });
+
+  it('logs compact console messages and ignores destroyed show/hide', async () => {
+    process.env.ONDA_COMPACT = '1';
+    await boot();
+    const compact = state.compactCreated[0];
+
+    compact.webHandlers['console-message']({}, 'warn', '[compact] hello');
+    compact.webHandlers['console-message']({}, 'warn', 'other');
+    expect(state.logger.info).toHaveBeenCalledWith('compact', 'console [warn]: [compact] hello');
+
+    compact.webContents.send.mockClear();
+    compact.destroyed = true;
+    compact.handlers['hide']();
+    compact.handlers['show']();
+    expect(compact.webContents.send).not.toHaveBeenCalled();
+  });
+
+  it('hides the compact shell from IPC and signals readiness', async () => {
+    process.env.ONDA_COMPACT = '1';
+    await boot();
+    const compact = state.compactCreated[0];
+
+    state.ipcHandlers['app:hideCompact']();
+    expect(compact.hide).toHaveBeenCalled();
+
+    compact.webHandlers['did-finish-load']();
+    expect(state.splash.onMainReady).toHaveBeenCalled();
+  });
+
+  it('closes the compact shell through its closed handler', async () => {
+    process.env.ONDA_COMPACT = '1';
+    await boot();
+    const compact = state.compactCreated[0];
+
+    compact.destroyed = true;
+    compact.handlers['closed']();
+
+    expect(state.pip.destroy).toHaveBeenCalled();
+    expect(state.app.quit).toHaveBeenCalled();
+  });
+});
+
+describe('mode switching edges', () => {
+  it('creates and then reuses the main window when returning from compact', async () => {
+    process.env.ONDA_CORE_SHELL = '1';
+    await boot();
+    const main = state.created[0];
+
+    await state.ipcHandlers['app:setWindowMode']({}, 'compact');
+    await flush();
+    expect(state.compactCreated).toHaveLength(1);
+    const compact = state.compactCreated[0];
+
+    await state.ipcHandlers['app:setWindowMode']({}, 'main');
+    await flush();
+    expect(main.show).toHaveBeenCalled();
+    expect(main.focus).toHaveBeenCalled();
+    expect(compact.hide).toHaveBeenCalled();
+
+    main.webHandlers['console-message']({}, 'info', '[core-shell] again');
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'core-shell',
+      'shell console [info]: [core-shell] again'
+    );
+  });
+
+  it('creates the main window from compact and finishes its load wiring', async () => {
+    process.env.ONDA_COMPACT = '1';
+    await boot();
+    const compact = state.compactCreated[0];
+
+    await state.ipcHandlers['app:setWindowMode']({}, 'main');
+    await flush();
+    const main = state.created[0];
+
+    main.options.onReadyToShow(main);
+    expect(main.show).toHaveBeenCalled();
+    expect(main.focus).toHaveBeenCalled();
+
+    main.webOnce['did-finish-load']();
+    expect(state.splash.onMainReady).toHaveBeenCalled();
+    expect(compact.hide).toHaveBeenCalled();
+  });
+
+  it('falls back to compact when the main window is gone', async () => {
+    process.env.ONDA_CORE_SHELL = '1';
+    await boot();
+    const main = state.created[0];
+    await state.ipcHandlers['app:setWindowMode']({}, 'compact');
+    await flush();
+    await state.ipcHandlers['app:setWindowMode']({}, 'main');
+    await flush();
+    const compact = state.compactCreated[0];
+    main.destroyed = true;
+
+    expect(
+      state.ipcHandlers['app:getShellActive']({ sender: { id: compact.webContents.id } })
+    ).toBe(true);
+  });
+
+  it('falls back to the main window when compact is gone', async () => {
+    process.env.ONDA_COMPACT = '1';
+    await boot();
+    const compact = state.compactCreated[0];
+    compact.destroyed = true;
+
+    expect(state.ipcHandlers['app:getShellActive']({ sender: { id: 999 } })).toBe(false);
+  });
+
+  it('skips the handoff when the active shell is gone', async () => {
+    await boot();
+    state.created[0].destroyed = true;
+
+    await state.ipcHandlers['app:setWindowMode']({}, 'compact');
+    await flush();
+
+    expect(state.relaunch).toHaveBeenCalledWith(300);
+  });
+
+  it('settles the handoff only once even if the IPC arrives twice', async () => {
+    await boot();
+    const promise = state.ipcHandlers['app:setWindowMode']({}, 'compact');
+    await flush();
+
+    state.ipcOnce['app:session-handoff-ready']?.();
+    state.ipcOnce['app:session-handoff-ready']?.();
+    await promise;
+    await flush();
+
+    expect(state.relaunch).toHaveBeenCalledWith(300);
   });
 });
