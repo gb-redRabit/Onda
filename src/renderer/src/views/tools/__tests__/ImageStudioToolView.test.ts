@@ -206,6 +206,10 @@ function pathInput(label: string) {
     .find((component) => component.props('label') === label)!;
 }
 
+function getContextMock() {
+  return HTMLCanvasElement.prototype.getContext as unknown as ReturnType<typeof vi.fn>;
+}
+
 class FakeImage {
   onload: (() => void) | null = null;
   onerror: (() => void) | null = null;
@@ -346,6 +350,97 @@ describe('empty state and loading', () => {
 
     expect(wrapper!.find('[data-testid="image-studio-canvas"]').exists()).toBe(false);
   });
+
+  it('keeps the empty state when the image cannot be decoded', async () => {
+    class FailingImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_value: string) {
+        queueMicrotask(() => this.onerror?.());
+      }
+    }
+    vi.stubGlobal('Image', FailingImage);
+    state.invoke.mockResolvedValueOnce({ canceled: false, filePaths: ['C:\\pics\\a.png'] });
+    mountView();
+    await wrapper!.get('[data-testid="image-studio-open"]').trigger('click');
+    await flush();
+
+    expect(state.imageRead).toHaveBeenCalledWith('C:\\pics\\a.png');
+    expect(wrapper!.find('[data-testid="image-studio-canvas"]').exists()).toBe(false);
+  });
+});
+
+describe('canvas guards', () => {
+  it('skips preview rendering without a 2d context', async () => {
+    await mountLoaded();
+    getContextMock().mockImplementationOnce(() => null);
+
+    slider('tools.imageStudioBrightness').vm.$emit('update:modelValue', 130);
+    await flush();
+
+    expect(wrapper!.find('[data-testid="image-studio-canvas"]').exists()).toBe(true);
+  });
+
+  it('returns the unscaled canvas when its context is missing', async () => {
+    await mountLoaded();
+    getContextMock()
+      .mockImplementationOnce(() => state.ctx)
+      .mockImplementationOnce(() => null);
+
+    slider('tools.imageStudioBrightness').vm.$emit('update:modelValue', 130);
+    await flush();
+
+    expect(wrapper!.find('[data-testid="image-studio-canvas"]').exists()).toBe(true);
+  });
+
+  it('skips sharpening without a context or readable pixels', async () => {
+    await mountLoaded();
+    getContextMock()
+      .mockImplementationOnce(() => state.ctx)
+      .mockImplementationOnce(() => state.ctx)
+      .mockImplementationOnce(() => null);
+    slider('tools.imageStudioSharpen').vm.$emit('update:modelValue', 50);
+    await flush();
+
+    state.ctx.putImageData.mockClear();
+    state.ctx.getImageData.mockImplementationOnce(() => {
+      throw new Error('tainted');
+    });
+    slider('tools.imageStudioSharpen').vm.$emit('update:modelValue', 60);
+    await flush();
+
+    expect(state.ctx.putImageData).not.toHaveBeenCalled();
+  });
+
+  it('skips sharpening tiny canvases', async () => {
+    state.context.value = { params: { path: 'C:\\pics\\tiny.png' } };
+    state.imageRead.mockResolvedValue({
+      success: true,
+      dataUrl: 'data:image/png;base64,AAAA',
+      width: 2,
+      height: 2,
+      bytes: 10,
+      format: 'png'
+    });
+    mountView();
+    await flush();
+
+    slider('tools.imageStudioSharpen').vm.$emit('update:modelValue', 50);
+    await flush();
+
+    expect(state.ctx.putImageData).not.toHaveBeenCalled();
+  });
+
+  it('skips export and estimates without a 2d context', async () => {
+    await mountLoaded();
+    state.imageEstimate.mockClear();
+    getContextMock().mockImplementationOnce(() => null);
+
+    await wrapper!.get('[data-testid="image-studio-estimate"]').trigger('click');
+    await flush();
+
+    expect(state.imageEstimate).not.toHaveBeenCalled();
+  });
 });
 
 describe('drop and context', () => {
@@ -475,6 +570,20 @@ describe('crop and orientation', () => {
     expect(cropAttr()).toBe(before);
   });
 
+  it('resizes the crop from a corner handle', async () => {
+    await wrapper!.get('[data-testid="image-studio-aspect-1:1"]').trigger('click');
+
+    await pointer('pointerdown', 90, 0);
+    await pointer('pointermove', 130, 40);
+    await pointer('pointerup', 130, 40);
+
+    const [x, y, w, h] = cropAttr().split(',').map(Number);
+    expect(x).toBeGreaterThan(80);
+    expect(y).toBeGreaterThan(0);
+    expect(w).toBeLessThan(480);
+    expect(h).toBeLessThan(480);
+  });
+
   it('forces the aspect ratio while drawing', async () => {
     await wrapper!.get('[data-testid="image-studio-aspect-16:9"]').trigger('click');
     await pointer('pointerdown', 10, 10);
@@ -540,6 +649,34 @@ describe('adjustments and output', () => {
 
     expect(outputAttr()).toBe('320,240');
     expect(wrapper!.text()).toContain('→ 240 px');
+  });
+
+  it('applies temperature and sharpening', async () => {
+    slider('tools.imageStudioTemperature').vm.$emit('update:modelValue', 60);
+    slider('tools.imageStudioSharpen').vm.$emit('update:modelValue', 50);
+    await flush();
+    await vi.advanceTimersByTimeAsync(600);
+    await flush();
+
+    expect(state.ctx.fillRect).toHaveBeenCalledWith(0, 0, 640, 480);
+    expect(state.ctx.putImageData).toHaveBeenCalled();
+    expect(state.imageEstimate).toHaveBeenCalled();
+  });
+
+  it('updates quality and the cover path', async () => {
+    slider('tools.imageStudioQuality').vm.$emit('update:modelValue', 60);
+    pathInput('tools.imageStudioCoverPick').vm.$emit('update:modelValue', 'C:/music/a.mp3');
+    await flush();
+
+    expect(wrapper!.text()).toContain('60');
+    expect(pathInput('tools.imageStudioCoverPick').props('modelValue')).toBe('C:/music/a.mp3');
+  });
+
+  it('ignores color changes without a selection', async () => {
+    wrapper!.findComponent(ColorInputStub).vm.$emit('update:modelValue', '#ff0000');
+    await flush();
+
+    expect(canvasEl().getAttribute('data-selected-width')).toBe('');
   });
 
   it('estimates on demand and handles failures', async () => {
@@ -683,6 +820,13 @@ describe('cover audio', () => {
       wrapper!.get('[data-testid="image-studio-cover-set"]').attributes('disabled')
     ).toBeDefined();
 
+    const guard = wrapper!
+      .findAllComponents(ButtonStub)
+      .find((component) => component.attributes('data-testid') === 'image-studio-cover-set')!;
+    guard.vm.$emit('click');
+    await flush();
+    expect(state.writeCover).not.toHaveBeenCalled();
+
     state.writeCover.mockResolvedValueOnce({ success: false, error: 'no cover support' });
     state.invoke.mockResolvedValueOnce({ canceled: false, filePaths: ['C:\\music\\a.mp3'] });
     pathInput('tools.imageStudioCoverPick').vm.$emit('browse');
@@ -811,9 +955,58 @@ describe('annotations', () => {
   });
 
   it('does nothing when deleting without a selection', async () => {
-    expect(
-      wrapper!.get('[data-testid="image-studio-delete"]').attributes('disabled')
-    ).toBeDefined();
+    const button = wrapper!.get('[data-testid="image-studio-delete"]');
+    expect(button.attributes('disabled')).toBeDefined();
+
+    button.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('0');
+  });
+
+  it('renders annotations into the export canvas', async () => {
+    await selectTool('rect');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 400, 300);
+    await pointer('pointerup', 400, 300);
+    state.imageEstimate.mockClear();
+
+    await wrapper!.get('[data-testid="image-studio-estimate"]').trigger('click');
+    await flush();
+
+    expect(state.imageEstimate).toHaveBeenCalled();
+    expect(state.ctx.strokeRect).toHaveBeenCalled();
+  });
+
+  it('skips blur scratch rendering without a context', async () => {
+    await selectTool('blur');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 400, 300);
+    await pointer('pointerup', 400, 300);
+
+    getContextMock()
+      .mockImplementationOnce(() => state.ctx)
+      .mockImplementationOnce(() => null);
+    wrapper!.findComponent(ColorInputStub).vm.$emit('update:modelValue', '#00ff00');
+    await flush();
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('1');
+  });
+
+  it('skips pixelate scratch rendering without a context', async () => {
+    await selectTool('pixelate');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 400, 300);
+    await pointer('pointerup', 400, 300);
+
+    getContextMock()
+      .mockImplementationOnce(() => state.ctx)
+      .mockImplementationOnce(() => state.ctx)
+      .mockImplementationOnce(() => null);
+    wrapper!.findComponent(ColorInputStub).vm.$emit('update:modelValue', '#00ff00');
+    await flush();
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('1');
   });
 });
 
