@@ -81,6 +81,65 @@ describe('applyAudioLayoutPreset', () => {
   });
 });
 
+describe('updates', () => {
+  it('merges every settings slice and persists', () => {
+    const store = useSettingsStore();
+
+    store.updateGeneral({ firstRunDone: true });
+    store.updatePlayback({ defaultVolume: 0.4 });
+    store.updateDownload({ maxConcurrent: 2 });
+    store.updateYoutube({ method: 'browser', lastLogin: 5 });
+    store.updateNetwork({ proxyPerPlatform: true });
+    store.updateToast({ showInfo: false });
+    store.updateExplorer({ showHidden: true });
+    store.updateStatusBar({ visible: false });
+    store.updateHome({ sections: [] });
+    store.updateLibrary({ coverCacheMaxEntries: 10 });
+    store.updateUpdates({ autoCheck: false });
+    store.updateShortcut('playPause', 'Space');
+    store.updateDependency('ffmpeg', { installed: true, version: '1.0', checkedAt: 5 });
+
+    expect(store.general.firstRunDone).toBe(true);
+    expect(store.playback.defaultVolume).toBe(0.4);
+    expect(store.download.maxConcurrent).toBe(2);
+    expect(store.youtube.method).toBe('browser');
+    expect(store.youtube.lastLogin).toBe(5);
+    expect(store.network.proxyPerPlatform).toBe(true);
+    expect(store.toast.showInfo).toBe(false);
+    expect(store.explorer.showHidden).toBe(true);
+    expect(store.statusBar.visible).toBe(false);
+    expect(store.home.sections).toEqual([]);
+    expect(store.library.coverCacheMaxEntries).toBe(10);
+    expect(store.updates.autoCheck).toBe(false);
+    expect(store.shortcuts.playPause).toBe('Space');
+    expect(store.getDependency('ffmpeg')).toEqual({
+      name: 'ffmpeg',
+      installed: true,
+      version: '1.0',
+      checkedAt: 5
+    });
+  });
+
+  it('updates appearance and the audio layout elements', () => {
+    const store = useSettingsStore();
+    const elements = store.appearance.audioLayout.elements.map((el) =>
+      el.id === 'cover' ? { ...el, x: 7, y: 8 } : el
+    );
+
+    store.updateAudioLayoutElements(elements);
+
+    expect(store.appearance.audioLayout.elements.find((el) => el.id === 'cover')).toMatchObject({
+      x: 7,
+      y: 8
+    });
+  });
+
+  it('reports unknown dependencies as undefined', () => {
+    const store = useSettingsStore();
+    expect(store.getDependency('missing')).toBeUndefined();
+  });
+});
+
 describe('resetAudioLayoutPreset', () => {
   it('restores the current preset factory layout when it was never customized', () => {
     const store = useSettingsStore();

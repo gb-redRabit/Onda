@@ -285,3 +285,280 @@ describe('download', () => {
     expect(usePlayerStore().currentTrack?.path).toContain('/stream?provider=TOK');
   });
 });
+
+describe('store edges', () => {
+  it('exposes playable detection and breadcrumb state', async () => {
+    const store = useProvidersStore();
+    expect(store.canGoUp).toBe(false);
+    expect(store.isPlayable('movie.MP4')).toBe(true);
+    expect(store.isPlayable('song.flac')).toBe(true);
+    expect(store.isPlayable('archive.zip')).toBe(false);
+    expect(store.itemKey('x')).toBe('x');
+    expect(store.isDownloaded('x')).toBe(false);
+
+    detectResult = DETECT;
+    const detected = useProvidersStore();
+    await detected.detect('https://mypikpak.com/s/S1');
+    expect(detected.canGoUp).toBe(false);
+    listResult = { success: true, items: [FOLDER] };
+    await detected.openFolder(FOLDER);
+    expect(detected.canGoUp).toBe(true);
+  });
+
+  it('registers the progress listener only once', async () => {
+    detectResult = DETECT;
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+    await store.detect('https://mypikpak.com/s/S1');
+
+    expect(on.mock.calls.filter(([channel]) => channel === 'yt:downloadProgress')).toHaveLength(1);
+  });
+
+  it('ignores progress payloads that are not completed provider tasks', async () => {
+    detectResult = DETECT;
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+    const cb = onHandlers.get('yt:downloadProgress')!;
+
+    cb(null);
+    cb({ status: 'completed' });
+    cb({
+      status: 'completed',
+      source: { mode: 'youtube', providerItemId: 'x', providerRef: DETECT.ref }
+    });
+    cb({
+      status: 'completed',
+      source: { mode: 'provider', providerItemId: '', providerRef: DETECT.ref }
+    });
+    cb({ status: 'completed', source: { mode: 'provider', providerItemId: 'x' } });
+
+    expect(store.downloaded.size).toBe(0);
+  });
+
+  it('ignores stale rejected responses', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [FOLDER] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    let rejectSlow!: (error: Error) => void;
+    invoke.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectSlow = reject;
+        })
+    );
+    listByFolder = {
+      d2: { success: true, items: [{ id: 'fresh', name: 'fresh.mp4', kind: 'file' }] }
+    };
+
+    const slow = store.loadFolder('d1');
+    const fast = store.loadFolder('d2');
+    await fast;
+    rejectSlow(new Error('stale failure'));
+    await slow;
+
+    expect(store.items.map((i) => i.id)).toEqual(['fresh']);
+    expect(store.error).toBe('');
+  });
+
+  it('ignores missing sources for folders and actions', async () => {
+    const store = useProvidersStore();
+
+    await expect(store.loadFolder(null)).resolves.toBeUndefined();
+    await expect(store.download(FILE)).resolves.toBe(false);
+    await expect(store.play(FILE)).resolves.toBe(false);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('reports folder listing failures', async () => {
+    detectResult = DETECT;
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    listResult = { success: false, error: 'denied', items: [FILE] } as never;
+    await store.loadFolder(null);
+    expect(store.error).toBe('denied');
+    expect(store.items).toEqual([]);
+
+    listResult = { success: false, items: [FILE] };
+    await store.loadFolder(null);
+    expect(store.error).toContain('Nie uda');
+
+    invoke.mockRejectedValueOnce(new Error('ipc'));
+    await store.loadFolder(null);
+    expect(store.error).toBe('ipc');
+    expect(store.items).toEqual([]);
+
+    invoke.mockRejectedValueOnce('plain');
+    await store.loadFolder(null);
+    expect(store.error).toBe('plain');
+  });
+
+  it('ignores invalid crumbs and going up at root', async () => {
+    detectResult = DETECT;
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    await store.goToCrumb(99);
+    expect(store.crumbs).toHaveLength(1);
+
+    await store.goUp();
+    expect(store.crumbs).toHaveLength(1);
+  });
+
+  it('validates empty detect input and reports failures', async () => {
+    const store = useProvidersStore();
+    expect(await store.detect('   ')).toBe(false);
+
+    detectResult = DETECT;
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    expect(await store.detect('https://mypikpak.com/s/S1')).toBe(false);
+    expect(store.error).toBe('offline');
+
+    invoke.mockRejectedValueOnce('plain');
+    expect(await store.detect('https://mypikpak.com/s/S1')).toBe(false);
+    expect(store.error).toBe('plain');
+  });
+
+  it('reports download failures', async () => {
+    detectResult = DETECT;
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    invoke.mockRejectedValueOnce(new Error('queue'));
+    await expect(store.download(FILE)).resolves.toBe(false);
+    expect(store.error).toBe('queue');
+
+    invoke.mockRejectedValueOnce('plain');
+    await expect(store.download(FILE)).resolves.toBe(false);
+    expect(store.error).toBe('plain');
+  });
+
+  it('resets the browsing state', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [FILE] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    store.reset();
+
+    expect(store.detected).toBeNull();
+    expect(store.source).toBeNull();
+    expect(store.crumbs).toEqual([]);
+    expect(store.items).toEqual([]);
+    expect(store.error).toBe('');
+  });
+
+  it('reports stream failures', async () => {
+    detectResult = DETECT;
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    streamResult = { success: false, error: 'rate limited' };
+    await expect(store.play(FILE)).resolves.toBe(false);
+    expect(store.error).toBe('rate limited');
+
+    streamResult = { success: true };
+    await expect(store.play(FILE)).resolves.toBe(false);
+    expect(store.error).toContain('Nie mo');
+
+    invoke.mockRejectedValueOnce(new Error('ipc'));
+    await expect(store.play(FILE)).resolves.toBe(false);
+    expect(store.error).toBe('ipc');
+
+    invoke.mockRejectedValueOnce('plain');
+    await expect(store.play(FILE)).resolves.toBe(false);
+    expect(store.error).toBe('plain');
+  });
+
+  it('handles empty folder downloads without a source', async () => {
+    const store = useProvidersStore();
+    await expect(store.downloadFolder()).resolves.toEqual({
+      queued: 0,
+      found: 0,
+      truncated: false
+    });
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it('stops walking folders at the file limit', async () => {
+    detectResult = DETECT;
+    listResult = {
+      success: true,
+      items: Array.from({ length: 501 }, (_, i) => ({
+        id: `f-${i}`,
+        name: `ep-${i}.mp4`,
+        kind: 'file' as const
+      }))
+    };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    const res = await store.downloadFolder();
+
+    expect(res.queued).toBe(500);
+    expect(res.truncated).toBe(true);
+  });
+
+  it('tolerates folder listing failures during bulk collection', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [FOLDER] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    invoke.mockImplementation(async (channel: string, args?: unknown) => {
+      if (channel === 'providers:list') {
+        const folderId = (args as { folderId?: string })?.folderId;
+        if (folderId === 'd1') throw new Error('boom');
+        return listResult;
+      }
+      if (channel === 'yt:download:add') return [];
+      return undefined;
+    });
+
+    const res = await store.downloadFolderById('d1');
+    expect(res.queued).toBe(0);
+    expect(res.found).toBe(0);
+  });
+
+  it('reports bulk enqueue failures', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [FILE] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    invoke.mockImplementation(async (channel: string) => {
+      if (channel === 'providers:list') return listResult;
+      if (channel === 'yt:download:add') throw new Error('queue');
+      return undefined;
+    });
+    const res = await store.downloadFolder();
+    expect(res).toMatchObject({ queued: 0, found: 1 });
+    expect(store.error).toBe('queue');
+
+    invoke.mockImplementation(async (channel: string) => {
+      if (channel === 'providers:list') return listResult;
+      if (channel === 'yt:download:add') throw 'plain';
+      return undefined;
+    });
+    const plain = await store.downloadFolder();
+    expect(plain.queued).toBe(0);
+    expect(store.error).toBe('plain');
+  });
+
+  it('ignores non-provider list failures during collection', async () => {
+    detectResult = DETECT;
+    listResult = { success: false, items: [] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    invoke.mockImplementation(async (channel: string) => {
+      if (channel === 'providers:list') return { success: false, items: [FILE] };
+      return undefined;
+    });
+
+    const res = await store.downloadFolderById('d1');
+    expect(res.found).toBe(0);
+  });
+});
