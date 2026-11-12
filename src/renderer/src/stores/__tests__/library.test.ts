@@ -413,3 +413,115 @@ describe('reorderPlaylistTrack', () => {
     expect(store.playlists[0].tracks.map((t) => t.id)).toEqual(['1', '2', '3']);
   });
 });
+
+describe('folder normalization and failures', () => {
+  it('normalizes folder suffixes for O(1) membership', () => {
+    const store = useLibraryStore();
+    store.folders = ['/music/', 'D:\\Videos\\', '/plain'];
+
+    expect(store.normalizedFolders.has('/music')).toBe(true);
+    expect(store.normalizedFolders.has('D:\\Videos')).toBe(true);
+    expect(store.normalizedFolders.has('/plain')).toBe(true);
+  });
+
+  it('rolls back a folder that fails to persist', async () => {
+    const store = useLibraryStore();
+    vi.mocked(window.api.invoke).mockRejectedValueOnce(new Error('disk'));
+
+    await store.addFolder('/music');
+
+    expect(store.folders).toEqual([]);
+  });
+
+  it('keeps the folder and tracks when removal fails to persist', async () => {
+    const store = useLibraryStore();
+    store.folders = ['/music'];
+    store.folderTypes = { '/music': 'audio' };
+    store.tracks = [makeTrack('1', { path: '/music/song.mp3' })];
+    vi.mocked(window.api.invoke).mockRejectedValueOnce(new Error('disk'));
+
+    await store.removeFolder('/music');
+
+    expect(store.folders).toEqual(['/music']);
+    expect(store.folderTypes['/music']).toBe('audio');
+    expect(store.tracks).toHaveLength(1);
+  });
+});
+
+describe('track updates', () => {
+  it('updates a track and returns it', () => {
+    const store = useLibraryStore();
+    store.tracks = [makeTrack('1')];
+
+    const updated = store.updateTrack('/music/1.mp3', (track) => {
+      track.name = 'Renamed';
+    });
+
+    expect(updated?.name).toBe('Renamed');
+    expect(store.updateTrack('/missing.mp3', () => undefined)).toBeUndefined();
+  });
+
+  it('rebuilds the path index when the tracks array is replaced', () => {
+    const store = useLibraryStore();
+    store.tracks = [makeTrack('1')];
+    store.updateTrack('/music/1.mp3', (track) => {
+      track.name = 'First';
+    });
+
+    store.tracks = [makeTrack('2'), makeTrack('3')];
+
+    expect(
+      store.updateTrack('/music/3.mp3', (track) => {
+        track.name = 'Third';
+      })?.name
+    ).toBe('Third');
+  });
+
+  it('applies a batch of updates and skips missing paths', () => {
+    const store = useLibraryStore();
+    store.tracks = [makeTrack('1'), makeTrack('2')];
+
+    store.updateTracksBatch([
+      { path: '/music/1.mp3', updater: (track) => (track.name = 'One') },
+      { path: '/missing.mp3', updater: () => undefined },
+      { path: '/music/2.mp3', updater: (track) => (track.name = 'Two') }
+    ]);
+
+    expect(store.tracks.map((track) => track.name)).toEqual(['One', 'Two']);
+    expect(() => store.updateTracksBatch([])).not.toThrow();
+  });
+
+  it('updates stats without rebuilding derived groups', () => {
+    const store = useLibraryStore();
+    store.tracks = [makeTrack('1', { playCount: 3 })];
+
+    const updated = store.updateTrackStats('/music/1.mp3', (track) => {
+      track.playCount = 4;
+    });
+
+    expect(updated?.playCount).toBe(4);
+    expect(store.updateTrackStats('/missing.mp3', () => undefined)).toBeUndefined();
+  });
+
+  it('clears the recent timestamp and persists the stats', () => {
+    const store = useLibraryStore();
+    store.tracks = [makeTrack('1', { playCount: 5, lastPlayed: 100 })];
+    vi.mocked(window.api.invoke).mockClear();
+
+    store.clearRecent('/music/1.mp3');
+
+    expect(store.tracks[0].lastPlayed).toBeUndefined();
+    expect(window.api.invoke).toHaveBeenCalledWith('library:updateStats', [
+      { path: '/music/1.mp3', playCount: 5, lastPlayed: 0 }
+    ]);
+  });
+
+  it('does not persist stats for unknown paths', () => {
+    const store = useLibraryStore();
+    vi.mocked(window.api.invoke).mockClear();
+
+    store.clearRecent('/missing.mp3');
+
+    expect(window.api.invoke).not.toHaveBeenCalled();
+  });
+});
