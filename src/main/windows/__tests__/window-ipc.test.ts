@@ -40,9 +40,13 @@ const deps = vi.hoisted(() => ({
   setDwmRoundedCorners: vi.fn(async () => false)
 }));
 
-vi.mock('../../shared/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+const logs = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn()
 }));
+
+vi.mock('../../../shared/logger', () => ({ logger: logs }));
 vi.mock('../auto-launch', () => ({
   getAutoLaunch: deps.getAutoLaunch,
   setAutoLaunch: deps.setAutoLaunch
@@ -357,5 +361,229 @@ describe('app preference IPC', () => {
   it('coerces close-to-tray and reports success', () => {
     expect(handler('app:setCloseToTray')({}, 'yes')).toBe(true);
     expect(deps.setCloseToTray).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('appearance fallbacks and guards', () => {
+  it('ignores corners on non-Windows and when DWM succeeds', async () => {
+    setPlatform('linux');
+    expect(await handler('window:setRoundedCorners')({ sender: {} }, false)).toBe(false);
+
+    setPlatform('win32');
+    deps.setDwmRoundedCorners.mockResolvedValueOnce(true);
+    expect(await handler('window:setRoundedCorners')({ sender: {} }, true)).toBe(true);
+    expect(win.setShape).not.toHaveBeenCalled();
+  });
+
+  it('falls back to an inset shape when the first setShape throws', async () => {
+    setPlatform('win32');
+    win.setShape.mockImplementationOnce(() => {
+      throw new Error('unavailable');
+    });
+
+    expect(await handler('window:setRoundedCorners')({ sender: {} }, false)).toBe(true);
+
+    expect(win.setShape).toHaveBeenNthCalledWith(2, [
+      expect.objectContaining({ x: 0, y: 0, width: 800 + 32, height: 600 + 32 })
+    ]);
+  });
+
+  it('logs and reports failure when every shape attempt throws', async () => {
+    setPlatform('win32');
+    win.setShape.mockImplementation(() => {
+      throw new Error('no shape');
+    });
+
+    expect(await handler('window:setRoundedCorners')({ sender: {} }, false)).toBe(false);
+
+    expect(logs.warn).toHaveBeenCalledWith(
+      'window',
+      'setShape failed (non-fatal)',
+      expect.any(Error)
+    );
+  });
+
+  it('reapplies square corners after resize and forgets them on close', async () => {
+    setPlatform('win32');
+    handler('window:setRoundedCorners')({ sender: {} }, false);
+    deps.setDwmRoundedCorners.mockClear();
+
+    win.emit('resize');
+    expect(deps.setDwmRoundedCorners).toHaveBeenCalledWith(win, false);
+
+    win.destroyed = true;
+    win.emit('resize');
+    expect(deps.setDwmRoundedCorners).toHaveBeenCalledTimes(1);
+
+    win.destroyed = false;
+    win.emit('closed');
+    deps.setDwmRoundedCorners.mockClear();
+    win.emit('resize');
+    expect(deps.setDwmRoundedCorners).not.toHaveBeenCalled();
+  });
+
+  it('returns false when the sender window is gone or destroyed', async () => {
+    setPlatform('win32');
+    state.current = null;
+    state.main = null;
+
+    expect(handler('app:setBackgroundMaterial')({ sender: {} }, 'mica')).toBe(false);
+    expect(await handler('window:setBorderColor')({ sender: {} }, '#123456')).toBe(false);
+    expect(await handler('window:setRoundedCorners')({ sender: {} }, true)).toBe(false);
+
+    state.current = win;
+    state.main = win;
+    win.destroyed = true;
+    expect(handler('app:setBackgroundMaterial')({ sender: {} }, 'mica')).toBe(false);
+    expect(await handler('window:setBorderColor')({ sender: {} }, '#123456')).toBe(false);
+    expect(handler('window:setAlwaysOnTop')({ sender: {} }, true)).toBe(false);
+
+    state.current = null;
+    expect(handler('window:setAlwaysOnTop')({ sender: {} }, true)).toBe(false);
+  });
+
+  it('rejects border colors outside Windows', async () => {
+    setPlatform('linux');
+    expect(await handler('window:setBorderColor')({ sender: {} }, '#123456')).toBe(false);
+  });
+
+  it('falls back to false when setAccentColor throws', async () => {
+    setPlatform('win32');
+    win.setAccentColor.mockImplementationOnce(() => {
+      throw new Error('accent');
+    });
+
+    expect(await handler('window:setBorderColor')({ sender: {} }, '#abcdef')).toBe(false);
+    expect(logs.warn).toHaveBeenCalledWith(
+      'window',
+      'setAccentColor failed (non-fatal)',
+      expect.any(Error)
+    );
+  });
+});
+
+describe('material reapplication', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setPlatform('win32');
+  });
+
+  it('debounces repeated focus events and reapplies the material', () => {
+    handler('app:setBackgroundMaterial')({ sender: {} }, 'acrylic');
+    win.setBackgroundMaterial.mockClear();
+
+    win.emit('focus');
+    win.emit('focus');
+    vi.advanceTimersByTime(80);
+
+    expect(win.setBackgroundMaterial).toHaveBeenCalledTimes(1);
+    expect(win.setBackgroundMaterial).toHaveBeenCalledWith('acrylic');
+  });
+
+  it('installs listeners only once per window', () => {
+    handler('app:setBackgroundMaterial')({ sender: {} }, 'mica');
+    const afterFirst = win.on.mock.calls.length;
+
+    handler('app:setBackgroundMaterial')({ sender: {} }, 'acrylic');
+
+    expect(win.on.mock.calls.length).toBe(afterFirst);
+  });
+
+  it('does nothing after the window is closed', () => {
+    handler('app:setBackgroundMaterial')({ sender: {} }, 'mica');
+    win.setBackgroundMaterial.mockClear();
+
+    win.emit('focus');
+    win.emit('closed');
+    win.emit('focus');
+    vi.advanceTimersByTime(80);
+
+    expect(win.setBackgroundMaterial).not.toHaveBeenCalled();
+  });
+
+  it('skips reapplication outside Windows', () => {
+    handler('app:setBackgroundMaterial')({ sender: {} }, 'mica');
+    win.setBackgroundMaterial.mockClear();
+    setPlatform('linux');
+
+    win.emit('focus');
+    vi.advanceTimersByTime(80);
+
+    expect(win.setBackgroundMaterial).not.toHaveBeenCalled();
+  });
+
+  it('logs and reports failure when the material is unsupported', () => {
+    win.setBackgroundMaterial.mockImplementationOnce(() => {
+      throw new Error('material');
+    });
+
+    expect(handler('app:setBackgroundMaterial')({ sender: {} }, 'tabbed')).toBe(false);
+    expect(logs.warn).toHaveBeenCalledWith(
+      'window',
+      'setBackgroundMaterial failed (non-fatal)',
+      expect.any(Error)
+    );
+  });
+});
+
+describe('fullscreen guards', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  it('returns false without a window', () => {
+    state.current = null;
+    state.main = null;
+
+    expect(handler('window:toggleFullscreen')({ sender: {} })).toBe(false);
+    handler('window:exitFullscreen')({ sender: {} });
+  });
+
+  it('ignores a destroyed window when restoring bounds', () => {
+    preFullscreenBounds.current = { x: 0, y: 0, width: 640, height: 480 };
+    win.fullScreen = true;
+    handler('window:exitFullscreen')({ sender: {} });
+    win.destroyed = true;
+
+    win.emit('leave-full-screen');
+
+    expect(win.setBounds).not.toHaveBeenCalled();
+    expect(preFullscreenBounds.current).not.toBeNull();
+  });
+
+  it('skips restoration when no bounds were stored', () => {
+    preFullscreenBounds.current = null;
+    win.fullScreen = true;
+    handler('window:exitFullscreen')({ sender: {} });
+
+    win.emit('leave-full-screen');
+
+    expect(win.setBounds).not.toHaveBeenCalled();
+    expect(win.setResizable).not.toHaveBeenCalled();
+  });
+
+  it('restores once even if both the event and timer fire', () => {
+    preFullscreenBounds.current = { x: 1, y: 2, width: 300, height: 200 };
+
+    win.maximized = true;
+    handler('window:toggleFullscreen')({ sender: {} });
+    win.fullScreen = true;
+    handler('window:toggleFullscreen')({ sender: {} });
+
+    win.emit('leave-full-screen');
+    vi.advanceTimersByTime(400);
+
+    expect(win.setResizable).toHaveBeenCalledTimes(2);
+  });
+
+  it('restores once through exitFullscreen when both sources fire', () => {
+    preFullscreenBounds.current = { x: 1, y: 2, width: 300, height: 200 };
+    win.fullScreen = true;
+    handler('window:exitFullscreen')({ sender: {} });
+
+    win.emit('leave-full-screen');
+    vi.advanceTimersByTime(400);
+
+    expect(win.setBounds).toHaveBeenCalledTimes(1);
   });
 });
