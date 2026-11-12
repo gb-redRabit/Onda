@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -190,7 +190,9 @@ describe('media:getThumbnail', () => {
 
   it('allows only paths inside media roots', async () => {
     const file = tempFile('thumb.jpg');
-    mocks.withinRoots.add(file);
+    // Handler sprawdza `realpath`; na macOS `/var` → `/private/var`, a na
+    // Windows runnerze ścieżka 8.3 (`RUNNER~1`) → nazwa długa.
+    mocks.withinRoots.add(realpathSync(file));
     expect(await handler('media:getThumbnail')({}, file, 128)).toBe('thumb');
     expect(mocks.getThumbnail).toHaveBeenCalledWith(file, 128);
   });
@@ -205,7 +207,7 @@ describe('media:batchThumbnails', () => {
   it('filters files outside allowed roots before batching', async () => {
     const allowed = tempFile('a.jpg');
     const blocked = tempFile('b.jpg');
-    mocks.withinRoots.add(allowed);
+    mocks.withinRoots.add(realpathSync(allowed));
 
     await handler('media:batchThumbnails')({}, [allowed, blocked], 64);
 

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { join } from 'node:path';
 import { copyItems, findDuplicates, moveItems, validateTransferArgs } from '../fs-transfer';
 
 const state = vi.hoisted(() => ({
@@ -132,8 +133,8 @@ describe('findDuplicates', () => {
 
     expect(groups).toEqual([
       {
-        original: 'C:\\dir\\a.mp3',
-        duplicates: ['C:\\dir\\a (1).mp3', 'C:\\dir\\a (2).mp3']
+        original: join('C:/dir', 'a.mp3'),
+        duplicates: [join('C:/dir', 'a (1).mp3'), join('C:/dir', 'a (2).mp3')]
       }
     ]);
   });
@@ -142,14 +143,14 @@ describe('findDuplicates', () => {
     state.readdir.mockResolvedValue([dirent('a (1).mp3'), dirent('a (2).mp3')]);
     state.stripDuplicateSuffix.mockImplementation((name: string) => name.replace(/ \(\d+\)/, ''));
     state.stat.mockImplementation(async (path: string) => {
-      if (path === 'C:\\dir\\a.mp3') throw new Error('missing');
+      if (path === join('C:/dir', 'a.mp3')) throw new Error('missing');
       return fileStats(100);
     });
 
     const groups = await findDuplicates('C:/dir');
     expect(groups).toHaveLength(1);
-    expect(groups[0].original).toBe('C:\\dir\\a (1).mp3');
-    expect(groups[0].duplicates).toEqual(['C:\\dir\\a (2).mp3']);
+    expect(groups[0].original).toBe(join('C:/dir', 'a (1).mp3'));
+    expect(groups[0].duplicates).toEqual([join('C:/dir', 'a (2).mp3')]);
   });
 
   it('skips a lone candidate when the original is missing', async () => {
@@ -215,7 +216,7 @@ describe('findDuplicates', () => {
     });
     state.stat.mockImplementation(async () => fileStats(100));
     const groups = await findDuplicates('C:/dir');
-    expect(groups[0].duplicates).toEqual(['C:\\dir\\a (1).mp3']);
+    expect(groups[0].duplicates).toEqual([join('C:/dir', 'a (1).mp3')]);
   });
 
   it('logs compare failures and readdir failures', async () => {
@@ -307,8 +308,8 @@ describe('moveItems', () => {
     state.uniqueDestPath.mockImplementation(async (path: string) => path);
     await moveItems(['C:/a', 'C:/b'], 'C:/dst');
 
-    expect(state.rename).toHaveBeenCalledWith('C:/a', 'C:\\dst\\a');
-    expect(state.rename).toHaveBeenCalledWith('C:/b', 'C:\\dst\\b');
+    expect(state.rename).toHaveBeenCalledWith('C:/a', join('C:/dst', 'a'));
+    expect(state.rename).toHaveBeenCalledWith('C:/b', join('C:/dst', 'b'));
   });
 
   it('skips case-insensitive identical destinations', async () => {
@@ -322,7 +323,7 @@ describe('moveItems', () => {
     state.lstat.mockResolvedValue(dirStats());
 
     await moveItems(['C:/dir'], 'C:/dst');
-    expect(state.cp).toHaveBeenCalledWith('C:/dir', 'C:\\dst\\dir', { recursive: true });
+    expect(state.cp).toHaveBeenCalledWith('C:/dir', join('C:/dst', 'dir'), { recursive: true });
     expect(state.rm).toHaveBeenCalledWith('C:/dir', { recursive: true, force: true });
   });
 
@@ -331,7 +332,7 @@ describe('moveItems', () => {
     state.lstat.mockResolvedValue(fileStats());
 
     await moveItems(['C:/file.txt'], 'C:/dst');
-    expect(state.copyFile).toHaveBeenCalledWith('C:/file.txt', 'C:\\dst\\file.txt');
+    expect(state.copyFile).toHaveBeenCalledWith('C:/file.txt', join('C:/dst', 'file.txt'));
     expect(state.unlink).toHaveBeenCalledWith('C:/file.txt');
   });
 
@@ -360,8 +361,8 @@ describe('copyItems', () => {
 
     await copyItems(['C:/dir', 'C:/file.txt'], 'C:/dst');
 
-    expect(state.cp).toHaveBeenCalledWith('C:/dir', 'C:\\dst\\dir', { recursive: true });
-    expect(state.copyFile).toHaveBeenCalledWith('C:/file.txt', 'C:\\dst\\file.txt');
+    expect(state.cp).toHaveBeenCalledWith('C:/dir', join('C:/dst', 'dir'), { recursive: true });
+    expect(state.copyFile).toHaveBeenCalledWith('C:/file.txt', join('C:/dst', 'file.txt'));
   });
 
   it('logs copy failures and skips rejected arguments', async () => {

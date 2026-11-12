@@ -29,6 +29,15 @@ vi.mock('../../../shared/logger', () => ({
 
 vi.mock('../../warnings', () => ({ recordWarning: vi.fn() }));
 
+// `setPlatform` celowo zmienia globalny `process.platform`; bez przywrócenia
+// kolejny plik testowy w tym samym workerze widzi platformę z ostatniego testu
+// (np. `darwin`), co zmienia zachowanie produkcyjnych gałęzi.
+const originalPlatform = process.platform;
+
+afterEach(() => {
+  Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+});
+
 const PREFIX = 'onda-enc:v1:';
 const PLAIN_PREFIX = 'onda-plain:v1:';
 

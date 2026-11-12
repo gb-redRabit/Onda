@@ -6,7 +6,15 @@ const state = vi.hoisted(() => ({
   showErrorBox: vi.fn(),
   defaultSession: null as any,
   fromPartition: vi.fn(),
-  isPathInside: vi.fn((_root: string, path: string) => path.startsWith('C:\\app')),
+  isPathInside: vi.fn((_root: string, path: string) => {
+    // `fileURLToPath` zwraca na POSIX `/C:/app/...`, a na Windows `C:\app\...`;
+    // normalizuj oba warianty, żeby test nie zależał od platformy CI.
+    const norm = (value: string) =>
+      value.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
+    const root = norm(_root);
+    const target = norm(path);
+    return target === root || target.startsWith(`${root}/`);
+  }),
   messages: {
     loadFailedTitle: 'Failed',
     rendererCrashMessage: (reason: string) => `crashed:${reason}`

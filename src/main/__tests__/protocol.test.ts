@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -37,7 +37,9 @@ writeFileSync(outsideFile, 'x');
 beforeEach(async () => {
   vi.resetModules();
   for (const key of ['documents', 'music', 'pictures', 'videos', 'downloads', 'desktop', 'temp']) {
-    paths[key] = allowed;
+    // Handler porównuje `realpath` żądania z prefiksami; na macOS `/var` jest
+    // symlinkiem do `/private/var`, a na Windows runner używa nazw 8.3.
+    paths[key] = realpathSync(allowed);
   }
   const mod = await import('../protocol');
   mod.registerOndaProtocolHandler();
