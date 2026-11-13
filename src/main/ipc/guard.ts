@@ -88,7 +88,8 @@ export function installIpcGuards(): void {
         throw new Error(`IPC '${channel}' blocked: untrusted sender`);
       }
       if (RATE_LIMITED_CHANNELS.has(channel)) {
-        const key = `${event.sender?.id ?? 'unknown'}:${channel}`;
+        // Missing sender id groups under the same "undefined" key (stable per channel).
+        const key = `${event.sender?.id}:${channel}`;
         if (!invokeLimiter.tryAcquire(key)) {
           blockLog('rate-limited invoke', channel);
           throw new Error(`IPC '${channel}' blocked: rate limit exceeded`);

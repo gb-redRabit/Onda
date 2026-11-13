@@ -391,4 +391,73 @@ describe('keyboard navigation', () => {
     wrapper = null;
     expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
   });
+
+  it('ignores horizontal navigation when the next trigger has no name', async () => {
+    mountMenu();
+    state.openDropdown.value = 'help';
+    await wrapper!.vm.$nextTick();
+    const bogus = document.createElement('div');
+    bogus.dataset.menuTrigger = '';
+    document.body.appendChild(bogus);
+    try {
+      const event = keydown({ key: 'ArrowRight' });
+      expect(event.defaultPrevented).toBe(false);
+    } finally {
+      bogus.remove();
+    }
+  });
+
+  it('ignores unknown keys pressed inside an open menu', async () => {
+    mountMenu();
+    state.openDropdown.value = 'file';
+    await wrapper!.vm.$nextTick();
+    const item = wrapper!.find('[data-menu="file"] [role="menuitem"]').element;
+    const event = keydown({ key: 'a' }, item);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('opens every dropdown from its trigger', async () => {
+    mountMenu();
+    for (const name of ['view', 'playback', 'help']) {
+      await trigger(name).trigger('click');
+      expect(state.toggleDropdown).toHaveBeenLastCalledWith(name);
+      expect(trigger(name).attributes('aria-expanded')).toBe('true');
+    }
+  });
+
+  it('switches menus on hover for view, playback and help', async () => {
+    mountMenu();
+    state.openDropdown.value = 'file';
+    for (const name of ['view', 'playback', 'help']) {
+      await trigger(name).trigger('mouseenter');
+      expect(state.openDropdown.value).toBe(name);
+    }
+  });
+
+  it('switches back to file on hover when another menu is open', async () => {
+    mountMenu();
+    state.openDropdown.value = 'help';
+
+    await trigger('file').trigger('mouseenter');
+
+    expect(state.openDropdown.value).toBe('file');
+  });
+
+  it('opens dropdowns with the down arrow for every trigger', async () => {
+    mountMenu();
+    for (const name of ['view', 'playback', 'help']) {
+      keydown({ key: 'ArrowDown' }, trigger(name).element);
+      await wrapper!.vm.$nextTick();
+      expect(state.openDropdown.value).toBe(name);
+    }
+  });
+
+  it('restores PiP without the preload bridge', async () => {
+    delete (window as { api?: unknown }).api;
+    mountMenu();
+    state.openDropdown.value = 'playback';
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(PlaybackStub).vm.$emit('restore-pip');
+    expect(state.closeDropdown).toHaveBeenCalled();
+  });
 });

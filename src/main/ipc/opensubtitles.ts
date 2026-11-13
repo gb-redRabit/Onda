@@ -154,7 +154,7 @@ export function registerOpenSubtitlesHandlers(): void {
           maxBytes: MAX_SUB_BYTES
         });
         const fileName = info.file_name || 'subtitle.srt';
-        const format = (fileName.split('.').pop() || 'srt').toLowerCase();
+        const format = (fileName.split('.').pop() as string).toLowerCase();
 
         const videoPath = typeof params.videoPath === 'string' ? params.videoPath : '';
         if (videoPath && isSafeAbsolutePath(videoPath)) {

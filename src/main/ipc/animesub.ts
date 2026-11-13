@@ -81,8 +81,7 @@ export function episodeNumber(name: string): number | null {
     base.match(/\bep?\.?\s?(\d{1,3})\b/i) ||
     base.match(/\b(\d{1,3})\b/);
   if (!m) return null;
-  const n = parseInt(m[1], 10);
-  return Number.isFinite(n) ? n : null;
+  return parseInt(m[1], 10);
 }
 
 /** Wybiera plik odcinka z archiwum; bez dopasowania bierze pierwszy. */
@@ -101,8 +100,8 @@ export function pickEpisodeFile<T extends { name: string }>(
 }
 
 function subtitleExt(name: string): string {
-  const ext = extname(name).toLowerCase();
-  return SUB_EXTS.includes(ext) ? ext : '.srt';
+  // Zapisywane pliki pochodzą z listy dozwolonych rozszerzeń albo z nazw `x.ass`/`x.srt`.
+  return extname(name).toLowerCase();
 }
 
 async function saveSubtitle(

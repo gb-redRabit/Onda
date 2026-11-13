@@ -26,4 +26,13 @@ describe('OnlineIconButton', () => {
     const wrapper = mountButton(false);
     expect(wrapper.attributes('aria-label')).toBe('Toggle preview');
   });
+
+  it('emits click events from the native button', async () => {
+    const wrapper = mountButton(false);
+
+    await wrapper.trigger('click');
+
+    expect(wrapper.emitted('click')).toHaveLength(1);
+    expect(wrapper.emitted('click')?.[0]?.[0]).toBeInstanceOf(MouseEvent);
+  });
 });

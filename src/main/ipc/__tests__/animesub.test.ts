@@ -9,8 +9,9 @@ import { buildZip } from '../../utils/__tests__/zip-builder';
 
 const state = vi.hoisted(() => ({
   handlers: new Map<string, (...args: unknown[]) => unknown>(),
-  responses: [] as Array<{ status: number; text: string; setCookie?: string }>,
-  requests: [] as Array<{ url: string; options?: Record<string, unknown> }>
+  responses: [] as Array<{ status: number; text: string; setCookie?: string | string[] }>,
+  requests: [] as Array<{ url: string; options?: Record<string, unknown> }>,
+  nextError: null as unknown
 }));
 
 vi.mock('electron', () => ({
@@ -24,11 +25,18 @@ vi.mock('electron', () => ({
 vi.mock('../http-request', () => ({
   httpRequest: async (url: string, options?: Record<string, unknown>) => {
     state.requests.push({ url, options });
+    if (state.nextError !== null) {
+      const error = state.nextError;
+      state.nextError = null;
+      throw error;
+    }
     const next = state.responses.shift();
     if (!next) throw new Error('no mocked response');
     if (next.status < 200 || next.status >= 300) throw new Error(`HTTP ${next.status}`);
     const headers: Record<string, string[]> = {};
-    if (next.setCookie) headers['set-cookie'] = [next.setCookie];
+    if (next.setCookie !== undefined) {
+      headers['set-cookie'] = next.setCookie as never;
+    }
     return { status: next.status, statusText: 'OK', headers, text: next.text };
   }
 }));
@@ -76,6 +84,15 @@ describe('parseAnimeSubResults', () => {
 
   it('returns nothing when there are no download forms', () => {
     expect(parseAnimeSubResults('<html><body>brak</body></html>')).toEqual([]);
+  });
+
+  it('skips forms without a usable id/sh pair or title', () => {
+    const html = [
+      '<form method="POST" action="sciagnij.php"><input name="id" value="1"></form>',
+      '<form method="POST" action="sciagnij.php"><input name="id" value="2"><input name="sh" value="ff"></form>'
+    ].join('\n');
+
+    expect(parseAnimeSubResults(html)).toEqual([]);
   });
 });
 
@@ -193,5 +210,171 @@ describe('animesub handlers', () => {
       success: false,
       error: 'no-session'
     });
+  });
+
+  it('rejects an empty search query and reports search failures', async () => {
+    const search = state.handlers.get('animesub:search')!;
+
+    await expect(search({}, { query: '   ' })).resolves.toEqual({
+      success: false,
+      results: [],
+      error: 'missing-query'
+    });
+    await expect(search({}, { query: 42 as never })).resolves.toEqual({
+      success: false,
+      results: [],
+      error: 'missing-query'
+    });
+
+    state.responses = [{ status: 500, text: '' }];
+    await expect(search({}, { query: 'fate' })).resolves.toEqual({
+      success: false,
+      results: [],
+      error: 'HTTP 500'
+    });
+
+    state.nextError = 'plain failure';
+    await expect(search({}, { query: 'fate' })).resolves.toEqual({
+      success: false,
+      results: [],
+      error: 'plain failure'
+    });
+  });
+
+  it('joins multiple session cookies and decodes via latin1 when CP1250 is unavailable', async () => {
+    state.responses = [
+      {
+        status: 200,
+        text: SEARCH_HTML,
+        setCookie: ['a=1; path=/', 'b=2; path=/']
+      }
+    ];
+    const decode = vi.fn(() => {
+      throw new Error('missing decoder');
+    });
+    vi.stubGlobal(
+      'TextDecoder',
+      class {
+        decode = decode;
+      }
+    );
+    try {
+      const search = state.handlers.get('animesub:search')!;
+      const res = (await search({}, { query: 'fate' })) as { success: boolean };
+      expect(res.success).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    state.responses = [{ status: 200, text: SEARCH_HTML, setCookie: 'a=1; path=/' }];
+    const search = state.handlers.get('animesub:search')!;
+    await search({}, { query: 'fate' });
+    const dir = tempDir();
+    const video = join(dir, 'm.mkv');
+    writeFileSync(video, Buffer.from('x'));
+    state.responses = [{ status: 200, text: '[Script Info]\nA' }];
+    await state.handlers.get('animesub:download')!({}, { id: '1', sh: 'ff', videoPath: video });
+    const headers = state.requests.at(-1)!.options?.headers as Record<string, string>;
+    expect(headers.Cookie).toContain('a=1');
+  });
+
+  it('validates the download request and target path', async () => {
+    const download = state.handlers.get('animesub:download')!;
+
+    await expect(download({}, { id: '1', sh: 'ff', videoPath: 'relative.mkv' })).resolves.toEqual({
+      success: false,
+      error: 'missing-file'
+    });
+    await expect(download({}, { id: '', sh: 'ff', videoPath: 'x' })).resolves.toEqual({
+      success: false,
+      error: 'invalid-request'
+    });
+    await expect(download({}, { id: 1, sh: null, videoPath: 5 } as never)).resolves.toEqual({
+      success: false,
+      error: 'invalid-request'
+    });
+  });
+
+  it('clears the session when a search response has no cookies', async () => {
+    state.responses = [{ status: 200, text: SEARCH_HTML, setCookie: 'a=1; path=/' }];
+    const search = state.handlers.get('animesub:search')!;
+    await search({}, { query: 'fate' });
+
+    state.responses = [{ status: 200, text: SEARCH_HTML }];
+    await search({}, { query: 'fate' });
+
+    const dir = tempDir();
+    const video = join(dir, 'm.mkv');
+    writeFileSync(video, Buffer.from('x'));
+    await expect(
+      state.handlers.get('animesub:download')!({}, { id: '1', sh: 'ff', videoPath: video })
+    ).resolves.toEqual({ success: false, error: 'no-session' });
+  });
+
+  it('saves non-ZIP payloads as ASS or SRT', async () => {
+    const dir = tempDir();
+    const video = join(dir, 'Show.mkv');
+    writeFileSync(video, Buffer.from('x'));
+    state.responses = [{ status: 200, text: SEARCH_HTML, setCookie: 'a=1; path=/' }];
+    await state.handlers.get('animesub:search')!({}, { query: 'fate' });
+
+    state.responses = [{ status: 200, text: '[Script Info]\nA' }];
+    const ass = (await state.handlers.get('animesub:download')!(
+      {},
+      { id: '1', sh: 'ff', videoPath: video }
+    )) as { success: boolean; path?: string; format?: string };
+    expect(ass).toMatchObject({ success: true, format: 'ass' });
+
+    state.responses = [{ status: 200, text: '1\n00:00:01,000 --> 00:00:02,000\nHi' }];
+    const srt = (await state.handlers.get('animesub:download')!(
+      {},
+      { id: '1', sh: 'ff', videoPath: video }
+    )) as { success: boolean; format?: string };
+    expect(srt).toMatchObject({ success: true, format: 'srt' });
+  });
+
+  it('reports empty, subtitle-less and broken archives', async () => {
+    const dir = tempDir();
+    const video = join(dir, 'Show.mkv');
+    writeFileSync(video, Buffer.from('x'));
+    state.handlers.clear();
+    registerAnimeSubHandlers();
+    const search = state.handlers.get('animesub:search')!;
+    state.responses = [{ status: 200, text: SEARCH_HTML, setCookie: 'a=1; path=/' }];
+    await search({}, { query: 'fate' });
+    const download = state.handlers.get('animesub:download')!;
+
+    state.responses = [{ status: 200, text: '' }];
+    await expect(download({}, { id: '1', sh: 'ff', videoPath: video })).resolves.toEqual({
+      success: false,
+      error: 'empty'
+    });
+
+    const noSubs = buildZip([{ name: 'readme.txt', content: Buffer.from('x') }]);
+    state.responses = [{ status: 200, text: noSubs.toString('latin1') }];
+    await expect(download({}, { id: '1', sh: 'ff', videoPath: video })).resolves.toEqual({
+      success: false,
+      error: 'no-subtitles'
+    });
+
+    state.responses = [{ status: 200, text: 'PKbroken' }];
+    const broken = (await download({}, { id: '1', sh: 'ff', videoPath: video })) as {
+      success: boolean;
+    };
+    expect(broken.success).toBe(false);
+
+    state.responses = [{ status: 500, text: '' }];
+    await expect(download({}, { id: '1', sh: 'ff', videoPath: video })).resolves.toEqual({
+      success: false,
+      error: 'HTTP 500'
+    });
+
+    state.nextError = 'plain failure';
+    const blank = (await download({}, { id: '1', sh: 'ff', videoPath: video })) as {
+      success: boolean;
+      error?: string;
+    };
+    expect(blank.success).toBe(false);
+    expect(blank.error).toBe('plain failure');
   });
 });
