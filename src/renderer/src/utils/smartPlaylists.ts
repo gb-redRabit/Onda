@@ -175,39 +175,27 @@ export function fieldDef(field: SmartPlaylistField): SmartFieldDef | undefined {
 
 function textValue(track: MediaFile, field: SmartPlaylistField): string {
   const meta = track.metadata;
-  switch (field) {
-    case 'title':
-      return meta?.title || track.name;
-    case 'artist':
-      return meta?.artist || '';
-    case 'album':
-      return meta?.album || '';
-    case 'genre':
-      return meta?.genre || '';
-    case 'path':
-      return track.path;
-    default:
-      return '';
-  }
+  // Tylko pola tekstowe trafiają tutaj (`fieldDef` gate w `ruleMatches`).
+  const values: Partial<Record<SmartPlaylistField, string>> = {
+    title: meta?.title || track.name,
+    artist: meta?.artist || '',
+    album: meta?.album || '',
+    genre: meta?.genre || '',
+    path: track.path
+  };
+  return values[field] as string;
 }
 
 function numberValue(track: MediaFile, field: SmartPlaylistField): number {
-  switch (field) {
-    case 'year':
-      return track.metadata?.year ?? 0;
-    case 'duration':
-      return track.duration ?? 0;
-    case 'bitrate':
-      return track.metadata?.bitrate ?? 0;
-    case 'playCount':
-      return track.playCount ?? 0;
-    case 'addedAt':
-      return track.addedAt ?? 0;
-    case 'lastPlayed':
-      return track.lastPlayed ?? 0;
-    default:
-      return 0;
-  }
+  const values: Partial<Record<SmartPlaylistField, number>> = {
+    year: track.metadata?.year ?? 0,
+    duration: track.duration ?? 0,
+    bitrate: track.metadata?.bitrate ?? 0,
+    playCount: track.playCount ?? 0,
+    addedAt: track.addedAt ?? 0,
+    lastPlayed: track.lastPlayed ?? 0
+  };
+  return values[field] as number;
 }
 
 function booleanValue(
@@ -215,16 +203,12 @@ function booleanValue(
   field: SmartPlaylistField,
   ctx: SmartPlaylistContext
 ): boolean {
-  switch (field) {
-    case 'lossless':
-      return track.metadata?.lossless === true;
-    case 'hasCover':
-      return hasCover(track);
-    case 'favorite':
-      return ctx.favorites.has(track.path);
-    default:
-      return false;
-  }
+  const values: Partial<Record<SmartPlaylistField, boolean>> = {
+    lossless: track.metadata?.lossless === true,
+    hasCover: hasCover(track),
+    favorite: ctx.favorites.has(track.path)
+  };
+  return values[field] as boolean;
 }
 
 function compareNumber(
@@ -239,9 +223,8 @@ function compareNumber(
   }
   const target = Number(value);
   if (!Number.isFinite(target)) return false;
-  if (operator === 'gte') return actual >= target;
   if (operator === 'lte') return actual <= target;
-  return false;
+  return operator === 'gte' && actual >= target;
 }
 
 function matchesDate(
@@ -256,8 +239,7 @@ function matchesDate(
   if (!timestamp) return false;
   const age = now - timestamp;
   if (operator === 'withinLastDays') return age <= days * DAY_MS;
-  if (operator === 'olderThanDays') return age > days * DAY_MS;
-  return false;
+  return operator === 'olderThanDays' && age > days * DAY_MS;
 }
 
 export function ruleMatches(
@@ -274,8 +256,7 @@ export function ruleMatches(
     const expected = String(rule.value ?? '').toLowerCase();
     if (rule.operator === 'contains') return actual.includes(expected);
     if (rule.operator === 'equals') return actual === expected;
-    if (rule.operator === 'notEquals') return actual !== expected;
-    return false;
+    return actual !== expected;
   }
 
   if (def.type === 'number') {
@@ -284,9 +265,7 @@ export function ruleMatches(
 
   if (def.type === 'boolean') {
     const actual = booleanValue(track, rule.field, ctx);
-    if (rule.operator === 'isTrue') return actual;
-    if (rule.operator === 'isFalse') return !actual;
-    return false;
+    return rule.operator === 'isTrue' ? actual : !actual;
   }
 
   return matchesDate(numberValue(track, rule.field), rule.operator, rule.value, ctx.now);

@@ -140,7 +140,7 @@ export function registerYoutubeHandlers(): void {
           result: {
             kind,
             sourceUrl: target,
-            title: parsed.title || '',
+            title: parsed.title,
             meta: {
               channelId: parsed.channel_id || '',
               channelTitle: parsed.channel || parsed.uploader || ''

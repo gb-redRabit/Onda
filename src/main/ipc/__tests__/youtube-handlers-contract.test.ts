@@ -10,6 +10,7 @@ const h = vi.hoisted(() => {
   const handlers = new Map<string, (event: unknown, ...args: unknown[]) => unknown>();
   return {
     handlers,
+    e2e: { enabled: false },
     ipcMain: {
       handle: (ch: string, fn: (event: unknown, ...args: unknown[]) => unknown) => {
         handlers.set(ch, fn);
@@ -25,6 +26,8 @@ vi.mock('electron', () => ({
   ipcMain: h.ipcMain,
   app: { getPath: () => '' }
 }));
+
+vi.mock('../../e2e-fixtures', () => ({ e2eFixturesEnabled: () => h.e2e.enabled }));
 
 // Warstwa uruchamiania yt-dlp — mockowana, żeby nie spawnować procesów i móc
 // sterować odpowiedziami JSON.
@@ -48,6 +51,7 @@ vi.mock('../network-target', async (importOriginal) => {
 });
 
 import { runYtDlp, fetchEntryJson, fetchRangeJson } from '../youtube/youtube-fetch';
+import { getStreamUrl } from '../youtube/youtube-stream';
 import { registerYoutubeHandlers } from '../youtube/youtube-handlers';
 import { resetChannelPlaylistCache } from '../youtube/youtube-channel';
 import { resetClientIdCache } from '../soundcloud/soundcloud-client';
@@ -55,6 +59,7 @@ import { resetClientIdCache } from '../soundcloud/soundcloud-client';
 const runYtDlpMock = vi.mocked(runYtDlp);
 const fetchEntryJsonMock = vi.mocked(fetchEntryJson);
 const fetchRangeJsonMock = vi.mocked(fetchRangeJson);
+const getStreamUrlMock = vi.mocked(getStreamUrl);
 
 registerYoutubeHandlers();
 const call = (channel: string, ...args: unknown[]): unknown => {
@@ -108,6 +113,7 @@ const CHANNEL_PARSED = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  h.e2e.enabled = false;
   resetClientIdCache();
   resetChannelPlaylistCache();
 });
@@ -346,5 +352,316 @@ describe('yt:channel count + pagination (regression)', () => {
       end: 60
     });
     expect(runYtDlpMock).toHaveBeenCalledTimes(1);
+  });
+});
+describe('yt:resolve external and E2E paths', () => {
+  it('returns an E2E marker for external links when fixtures are enabled', async () => {
+    h.e2e.enabled = true;
+    const res = (await call('yt:resolve', 'https://mirror.example/video')) as {
+      success: boolean;
+      result: { items: Array<{ id: string; url: string }> };
+    };
+
+    expect(res.success).toBe(true);
+    expect(res.result.items[0]).toMatchObject({
+      id: 'external-e2e-media',
+      url: 'https://mirror.example/video'
+    });
+    expect(fetchEntryJsonMock).not.toHaveBeenCalled();
+  });
+
+  it('disables the yt-dlp path for YouTube links when E2E fixtures are enabled', async () => {
+    h.e2e.enabled = true;
+    const res = (await call('yt:resolve', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')) as {
+      success: boolean;
+      error: string;
+    };
+
+    expect(res).toMatchObject({ success: false, error: 'e2e fixtures: resolve disabled' });
+    expect(fetchEntryJsonMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-http input', async () => {
+    const res = (await call('yt:resolve', 'not a link')) as { success: boolean; error: string };
+
+    expect(res).toMatchObject({ success: false, error: 'Paste a valid public http(s) link' });
+  });
+
+  it('maps an external playlist and reports hasMore', async () => {
+    const entries = Array.from({ length: 30 }, (_, i) => ({
+      id: `ext${i}`,
+      title: `Ext ${i}`,
+      webpage_url: `https://example.com/v/${i}`
+    }));
+    fetchEntryJsonMock.mockResolvedValueOnce({
+      _type: 'playlist',
+      title: 'External list',
+      playlist_count: 60,
+      entries
+    });
+
+    const res = (await call('yt:resolve', 'https://example.com/list')) as {
+      success: boolean;
+      result: {
+        kind: string;
+        title: string;
+        meta: { totalItems: number; hasMore: boolean; channelId: string };
+        items: unknown[];
+      };
+    };
+
+    expect(res.success).toBe(true);
+    expect(res.result.kind).toBe('playlist');
+    expect(res.result.title).toBe('External list');
+    expect(res.result.meta).toMatchObject({ totalItems: 60, hasMore: true });
+    expect(res.result.items).toHaveLength(30);
+  });
+
+  it('reports links with no playable entries', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({ entries: [] });
+    const res = (await call('yt:resolve', 'https://example.com/empty')) as {
+      success: boolean;
+      error: string;
+    };
+
+    expect(res).toMatchObject({
+      success: false,
+      error: 'This site did not return playable media'
+    });
+  });
+
+  it('classifies external extractor failures', async () => {
+    fetchEntryJsonMock.mockRejectedValueOnce('plain failure');
+    const res = (await call('yt:resolve', 'https://example.com/broken')) as {
+      success: boolean;
+      error: string;
+      code: string;
+    };
+
+    expect(res.success).toBe(false);
+    expect(res.error).toBe('plain failure');
+    expect(res.code).toBeTruthy();
+
+    fetchEntryJsonMock.mockRejectedValueOnce(new Error(''));
+    const empty = (await call('yt:resolve', 'https://example.com/empty-error')) as {
+      error: string;
+    };
+    expect(empty.error).toBe('Error');
+  });
+
+  it('rejects video info without an id or title', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({ id: 'x' });
+    const res = (await call('yt:resolve', 'https://www.youtube.com/watch?v=aaaaaaaaaaa')) as {
+      success: boolean;
+      error: string;
+    };
+
+    expect(res).toMatchObject({ success: false, error: 'Could not read video info' });
+  });
+
+  it('leaves totalItems unknown when the playlist count is missing', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({
+      _type: 'playlist',
+      title: 'No count',
+      entries: PLAYLIST_PARSED.entries
+    });
+    const res = (await call('yt:resolve', 'https://www.youtube.com/playlist?list=PLx')) as {
+      success: boolean;
+      result: { meta: { totalItems: number | null; hasMore: boolean } };
+    };
+
+    expect(res.result.meta.totalItems).toBeNull();
+    expect(res.result.meta.hasMore).toBe(false);
+  });
+
+  it('accepts entries identified by url, webpage_url or title alone', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({
+      _type: 'playlist',
+      title: 'Mixed',
+      entries: [
+        { webpage_url: 'https://example.com/w' },
+        { url: 'https://example.com/u' },
+        { title: 'Only title' },
+        {}
+      ]
+    });
+
+    const res = (await call('yt:resolve', 'https://example.com/mixed')) as {
+      result: { items: unknown[] };
+    };
+
+    expect(res.result.items).toHaveLength(3);
+  });
+
+  it('falls back to the request URL as the external title', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({ entries: [{ id: 'ext' }] });
+
+    const res = (await call('yt:resolve', 'https://example.com/untitled')) as {
+      result: { title: string };
+    };
+
+    expect(res.result.title).toBe('https://example.com/untitled');
+  });
+
+  it('handles an external playlist without entries', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({ _type: 'playlist', title: 'Empty' });
+
+    const res = (await call('yt:resolve', 'https://example.com/no-entries')) as {
+      success: boolean;
+      error: string;
+    };
+
+    expect(res).toMatchObject({
+      success: false,
+      error: 'This site did not return playable media'
+    });
+  });
+
+  it('defaults missing video channel metadata', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({ id: 'v1', title: 'Bare video' });
+
+    const res = (await call('yt:resolve', 'https://www.youtube.com/watch?v=bbbbbbbbbbb')) as {
+      result: { meta: { channelId: string; channelTitle: string } };
+    };
+
+    expect(res.result.meta).toEqual({ channelId: '', channelTitle: '' });
+  });
+
+  it('defaults a missing playlist title to an empty string', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({
+      _type: 'playlist',
+      entries: [{ id: 'p1', title: 'P1' }]
+    });
+
+    const res = (await call('yt:resolve', 'https://www.youtube.com/playlist?list=PLz')) as {
+      result: { title: string };
+    };
+
+    expect(res.result.title).toBe('');
+  });
+
+  it('reports hasMore for a full page when the playlist is longer', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({
+      _type: 'playlist',
+      title: 'Long',
+      playlist_count: 100,
+      entries: Array.from({ length: 30 }, (_, i) => ({ id: `p${i}`, title: `P${i}` }))
+    });
+
+    const res = (await call('yt:resolve', 'https://www.youtube.com/playlist?list=PLlong')) as {
+      result: { meta: { hasMore: boolean; totalItems: number } };
+    };
+
+    expect(res.result.meta).toMatchObject({ hasMore: true, totalItems: 100 });
+  });
+
+  it('reports hasMore for a full page with an unknown playlist length', async () => {
+    fetchEntryJsonMock.mockResolvedValueOnce({
+      _type: 'playlist',
+      title: 'Longer',
+      entries: Array.from({ length: 30 }, (_, i) => ({ id: `q${i}`, title: `Q${i}` }))
+    });
+
+    const res = (await call('yt:resolve', 'https://www.youtube.com/playlist?list=PLunknown')) as {
+      result: { meta: { hasMore: boolean } };
+    };
+
+    expect(res.result.meta.hasMore).toBe(true);
+  });
+
+  it('falls back to a generic error message when the failure has none', async () => {
+    fetchEntryJsonMock.mockRejectedValueOnce(new Error(''));
+    const res = (await call('yt:resolve', 'https://www.youtube.com/watch?v=ccccccccccc')) as {
+      error: string;
+    };
+    expect(res.error).toBe('Could not resolve this link');
+
+    fetchEntryJsonMock.mockRejectedValueOnce('string failure');
+    const nonError = (await call('yt:resolve', 'https://www.youtube.com/watch?v=ddddddddddd')) as {
+      error: string;
+    };
+    expect(nonError.error).toBe('Could not resolve this link');
+  });
+});
+
+describe('yt:resolveMore pagination and failures', () => {
+  it('rejects missing options', async () => {
+    const res = (await call('yt:resolveMore', null)) as { success: boolean };
+
+    expect(res.success).toBe(false);
+  });
+
+  it('handles external links with the generic extractor and clamped ranges', async () => {
+    fetchRangeJsonMock.mockResolvedValueOnce({ entries: PLAYLIST_PARSED.entries });
+    const res = (await call('yt:resolveMore', {
+      url: 'https://example.com/list',
+      start: 0,
+      end: 9999
+    })) as { success: boolean; items: unknown[] };
+
+    expect(res.success).toBe(true);
+    expect(fetchRangeJsonMock).toHaveBeenCalledWith('https://example.com/list', 1, 200, 'generic');
+    expect(res.items).toHaveLength(2);
+  });
+
+  it('defaults the end of the range when it is missing or zero', async () => {
+    fetchRangeJsonMock.mockResolvedValueOnce({ entries: [] });
+
+    await call('yt:resolveMore', { url: 'https://example.com/list', start: 5, end: 0 });
+
+    expect(fetchRangeJsonMock).toHaveBeenCalledWith('https://example.com/list', 5, 34, 'generic');
+  });
+
+  it('reports more pages for a full page with a known or unknown total', async () => {
+    const fullPage = {
+      playlist_count: 100,
+      entries: Array.from({ length: 30 }, (_, i) => ({ id: `v${i}`, title: `V${i}` }))
+    };
+    fetchRangeJsonMock.mockResolvedValueOnce(fullPage);
+    const known = (await call('yt:resolveMore', {
+      url: 'https://www.youtube.com/playlist?list=PL123',
+      start: 1,
+      end: 30
+    })) as { hasMore: boolean; totalItems: number };
+    expect(known).toMatchObject({ hasMore: true, totalItems: 100 });
+
+    fetchRangeJsonMock.mockResolvedValueOnce({
+      entries: Array.from({ length: 30 }, (_, i) => ({ id: `w${i}`, title: `W${i}` }))
+    });
+    const unknown = (await call('yt:resolveMore', {
+      url: 'https://www.youtube.com/playlist?list=PL123',
+      start: 1,
+      end: 30
+    })) as { hasMore: boolean; totalItems: number | null };
+    expect(unknown).toMatchObject({ hasMore: true, totalItems: null });
+  });
+
+  it('returns a classified failure when pagination fails', async () => {
+    fetchRangeJsonMock.mockRejectedValueOnce(new Error('boom'));
+    const res = (await call('yt:resolveMore', {
+      url: 'https://www.youtube.com/playlist?list=PL123',
+      start: 1,
+      end: 30
+    })) as { success: boolean; error: string; items: unknown[] };
+
+    expect(res).toMatchObject({ success: false, error: 'boom', items: [] });
+
+    fetchRangeJsonMock.mockRejectedValueOnce(new Error(''));
+    const empty = (await call('yt:resolveMore', {
+      url: 'https://www.youtube.com/playlist?list=PL123',
+      start: 1,
+      end: 30
+    })) as { error: string };
+    expect(empty.error).toBe('Could not load more items');
+  });
+});
+
+describe('yt:stream:get', () => {
+  it('delegates to the stream resolver', async () => {
+    const stream = { success: true, url: 'https://stream.example/audio' };
+    getStreamUrlMock.mockResolvedValueOnce(stream as never);
+
+    await expect(call('yt:stream:get', 'https://youtu.be/x')).resolves.toEqual(stream);
+    expect(getStreamUrlMock).toHaveBeenCalledWith('https://youtu.be/x');
   });
 });
