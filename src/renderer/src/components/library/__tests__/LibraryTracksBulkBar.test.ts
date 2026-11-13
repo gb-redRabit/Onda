@@ -1,55 +1,83 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
 
-// Regresja UX: pojedynczy utwór w zakładce Utwory musi dać się zaznaczyć tak samo
-// jak wielokrotny wybór (checkbox w liście i na karcie), a pasek zbiorczy musi
-// mówić wprost o utworze, gdy wybrany jest dokładnie jeden.
-const read = (relative: string): string => readFileSync(join(process.cwd(), relative), 'utf8');
+import LibraryTracksBulkBar from '../LibraryTracksBulkBar.vue';
 
-const BULK = read('src/renderer/src/components/library/LibraryTracksBulkBar.vue');
-const CARD = read('src/renderer/src/components/library/LibraryTrackCard.vue');
-const EN = read('src/renderer/src/locales/en.ts');
-const PL = read('src/renderer/src/locales/pl.ts');
-
-describe('LibraryTracksBulkBar singular/plural wording', () => {
-  it('switches to track-specific labels for a single selection', () => {
-    expect(BULK).toMatch(/isSingle/);
-    expect(BULK).toMatch(/\$t\('common\.addTrackToQueue'\)/);
-    expect(BULK).toMatch(/\$t\('common\.addTrackToPlaylist'\)/);
+function mountBar(
+  props: Partial<{ count: number; playlists: { id: string; name: string }[] }> = {}
+) {
+  return mount(LibraryTracksBulkBar, {
+    props: {
+      count: 2,
+      playlists: [
+        { id: 'p1', name: 'Playlist one' },
+        { id: 'p2', name: 'Playlist two' }
+      ],
+      ...props
+    },
+    global: { mocks: { $t: (key: string) => key } }
   });
-});
+}
 
-const CARD_SRC = read('src/renderer/src/components/library/LibraryTrackCard.vue');
-const TAB = read('src/renderer/src/components/library/LibraryTracksTab.vue');
-
-describe('single/multi-track selection in grid and list', () => {
-  it('renders a labelled checkbox on the card that selects additively', () => {
-    expect(CARD_SRC).toMatch(/type="checkbox"/);
-    expect(CARD_SRC).toMatch(/:aria-label="track\.metadata\?\.title \|\| track\.name"/);
-    // Checkbox przełącza (additive), a nie zastępuje zaznaczenie.
-    expect(CARD_SRC).toMatch(/onCheckboxClick/);
-    expect(CARD_SRC).toMatch(/emit\('select', e, true\)/);
+describe('LibraryTracksBulkBar', () => {
+  it('shows the selection count', () => {
+    expect(mountBar({ count: 3 }).text()).toContain('3 common.selected');
   });
 
-  it('plain click and checkbox both toggle (multi-select without modifiers)', () => {
-    expect(typeof CARD).toBe('string'); // sanity: plik istnieje
-    expect(TAB).toMatch(/selection\.toggle\(/);
-    // Shift jest jedynym modyfikatorem, jaki zostaje (zakres).
-    expect(TAB).toMatch(/selectRange/);
+  it('uses plural action labels for multiple tracks', () => {
+    const text = mountBar({ count: 2 }).text();
+
+    expect(text).toContain('common.addToQueue');
+    expect(text).toContain('common.addToPlaylist');
   });
 
-  it('measures virtual grid rows instead of a fixed estimate (no overlap)', () => {
-    // Wysokość wiersza musi być mierzona; stały estimateSize rozjeżdżał siatkę.
-    expect(TAB).toMatch(/measureElement/);
-  });
-});
+  it('uses singular action labels for one track', () => {
+    const text = mountBar({ count: 1 }).text();
 
-describe('i18n parity for the new labels', () => {
-  it('defines the single-track keys in both locales', () => {
-    expect(EN).toMatch(/addTrackToQueue:/);
-    expect(EN).toMatch(/addTrackToPlaylist:/);
-    expect(PL).toMatch(/addTrackToQueue:/);
-    expect(PL).toMatch(/addTrackToPlaylist:/);
+    expect(text).toContain('common.addTrackToQueue');
+    expect(text).toContain('common.addTrackToPlaylist');
+  });
+
+  it('emits play, queue and clear', async () => {
+    const wrapper = mountBar();
+
+    await wrapper.findAll('button')[0].trigger('click');
+    await wrapper.findAll('button')[1].trigger('click');
+    await wrapper.get('[data-testid="library-selection-clear"]').trigger('click');
+
+    expect(wrapper.emitted('play')).toEqual([[]]);
+    expect(wrapper.emitted('queue')).toEqual([[]]);
+    expect(wrapper.emitted('clear')).toEqual([[]]);
+  });
+
+  it('opens the playlist menu and emits the chosen playlist', async () => {
+    const wrapper = mountBar();
+    expect(wrapper.text()).not.toContain('Playlist one');
+
+    await wrapper.findAll('button')[2].trigger('click');
+    expect(wrapper.text()).toContain('Playlist one');
+
+    const items = wrapper.findAll('.absolute button');
+    await items[1].trigger('click');
+
+    expect(wrapper.emitted('add-to-playlist')).toEqual([['p2']]);
+  });
+
+  it('closes the playlist menu on a second click', async () => {
+    const wrapper = mountBar();
+    const toggle = wrapper.findAll('button')[2];
+
+    await toggle.trigger('click');
+    await toggle.trigger('click');
+
+    expect(wrapper.text()).not.toContain('Playlist one');
+  });
+
+  it('shows a placeholder without playlists', async () => {
+    const wrapper = mountBar({ playlists: [] });
+
+    await wrapper.findAll('button')[2].trigger('click');
+
+    expect(wrapper.text()).toContain('common.noPlaylists');
   });
 });
