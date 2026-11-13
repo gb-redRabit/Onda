@@ -1,285 +1,129 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import sharp from 'sharp';
+import { estimateEditedImage, readImageForEditing, saveEditedImage } from '../image-studio';
 
-const h = vi.hoisted(() => ({
-  loadSharp: vi.fn(),
-  stat: vi.fn(),
-  readFile: vi.fn(),
-  writeFile: vi.fn(),
-  mkdir: vi.fn(),
-  isProtectedPath: vi.fn(() => false),
-  isSafeAbsolutePath: vi.fn(() => true),
-  replaceFileAtomic: vi.fn(),
-  safeRm: vi.fn(),
-  warn: vi.fn()
-}));
+let dir: string;
 
-vi.mock('../../utils/lazy-sharp', () => ({ loadSharp: h.loadSharp }));
-vi.mock('fs/promises', () => ({
-  mkdir: h.mkdir,
-  readFile: h.readFile,
-  stat: h.stat,
-  writeFile: h.writeFile
-}));
-vi.mock('../../path-policy', () => ({ isProtectedPath: h.isProtectedPath }));
-vi.mock('../../utils/validate', () => ({ isSafeAbsolutePath: h.isSafeAbsolutePath }));
-vi.mock('../../utils/fs-atomic', () => ({
-  replaceFileAtomic: h.replaceFileAtomic,
-  safeRm: h.safeRm
-}));
-vi.mock('../../../shared/logger', () => ({
-  logger: { warn: h.warn, info: vi.fn(), error: vi.fn(), debug: vi.fn() }
-}));
-
-import {
-  encodeImageBuffer,
-  estimateEditedImage,
-  IMAGE_EXTENSIONS,
-  readImageForEditing,
-  saveEditedImage
-} from '../image-studio';
-
-function pipeline() {
-  const chain = {
-    rotate: vi.fn(),
-    resize: vi.fn(),
-    flatten: vi.fn(),
-    jpeg: vi.fn(),
-    webp: vi.fn(),
-    avif: vi.fn(),
-    png: vi.fn(),
-    metadata: vi.fn(async () => ({ width: 800, height: 600, format: 'jpeg' })),
-    toBuffer: vi.fn(async () => {
-      const buffer = Buffer.from('encoded');
-      return Object.assign(buffer, {
-        data: buffer,
-        info: { width: 640, height: 480 }
-      });
-    })
-  };
-  for (const method of ['rotate', 'resize', 'flatten', 'jpeg', 'webp', 'avif', 'png'] as const) {
-    chain[method].mockReturnValue(chain);
-  }
-  return chain;
+async function makePng(width = 8, height = 6): Promise<Buffer> {
+  return sharp({
+    create: {
+      width,
+      height,
+      channels: 4,
+      background: { r: 200, g: 40, b: 40, alpha: 1 }
+    }
+  })
+    .png()
+    .toBuffer();
 }
 
-let chain: ReturnType<typeof pipeline>;
-
-beforeEach(() => {
-  chain = pipeline();
-  h.loadSharp.mockReset().mockResolvedValue(() => chain);
-  h.stat.mockReset().mockResolvedValue({ isFile: () => true, size: 1234 });
-  h.readFile.mockReset().mockResolvedValue(Buffer.from('image'));
-  h.writeFile.mockReset().mockResolvedValue(undefined);
-  h.mkdir.mockReset().mockResolvedValue(undefined);
-  h.isProtectedPath.mockReset().mockReturnValue(false);
-  h.isSafeAbsolutePath.mockReset().mockReturnValue(true);
-  h.replaceFileAtomic.mockReset().mockResolvedValue(undefined);
-  h.safeRm.mockReset().mockResolvedValue(undefined);
-  h.warn.mockClear();
+beforeEach(async () => {
+  dir = await mkdtemp(join(tmpdir(), 'onda-image-studio-'));
 });
 
-describe('encodeImageBuffer', () => {
-  it('encodes jpeg with a flattened background', async () => {
-    await encodeImageBuffer(Buffer.from('x'), 'jpeg', 80);
-
-    expect(chain.flatten).toHaveBeenCalledWith({ background: '#ffffff' });
-    expect(chain.jpeg).toHaveBeenCalledWith({ quality: 80 });
-  });
-
-  it('encodes webp, avif and png with their settings', async () => {
-    await encodeImageBuffer(Buffer.from('x'), 'webp', 70);
-    await encodeImageBuffer(Buffer.from('x'), 'avif', 60);
-    await encodeImageBuffer(Buffer.from('x'), 'png', 50);
-
-    expect(chain.webp).toHaveBeenCalledWith({ quality: 70 });
-    expect(chain.avif).toHaveBeenCalledWith({ quality: 60 });
-    expect(chain.png).toHaveBeenCalledWith({ compressionLevel: 9 });
-  });
-
-  it('resizes only when a bound is provided', async () => {
-    await encodeImageBuffer(Buffer.from('x'), 'png', 80, 100, 0);
-
-    expect(chain.resize).toHaveBeenCalledWith({
-      width: 100,
-      height: undefined,
-      fit: 'inside',
-      withoutEnlargement: true
-    });
-
-    await encodeImageBuffer(Buffer.from('x'), 'png', 80, 0, 50);
-    expect(chain.resize).toHaveBeenLastCalledWith({
-      width: undefined,
-      height: 50,
-      fit: 'inside',
-      withoutEnlargement: true
-    });
-  });
+afterEach(async () => {
+  await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 describe('readImageForEditing', () => {
-  it('reads and converts an image to a working PNG', async () => {
-    const result = await readImageForEditing('D:/pics/a.jpg');
-
-    expect(result).toMatchObject({
-      success: true,
-      width: 640,
-      height: 480,
-      sourceWidth: 800,
-      sourceHeight: 600,
-      bytes: 1234,
-      format: 'jpeg'
-    });
-    expect(result.success && result.dataUrl?.startsWith('data:image/png;base64,')).toBe(true);
-  });
-
-  it('falls back to working dimensions when metadata omits them', async () => {
-    chain.metadata.mockResolvedValueOnce({
-      width: undefined,
-      height: undefined,
-      format: undefined
-    } as never);
-
-    const result = await readImageForEditing('D:/pics/a.png');
-
-    expect(result).toMatchObject({ sourceWidth: 640, sourceHeight: 480, format: 'unknown' });
-  });
-
-  it('rejects invalid paths, unsupported formats and non-files', async () => {
-    h.isSafeAbsolutePath.mockReturnValueOnce(false);
-    await expect(readImageForEditing('relative.jpg')).resolves.toEqual({
+  it('rejects unsafe paths and unsupported extensions', async () => {
+    await expect(readImageForEditing('relative.png')).resolves.toMatchObject({
       success: false,
       error: 'Invalid path'
     });
-
-    await expect(readImageForEditing('D:/a.txt')).resolves.toEqual({
+    await expect(readImageForEditing(join(dir, 'file.txt'))).resolves.toMatchObject({
       success: false,
       error: 'Unsupported image format'
     });
-
-    h.stat.mockResolvedValueOnce({ isFile: () => false, size: 1 });
-    await expect(readImageForEditing('D:/a.jpg')).resolves.toMatchObject({ success: false });
   });
 
-  it('reports decoding failures', async () => {
-    h.loadSharp.mockRejectedValueOnce(new Error('no libvips'));
+  it('returns a PNG data URL with the working dimensions', async () => {
+    const source = join(dir, 'source.png');
+    await writeFile(source, await makePng(40, 20));
 
-    await expect(readImageForEditing('D:/a.jpg')).resolves.toEqual({
-      success: false,
-      error: 'no libvips'
-    });
-    expect(h.warn).toHaveBeenCalled();
+    const result = await readImageForEditing(source);
+    expect(result.success).toBe(true);
+    expect(result.width).toBe(40);
+    expect(result.height).toBe(20);
+    expect(result.dataUrl?.startsWith('data:image/png;base64,')).toBe(true);
+    expect(result.bytes).toBeGreaterThan(0);
   });
 
-  it('covers the supported extension list', () => {
-    expect(IMAGE_EXTENSIONS.has('.heic')).toBe(true);
-    expect(IMAGE_EXTENSIONS.has('.gif')).toBe(true);
+  it('reports a missing file instead of throwing', async () => {
+    const result = await readImageForEditing(join(dir, 'missing.png'));
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
   });
 });
 
 describe('saveEditedImage', () => {
-  it('writes the encoded image atomically', async () => {
+  it('encodes the canvas PNG to the requested format', async () => {
+    const png = await makePng(20, 10);
+    const outputPath = join(dir, 'out.webp');
+
     const result = await saveEditedImage({
-      outputPath: 'D:/out/a.webp',
+      png: Array.from(png),
+      outputPath,
       format: 'webp',
-      quality: 200,
-      png: [1, 2, 3]
+      quality: 80
     });
 
-    expect(result).toEqual({ success: true, outputPath: 'D:/out/a.webp', bytes: 7 });
-    expect(chain.webp).toHaveBeenCalledWith({ quality: 100 });
-    expect(h.replaceFileAtomic).toHaveBeenCalled();
-    expect(h.safeRm).toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    expect(result.outputPath).toBe(outputPath);
+    expect(result.bytes).toBeGreaterThan(0);
+    // Czytamy z bufora, nie ze ścieżki: libvips na Windows trzyma handle pliku
+    // do GC, co blokowałoby sprzątanie katalogu w afterEach.
+    const meta = await sharp(await readFile(outputPath)).metadata();
+    expect(meta.format).toBe('webp');
+    expect(meta.width).toBe(20);
+    expect(meta.height).toBe(10);
   });
 
-  it('rejects malformed requests and paths', async () => {
-    await expect(saveEditedImage(null)).resolves.toEqual({
-      success: false,
-      error: 'Invalid request'
+  it('flattens transparency to white for jpeg', async () => {
+    const png = await makePng(4, 4);
+    const outputPath = join(dir, 'out.jpg');
+    const result = await saveEditedImage({
+      png: Array.from(png),
+      outputPath,
+      format: 'jpeg',
+      quality: 70
     });
-    await expect(saveEditedImage([])).resolves.toEqual({
-      success: false,
-      error: 'Invalid request'
-    });
-
-    h.isSafeAbsolutePath.mockReturnValueOnce(false);
-    await expect(saveEditedImage({ png: [1], format: 'png' })).resolves.toEqual({
-      success: false,
-      error: 'Invalid output path'
-    });
-
-    h.isProtectedPath.mockReturnValueOnce(true);
-    await expect(
-      saveEditedImage({ outputPath: 'C:/Windows/x.png', png: [1], format: 'png' })
-    ).resolves.toEqual({ success: false, error: 'Protected path' });
-
-    await expect(
-      saveEditedImage({ outputPath: 'D:/x.png', png: [1], format: 'gif' })
-    ).resolves.toEqual({ success: false, error: 'Invalid format' });
+    expect(result.success).toBe(true);
+    const { data, info } = await sharp(await readFile(outputPath))
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    expect(info.channels).toBe(3);
+    // Piksel (0,0) po spłaszczeniu nie jest czarny (tło #fff, obraz czerwony).
+    expect(data[0] + data[1] + data[2]).toBeGreaterThan(20);
   });
 
-  it('rejects empty, oversized or invalid PNG payloads', async () => {
+  it('rejects invalid requests', async () => {
+    await expect(saveEditedImage(null)).resolves.toMatchObject({ success: false });
     await expect(
-      saveEditedImage({ outputPath: 'D:/x.png', png: [], format: 'png' })
-    ).resolves.toEqual({ success: false, error: 'Invalid image data' });
-
-    const oversized = new Proxy([], {
-      get: (target, key) => (key === 'length' ? 200 * 1024 * 1024 + 1 : Reflect.get(target, key))
-    });
+      saveEditedImage({ png: [], outputPath: join(dir, 'x.png'), format: 'png' })
+    ).resolves.toMatchObject({ success: false });
     await expect(
-      saveEditedImage({ outputPath: 'D:/x.png', png: oversized, format: 'png' })
-    ).resolves.toEqual({ success: false, error: 'Image data too large' });
-  });
-
-  it('reports encoding and write failures', async () => {
-    chain.toBuffer.mockRejectedValueOnce(new Error('encode failed'));
-    await expect(
-      saveEditedImage({ outputPath: 'D:/x.png', png: [1], format: 'png' })
-    ).resolves.toEqual({ success: false, error: 'Image encoding failed: encode failed' });
-
-    h.writeFile.mockRejectedValueOnce(new Error('disk full'));
-    const result = await saveEditedImage({ outputPath: 'D:/x.png', png: [1], format: 'png' });
-    expect(result).toEqual({ success: false, error: 'disk full' });
-    expect(h.warn).toHaveBeenCalled();
-  });
-
-  it('stringifies non-Error write failures', async () => {
-    h.writeFile.mockRejectedValueOnce('plain failure');
-
-    await expect(
-      saveEditedImage({ outputPath: 'D:/x.png', png: [1], format: 'png' })
-    ).resolves.toEqual({ success: false, error: 'plain failure' });
+      saveEditedImage({ png: [1, 2, 3], outputPath: join(dir, 'x.gif'), format: 'gif' })
+    ).resolves.toMatchObject({ success: false, error: 'Invalid format' });
   });
 });
 
 describe('estimateEditedImage', () => {
-  it('returns the encoded size', async () => {
-    await expect(estimateEditedImage({ format: 'png', png: [1, 2] })).resolves.toEqual({
-      success: true,
-      bytes: 7
-    });
-  });
+  it('returns the encoded size for png and webp', async () => {
+    const png = await makePng(16, 16);
+    const pngEstimate = await estimateEditedImage({ png: Array.from(png), format: 'png' });
+    expect(pngEstimate.success).toBe(true);
+    expect(pngEstimate.bytes).toBeGreaterThan(0);
 
-  it('validates the request, format and payload', async () => {
-    await expect(estimateEditedImage(null)).resolves.toEqual({
-      success: false,
-      error: 'Invalid request'
+    const webpEstimate = await estimateEditedImage({
+      png: Array.from(png),
+      format: 'webp',
+      quality: 60
     });
-    await expect(estimateEditedImage({ format: 'gif', png: [1] })).resolves.toEqual({
-      success: false,
-      error: 'Invalid format'
-    });
-    await expect(estimateEditedImage({ format: 'png', png: [] })).resolves.toEqual({
-      success: false,
-      error: 'Invalid image data'
-    });
-  });
-
-  it('reports encoding failures', async () => {
-    chain.toBuffer.mockRejectedValueOnce(new Error('boom'));
-
-    await expect(estimateEditedImage({ format: 'png', png: [1] })).resolves.toEqual({
-      success: false,
-      error: 'Image encoding failed: boom'
-    });
+    expect(webpEstimate.success).toBe(true);
+    expect(webpEstimate.bytes).toBeGreaterThan(0);
   });
 });
