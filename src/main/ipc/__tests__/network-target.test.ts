@@ -194,4 +194,61 @@ describe('network target validation', () => {
     };
     lookup('example.com', { family: 6, hints: 0, all: false, verbatim: true }, callback);
   });
+
+  it('returns every pinned address when the caller asks for all', () => {
+    const lookup = createPinnedLookup([
+      { address: '1.1.1.1', family: 4 },
+      { address: '8.8.8.8', family: 4 }
+    ]);
+    const addresses: unknown[] = [];
+    lookup('example.com', { all: true }, (error, value) => {
+      expect(error).toBeNull();
+      addresses.push(...(value as unknown[]));
+    });
+
+    expect(addresses).toHaveLength(2);
+  });
+
+  it('refuses a family with no pinned address', () => {
+    const lookup = createPinnedLookup([{ address: '1.1.1.1', family: 4 }]);
+    let failure: NodeJS.ErrnoException | null = null;
+    lookup('example.com', { family: 6, all: false }, (error) => {
+      failure = error;
+    });
+
+    expect(failure).toMatchObject({ code: 'ENOTFOUND' });
+  });
+
+  it('rejects unsupported protocols and credentials', async () => {
+    await expect(resolveNetworkTarget('ftp://example.com/file')).rejects.toThrow(
+      'Unsupported network protocol'
+    );
+    await expect(resolveNetworkTarget('https://user:pass@example.com/')).rejects.toThrow(
+      'Credentials in URL are not allowed'
+    );
+  });
+
+  it('rejects a hostname that resolves to nothing', async () => {
+    await expect(
+      resolveNetworkTarget('https://empty.example/', {}, async () => [])
+    ).rejects.toThrow('Host did not resolve');
+  });
+
+  it('resolves hostnames through the injected lookup', async () => {
+    const lookup = async (hostname: string) => {
+      expect(hostname).toBe('example.com');
+      return [{ address: '93.184.216.34', family: 4 as const }];
+    };
+
+    await expect(resolveNetworkTarget('https://example.com/x', {}, lookup)).resolves.toMatchObject({
+      addresses: [{ address: '93.184.216.34', family: 4 }]
+    });
+  });
+
+  it('treats malformed mapped addresses and non-IP values as unsafe', () => {
+    expect(isNonPublicAddress('::ffff:zzzz:1')).toBe(true);
+    expect(isNonPublicAddress('example.com')).toBe(true);
+    expect(isNeverPublicAddress('example.com')).toBe(true);
+    expect(isLoopbackHost('::ffff:zzzz:1')).toBe(false);
+  });
 });

@@ -109,4 +109,73 @@ describe('useProviderSubsStore', () => {
     expect(sub?.status).toBe('ok');
     expect(store.subs[0].ref.shareId).toBe('NEW');
   });
+
+  it('ignores empty or failed load responses', async () => {
+    const store = useProviderSubsStore();
+
+    invoke.mockResolvedValueOnce(null);
+    await store.load();
+    expect(store.subs).toEqual([]);
+    expect(store.loaded).toBe(true);
+
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    await store.load();
+    expect(store.loaded).toBe(true);
+  });
+
+  it('returns null when add or check fails', async () => {
+    const store = useProviderSubsStore();
+
+    invoke.mockResolvedValueOnce(null);
+    await expect(store.add('u')).resolves.toBeNull();
+
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    await expect(store.add('u')).resolves.toBeNull();
+
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    await expect(store.check('sub-1')).resolves.toBeNull();
+
+    invoke.mockResolvedValueOnce(null);
+    await expect(store.check('sub-1')).resolves.toBeNull();
+  });
+
+  it('keeps the list when removal is refused or fails', async () => {
+    const store = useProviderSubsStore();
+    store.upsert(SUB);
+
+    invoke.mockResolvedValueOnce(false);
+    await expect(store.remove('sub-1')).resolves.toBe(false);
+    expect(store.subs).toHaveLength(1);
+
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    await expect(store.remove('sub-1')).resolves.toBe(false);
+    expect(store.subs).toHaveLength(1);
+  });
+
+  it('keeps the list when checkAll fails or returns nothing', async () => {
+    const store = useProviderSubsStore();
+    store.upsert(SUB);
+
+    invoke.mockResolvedValueOnce(null);
+    await store.checkAll();
+    expect(store.subs).toHaveLength(1);
+
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    await store.checkAll();
+    expect(store.subs).toHaveLength(1);
+  });
+
+  it('returns null when re-detection or update fails', async () => {
+    const store = useProviderSubsStore();
+
+    invoke.mockResolvedValueOnce(null);
+    await expect(store.replaceLink('sub-1', 'url')).resolves.toBeNull();
+
+    invoke.mockResolvedValueOnce({ ref: { provider: 'pikpak', shareId: 'X' } });
+    invoke.mockResolvedValueOnce(null);
+    await expect(store.replaceLink('sub-1', 'url')).resolves.toBeNull();
+
+    invoke.mockRejectedValueOnce(new Error('offline'));
+    await expect(store.replaceLink('sub-1', 'url')).resolves.toBeNull();
+  });
 });

@@ -136,4 +136,38 @@ describe('PeekController', () => {
 
     expect(applyPeeked.mock.calls).toEqual([[true], [false]]);
   });
+
+  it('cancels a pending delay with the injected clearTimeout', () => {
+    const clearTimeoutFn = vi.fn((timer: unknown) => clearTimeout(timer as NodeJS.Timeout));
+    const { controller, applyPeeked } = makeController({ clearTimeoutFn });
+
+    controller.schedule();
+    expect(controller.isScheduled()).toBe(true);
+
+    controller.cancelDelay();
+
+    expect(clearTimeoutFn).toHaveBeenCalledTimes(1);
+    expect(controller.isScheduled()).toBe(false);
+    vi.advanceTimersByTime(5000);
+    expect(applyPeeked).not.toHaveBeenCalled();
+  });
+
+  it('cancelDelay is a no-op without a pending timer', () => {
+    const clearTimeoutFn = vi.fn();
+    const { controller } = makeController({ clearTimeoutFn });
+
+    expect(() => controller.cancelDelay()).not.toThrow();
+    expect(clearTimeoutFn).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the global clearTimeout', () => {
+    const { controller, applyPeeked } = makeController();
+
+    controller.schedule();
+    controller.cancelDelay();
+    vi.advanceTimersByTime(5000);
+
+    expect(controller.isScheduled()).toBe(false);
+    expect(applyPeeked).not.toHaveBeenCalled();
+  });
 });
