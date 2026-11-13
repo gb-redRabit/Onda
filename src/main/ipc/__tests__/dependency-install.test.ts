@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   invalidateBinaries: vi.fn(),
   runCommand: vi.fn(async (_cmd?: string, _args?: string[], _opts?: unknown) => 'ok'),
   dialog: vi.fn(async () => ({ response: 1 })),
+  fromWebContents: vi.fn(),
   emitProgress: vi.fn(),
   newSignal: vi.fn(() => new AbortController().signal),
   clearSignal: vi.fn(),
@@ -41,7 +42,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({
   dialog: { showMessageBox: mocks.dialog },
-  BrowserWindow: { fromWebContents: () => ({}) }
+  BrowserWindow: { fromWebContents: mocks.fromWebContents }
 }));
 vi.mock('../../binaries', () => ({
   getBinDir: mocks.getBinDir,
@@ -94,6 +95,7 @@ beforeEach(() => {
   mocks.getBinDir.mockReturnValue(binDir);
   mocks.runCommand.mockResolvedValue('ok');
   mocks.dialog.mockResolvedValue({ response: 1 });
+  mocks.fromWebContents.mockReturnValue({});
   mocks.newSignal.mockReturnValue(new AbortController().signal);
   mocks.ytdlpBinaryName.mockReturnValue('yt-dlp');
   mocks.ytdlpDownloadUrl.mockReturnValue('https://example.com/yt-dlp');
@@ -467,5 +469,317 @@ describe('uninstallTool', () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain('apt uninstall ffmpeg');
     expect(result.error).toContain('permission denied');
+  });
+
+  it('polls until the package manager removes the binary', async () => {
+    const info = { path: '/usr/bin/ffmpeg', managed: false, broken: false };
+    mocks.resolveBinInfo
+      .mockResolvedValueOnce(info)
+      .mockResolvedValueOnce(info)
+      .mockResolvedValueOnce(info)
+      .mockResolvedValueOnce(null);
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+
+    vi.useFakeTimers();
+    try {
+      const pending = uninstallTool(sender, 'ffmpeg');
+      await vi.runAllTimersAsync();
+
+      await expect(pending).resolves.toEqual({ success: true });
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(mocks.runCommand).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a tool that is still runnable after every attempt', async () => {
+    mocks.resolveBinInfo.mockResolvedValue({
+      path: '/usr/bin/ffmpeg',
+      managed: false,
+      broken: false
+    });
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+
+    vi.useFakeTimers();
+    try {
+      const pending = uninstallTool(sender, 'ffmpeg');
+      await vi.runAllTimersAsync();
+
+      const result = await pending;
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('narzędzie nadal działa');
+      expect(result.error).toContain('apt uninstall ffmpeg');
+      expect(result.error).toContain('ok');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+async function withPlatform<T>(value: NodeJS.Platform, run: () => Promise<T>): Promise<T> {
+  const original = process.platform;
+  Object.defineProperty(process, 'platform', { value, configurable: true });
+  try {
+    return await run();
+  } finally {
+    Object.defineProperty(process, 'platform', { value: original, configurable: true });
+  }
+}
+
+describe('POSIX managed installs', () => {
+  it('reports download progress and marks yt-dlp executable', async () => {
+    await withPlatform('linux', async () => {
+      mocks.downloadFile.mockImplementation(
+        async (
+          _url: string,
+          dest: string,
+          _signal: unknown,
+          onProgress: (a: number, b: number) => void
+        ) => {
+          onProgress(50, 100);
+          onProgress(1, 0);
+          writeFileSync(dest, 'binary');
+        }
+      );
+
+      const result = await installYtdlpManaged(sender, false);
+
+      expect(result.success).toBe(true);
+      expect(mocks.emitProgress).toHaveBeenCalledWith(sender, 'yt-dlp', 'download', 48);
+      expect(mocks.emitProgress).toHaveBeenCalledWith(sender, 'yt-dlp', 'download', 5);
+    });
+  });
+
+  it('reports a cancelled yt-dlp download from the outer catch', async () => {
+    mocks.downloadFile.mockRejectedValue(new Error('cancelled'));
+
+    await expect(installYtdlpManaged(sender, false)).resolves.toEqual({
+      success: false,
+      cancelled: true
+    });
+  });
+
+  it('reports a cancelled ffmpeg download from the outer catch', async () => {
+    mocks.ffmpegDownloadUrl.mockReturnValue('https://example.com/ffmpeg.zip');
+    mocks.ffmpegSha256.mockReturnValue('a'.repeat(64));
+    mocks.downloadFile.mockRejectedValue(new Error('cancelled'));
+
+    await expect(installFfmpegManaged(sender)).resolves.toEqual({
+      success: false,
+      cancelled: true
+    });
+  });
+
+  it('falls back to the localized ffmpeg error', async () => {
+    mocks.ffmpegDownloadUrl.mockReturnValue('https://example.com/ffmpeg.zip');
+    mocks.ffmpegSha256.mockReturnValue('a'.repeat(64));
+
+    mocks.downloadFile.mockRejectedValue(new Error('disk full'));
+    await expect(installFfmpegManaged(sender)).resolves.toEqual({
+      success: false,
+      error: 'disk full'
+    });
+
+    mocks.downloadFile.mockRejectedValue({});
+    await expect(installFfmpegManaged(sender)).resolves.toEqual({
+      success: false,
+      error: 'ffmpeg failed'
+    });
+  });
+
+  function posixDestination(args: string[]): string | null {
+    const joined = args.join(' ');
+    const ps = /-DestinationPath '([^']+)'/.exec(joined);
+    if (ps) return ps[1];
+    for (const flag of ['-d', '-C']) {
+      const index = args.indexOf(flag);
+      if (index >= 0) return args[index + 1] ?? null;
+    }
+    return null;
+  }
+
+  function posixExtraction(): void {
+    mocks.runCommand.mockImplementation(async (_cmd?: string, args: string[] = []) => {
+      const dest = posixDestination(args);
+      if (!dest) return 'ok';
+      mkdirSync(join(dest, 'tool'), { recursive: true });
+      writeFileSync(join(dest, 'tool', 'ffmpeg'), 'ffmpeg-binary');
+      writeFileSync(join(dest, 'tool', 'ffprobe'), 'probe-binary');
+      return 'ok';
+    });
+  }
+
+  it('reports ffmpeg download progress and extracts a tar.xz archive', async () => {
+    await withPlatform('linux', async () => {
+      mocks.ffmpegDownloadUrl.mockReturnValue('https://example.com/ffmpeg.tar.xz');
+      mocks.ffmpegSha256.mockReturnValue('a'.repeat(64));
+      posixExtraction();
+      mocks.downloadFile.mockImplementation(
+        async (
+          _url: string,
+          dest: string,
+          _signal: unknown,
+          onProgress: (a: number, b: number) => void
+        ) => {
+          onProgress(50, 100);
+          onProgress(1, 0);
+          writeFileSync(dest, 'archive');
+        }
+      );
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(true);
+      expect(mocks.emitProgress).toHaveBeenCalledWith(sender, 'ffmpeg', 'download', 43);
+      expect(mocks.emitProgress).toHaveBeenCalledWith(sender, 'ffmpeg', 'download', 5);
+      expect(mocks.runCommand).toHaveBeenCalledWith(
+        'tar',
+        expect.arrayContaining(['-C', join(binDir, 'ffmpeg-extract')]),
+        { timeout: 300000 }
+      );
+      expect(mocks.runCommand).not.toHaveBeenCalledWith(
+        'unzip',
+        expect.anything(),
+        expect.anything()
+      );
+      expect(existsSync(join(binDir, 'ffmpeg'))).toBe(true);
+      expect(existsSync(join(binDir, 'ffprobe'))).toBe(true);
+    });
+  });
+
+  it('falls back to tar when unzip is unavailable', async () => {
+    await withPlatform('linux', async () => {
+      mocks.ffmpegDownloadUrl.mockReturnValue('https://example.com/ffmpeg.zip');
+      mocks.ffmpegSha256.mockReturnValue('a'.repeat(64));
+      mocks.runCommand.mockImplementation(async (cmd?: string, args: string[] = []) => {
+        if (cmd === 'unzip') throw new Error('unzip missing');
+        const dest = posixDestination(args);
+        if (!dest) return 'ok';
+        mkdirSync(join(dest, 'tool'), { recursive: true });
+        writeFileSync(join(dest, 'tool', 'ffmpeg'), 'ffmpeg-binary');
+        writeFileSync(join(dest, 'tool', 'ffprobe'), 'probe-binary');
+        return 'ok';
+      });
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(true);
+      expect(mocks.runCommand).toHaveBeenCalledWith('unzip', expect.any(Array), {
+        timeout: 300000
+      });
+      expect(mocks.runCommand).toHaveBeenCalledWith(
+        'tar',
+        expect.arrayContaining(['-C', join(binDir, 'ffmpeg-extract')]),
+        { timeout: 300000 }
+      );
+    });
+  });
+
+  it('falls back to tar when PowerShell cannot expand the archive', async () => {
+    await withPlatform('win32', async () => {
+      mocks.ffmpegDownloadUrl.mockReturnValue('https://example.com/ffmpeg.zip');
+      mocks.ffmpegSha256.mockReturnValue('a'.repeat(64));
+      mocks.runCommand.mockImplementation(async (cmd?: string, args: string[] = []) => {
+        if (cmd === 'powershell') throw new Error('no powershell');
+        const dest = posixDestination(args);
+        if (!dest) return 'ok';
+        mkdirSync(join(dest, 'tool'), { recursive: true });
+        writeFileSync(join(dest, 'tool', 'ffmpeg.exe'), 'ffmpeg-binary');
+        writeFileSync(join(dest, 'tool', 'ffprobe.exe'), 'probe-binary');
+        return 'ok';
+      });
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(true);
+      expect(mocks.runCommand).toHaveBeenCalledWith('powershell', expect.any(Array), {
+        timeout: 300000
+      });
+      expect(mocks.runCommand).toHaveBeenCalledWith(
+        'tar',
+        expect.arrayContaining(['-C', join(binDir, 'ffmpeg-extract')]),
+        { timeout: 300000 }
+      );
+      expect(existsSync(join(binDir, 'ffmpeg.exe'))).toBe(true);
+      expect(existsSync(join(binDir, 'ffprobe.exe'))).toBe(true);
+    });
+  });
+
+  it('confirms elevated installs through the parent window', async () => {
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+    mocks.needsSudo.mockReturnValue(true);
+    mocks.dialog.mockResolvedValue({ response: 1 });
+    mocks.resolveBinInfo.mockResolvedValue({
+      path: '/usr/bin/ffmpeg',
+      managed: false,
+      broken: false
+    });
+
+    const result = await installSystem(sender, 'ffmpeg');
+
+    expect(result.success).toBe(true);
+    expect(mocks.dialog).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ defaultId: 1, cancelId: 0 })
+    );
+  });
+
+  it('confirms elevated installs without a parent window', async () => {
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+    mocks.needsSudo.mockReturnValue(true);
+    mocks.fromWebContents.mockReturnValue(null);
+    mocks.dialog.mockResolvedValue({ response: 1 });
+    mocks.resolveBinInfo.mockResolvedValue({
+      path: '/usr/bin/ffmpeg',
+      managed: false,
+      broken: false
+    });
+
+    const result = await installSystem(sender, 'ffmpeg');
+
+    expect(result.success).toBe(true);
+    expect(mocks.dialog).toHaveBeenCalledWith(expect.objectContaining({ defaultId: 1 }));
+  });
+
+  it('reports stdout from a failed install', async () => {
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+    mocks.runCommand.mockRejectedValue({ stdout: 'install output' });
+
+    const result = await installSystem(sender, 'ffmpeg');
+
+    expect(result.error).toContain('install output');
+  });
+
+  it('reports an unknown install failure', async () => {
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+    mocks.runCommand.mockRejectedValue({});
+
+    const result = await installSystem(sender, 'ffmpeg');
+
+    expect(result.error).toContain('Nieznany błąd');
+  });
+
+  it('uninstalls when the binary cannot be resolved', async () => {
+    mocks.resolveBinInfo.mockResolvedValue(null);
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+
+    const result = await uninstallTool(sender, 'ffmpeg');
+
+    expect(result).toEqual({ success: true });
+    expect(mocks.inferPkgManager).toHaveBeenCalledWith(null);
+  });
+
+  it('reports an unknown uninstall failure reason', async () => {
+    mocks.resolveBinInfo.mockResolvedValue({
+      path: '/usr/bin/ffmpeg',
+      managed: false,
+      broken: false
+    });
+    mocks.detectPkgManagers.mockResolvedValue(['apt']);
+    mocks.runCommand.mockRejectedValue({});
+
+    const result = await uninstallTool(sender, 'ffmpeg');
+
+    expect(result.error).toContain('nieznany błąd');
   });
 });
