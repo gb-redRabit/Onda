@@ -17,6 +17,7 @@ export function useToolMessages(): void {
     off =
       window.api?.on('tools:message', (payload: unknown) => {
         const message = payload as ToolMessage;
+        if (!message || typeof message !== 'object') return;
         if (message.type === 'conversion-complete') {
           ui.notify(
             'success',

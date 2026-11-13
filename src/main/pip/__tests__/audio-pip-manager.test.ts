@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   window: null as any,
   windowOptions: null as any,
+  peekOptions: null as any,
   peek: {
     peeked: false,
     reset: vi.fn(),
@@ -60,7 +61,8 @@ vi.mock('../../../shared/types/pip', async (importOriginal) => {
 vi.mock('../pip-position', () => ({ computePipPosition: state.computePipPosition }));
 vi.mock('../pip-edge-position', () => ({ computeEdgePeekBounds: state.computeEdgePeekBounds }));
 vi.mock('../peek-controller', () => ({
-  PeekController: function PeekController() {
+  PeekController: function PeekController(options: unknown) {
+    state.peekOptions = options;
     return state.peek;
   }
 }));
@@ -526,5 +528,172 @@ describe('audio-pip IPC callbacks', () => {
     manager.showPreview({});
     expect(callbacks().isPreview()).toBe(true);
     expect(callbacks().mainWindow()).toBeNull();
+  });
+});
+
+describe('peek integration and lifecycle guards', () => {
+  it('reports canPeek from dock, autohide and preview state', () => {
+    const options = state.peekOptions;
+
+    manager.setDock('bottom-right');
+    expect(options.canPeek()).toBe(false);
+
+    manager.setDock('bottom');
+    expect(options.canPeek()).toBe(true);
+
+    manager.prewarm();
+    manager.showPreview({});
+    expect(options.canPeek()).toBe(false);
+    manager.hidePreview();
+    expect(options.canPeek()).toBe(true);
+  });
+
+  it('reports window visibility for the peek controller', () => {
+    const options = state.peekOptions;
+    manager.prewarm();
+    expect(options.isWindowVisible()).toBe(false);
+
+    win.visible = true;
+    expect(options.isWindowVisible()).toBe(true);
+
+    win.destroyed = true;
+    expect(options.isWindowVisible()).toBe(false);
+  });
+
+  it('applies peeked bounds and logs failures', () => {
+    const options = state.peekOptions;
+    manager.setDock('bottom');
+    manager.prewarm();
+    state.peek.peeked = true;
+
+    options.applyPeeked();
+    expect(state.computeEdgePeekBounds).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dock: 'bottom',
+        peeked: true,
+        sliver: 5,
+        size: { width: 300, height: 80 }
+      })
+    );
+    expect(win.setBounds).toHaveBeenCalledWith({ x: 1, y: 2, width: 3, height: 4 });
+
+    state.computeEdgePeekBounds.mockImplementationOnce(() => {
+      throw new Error('bad bounds');
+    });
+    options.applyPeeked();
+    expect(state.loggerWarn).toHaveBeenCalledWith(
+      'audio-pip',
+      'reposition failed',
+      expect.any(Error)
+    );
+  });
+
+  it('skips peek positioning without a window or for corner docks', () => {
+    const options = state.peekOptions;
+
+    manager.setDock('bottom-right');
+    manager.prewarm();
+    const before = state.computeEdgePeekBounds.mock.calls.length;
+    options.applyPeeked();
+    expect(state.computeEdgePeekBounds.mock.calls.length).toBe(before);
+
+    manager.releaseWindow();
+    expect(() => options.applyPeeked()).not.toThrow();
+  });
+
+  it('pushes UI updates when peek state changes', () => {
+    manager.prewarm();
+    win.webContents.emit('did-finish-load');
+    win.visible = true;
+    state.peek.setMouseInside.mockClear();
+
+    state.peekOptions.onChanged();
+
+    expect(win.webContents.send).toHaveBeenCalledWith(
+      'audio-pip:update',
+      expect.objectContaining({ isPreview: false })
+    );
+  });
+
+  it('ignores main-window focus while a preview is open', () => {
+    manager.setMainWindow(mainWindow as never);
+    manager.prewarm();
+    manager.showPreview({});
+    const focusHandler = mainWindow.on.mock.calls[0][1] as () => void;
+
+    focusHandler();
+
+    expect(win.hide).not.toHaveBeenCalled();
+  });
+
+  it('does not re-register the same main window', () => {
+    manager.setMainWindow(mainWindow as never);
+    manager.setMainWindow(mainWindow as never);
+
+    expect(mainWindow.on).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears preview timers on show, hide and destroy', () => {
+    vi.useFakeTimers();
+    try {
+      manager.prewarm();
+      (manager as unknown as { previewTimer: unknown }).previewTimer = setTimeout(() => {}, 1000);
+      manager.show({
+        trackName: 'Song',
+        artist: '',
+        coverData: null,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        volume: 1
+      });
+      expect((manager as unknown as { previewTimer: unknown }).previewTimer).toBeNull();
+
+      (manager as unknown as { previewTimer: unknown }).previewTimer = setTimeout(() => {}, 1000);
+      manager.hide();
+      expect((manager as unknown as { previewTimer: unknown }).previewTimer).toBeNull();
+
+      (manager as unknown as { previewTimer: unknown }).previewTimer = setTimeout(() => {}, 1000);
+      manager.destroy();
+      expect((manager as unknown as { previewTimer: unknown }).previewTimer).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ignores preview updates outside preview mode', () => {
+    manager.prewarm();
+    const before = state.computePipPosition.mock.calls.length;
+
+    manager.updatePreview({ dock: 'left' });
+
+    expect(state.computePipPosition.mock.calls.length).toBe(before);
+  });
+
+  it('skips positioning after the window is released', () => {
+    manager.releaseWindow();
+
+    expect(() => (manager as unknown as { positionWindow(): void }).positionWindow()).not.toThrow();
+  });
+
+  it('applies layout options passed to show', () => {
+    manager.prewarm();
+    const before = state.computeEdgePeekBounds.mock.calls.length;
+
+    manager.show(
+      {
+        trackName: 'Song',
+        artist: '',
+        coverData: null,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        volume: 1
+      },
+      { dock: 'left' }
+    );
+
+    expect(state.computeEdgePeekBounds.mock.calls.length).toBeGreaterThan(before);
+    expect(win.setBounds).toHaveBeenCalledWith({ x: 1, y: 2, width: 3, height: 4 });
   });
 });
