@@ -24,16 +24,6 @@ export function classifyYtDlpError(stderr: string): IpcDownloadErrorCode {
     return 'rate-limited';
   }
 
-  if (/(this video is private|video is private|private video)/.test(s)) {
-    return 'private';
-  }
-  if (
-    /(bot|recaptcha|captcha|http error 429|too many requests|automated traffic|unusual traffic)/.test(
-      s
-    )
-  ) {
-    return 'bot-block';
-  }
   if (
     /(video unavailable|this video is not available|no longer available|does not exist|http error 404|not available in your country|requested format is not available)/.test(
       s

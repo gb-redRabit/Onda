@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectProviderLimit, formatProviderLimit } from '../provider-limits';
-import { classifyYtDlpError } from '../../../downloads/error-classifier';
+import { classifyYtDlpError, describeError } from '../../../downloads/error-classifier';
 
 // Uniwersalna detekcja limitów serwisów (transfer/kwota/rate-limit).
 
@@ -56,5 +56,35 @@ describe('classifyYtDlpError', () => {
       'rate-limited'
     );
     expect(classifyYtDlpError('ERROR: HTTP Error 429: Too Many Requests')).toBe('bot-block');
+  });
+
+  it('klasyfikuje limity bez wzorca bota jako rate-limited', () => {
+    expect(classifyYtDlpError('transfer quota exceeded')).toBe('rate-limited');
+    expect(classifyYtDlpError('out of quota')).toBe('rate-limited');
+  });
+
+  it('mapuje gołe statusy HTTP na kategorie przejściowe', () => {
+    expect(classifyYtDlpError('HTTP 408')).toBe('network');
+    expect(classifyYtDlpError('HTTP 429')).toBe('rate-limited');
+    expect(classifyYtDlpError('HTTP 500')).toBe('network');
+    expect(classifyYtDlpError('HTTP 503')).toBe('network');
+    expect(classifyYtDlpError('HTTP 404')).toBe('not-found');
+    expect(classifyYtDlpError('HTTP 410')).toBe('not-found');
+    expect(classifyYtDlpError('HTTP 418')).toBe('unknown');
+  });
+});
+
+describe('describeError', () => {
+  it('zwraca stabilny opis dla każdego kodu i domyślny fallback', () => {
+    expect(describeError('auth-required')).toContain('Sign-in required');
+    expect(describeError('bot-block')).toContain('bot protection');
+    expect(describeError('private')).toContain('private');
+    expect(describeError('not-found')).toContain('not found');
+    expect(describeError('network')).toContain('Network error');
+    expect(describeError('proxy')).toContain('Proxy error');
+    expect(describeError('dependency')).toContain('Missing dependency');
+    expect(describeError('disk-full')).toContain('disk space');
+    expect(describeError('rate-limited')).toContain('Provider limit');
+    expect(describeError('unknown')).toBe('Download failed');
   });
 });

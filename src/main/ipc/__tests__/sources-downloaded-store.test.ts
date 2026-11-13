@@ -91,4 +91,32 @@ describe('sources-downloaded-store', () => {
     expect(await removeDownloadedItems(file, 'src-a', ['nope'])).toEqual(['item-1']);
     expect(await removeDownloadedItems(file, '', ['item-1'])).toEqual([]);
   });
+
+  it('reads an existing file from disk and filters malformed entries', async () => {
+    await writeFile(
+      file,
+      JSON.stringify({
+        version: 1,
+        bySource: { 'src-a': ['item-1', 42, '', 'item-2'], 'src-b': 'not-an-array' }
+      }),
+      'utf-8'
+    );
+
+    await expect(getDownloadedForSource(file, 'src-a')).resolves.toEqual(['item-1', 'item-2']);
+    await expect(getDownloadedForSource(file, 'src-b')).resolves.toEqual([]);
+  });
+
+  it('returns an empty list for an empty source id', async () => {
+    await expect(getDownloadedForSource(file, '')).resolves.toEqual([]);
+  });
+
+  it('treats a non-object document as empty', async () => {
+    await writeFile(file, JSON.stringify(['unexpected']), 'utf-8');
+
+    await expect(getDownloadedForSource(file, 'src-a')).resolves.toEqual([]);
+  });
+
+  it('removing ids from an unknown source is a no-op', async () => {
+    await expect(removeDownloadedItems(file, 'unknown', ['item-1'])).resolves.toEqual([]);
+  });
 });

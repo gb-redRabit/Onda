@@ -11,7 +11,7 @@ const TIMEOUT_MS = 15000;
 export function signParams(params: Record<string, string>, secret: string): string {
   const base = Object.entries(params)
     .filter(([key]) => key !== 'format' && key !== 'callback')
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([key, value]) => `${key}${value}`)
     .join('');
   return createHash('md5')

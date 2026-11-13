@@ -95,17 +95,13 @@ export function patternToRegex(pattern: string): RegExp {
   if (domainAnchor) out = '^[a-z]+://(?:[^/]+\\.)?' + out;
   else if (startAnchor) out = '^' + out;
   if (endAnchor) out += '$';
-  try {
-    return new RegExp(out, 'i');
-  } catch {
-    return /$^/;
-  }
+  return new RegExp(out, 'i');
 }
 
 function parseDomainList(raw: string): { include: string[]; exclude: string[] } {
   const include: string[] = [];
   const exclude: string[] = [];
-  for (const part of raw.split(',')) {
+  for (const part of raw.split(/[|,]/)) {
     const d = part.trim().toLowerCase();
     if (!d) continue;
     if (d.startsWith('~')) exclude.push(d.slice(1));
@@ -158,7 +154,6 @@ function parseCosmeticLine(line: string, set: FilterSet): void {
   const marker = line.includes('#@#') ? '#@#' : line.includes('#?#') ? '#?#' : '##';
   if (marker === '#@#' || marker === '#?#') return; // wyjątki/proceduralne pomijamy
   const idx = line.indexOf('##');
-  if (idx < 0) return;
   const domainsRaw = line.slice(0, idx);
   let body = line.slice(idx + 2);
   if (!body) return;
@@ -178,7 +173,7 @@ function parseCosmeticLine(line: string, set: FilterSet): void {
   let style = 'display:none!important';
   const styleMatch = /:style\(([^)]*)\)/.exec(body);
   if (styleMatch) {
-    style = styleMatch[1] ?? 'display:none!important';
+    style = styleMatch[1]!;
     body = body.slice(0, styleMatch.index);
   } else if (body.includes(':remove()')) {
     body = body.replace(':remove()', '');

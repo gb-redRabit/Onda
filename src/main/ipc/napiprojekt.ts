@@ -145,8 +145,8 @@ async function cachedNapiCheck(videoPath: string): Promise<NapiProjektCheckResul
   if ('srt' in result) {
     checkCache.set(videoPath, { found: true, at: Date.now() });
     if (checkCache.size > CHECK_CACHE_MAX) {
-      const oldest = checkCache.keys().next();
-      if (!oldest.done) checkCache.delete(oldest.value);
+      // Size > MAX guarantees at least one key; evict the oldest insertion.
+      checkCache.delete(checkCache.keys().next().value as string);
     }
     return { found: true };
   }

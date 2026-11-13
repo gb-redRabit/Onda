@@ -1,8 +1,39 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { access, mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { RESET_STATE_FILES, removeProfileState } from '../profile-state';
+
+const appState = vi.hoisted(() => ({ path: '', throws: false }));
+const rmMock = vi.hoisted(() => ({
+  fn: vi.fn(),
+  real: null as unknown as (...args: unknown[]) => Promise<void>
+}));
+vi.mock('electron', () => ({
+  app: {
+    getPath: () => {
+      if (appState.throws) throw new Error('not ready');
+      return appState.path;
+    }
+  }
+}));
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  rmMock.real = actual.rm as unknown as (...args: unknown[]) => Promise<void>;
+  return { ...actual, rm: (...args: unknown[]) => rmMock.fn(...args) };
+});
+
+import {
+  RESET_STATE_DIRS,
+  RESET_STATE_FILES,
+  removeProfileState,
+  safeUserDataPath
+} from '../profile-state';
+
+beforeEach(() => {
+  appState.path = '';
+  appState.throws = false;
+  rmMock.fn.mockReset().mockImplementation((...args: unknown[]) => rmMock.real(...args));
+});
 
 async function exists(path: string): Promise<boolean> {
   return access(path).then(
@@ -54,5 +85,32 @@ describe('removeProfileState', () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+
+  it('reports entries that could not be removed', async () => {
+    rmMock.fn.mockRejectedValue(new Error('locked'));
+
+    const failed = await removeProfileState(join(tmpdir(), 'whatever'));
+
+    expect(failed).toHaveLength(RESET_STATE_FILES.length + RESET_STATE_DIRS.length);
+  });
+});
+
+describe('safeUserDataPath', () => {
+  it('returns an absolute userData path', () => {
+    appState.path = join(tmpdir(), 'onda-userdata');
+    expect(safeUserDataPath()).toBe(appState.path);
+  });
+
+  it('rejects empty or relative paths', () => {
+    appState.path = '';
+    expect(safeUserDataPath()).toBeNull();
+    appState.path = 'relative/path';
+    expect(safeUserDataPath()).toBeNull();
+  });
+
+  it('returns null when electron throws before ready', () => {
+    appState.throws = true;
+    expect(safeUserDataPath()).toBeNull();
   });
 });

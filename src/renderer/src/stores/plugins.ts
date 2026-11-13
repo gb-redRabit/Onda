@@ -222,9 +222,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const { emitHook, commandsIn, dispatchShortcut, dispatchCommand, invokeCommandWithContext } =
     createPluginCommands({ commands, workers, readyWorkers, getManifest: manifestOf, logPush });
 
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', () => spawner.terminateAll());
-  }
+  window.addEventListener('beforeunload', () => spawner.terminateAll());
 
   return {
     plugins,
