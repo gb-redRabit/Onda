@@ -6,8 +6,11 @@ const emit = defineEmits<{ preset: [value: string] }>();
 const selected = ref('');
 
 function onSelect(e: Event) {
-  const value = (e.target as HTMLSelectElement).value;
+  const select = e.target as HTMLSelectElement;
+  const value = select.value;
   selected.value = '';
+  // Gdy poprzednia wartość też była pusta, Vue nie patchuje DOM-u; resetujemy ręcznie.
+  select.value = '';
   if (value) emit('preset', value);
 }
 </script>

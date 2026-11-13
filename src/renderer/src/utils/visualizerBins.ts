@@ -6,6 +6,11 @@ export function binFreq(freqBinCount: number, data: Uint8Array, count: number): 
   const len = freqBinCount;
   const binSize = Math.floor(len / count);
   if (binScratch.length !== count) binScratch = new Array<number>(count).fill(0);
+  // Za mało danych na żądaną liczbę słupków — unikamy dzielenia przez zero.
+  if (binSize < 1) {
+    binScratch.fill(0);
+    return binScratch;
+  }
   for (let i = 0; i < count; i++) {
     let sum = 0;
     const start = i * binSize;
