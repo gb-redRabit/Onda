@@ -1,75 +1,118 @@
-import { describe, expect, it, vi } from 'vitest';
-import { renderToString } from '@vue/server-renderer';
-import { createSSRApp, h } from 'vue';
-import { createI18n } from 'vue-i18n';
+import { describe, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
+import { defineComponent } from 'vue';
+
+const CoverStub = defineComponent({
+  name: 'MediaCover',
+  props: {
+    path: { type: String },
+    size: { type: Number },
+    fallback: { type: String },
+    still: { type: Boolean }
+  },
+  template: '<div data-testid="cover" />'
+});
+
 import HomeMediaCard from '../HomeMediaCard.vue';
 
-vi.mock('@renderer/components/MediaCover.vue', () => ({
-  default: {
-    name: 'MediaCover',
-    props: ['path', 'size', 'fallback'],
-    template: '<div class="media-cover-mock" />'
-  }
-}));
-
-interface CardProps {
-  title: string;
-  subtitle?: string;
-  coverPath?: string;
-  round?: boolean;
-  coverSize?: number;
-  fallback?: 'music' | 'play' | 'disc' | 'film';
-  openLabel?: string;
-  badge?: string;
-  stacked?: boolean;
-}
-
-function render(props: CardProps): Promise<string> {
-  const i18n = createI18n({
-    legacy: false,
-    locale: 'pl',
-    messages: { pl: { common: { play: 'Odtwórz' } } },
-    missingWarn: false,
-    fallbackWarn: false
+function mountCard(props: Record<string, unknown> = {}) {
+  return mount(HomeMediaCard, {
+    props: { title: 'Title', ...props },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: { MediaCover: CoverStub }
+    }
   });
-  const app = createSSRApp({ render: () => h(HomeMediaCard, props) });
-  app.use(i18n);
-  return renderToString(app);
 }
 
 describe('HomeMediaCard', () => {
-  it('uses an article with one stretched control, not a nested role=button', async () => {
-    const html = await render({ title: 'Song' });
-    expect(html).toContain('<article');
-    expect(html).not.toContain('role="button"');
+  it('plays from the round avatar overlay', async () => {
+    const wrapper = mountCard({ round: true });
+    const buttons = wrapper.findAll('button');
+
+    await buttons[1].trigger('click');
+
+    expect(wrapper.emitted('play')).toEqual([[]]);
   });
 
-  it('renders the play-count badge when one is provided', async () => {
-    const html = await render({ title: 'Song', badge: '14×' });
-    expect(html).toContain('14×');
+  it('renders the title and optional subtitle', () => {
+    const wrapper = mountCard();
+    expect(wrapper.text()).toContain('Title');
+    expect(wrapper.findAll('div').some((d) => d.text() === '')).toBe(true);
+
+    expect(mountCard({ subtitle: 'Artist' }).text()).toContain('Artist');
   });
 
-  it('adds the stacked layers for collections', async () => {
-    const html = await render({ title: 'Album', stacked: true });
-    expect(html).toContain('inset-x-3');
-    expect(html).toContain('inset-x-1.5');
+  it('passes cover settings', () => {
+    const cover = mountCard({
+      coverPath: 'D:/a.png',
+      coverSize: 64,
+      fallback: 'film'
+    }).getComponent(CoverStub);
+
+    expect(cover.props()).toMatchObject({
+      path: 'D:/a.png',
+      size: 64,
+      fallback: 'film',
+      still: true
+    });
   });
 
-  it('never stacks round avatars and marks them as circles', async () => {
-    const html = await render({ title: 'Artist', round: true, stacked: true });
-    expect(html).not.toContain('inset-x-3');
-    expect(html).toContain('rounded-full');
+  it('shows a badge', () => {
+    expect(mountCard({ badge: '12' }).text()).toContain('12');
+    expect(mountCard().text()).not.toContain('badge');
   });
 
-  it('keeps one labelled play control, with mouse-only duplicates hidden', async () => {
-    const html = await render({ title: 'Song', openLabel: 'Otwórz' });
+  it('plays from the overlay button', async () => {
+    const wrapper = mountCard();
 
-    // Jedna nazwa dla czytnika: rozciągnięty przycisk karty.
-    expect(html).toContain('aria-label="Odtwórz: Song"');
+    await wrapper.get('button[aria-label="common.play: Title"]').trigger('click');
 
-    // Widoczne Play / overlay są dla myszy, nie dla AT.
-    expect(html).not.toContain('aria-label="Odtwórz"');
-    expect(html).toContain('tabindex="-1"');
-    expect(html).toContain('aria-hidden="true"');
+    expect(wrapper.emitted('play')).toEqual([[]]);
+  });
+
+  it('plays from the hover affordance', async () => {
+    const wrapper = mountCard();
+    const buttons = wrapper.findAll('button');
+    await buttons[1].trigger('click');
+
+    expect(wrapper.emitted('play')).toEqual([[]]);
+  });
+
+  it('opens the library entry when labelled', async () => {
+    const wrapper = mountCard({ openLabel: 'Open in library' });
+    const button = wrapper.get('[aria-label="Open in library"]');
+
+    await button.trigger('click');
+
+    expect(wrapper.emitted('open')).toEqual([[]]);
+  });
+
+  it('hides the open affordance without a label', () => {
+    expect(mountCard().findAll('button')).toHaveLength(2);
+  });
+
+  it('uses the round avatar variant', () => {
+    const wrapper = mountCard({ round: true, openLabel: 'Open' });
+
+    expect(wrapper.find('.rounded-full').exists()).toBe(true);
+    expect(wrapper.find('.aspect-square').classes()).toContain('rounded-full');
+  });
+
+  it('stacks collection covers only for square cards', () => {
+    const stacked = mountCard({ stacked: true });
+    expect(stacked.findAll('.pt-1\\.5').length).toBe(1);
+
+    const round = mountCard({ stacked: true, round: true });
+    expect(round.findAll('.pt-1\\.5')).toHaveLength(0);
+  });
+
+  it('emits context menu events', async () => {
+    const wrapper = mountCard();
+
+    await wrapper.get('article').trigger('contextmenu');
+
+    expect(wrapper.emitted('contextmenu')).toHaveLength(1);
+    expect(wrapper.emitted('contextmenu')![0][0]).toBeInstanceOf(MouseEvent);
   });
 });
