@@ -24,7 +24,29 @@ describe('detectProviderLimit', () => {
 
   it('zwraca brak limitu dla zwykłych błędów', () => {
     expect(detectProviderLimit('HTTP 404 not found')).toEqual({ limited: false });
+    expect(detectProviderLimit('')).toEqual({ limited: false });
     expect(formatProviderLimit({ limited: false })).toBe('');
+  });
+
+  it('wyciąga sekundy, minuty i godziny z komunikatu', () => {
+    expect(detectProviderLimit('rate limit: 30 seconds')).toMatchObject({
+      limited: true,
+      retryAfterSeconds: 30
+    });
+    expect(detectProviderLimit('too many requests, retry in 2 hours')).toMatchObject({
+      limited: true,
+      retryAfterSeconds: 7200
+    });
+  });
+
+  it('formatuje opis limitu dla UI', () => {
+    expect(formatProviderLimit({ limited: true, retryAfterSeconds: 90, source: 'MEGA' })).toBe(
+      'Service limit (MEGA) — try again in ~2 min'
+    );
+    expect(formatProviderLimit({ limited: true, source: 'quota' })).toBe(
+      'Service limit (quota) — try again later'
+    );
+    expect(formatProviderLimit({ limited: true })).toBe('Service limit — try again later');
   });
 });
 

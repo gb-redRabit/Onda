@@ -128,3 +128,133 @@ describe('useTheme window material', () => {
     for (const vars of pipVars) expect(vars['--glass-blur']).toBe('20px');
   });
 });
+
+describe('useTheme accessibility, previews and system theme', () => {
+  afterEach(() => {
+    window.api.invoke = originalInvoke;
+    window.api.send = originalSend;
+    vi.clearAllMocks();
+  });
+
+  it('applies the locale, motion preference and preview variables', async () => {
+    const appearance = ref<AppearanceSettings>({
+      ...DEFAULT_APPEARANCE,
+      locale: 'pl',
+      animations: false
+    });
+    const theme = useTheme(appearance);
+
+    theme.applyTheme();
+    expect(document.documentElement.lang).toBe('pl');
+    expect(document.documentElement.classList.contains('no-animations')).toBe(true);
+
+    appearance.value.locale = 'auto';
+    theme.applyTheme();
+    expect(document.documentElement.lang).toBe(navigator.language || 'en');
+
+    theme.applyPreviewVars({ '--preview': '1' });
+    theme.applyPreviewVars({ '--preview': '2' });
+    await flushThemeFrame();
+
+    expect(document.documentElement.style.getPropertyValue('--preview')).toBe('2');
+    theme.dispose();
+  });
+
+  it('falls back to English when the browser exposes no language', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, 'language');
+    Object.defineProperty(navigator, 'language', { configurable: true, value: '' });
+    try {
+      const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE, locale: 'auto' });
+      useTheme(appearance).applyTheme();
+      expect(document.documentElement.lang).toBe('en');
+    } finally {
+      if (descriptor) Object.defineProperty(navigator, 'language', descriptor);
+    }
+  });
+
+  it('defaults glass and radius when the settings omit them', () => {
+    const invoke = vi.fn().mockResolvedValue(true);
+    window.api.invoke = invoke as typeof window.api.invoke;
+    const appearance = ref<AppearanceSettings>({
+      ...DEFAULT_APPEARANCE,
+      glassAlpha: undefined,
+      geometry: {} as never
+    });
+
+    useTheme(appearance).applyTheme();
+
+    expect(invoke.mock.calls).toContainEqual(['app:setBackgroundMaterial', 'auto']);
+    expect(invoke.mock.calls).toContainEqual(['window:setRoundedCorners', true]);
+  });
+
+  it('listens to the OS color scheme only while the system theme is active', async () => {
+    const listeners = new Set<() => void>();
+    const mediaQuery = {
+      addEventListener: vi.fn((_event: string, fn: () => void) => listeners.add(fn)),
+      removeEventListener: vi.fn((_event: string, fn: () => void) => listeners.delete(fn))
+    };
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => mediaQuery)
+    });
+
+    try {
+      const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE, theme: 'system' });
+      const theme = useTheme(appearance);
+      theme.applyTheme();
+
+      expect(mediaQuery.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+      const onChange = [...listeners][0]!;
+      onChange();
+      await flushThemeFrame();
+
+      appearance.value.theme = 'midnight';
+      await flushThemeFrame();
+      expect(mediaQuery.removeEventListener).toHaveBeenCalled();
+
+      theme.dispose();
+      theme.dispose();
+    } finally {
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia
+      });
+    }
+  });
+
+  it('does not install a listener when matchMedia is unavailable', () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: undefined });
+    try {
+      const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE, theme: 'system' });
+      expect(() => useTheme(appearance).applyTheme()).not.toThrow();
+    } finally {
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia
+      });
+    }
+  });
+
+  it('shares a single theme engine instance', async () => {
+    vi.resetModules();
+    const mod = await import('../useTheme');
+    const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
+
+    expect(mod.getThemeEngine(appearance)).toBe(mod.getThemeEngine(appearance));
+  });
+
+  it('coalesces rapid repaints into one animation frame', async () => {
+    const send = vi.fn();
+    window.api.send = send as typeof window.api.send;
+    const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE, fontSize: 13 });
+    const theme = useTheme(appearance);
+
+    theme.reapplyTheme();
+    theme.reapplyTheme();
+    await flushThemeFrame();
+
+    expect(send.mock.calls.filter((c) => c[0] === 'audio-pip:theme')).toHaveLength(1);
+  });
+});

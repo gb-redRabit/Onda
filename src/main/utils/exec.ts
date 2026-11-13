@@ -48,7 +48,6 @@ export function runCommandResult(
     };
 
     const fail = (err: Error): void => {
-      if (settled) return;
       settled = true;
       cleanup();
       child.kill();
@@ -58,10 +57,6 @@ export function runCommandResult(
     const onAbort = (): void => fail(new Error('Command aborted'));
 
     if (options.signal) {
-      if (options.signal.aborted) {
-        fail(new Error('Command aborted'));
-        return;
-      }
       options.signal.addEventListener('abort', onAbort, { once: true });
     }
 

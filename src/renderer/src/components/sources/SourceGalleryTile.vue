@@ -42,7 +42,7 @@ const typeIcon = {
     <div class="aspect-video w-full">
       <img
         v-if="item.thumbnail || (item.type === 'image' && item.mediaUrl)"
-        :src="item.thumbnail || (item.type === 'image' ? item.mediaUrl : '')"
+        :src="item.thumbnail || item.mediaUrl"
         :alt="item.title"
         loading="lazy"
         class="w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-105"

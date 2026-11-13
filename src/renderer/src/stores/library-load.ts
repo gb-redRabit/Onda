@@ -74,7 +74,6 @@ export function useLibraryLoad(ctx: LibraryLoadCtx) {
   const LOAD_TRACKS_TIMEOUT_MS = 5000;
 
   function scheduleLoadTracks(audioOnly = audioOnlyPreference): void {
-    if (loadTracksScheduled) return;
     loadTracksScheduled = true;
     const doLoad = (): void => {
       ctx.isLoading.value = false;
