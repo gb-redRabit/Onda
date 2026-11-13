@@ -141,12 +141,9 @@ export function sanitizeFileName(title: string): string {
 export function extractSignedUrlExpiryMs(url: string): number | null {
   const m = url.match(/[?&]Policy=([^&]+)/);
   if (!m) return null;
-  try {
-    // latin1 sprawia, że zbłąkane końcowe bajty są nieszkodliwe; liczba epoch jest ASCII.
-    const raw = Buffer.from(m[1], 'base64url').toString('latin1');
-    const e = raw.match(/"AWS:EpochTime"\s*:\s*(\d+)/);
-    return e ? Number(e[1]) * 1000 : null;
-  } catch {
-    return null;
-  }
+  // base64url w Bufferze jest łagodne: niepoprawne znaki są pomijane, nie rzuca.
+  // latin1 sprawia, że zbłąkane końcowe bajty są nieszkodliwe; liczba epoch jest ASCII.
+  const raw = Buffer.from(m[1], 'base64url').toString('latin1');
+  const e = raw.match(/"AWS:EpochTime"\s*:\s*(\d+)/);
+  return e ? Number(e[1]) * 1000 : null;
 }

@@ -35,6 +35,18 @@ describe('main-process i18n', () => {
     expect(mainMessages().loadFailedMessage(1, 'boom')).toContain('boom');
   });
 
+  it('formats load failures and renderer crashes in both locales', () => {
+    setMainLocale('en');
+    expect(mainMessages().loadFailedMessage(404, 'Not Found')).toContain('404 Not Found');
+    expect(mainMessages().rendererCrashMessage('out of memory')).toContain('out of memory');
+    expect(mainMessages().loadFailedDevHint).toContain('dev server');
+
+    setMainLocale('pl');
+    expect(mainMessages().rendererCrashMessage('brak pamięci')).toContain('brak pamięci');
+    expect(mainMessages().openExecMessage('C:\\x.exe')).toContain('C:\\x.exe');
+    expect(mainMessages().loadFailedDevHint).toContain('dev server');
+  });
+
   it('initialises from the OS locale', () => {
     initMainLocale();
     expect(getMainLocale()).toBe('en');

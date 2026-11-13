@@ -49,4 +49,28 @@ describe('AppMenuViewDropdown keyboard', () => {
     expect(updateStatusBar).toHaveBeenCalledTimes(1);
     expect(updateStatusBar).toHaveBeenCalledWith({ visible: false });
   });
+
+  it('renders shortcut hints for bound actions only', () => {
+    const wrapper = mount(AppMenuViewDropdown, {
+      props: { shortcut: (key: string) => (key ? `Ctrl+${key}` : '') },
+      global
+    });
+    const text = wrapper.text();
+
+    expect(text).toContain('Ctrl+home');
+    expect(text).toContain('Ctrl+library');
+    expect(text).toContain('Ctrl+settings');
+    expect(text).not.toContain('Ctrl+audioView');
+  });
+
+  it('navigates to downloads and settings', async () => {
+    const wrapper = mountMenu();
+    const item = (label: string) =>
+      wrapper.findAll('[role="menuitem"]').find((m) => m.text() === label)!;
+
+    await item('menu.downloads').trigger('click');
+    await item('menu.settings').trigger('click');
+
+    expect(wrapper.emitted('navigate')).toEqual([['/downloads'], ['/settings']]);
+  });
 });

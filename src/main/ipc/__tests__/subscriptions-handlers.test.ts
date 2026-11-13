@@ -42,11 +42,17 @@ vi.mock('../cover/cover-cache', () => ({
 import {
   seedSubscriptionBaseline,
   checkSubscriptions,
-  checkSingleChannel
+  checkSingleChannel,
+  startSubscriptionChecker,
+  stopSubscriptionChecker
 } from '../subscriptions/subscription-checker';
 import { setDownloadCompletedHandler } from '../../downloads/download-manager';
 import { broadcastToAllWindows } from '../../utils/broadcast';
-import { registerSubscriptionHandlers } from '../subscriptions/subscriptions-handlers';
+import { getStore } from '../cover/cover-cache';
+import {
+  registerSubscriptionHandlers,
+  syncSubscriptionsScheduler
+} from '../subscriptions/subscriptions-handlers';
 import { loadSubscriptions, addSubscription } from '../subscriptions/subscriptions-store';
 
 let dir: string;
@@ -167,5 +173,43 @@ describe('download-completed bridge', () => {
     downloadCompletedCb!('missing', 'vid-1');
     await new Promise((r) => setTimeout(r, 50));
     expect(broadcastToAllWindows).not.toHaveBeenCalled();
+  });
+
+  it('records the output path when the downloader reports one', async () => {
+    await addSubscription(file, { channelId: 'UC1', channelTitle: 'A', channelThumbnail: '' });
+    downloadCompletedCb!('UC1', 'vid-2', '/media/vid-2.mp4');
+    await waitFor(() => vi.mocked(broadcastToAllWindows).mock.calls.length > 0);
+
+    const [sub] = await loadSubscriptions(file);
+    expect(sub.downloadedFiles?.['vid-2']).toBe('/media/vid-2.mp4');
+  });
+});
+
+describe('syncSubscriptionsScheduler', () => {
+  it('starts the checker when auto-download is enabled', async () => {
+    vi.mocked(getStore).mockResolvedValueOnce({
+      get: () => ({ autoDownloadSubscriptions: true })
+    } as never);
+
+    await syncSubscriptionsScheduler();
+
+    expect(startSubscriptionChecker).toHaveBeenCalledWith(file);
+    expect(stopSubscriptionChecker).not.toHaveBeenCalled();
+  });
+
+  it('stops the checker when auto-download is disabled', async () => {
+    await syncSubscriptionsScheduler();
+
+    expect(stopSubscriptionChecker).toHaveBeenCalledTimes(1);
+    expect(startSubscriptionChecker).not.toHaveBeenCalled();
+  });
+
+  it('stops the checker when settings cannot be read', async () => {
+    vi.mocked(getStore).mockRejectedValueOnce(new Error('locked'));
+
+    await syncSubscriptionsScheduler();
+
+    expect(stopSubscriptionChecker).toHaveBeenCalledTimes(1);
+    expect(startSubscriptionChecker).not.toHaveBeenCalled();
   });
 });
