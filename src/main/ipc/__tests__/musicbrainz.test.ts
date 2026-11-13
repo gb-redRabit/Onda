@@ -5,11 +5,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // (walidacja MBID, śledzenie przekierowań okładki, limity rozmiaru), nie sieć.
 const state = vi.hoisted(() => ({
   handlers: new Map<string, (...args: unknown[]) => Promise<unknown>>(),
-  get: null as null | ((url: string, options: unknown, callback: (res: unknown) => void) => unknown)
+  get: null as
+    null | ((url: string, options: unknown, callback: (res: unknown) => void) => unknown),
+  requests: [] as (EventEmitter & Record<string, unknown>)[],
+  options: [] as { headers?: Record<string, string> }[],
+  warn: vi.fn(),
+  appVersionThrows: false
 }));
 
 vi.mock('electron', () => ({
-  app: { getVersion: () => '9.9.9' },
+  app: {
+    getVersion: () => {
+      if (state.appVersionThrows) throw new Error('app is not ready');
+      return '9.9.9';
+    }
+  },
   ipcMain: {
     handle: (channel: string, handler: (...args: unknown[]) => Promise<unknown>) => {
       state.handlers.set(channel, handler);
@@ -17,15 +27,9 @@ vi.mock('electron', () => ({
   }
 }));
 vi.mock('../../shared/logger', () => ({
-  logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() }
+  logger: { warn: state.warn, info: vi.fn(), error: vi.fn() }
 }));
 vi.mock('https', () => ({
-  default: {
-    get: (url: string, options: unknown, callback: (res: unknown) => void) =>
-      state.get!(url, options, callback)
-  }
-}));
-vi.mock('http', () => ({
   default: {
     get: (url: string, options: unknown, callback: (res: unknown) => void) =>
       state.get!(url, options, callback)
@@ -39,35 +43,52 @@ const VALID_ID = 'b1a9c0de-1234-4abc-8def-0123456789ab';
 
 interface FakeResponseInit {
   statusCode?: number;
+  omitStatus?: boolean;
+  hold?: boolean;
   headers?: Record<string, string>;
   body?: string | Buffer;
 }
 
 function fakeResponse(init: FakeResponseInit): EventEmitter & Record<string, unknown> {
   const res = new EventEmitter() as EventEmitter & Record<string, unknown>;
-  res.statusCode = init.statusCode ?? 200;
+  res.statusCode = init.omitStatus ? undefined : (init.statusCode ?? 200);
   res.headers = init.headers ?? {};
   res.resume = vi.fn();
   res.destroy = vi.fn();
-  process.nextTick(() => {
-    if (init.body !== undefined && init.body !== '') res.emit('data', init.body);
-    res.emit('end');
-  });
+  if (!init.hold) {
+    process.nextTick(() => {
+      if (init.body !== undefined && init.body !== '') res.emit('data', init.body);
+      res.emit('end');
+    });
+  }
   return res;
 }
 
 function mockTransport(sequence: FakeResponseInit[]): string[] {
   const calls: string[] = [];
-  state.get = (url, _options, callback) => {
+  state.get = (url, options, callback) => {
     calls.push(url);
+    state.options.push(options as { headers?: Record<string, string> });
     const req = new EventEmitter() as EventEmitter & Record<string, unknown>;
     req.destroy = vi.fn();
-    req.setTimeout = vi.fn();
+    req.setTimeout = vi.fn((_ms: number, cb: () => void) => {
+      req.timeoutHandler = cb;
+    });
+    state.requests.push(req);
     const next = sequence.shift() ?? {};
     process.nextTick(() => callback(fakeResponse(next)));
     return req;
   };
   return calls;
+}
+
+async function waitForRequest(): Promise<EventEmitter & Record<string, unknown>> {
+  for (let i = 0; i < 50; i++) {
+    const req = state.requests[state.requests.length - 1];
+    if (req) return req;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  throw new Error('the request was never created');
 }
 
 function handler(channel: string): (...args: unknown[]) => Promise<unknown> {
@@ -84,6 +105,10 @@ beforeEach(() => {
   // `lastMbRequest` w module pamięta poprzednie wywołanie i cofnięty zegar
   // kazałby czekać kilkanaście sekund.
   vi.spyOn(Date, 'now').mockImplementation(() => (clock += 10_000));
+  state.requests.length = 0;
+  state.options.length = 0;
+  state.warn.mockClear();
+  state.appVersionThrows = false;
 });
 
 afterEach(() => {
@@ -178,6 +203,110 @@ describe('musicbrainz search/lookup handlers', () => {
     expect(result.error).toContain('Rate limited HTTP 503');
     expect(calls).toHaveLength(4);
   });
+
+  it('treats a body without releases as empty', async () => {
+    mockTransport([{ body: JSON.stringify({}) }]);
+    const result = (await handler('musicbrainz:searchRelease')(null, 'x')) as {
+      success: boolean;
+      releases: unknown[];
+    };
+    expect(result).toEqual({ success: true, releases: [] });
+  });
+
+  it('rejects 429 without retrying', async () => {
+    const calls = mockTransport([{ statusCode: 429, body: 'slow down' }]);
+    const result = (await handler('musicbrainz:searchRelease')(null, 'x')) as {
+      success: boolean;
+      error: string;
+    };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Rate limited HTTP 429');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('reports non-2xx failures with the response excerpt', async () => {
+    mockTransport([{ statusCode: 500, body: 'server exploded' }]);
+    const result = (await handler('musicbrainz:searchRelease')(null, 'x')) as {
+      success: boolean;
+      error: string;
+    };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('HTTP 500: server exploded');
+  });
+
+  it('reports a missing release as not found', async () => {
+    mockTransport([{ statusCode: 404, body: 'nope' }]);
+    const result = (await handler('musicbrainz:searchRelease')(null, 'x')) as {
+      success: boolean;
+      error: string;
+    };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('HTTP 404: nope');
+  });
+
+  it('reports lookup network failures', async () => {
+    mockTransport([{ hold: true }]);
+    const pending = handler('musicbrainz:lookupRelease')(null, VALID_ID);
+    const req = await waitForRequest();
+    req.emit('error', new Error('offline'));
+
+    const result = (await pending) as { success: boolean; error: string };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('offline');
+  });
+
+  it('treats redirects and missing status codes as HTTP errors', async () => {
+    mockTransport([{ statusCode: 302, headers: { location: 'https://archive.org/x' } }]);
+    const redirect = (await handler('musicbrainz:searchRelease')(null, 'x')) as {
+      error: string;
+    };
+    expect(redirect.error).toContain('HTTP 302');
+
+    mockTransport([{ omitStatus: true, body: 'no status' }]);
+    const missing = (await handler('musicbrainz:searchRelease')(null, 'x')) as {
+      error: string;
+    };
+    expect(missing.error).toContain('HTTP undefined');
+  });
+
+  it('reports network failures', async () => {
+    mockTransport([{ hold: true }]);
+    const pending = handler('musicbrainz:searchRelease')(null, 'x');
+    const req = await waitForRequest();
+    req.emit('error', new Error('socket hang up'));
+
+    const result = (await pending) as { success: boolean; error: string };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('socket hang up');
+  });
+
+  it('reports request timeouts', async () => {
+    mockTransport([{ hold: true }]);
+    const pending = handler('musicbrainz:searchRelease')(null, 'x');
+    const req = await waitForRequest();
+    (req.timeoutHandler as () => void)();
+
+    const result = (await pending) as { success: boolean; error: string };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Timeout');
+  });
+
+  it('waits out the throttle window before requesting', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    const delays: number[] = [];
+    vi.spyOn(global, 'setTimeout').mockImplementation(((cb: () => void, ms?: number) => {
+      delays.push(ms ?? 0);
+      cb();
+      return 0;
+    }) as unknown as typeof setTimeout);
+    const calls = mockTransport([{ body: '{}' }, { body: '{}' }]);
+
+    await handler('musicbrainz:searchRelease')(null, 'a');
+    await handler('musicbrainz:searchRelease')(null, 'b');
+
+    expect(calls).toHaveLength(2);
+    expect(delays).toContain(1000);
+  });
 });
 
 describe('musicbrainz cover handler', () => {
@@ -239,6 +368,55 @@ describe('musicbrainz cover handler', () => {
     expect(result.success).toBe(false);
     expect(result.rateLimited).toBe(true);
   });
+
+  it('resolves a relative redirect against the current URL', async () => {
+    const calls = mockTransport([
+      { statusCode: 302, headers: { location: '/cover.jpg' } },
+      { body: Buffer.from([7, 8]) }
+    ]);
+    const result = (await handler('musicbrainz:getCoverData')(null, VALID_ID)) as {
+      success: boolean;
+      data: number[];
+    };
+    expect(result).toEqual({ success: true, data: [7, 8], mime: 'image/jpeg' });
+    expect(calls[1]).toBe('https://coverartarchive.org/cover.jpg');
+  });
+
+  it('stops after too many redirects', async () => {
+    const calls = mockTransport(
+      Array.from({ length: 4 }, () => ({
+        statusCode: 302,
+        headers: { location: 'https://archive.org/x.jpg' }
+      }))
+    );
+    const result = (await handler('musicbrainz:getCoverData')(null, VALID_ID)) as {
+      success: boolean;
+      error: string;
+    };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Too many redirects');
+    expect(calls).toHaveLength(4);
+  });
+
+  it('rejects an unparsable redirect target', async () => {
+    mockTransport([{ statusCode: 302, headers: { location: 'https://bad host/x.jpg' } }]);
+    const result = (await handler('musicbrainz:getCoverData')(null, VALID_ID)) as {
+      success: boolean;
+      error: string;
+    };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('non-allowed host');
+  });
+
+  it('rejects an oversized cover', async () => {
+    mockTransport([{ body: Buffer.alloc(10 * 1024 * 1024 + 1, 1) }]);
+    const result = (await handler('musicbrainz:getCoverData')(null, VALID_ID)) as {
+      success: boolean;
+      error: string;
+    };
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Cover too large');
+  });
 });
 
 describe('musicbrainz autodetect scoring', () => {
@@ -269,5 +447,55 @@ describe('musicbrainz autodetect scoring', () => {
 
   it('is ambiguous when the best score is below the threshold', async () => {
     expect((await run([{ score: 60 }, { score: 10 }])).match).toBe('ambiguous');
+  });
+
+  it('treats missing scores as zero', async () => {
+    expect((await run([{}, {}])).match).toBe('ambiguous');
+  });
+
+  it('returns none when the payload has no releases', async () => {
+    mockTransport([{ body: JSON.stringify({}) }]);
+    expect(await handler('musicbrainz:autodetect')(null, 'query')).toEqual({
+      success: true,
+      match: 'none',
+      releases: []
+    });
+  });
+
+  it('treats a non-JSON autodetect body as no releases', async () => {
+    mockTransport([{ body: '<html>maintenance</html>' }]);
+    expect(await handler('musicbrainz:autodetect')(null, 'query')).toEqual({
+      success: true,
+      match: 'none',
+      releases: []
+    });
+  });
+
+  it('reports network failures', async () => {
+    mockTransport([{ hold: true }]);
+    const pending = handler('musicbrainz:autodetect')(null, 'query');
+    const req = await waitForRequest();
+    req.emit('error', new Error('offline'));
+
+    expect(await pending).toEqual({
+      success: false,
+      error: 'Error: offline',
+      match: 'none',
+      releases: []
+    });
+  });
+});
+
+describe('module bootstrap', () => {
+  it('falls back to the bundled version when app.getVersion throws', async () => {
+    state.appVersionThrows = true;
+    vi.resetModules();
+    const mod = await import('../musicbrainz');
+    mod.registerMusicBrainzHandlers();
+    mockTransport([{ body: '{}' }]);
+
+    await handler('musicbrainz:searchRelease')(null, 'x');
+
+    expect(state.options[0]?.headers?.['User-Agent']).toContain('Onda/0.4.0');
   });
 });

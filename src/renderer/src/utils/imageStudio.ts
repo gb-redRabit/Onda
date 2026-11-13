@@ -189,22 +189,6 @@ export function resizeCropRect(
     else right = left + w;
     if (handle === 'nw' || handle === 'ne') top = bottom - h;
     else bottom = top + h;
-    if (left < 0) {
-      left = 0;
-      right = w;
-    }
-    if (top < 0) {
-      top = 0;
-      bottom = h;
-    }
-    if (right > width) {
-      right = width;
-      left = width - w;
-    }
-    if (bottom > height) {
-      bottom = height;
-      top = height - h;
-    }
   }
   const x = clamp(left, 0, width - 4);
   const y = clamp(top, 0, height - 4);

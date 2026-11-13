@@ -1,6 +1,5 @@
 import { app, ipcMain } from 'electron';
 import https from 'https';
-import http from 'http';
 import type { MusicbrainzRelease } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
 import { decideRateLimitRetry } from './musicbrainz-rate-limit';
@@ -51,10 +50,9 @@ function mbFetch(url: string, rateLimitAttempt = 0): Promise<Record<string, unkn
   return throttleMb().then(
     () =>
       new Promise<Record<string, unknown> | string>((resolve, reject) => {
-        const protocol = url.startsWith('https') ? https : http;
         let total = 0;
         const MAX_JSON = 2 * 1024 * 1024; // 2 MB
-        const req = protocol.get(
+        const req = https.get(
           url,
           { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } },
           (res) => {
@@ -160,10 +158,6 @@ function fetchCoverWithRedirect(url: string, redirects = 0): Promise<Buffer> {
               res.destroy();
               reject(new Error('Cover too large'));
               return;
-            }
-            const ct = res.headers['content-type'] || '';
-            if (ct && !String(ct).startsWith('image/') && total < 1024) {
-              // pozwól, ale ostrzeż
             }
             chunks.push(c);
           });

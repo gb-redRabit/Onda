@@ -136,7 +136,6 @@ export function useVideoSource(
       el.addEventListener(
         'error',
         () => {
-          if (loadId !== currentLoadId) return;
           if (transcodeState.attempted === track.path) return;
           notify(i18n.global.t('player.videoPlaybackFailed', { name: track.name }), 5000);
         },

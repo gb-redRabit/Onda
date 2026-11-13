@@ -39,16 +39,20 @@ describe('imageStudio — formatowanie', () => {
 
   it('suggests an output path next to the source', () => {
     expect(fileNameOf('C:\\pics\\a.png')).toBe('a.png');
+    expect(fileNameOf('')).toBe('');
     expect(extensionForFormat('jpeg')).toBe('jpg');
     expect(extensionForFormat('webp')).toBe('webp');
     expect(suggestOutputPath('C:\\pics\\a.png', 'jpeg')).toBe('C:/pics/a-edited.jpg');
     expect(suggestOutputPath('/pics/a.png', 'avif')).toBe('/pics/a-edited.avif');
+    expect(suggestOutputPath('a.png', 'webp')).toBe('./a-edited.webp');
+    expect(suggestOutputPath('README', 'png')).toBe('./README-edited.png');
   });
 
   it('maps aspect presets to ratios and centered crops', () => {
     expect(aspectRatioOf('free')).toBe(0);
     expect(aspectRatioOf('1:1')).toBe(1);
     expect(aspectRatioOf('16:9')).toBeCloseTo(16 / 9);
+    expect(aspectRatioOf('4:3')).toBeCloseTo(4 / 3);
     expect(computeAspectCrop('1:1', 200, 100)).toEqual({ x: 50, y: 0, w: 100, h: 100 });
     expect(computeAspectCrop('16:9', 200, 200)).toEqual({
       x: 0,
@@ -117,6 +121,66 @@ describe('imageStudio — kadr', () => {
       y: 0,
       w: 100,
       h: 100
+    });
+  });
+
+  it('resizes from the north-east and south-west handles', () => {
+    expect(resizeCropRect('ne', { x: 10, y: 10, w: 100, h: 50 }, 20, 10, 300, 300, 0)).toEqual({
+      x: 10,
+      y: 20,
+      w: 120,
+      h: 40
+    });
+    expect(resizeCropRect('sw', { x: 10, y: 10, w: 100, h: 50 }, 10, 20, 300, 300, 0)).toEqual({
+      x: 20,
+      y: 10,
+      w: 90,
+      h: 70
+    });
+  });
+
+  it('shrinks the wider side when the aspect ratio forces it', () => {
+    expect(resizeCropRect('se', { x: 0, y: 0, w: 100, h: 50 }, 50, 0, 300, 300, 1)).toEqual({
+      x: 0,
+      y: 0,
+      w: 50,
+      h: 50
+    });
+    expect(resizeCropRect('se', { x: 0, y: 0, w: 50, h: 100 }, 0, 0, 300, 300, 1)).toEqual({
+      x: 0,
+      y: 0,
+      w: 50,
+      h: 50
+    });
+  });
+
+  it('leaves the crop untouched for draw and move handles', () => {
+    const origin = { x: 20, y: 20, w: 100, h: 50 };
+
+    expect(resizeCropRect('draw', origin, 30, 30, 300, 300, 0)).toEqual(origin);
+    expect(resizeCropRect('move', origin, 30, 30, 300, 300, 0)).toEqual(origin);
+  });
+
+  it('anchors each ratio resize to the dragged corner', () => {
+    const origin = { x: 20, y: 20, w: 100, h: 50 };
+
+    expect(resizeCropRect('nw', origin, 0, 0, 300, 300, 1)).toEqual({
+      x: 70,
+      y: 20,
+      w: 50,
+      h: 50
+    });
+    expect(resizeCropRect('ne', origin, 0, 0, 300, 300, 1)).toEqual({
+      x: 20,
+      y: 20,
+      w: 50,
+      h: 50
+    });
+    expect(resizeCropRect('sw', origin, 0, 0, 300, 300, 1)).toEqual({
+      x: 70,
+      y: 20,
+      w: 50,
+      h: 50
     });
   });
 
