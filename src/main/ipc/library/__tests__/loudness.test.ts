@@ -9,7 +9,14 @@ const deps = vi.hoisted(() => ({
 vi.mock('../../../binaries', () => ({ resolveBin: deps.resolveBin }));
 vi.mock('../../../utils/exec', () => ({ runCommandResult: deps.runCommandResult }));
 
-import { combineAlbumLufs, gainDbToRatio, loudnessToGainDb, parseEbur128 } from '../loudness';
+import {
+  analyzeFileLoudness,
+  combineAlbumLufs,
+  gainDbToRatio,
+  loudnessToGainDb,
+  parseEbur128
+} from '../loudness';
+import { logger } from '../../../../shared/logger';
 import { analyzeLibraryLoudness } from '../loudness-analysis';
 
 const EBUR128_OUTPUT = `
@@ -50,6 +57,15 @@ describe('loudness math', () => {
     expect(parseEbur128('ffmpeg version 7')).toBeNull();
   });
 
+  it('treats a missing or non-finite peak as unknown', () => {
+    expect(parseEbur128('I: -20.0 LUFS')?.peakDb).toBeUndefined();
+    expect(parseEbur128(`I: -20.0 LUFS\nPeak: ${'9'.repeat(400)} dBFS`)?.peakDb).toBeUndefined();
+  });
+
+  it('returns null for a non-finite integrated loudness', () => {
+    expect(parseEbur128(`I: ${'9'.repeat(400)} LUFS`)).toBeNull();
+  });
+
   it('turns loudness into gain relative to the ReplayGain target', () => {
     expect(loudnessToGainDb(-23)).toBe(5);
   });
@@ -80,6 +96,47 @@ describe('loudness math', () => {
 
   it('ignores samples without a usable duration', () => {
     expect(combineAlbumLufs([{ lufs: -20, duration: 0 }])).toBeNull();
+  });
+});
+
+describe('analyzeFileLoudness', () => {
+  beforeEach(() => {
+    deps.runCommandResult.mockReset();
+  });
+
+  it('parses the ffmpeg summary', async () => {
+    deps.runCommandResult.mockResolvedValue({ stdout: '', stderr: EBUR128_OUTPUT });
+
+    await expect(analyzeFileLoudness('/ffmpeg', '/a.mp3')).resolves.toEqual({
+      lufs: -23,
+      peakDb: -1.5
+    });
+  });
+
+  it('returns null after an aborted run without warning', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    deps.runCommandResult.mockRejectedValue(new Error('aborted'));
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(analyzeFileLoudness('/ffmpeg', '/a.mp3', controller.signal)).resolves.toBeNull();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('logs and returns null when ffmpeg fails', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    deps.runCommandResult.mockRejectedValue(new Error('boom'));
+
+    await expect(
+      analyzeFileLoudness('/ffmpeg', '/a.mp3', new AbortController().signal)
+    ).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledWith(
+      'library',
+      expect.stringContaining('/a.mp3'),
+      expect.any(Error)
+    );
+    warn.mockRestore();
   });
 });
 

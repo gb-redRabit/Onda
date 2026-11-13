@@ -56,8 +56,7 @@ const {
 } = usePromptDialog();
 
 async function onPlayFromStart(): Promise<void> {
-  const track = continueTrack.value;
-  if (!track) return;
+  const track = continueTrack.value!;
   if (continuePosition.value > 5) {
     const title = track.metadata?.title || track.name;
     const ok = await showConfirm(t('home.playFromStartConfirm', { title }));

@@ -113,8 +113,7 @@ export function cacheStream(url: string, streamUrl: string): void {
   loadStreamCache();
   streamCache.set(url, { url: streamUrl, expires: Date.now() + STREAM_CACHE_TTL_MS });
   if (streamCache.size > STREAM_CACHE_MAX) {
-    const oldest = streamCache.keys().next().value;
-    if (oldest) streamCache.delete(oldest);
+    streamCache.delete(streamCache.keys().next().value as string);
   }
   scheduleStreamCacheSave();
 }

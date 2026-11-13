@@ -47,6 +47,7 @@ const MediaCardStub = defineComponent({
   template: `<div data-testid="media-card" :data-title="title">
     <button data-testid="card-play" @click="$emit('play')" />
     <button data-testid="card-open" @click="$emit('open')" />
+    <button data-testid="card-menu" @click="$emit('contextmenu', {})" />
   </div>`
 });
 const ContinueCardStub = defineComponent({
@@ -372,6 +373,10 @@ describe('shelves', () => {
     await top.get('[data-testid="card-play"]').trigger('click');
     expect(state.home.player.setTrack).toHaveBeenCalledTimes(1);
 
+    const fav = cards.find((card) => card.props('title') === 'Fav Song')!;
+    await fav.get('[data-testid="card-play"]').trigger('click');
+    expect(state.home.player.setTrack).toHaveBeenCalledTimes(2);
+
     const playlist = cards.find((card) => card.props('title') === 'Playlist')!;
     await playlist.get('[data-testid="card-play"]').trigger('click');
     expect(state.playTrackList).toHaveBeenCalledWith(state.home.playlists.value[0].tracks);
@@ -385,8 +390,42 @@ describe('shelves', () => {
     expect(state.home.openLibrary).toHaveBeenCalledWith('albums');
 
     const artist = cards.find((card) => card.props('title') === 'label:Artist')!;
+    await artist.get('[data-testid="card-play"]').trigger('click');
+    expect(state.playTrackList).toHaveBeenCalledWith(state.home.artists.value[0][1]);
     await artist.get('[data-testid="card-open"]').trigger('click');
     expect(state.home.openLibrary).toHaveBeenCalledWith('artists');
+  });
+
+  it('opens recent menus from the shelf cards', async () => {
+    setup();
+    const cards = wrapper!.findAllComponents(MediaCardStub);
+    const top = cards.find((card) => card.props('title') === 'Top Song')!;
+    const fav = cards.find((card) => card.props('title') === 'Fav Song')!;
+
+    await top.get('[data-testid="card-menu"]').trigger('click');
+    await fav.get('[data-testid="card-menu"]').trigger('click');
+
+    expect(state.home.homeContextMenu.showRecentMenu).toHaveBeenCalledTimes(2);
+    expect(state.home.homeContextMenu.showRecentMenu).toHaveBeenCalledWith(
+      {},
+      state.home.mostPlayed.value[0]
+    );
+    expect(state.home.homeContextMenu.showRecentMenu).toHaveBeenCalledWith(
+      {},
+      state.home.favoriteTracks.value[0]
+    );
+  });
+
+  it('falls back to the first track cover when a playlist has no cover', () => {
+    state.home.playlists.value = [
+      { id: 'pl2', name: 'No cover', coverUrl: '', tracks: [track('cov')] }
+    ];
+    setup();
+
+    const card = wrapper!
+      .findAllComponents(MediaCardStub)
+      .find((c) => c.props('title') === 'No cover')!;
+    expect(card.props('coverPath')).toBe('D:/music/cov.mp3');
   });
 
   it('hides shelves with no items', () => {
@@ -435,6 +474,17 @@ describe('play from start', () => {
     setup();
 
     expect(wrapper!.find('[data-testid="continue-card"]').exists()).toBe(false);
+  });
+
+  it('falls back to the track name when metadata has no title', async () => {
+    state.sections.add('continue');
+    state.home.continueTrack.value = track('resume', {});
+    setup();
+
+    await wrapper!.get('[data-testid="continue-start"]').trigger('click');
+
+    expect(state.prompt.showConfirm).toHaveBeenCalledWith('home.playFromStartConfirm');
+    expect(state.home.playContinueFromStart).toHaveBeenCalledTimes(1);
   });
 });
 

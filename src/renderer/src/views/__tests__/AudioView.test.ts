@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   nextVizMode: vi.fn(() => 'next-mode'),
   drag: null as any,
   immersive: null as any,
+  immersiveOptions: null as any,
   dialogFocus: vi.fn(),
   resumeOptions: null as any,
   resume: null as any,
@@ -33,7 +34,10 @@ vi.mock('@renderer/composables/useAudioElementDrag', () => ({
   useAudioElementDrag: () => state.drag
 }));
 vi.mock('@renderer/composables/useAudioImmersive', () => ({
-  useAudioImmersive: () => state.immersive
+  useAudioImmersive: (options: any) => {
+    state.immersiveOptions = options;
+    return state.immersive;
+  }
 }));
 vi.mock('@renderer/composables/useDialogFocus', () => ({
   useDialogFocus: (...args: any[]) => state.dialogFocus(...args)
@@ -52,6 +56,20 @@ vi.mock('@renderer/composables/useAlwaysOnTop', () => ({
     togglePin: state.togglePin
   })
 }));
+
+vi.mock('@renderer/components/audio/AudioLayoutEditor.vue', async () => {
+  const { defineComponent, h } = await import('vue');
+  return {
+    __esModule: true,
+    default: defineComponent({
+      name: 'AudioLayoutEditorMock',
+      setup(_props, { expose }) {
+        expose({ cancel: state.cancel });
+        return () => h('div', { 'data-testid': 'layout-editor' });
+      }
+    })
+  };
+});
 
 const LayoutEditorStub = defineComponent({
   name: 'AudioLayoutEditorStub',
@@ -289,6 +307,31 @@ describe('canvas and toolbar', () => {
     const [element] = state.immersive.setViewEl.mock.calls[0];
     expect(element).toBe(wrapper!.get('[data-testid="audio-view"]').element);
   });
+
+  it('exposes immersive callbacks for drag state, moves and HUD hold', async () => {
+    setup();
+    const options = state.immersiveOptions;
+
+    expect(options.isDragging()).toBe(false);
+    state.drag.dragging.value = true;
+    expect(options.isDragging()).toBe(true);
+
+    const event = { clientX: 5 };
+    options.onDragMove(event);
+    expect(state.drag.onDragMouseMove).toHaveBeenCalledWith(event);
+    expect(options.holdUI()).toBe(false);
+
+    await wrapper!.get('[data-testid="toolbar-viz"]').trigger('click');
+    expect(options.holdUI()).toBe(true);
+  });
+
+  it('falls back to no elements and full HUD opacity without a layout', () => {
+    state.settings.appearance.audioLayout = undefined;
+    setup();
+
+    expect(wrapper!.getComponent(CanvasStub).props('elements')).toEqual([]);
+    expect(wrapper!.getComponent(ToolbarStub).props('hudOpacity')).toBe(1);
+  });
 });
 
 describe('layout editor', () => {
@@ -344,6 +387,22 @@ describe('layout editor', () => {
     const [, options] = state.dialogFocus.mock.calls[0];
 
     expect(() => options.onEscape()).not.toThrow();
+  });
+
+  it('loads the lazy editor chunk when first opened', async () => {
+    const { AudioLayoutEditor: _omit, ...otherStubs } = stubs;
+    wrapper = mount(AudioView, {
+      global: {
+        stubs: otherStubs,
+        mocks: { $t: (key: string) => key }
+      }
+    });
+
+    await wrapper.get('[data-testid="toolbar-layout"]').trigger('click');
+    await flush();
+    await flush();
+
+    expect(wrapper.find('[data-testid="layout-editor"]').exists()).toBe(true);
   });
 });
 

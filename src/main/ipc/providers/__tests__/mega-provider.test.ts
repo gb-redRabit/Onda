@@ -52,6 +52,7 @@ describe('match/parse', () => {
       provider: 'mega',
       shareId: 'https://mega.nz/file/abc#key'
     });
+    expect(megaProvider.parse('https://example.com/x')).toBeNull();
   });
 });
 
@@ -62,6 +63,50 @@ describe('listFolder', () => {
     expect(items).toEqual([
       { id: 'F1', name: 'clip.mp4', kind: 'file', size: 2048, parentId: null }
     ]);
+  });
+
+  it('falls back to the name when a node has no stable id or name', async () => {
+    mega.fromURL.mockReturnValue(node({ name: null, size: 50 }));
+    expect(await megaProvider.listFolder(REF)).toEqual([
+      { id: 'file', name: 'file', kind: 'file', size: 50, parentId: null }
+    ]);
+  });
+
+  it('returns an empty root when a shared folder has no children', async () => {
+    mega.fromURL.mockReturnValue(
+      node({ name: 'root', nodeId: 'ROOT', directory: true, children: undefined })
+    );
+    expect(await megaProvider.listFolder(REF)).toEqual([]);
+  });
+
+  it('uses the name as id for children without a stable id', async () => {
+    mega.fromURL.mockReturnValue(
+      node({
+        name: 'root',
+        nodeId: 'ROOT',
+        directory: true,
+        children: [node({ name: 'raw' })]
+      })
+    );
+
+    const items = await megaProvider.listFolder(REF);
+
+    expect(items).toEqual([{ id: 'raw', name: 'raw', kind: 'file', size: 100, parentId: null }]);
+  });
+
+  it('returns no items for a subfolder without children', async () => {
+    mega.fromURL.mockReturnValue(
+      node({
+        name: 'root',
+        nodeId: 'ROOT',
+        directory: true,
+        children: [
+          node({ name: 'sub', downloadId: ['ROOT', 'SUB'], directory: true, children: undefined })
+        ]
+      })
+    );
+
+    expect(await megaProvider.listFolder(REF, 'SUB')).toEqual([]);
   });
 
   it('lists a folder root and navigates into a subfolder by handle', async () => {
@@ -134,5 +179,59 @@ describe('resolveFileUrl', () => {
     mega.fromURL.mockReturnValue(root);
     await megaProvider.resolveFileUrl(REF, 'F1', { start: 10, end: 20 });
     expect(download).toHaveBeenCalledWith({ start: 10, end: 20 });
+  });
+
+  it('streams the root directly for a single-file link', async () => {
+    mega.fromURL.mockReturnValue(node({ name: 'clip.mp4', nodeId: 'F1', size: 2048 }));
+
+    const res = await megaProvider.resolveFileUrl(REF, 'ignored');
+
+    expect(res.size).toBe(2048);
+    expect(res.stream).toBeTruthy();
+  });
+
+  it('throws for an unknown item id', async () => {
+    mega.fromURL.mockReturnValue(
+      node({ name: 'root', nodeId: 'ROOT', directory: true, children: [] })
+    );
+
+    await expect(megaProvider.resolveFileUrl(REF, 'NOPE')).rejects.toThrow(/pliku/i);
+  });
+});
+
+describe('root cache', () => {
+  it('reloads and evicts expired roots after the ttl', async () => {
+    let now = 1_000_000;
+    const spy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    try {
+      mega.fromURL.mockReturnValue(node({ name: 'a', nodeId: 'A', size: 1 }));
+
+      await megaProvider.listFolder(REF);
+      await megaProvider.listFolder(REF);
+      expect(mega.fromURL).toHaveBeenCalledTimes(1);
+
+      now += 5 * 60 * 1000;
+      await megaProvider.listFolder(REF);
+      expect(mega.fromURL).toHaveBeenCalledTimes(2);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('evicts the oldest root once the cache is full', async () => {
+    const spy = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    try {
+      mega.fromURL.mockReturnValue(node({ name: 'a', nodeId: 'A', size: 1 }));
+
+      for (let i = 0; i < 65; i += 1) {
+        await megaProvider.listFolder({ provider: 'mega', shareId: `https://mega.nz/file/${i}` });
+      }
+      expect(mega.fromURL).toHaveBeenCalledTimes(65);
+
+      await megaProvider.listFolder({ provider: 'mega', shareId: 'https://mega.nz/file/0' });
+      expect(mega.fromURL).toHaveBeenCalledTimes(66);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

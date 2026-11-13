@@ -64,4 +64,36 @@ describe('sourceStream', () => {
     // Audio → strumień w silniku audio (proxy `/stream?url=`).
     expect(audio.type).toBe('stream');
   });
+
+  it('returns an empty play url when the item has no media url', () => {
+    expect(sourceItemPlayUrl({ id: 'x', title: 'X', type: 'video' })).toBe('');
+  });
+
+  it('falls back to the source name and order for an untitled item', () => {
+    const track = buildSourceStreamTrack(
+      source,
+      { id: '', title: '', type: 'video', mediaUrl: 'https://cdn.example/ep.mp4' },
+      7
+    );
+
+    expect(track.id).toBe('src:src:7');
+    expect(track.name).toBe('Source');
+  });
+
+  it('defaults the mime type when the url has no usable extension', () => {
+    const noExtension = buildSourceStreamTrack(
+      source,
+      { id: 'n1', title: 'No ext', type: 'video', mediaUrl: 'https://cdn.example/stream' },
+      0
+    );
+    expect(noExtension.extension).toBe('');
+    expect(noExtension.mimeType).toBe('video/mp4');
+
+    const invalid = buildSourceStreamTrack(
+      source,
+      { id: 'n2', title: 'Invalid', type: 'video', mediaUrl: 'not a url' },
+      0
+    );
+    expect(invalid.extension).toBe('');
+  });
 });

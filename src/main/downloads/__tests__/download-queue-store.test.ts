@@ -1,9 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, readFile, writeFile } from 'fs/promises';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mkdir, mkdtemp, rm, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import type { IpcDownloadTask } from '../../../shared/types/ipc';
-import { loadPersistedJobs, persistJobs, capPersistedJobs } from '../download-queue-store';
+import { logger } from '../../../shared/logger';
+import {
+  loadPersistedJobs,
+  persistJobs,
+  capPersistedJobs,
+  queueFilePath
+} from '../download-queue-store';
+
+vi.mock('electron', () => ({ app: { getPath: () => '/user-data' } }));
 
 let dir: string;
 let file: string;
@@ -60,6 +68,25 @@ describe('download-queue-store', () => {
     await writeFile(file, JSON.stringify({ version: 1, jobs: broken }), 'utf-8');
     const loaded = await loadPersistedJobs(file);
     expect(loaded.map((j) => j.id)).toEqual(['ok']);
+  });
+
+  it('resolves the queue file inside the app user data directory', () => {
+    expect(queueFilePath()).toBe(join('/user-data', 'downloads-queue.json'));
+  });
+
+  it('logs write failures without rejecting', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    const target = join(dir, 'folder');
+    await mkdir(target);
+
+    await expect(persistJobs(target, [task('a', 'pending')])).resolves.toBeUndefined();
+
+    expect(warn).toHaveBeenCalledWith(
+      'downloads',
+      'failed to persist download queue',
+      expect.anything()
+    );
+    warn.mockRestore();
   });
 });
 

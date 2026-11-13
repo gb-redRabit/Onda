@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import type { Component } from 'vue';
 import { useContextMenu, type ContextMenuAction } from '../useContextMenu';
-import { useUIStore } from '@renderer/stores/ui';
+import { CONTEXT_MENU_WIDTH, useUIStore } from '@renderer/stores/ui';
 
 interface Ctx {
   kind: 'dir' | 'file';
@@ -127,6 +127,26 @@ describe('useContextMenu.build', () => {
     const defs: ContextMenuAction<Ctx>[] = [{ label: 'I', icon }];
     expect(build(defs, { kind: 'file', count: 1 })[0].icon).toBe(icon);
   });
+
+  it('copies shortcuts and explicit disabled/checked state', () => {
+    const { build } = useContextMenu();
+    const ctx = { kind: 'file' as const, count: 1 };
+
+    expect(
+      build([{ label: 'S', shortcut: 'Ctrl+S', disabled: true, checked: false }], ctx)[0]
+    ).toMatchObject({ shortcut: 'Ctrl+S', disabled: true, checked: false });
+  });
+
+  it('drops an empty submenu wrapper', () => {
+    const { build } = useContextMenu();
+    const items = build([{ label: 'Group', children: [{ separator: true, label: '' }] }], {
+      kind: 'file',
+      count: 1
+    });
+
+    expect(items[0].label).toBe('Group');
+    expect(items[0].children).toBeUndefined();
+  });
 });
 
 describe('useContextMenu.open', () => {
@@ -148,5 +168,19 @@ describe('useContextMenu.open', () => {
     const e = stubEvent();
     open(e, [{ label: 'Hide', when: (c) => c.kind === 'dir' }], { kind: 'file', count: 1 });
     expect(ui.contextMenu?.items).toHaveLength(0);
+  });
+
+  it('opens a button menu aligned to the right edge and clamps it', () => {
+    const { openAt } = useContextMenu();
+    const ui = useUIStore();
+    const target = (right: number, bottom: number) =>
+      ({ getBoundingClientRect: () => ({ right, bottom }) }) as unknown as HTMLElement;
+
+    openAt(target(500, 40), [{ label: 'X' }], { kind: 'file', count: 1 });
+    expect(ui.contextMenu?.x).toBe(500 - CONTEXT_MENU_WIDTH);
+    expect(ui.contextMenu?.y).toBe(44);
+
+    openAt(target(5, 10), [{ label: 'X' }], { kind: 'file', count: 1 });
+    expect(ui.contextMenu?.x).toBe(8);
   });
 });

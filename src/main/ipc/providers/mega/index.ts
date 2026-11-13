@@ -56,8 +56,7 @@ async function loadRoot(url: string): Promise<RootEntry> {
     if (now - val.at >= CACHE_TTL_MS) rootCache.delete(key);
   }
   while (rootCache.size >= MAX_CACHE_ENTRIES) {
-    const oldest = rootCache.keys().next().value;
-    if (!oldest) break;
+    const oldest = rootCache.keys().next().value as string;
     rootCache.delete(oldest);
   }
   rootCache.set(url, entry);
@@ -109,13 +108,13 @@ export const megaProvider: Provider = {
     if (!folderId) {
       return (root.children || [])
         .filter((c) => !!c.name)
-        .map((c) => toItem(c, null, c.name || 'x'));
+        .map((c) => toItem(c, null, c.name as string));
     }
     const dir = index.get(folderId);
     if (!dir || !dir.directory) throw new Error('Nie znaleziono folderu w linku MEGA');
     return (dir.children || [])
       .filter((c) => !!c.name)
-      .map((c) => toItem(c, folderId, c.name || 'x'));
+      .map((c) => toItem(c, folderId, c.name as string));
   },
   resolveFileUrl: async (ref: ProviderRef, itemId: string, range) => {
     const { root, index } = await loadRoot(ref.shareId);

@@ -47,6 +47,9 @@ describe('ListenBrainz payloads', () => {
     const track = { artist: 'A', title: 'T', startedAt: 1_700_000_000 };
     expect(buildListenPayload(track, 'playing_now').payload[0]).not.toHaveProperty('listened_at');
     expect(buildListenPayload(track, 'single').payload[0].listened_at).toBe(1_700_000_000);
+    expect(
+      typeof buildListenPayload({ artist: 'A', title: 'T' }, 'single').payload[0].listened_at
+    ).toBe('number');
   });
 });
 
@@ -91,5 +94,58 @@ describe('ListenBrainz API calls', () => {
       listen_type: string;
     };
     expect(body.listen_type).toBe('playing_now');
+  });
+
+  it('accepts a valid token without a username', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ valid: true })));
+
+    await expect(validateToken('tok')).resolves.toEqual({ username: undefined });
+  });
+
+  it('falls back to the HTTP status when the body is missing or not JSON', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('not json');
+        }
+      })
+    );
+
+    await expect(validateToken('tok')).rejects.toThrow('ListenBrainz HTTP 500');
+  });
+
+  it('includes the response body in submit errors', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => 'bad listen'
+      })
+    );
+
+    await expect(scrobble('tok', { artist: 'A', title: 'T' })).rejects.toThrow(
+      'ListenBrainz HTTP 400: bad listen'
+    );
+  });
+
+  it('omits the body separator when reading the error body fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => {
+          throw new Error('stream closed');
+        }
+      })
+    );
+
+    await expect(submitNowPlaying('tok', { artist: 'A', title: 'T' })).rejects.toThrow(
+      'ListenBrainz HTTP 500'
+    );
   });
 });

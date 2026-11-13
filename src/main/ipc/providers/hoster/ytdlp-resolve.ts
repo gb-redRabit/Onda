@@ -59,8 +59,7 @@ export async function inspectHoster(pageUrl: string): Promise<HosterEntry[]> {
             : undefined
     }));
   if (hosterCache.size >= MAX_CACHE_ENTRIES) {
-    const oldest = hosterCache.keys().next().value;
-    if (oldest) hosterCache.delete(oldest);
+    hosterCache.delete(hosterCache.keys().next().value as string);
   }
   hosterCache.set(cleanUrl, { entries, at: now });
   return entries;
