@@ -151,10 +151,15 @@ export async function flushProviderCache(): Promise<void> {
   await persist();
 }
 
-// Dla testów: czyści cały cache w pamięci.
+// Dla testów: czyści cały cache w pamięci (także debounce i stan ładowania).
 export function __resetProviderCache(): void {
   folders.clear();
   files.clear();
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
   loaded = false;
+  cacheEnabled = false;
   loadPromise = null;
 }
