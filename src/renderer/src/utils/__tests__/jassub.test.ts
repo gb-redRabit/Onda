@@ -1,51 +1,145 @@
-import { describe, it, expect } from 'vitest';
-import { createJassub } from '../jassub';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Regresja: JASSUB wylicza wbudowaną czcionkę awaryjną przez `new URL('./default.woff2',
-// import.meta.url)`, co w dev wskazuje nieistniejący URL → worker pobiera 404 → libass
-// zgłasza "Error opening memory font", a napisy bez osadzonych czcionek (zwykły `.srt`)
-// nie renderują się. Oczekujemy, że `createJassub` poda tę czcionkę jawnie.
+vi.mock('jassub/dist/worker/worker.js?worker&url', () => ({ default: 'worker.js' }));
+vi.mock('jassub/dist/wasm/jassub-worker.wasm?url', () => ({ default: 'worker.wasm' }));
+vi.mock('jassub/dist/wasm/jassub-worker-modern.wasm?url', () => ({ default: 'modern.wasm' }));
+vi.mock('jassub/dist/default.woff2?url', () => ({ default: 'font.woff2' }));
 
-class FakeJassub {
-  opts: Record<string, unknown>;
-  ready = Promise.resolve();
-  constructor(opts: Record<string, unknown>) {
-    this.opts = opts;
+import { createJassub, loadJassubWasmDataUrls } from '../jassub';
+
+const fetchMock = vi.fn();
+
+beforeEach(() => {
+  fetchMock.mockReset().mockImplementation(async (url: string) => ({
+    arrayBuffer: async () => new TextEncoder().encode(url).buffer
+  }));
+  vi.stubGlobal('fetch', fetchMock);
+});
+
+describe('loadJassubWasmDataUrls', () => {
+  it('fetches both wasm files and returns base64 data urls', async () => {
+    const result = await loadJassubWasmDataUrls();
+
+    expect(fetchMock).toHaveBeenCalledWith('worker.wasm');
+    expect(fetchMock).toHaveBeenCalledWith('modern.wasm');
+    expect(result.wasmDataUrl).toBe('data:application/wasm;base64,' + btoa('worker.wasm'));
+    expect(result.modernWasmDataUrl).toBe('data:application/wasm;base64,' + btoa('modern.wasm'));
+  });
+});
+
+describe('createJassub', () => {
+  let captured: Record<string, unknown> | null = null;
+
+  class FakeJassub {
+    ready = Promise.resolve();
+    constructor(options: Record<string, unknown>) {
+      captured = options;
+    }
   }
-}
 
-function baseParams(extra: Record<string, unknown> = {}) {
-  return {
-    video: {} as HTMLVideoElement,
-    subContent: 'x',
-    fonts: [],
-    availableFonts: {},
-    ...extra
-  };
-}
-
-async function optionsFor(extra: Record<string, unknown> = {}) {
-  const instance = await createJassub(
-    FakeJassub as unknown as Parameters<typeof createJassub>[0],
-    baseParams(extra) as Parameters<typeof createJassub>[1]
-  );
-  return (instance as unknown as FakeJassub).opts;
-}
-
-describe('createJassub options', () => {
-  it('always provides a usable fallback font and queries local fonts', async () => {
-    const opts = await optionsFor();
-    expect(opts.defaultFont).toBe('liberation sans');
-    expect(opts.queryFonts).toBe('local');
-    const fonts = opts.availableFonts as Record<string, string>;
-    expect(typeof fonts['liberation sans']).toBe('string');
-    expect(fonts['liberation sans']).not.toHaveLength(0);
+  beforeEach(() => {
+    captured = null;
   });
 
-  it('honours an explicit defaultFont and queryFonts', async () => {
-    const opts = await optionsFor({ defaultFont: 'Arial', queryFonts: false });
-    expect(opts.defaultFont).toBe('Arial');
-    expect(opts.queryFonts).toBe(false);
-    expect((opts.availableFonts as Record<string, string>)['liberation sans']).toBeUndefined();
+  const video = {} as HTMLVideoElement;
+  const fonts = [new Uint8Array([1, 2])];
+
+  it('creates an instance with defaults', async () => {
+    const instance = await createJassub(FakeJassub as never, {
+      video,
+      subContent: 'sub',
+      fonts,
+      availableFonts: {}
+    });
+
+    expect(instance).toBeInstanceOf(FakeJassub);
+    expect(captured).toMatchObject({
+      video,
+      subContent: 'sub',
+      workerUrl: 'worker.js',
+      wasmUrl: 'worker.wasm',
+      modernWasmUrl: 'modern.wasm',
+      timeOffset: 0,
+      queryFonts: 'local',
+      fonts,
+      defaultFont: 'liberation sans'
+    });
+  });
+
+  it('adds the bundled fallback font', async () => {
+    await createJassub(FakeJassub as never, {
+      video,
+      subContent: 'sub',
+      fonts: [],
+      availableFonts: {}
+    });
+
+    expect((captured!.availableFonts as Record<string, string>)['liberation sans']).toBe(
+      'font.woff2'
+    );
+  });
+
+  it('keeps an explicitly supplied fallback font', async () => {
+    await createJassub(FakeJassub as never, {
+      video,
+      subContent: 'sub',
+      fonts: [],
+      availableFonts: {},
+      defaultFont: 'custom.woff2'
+    });
+
+    expect(captured).toMatchObject({ defaultFont: 'custom.woff2' });
+    expect((captured!.availableFonts as Record<string, string>)['liberation sans']).toBeUndefined();
+  });
+
+  it('keeps a supplied liberation sans font', async () => {
+    await createJassub(FakeJassub as never, {
+      video,
+      subContent: 'sub',
+      fonts: [],
+      availableFonts: { 'liberation sans': 'custom-liberation.woff2' }
+    });
+
+    expect((captured!.availableFonts as Record<string, string>)['liberation sans']).toBe(
+      'custom-liberation.woff2'
+    );
+  });
+
+  it('tolerates missing available fonts', async () => {
+    await createJassub(
+      FakeJassub as never,
+      {
+        video,
+        subContent: 'sub',
+        fonts: []
+      } as never
+    );
+
+    expect((captured!.availableFonts as Record<string, string>)['liberation sans']).toBe(
+      'font.woff2'
+    );
+  });
+
+  it('honours overrides', async () => {
+    await createJassub(FakeJassub as never, {
+      video,
+      subContent: 'sub',
+      fonts,
+      availableFonts: { arial: 'arial.woff2' },
+      timeOffset: 2,
+      queryFonts: false,
+      workerUrlOverride: 'w.js',
+      wasmUrlOverride: 'w.wasm',
+      modernWasmUrlOverride: 'm.wasm'
+    });
+
+    expect(captured).toMatchObject({
+      timeOffset: 2,
+      queryFonts: false,
+      workerUrl: 'w.js',
+      wasmUrl: 'w.wasm',
+      modernWasmUrl: 'm.wasm',
+      availableFonts: expect.objectContaining({ arial: 'arial.woff2' })
+    });
   });
 });
