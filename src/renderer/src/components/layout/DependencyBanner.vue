@@ -17,7 +17,7 @@ onMounted(() => {
   window.addEventListener('focus', onWindowFocus);
   // Pierwsze sprawdzenie uruchamia się po namalowaniu powłoki: testy tworzą procesy w
   // procesie głównym i nie mogą konkurować z sekwencją startową.
-  if ('requestIdleCallback' in window) {
+  if (typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(() => void check(), { timeout: 3000 });
   } else {
     setTimeout(() => void check(), 1000);
