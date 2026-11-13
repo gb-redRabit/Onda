@@ -77,9 +77,7 @@ const playIconClass = computed(
   () => props.styles?.playIcon ?? (isBar.value ? 'text-base-200' : 'text-neutral-content')
 );
 const activeClass = computed(() => props.styles?.active ?? 'text-primary-text!');
-const glowClass = computed(
-  () => props.styles?.glow ?? (isBar.value ? '' : 'bg-neutral-content/10 blur-lg')
-);
+const glowClass = computed(() => props.styles?.glow ?? 'bg-neutral-content/10 blur-lg');
 const showGlow = computed(() => props.isPlaying && (!isBar.value || !!props.styles?.glow));
 const sz = computed(() => ({
   toggle: props.styles?.toggleSize ?? (isBar.value ? 15 : 16),

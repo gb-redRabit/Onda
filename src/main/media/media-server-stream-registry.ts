@@ -29,8 +29,8 @@ export async function registerGenericStreamUrl(
     if (expiresAt <= now) genericStreamUrls.delete(registeredUrl);
   }
   while (genericStreamUrls.size > MAX_REGISTERED_GENERIC_STREAMS) {
-    const oldest = genericStreamUrls.keys().next().value as string | undefined;
-    if (!oldest) break;
+    // Map has at least one key here; evict the oldest insertion (LRU-ish).
+    const oldest = genericStreamUrls.keys().next().value as string;
     genericStreamUrls.delete(oldest);
   }
 }
@@ -74,8 +74,8 @@ export function registerProviderStream(factory: ProviderStreamFactory, now = Dat
     if (entry.expiresAt <= now) providerStreams.delete(key);
   }
   while (providerStreams.size > MAX_REGISTERED_GENERIC_STREAMS) {
-    const oldest = providerStreams.keys().next().value as string | undefined;
-    if (!oldest) break;
+    // Map has at least one key here; evict the oldest insertion (LRU-ish).
+    const oldest = providerStreams.keys().next().value as string;
     providerStreams.delete(oldest);
   }
   return token;
