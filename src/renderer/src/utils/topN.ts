@@ -1,4 +1,5 @@
 export function topN<T>(items: T[], n: number, score: (t: T) => number): T[] {
+  if (n <= 0) return [];
   const out: T[] = [];
   for (const item of items) {
     const s = score(item);
