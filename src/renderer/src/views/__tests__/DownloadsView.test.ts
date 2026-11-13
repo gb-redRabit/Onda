@@ -15,7 +15,8 @@ const state = vi.hoisted(() => ({
   rowItems: [] as any[],
   total: 0,
   measureElement: vi.fn(),
-  grant: vi.fn()
+  grant: vi.fn(),
+  invoke: vi.fn()
 }));
 
 vi.mock('vue-router', () => ({ useRouter: () => state.router }));
@@ -127,9 +128,11 @@ beforeEach(() => {
   state.buildFilters.mockReturnValue({ all: 2, active: 1, completed: 1, failed: 0 });
   state.grant.mockReset();
   state.grant.mockResolvedValue(undefined);
+  state.invoke.mockReset();
+  state.invoke.mockResolvedValue(undefined);
   (window as { api?: unknown }).api = {
     grantMediaAccess: state.grant,
-    invoke: vi.fn()
+    invoke: state.invoke
   };
 });
 
@@ -250,6 +253,77 @@ describe('row actions', () => {
       })
     );
     expect(state.player.play).toHaveBeenCalled();
+    expect(state.router.push).toHaveBeenCalledWith('/player');
+  });
+
+  it('opens an audio file in the audio view even when the task kind says video', async () => {
+    const item = task('a', { outputPath: 'C:/out/Song.MP3', kind: 'video' });
+    state.visibleDownloads.mockReturnValue([item]);
+    mountView();
+    wrapper!.findComponent(RowStub).vm.$emit('play');
+    await flushPromises();
+
+    expect(state.player.setTrack).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'C:/out/Song.MP3', extension: 'mp3', type: 'audio' })
+    );
+    expect(state.router.push).toHaveBeenCalledWith('/audio');
+  });
+
+  it('opens a video file in the video view even when the task kind says audio', async () => {
+    const item = task('a', { outputPath: 'C:/out/Clip.MKV', kind: 'audio' });
+    state.visibleDownloads.mockReturnValue([item]);
+    mountView();
+    wrapper!.findComponent(RowStub).vm.$emit('play');
+    await flushPromises();
+
+    expect(state.player.setTrack).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'C:/out/Clip.MKV', extension: 'mkv', type: 'video' })
+    );
+    expect(state.router.push).toHaveBeenCalledWith('/player');
+  });
+
+  it('falls back to the task kind for an unknown extension', async () => {
+    const item = task('a', { outputPath: 'C:/out/file.bin', kind: 'video' });
+    state.visibleDownloads.mockReturnValue([item]);
+    mountView();
+    wrapper!.findComponent(RowStub).vm.$emit('play');
+    await flushPromises();
+
+    expect(state.player.setTrack).toHaveBeenCalledWith(
+      expect.objectContaining({ extension: 'bin', type: 'video' })
+    );
+    expect(state.router.push).toHaveBeenCalledWith('/player');
+  });
+
+  it('opens an image in the image viewer instead of the player', async () => {
+    const item = task('a', { outputPath: 'C:/out/Photo.JPG', kind: 'video' });
+    state.visibleDownloads.mockReturnValue([item]);
+    mountView();
+    wrapper!.findComponent(RowStub).vm.$emit('play');
+    await flushPromises();
+
+    expect(state.grant).toHaveBeenCalledWith('C:/out/Photo.JPG');
+    expect(state.invoke).toHaveBeenCalledWith(
+      'imageViewer:open',
+      [
+        expect.objectContaining({
+          name: 'Photo.JPG',
+          path: 'C:/out/Photo.JPG',
+          extension: 'jpg',
+          isDirectory: false,
+          size: 0,
+          modifiedAt: 100,
+          createdAt: 100
+        })
+      ],
+      0
+    );
+    expect(state.grant.mock.invocationCallOrder[0]).toBeLessThan(
+      state.invoke.mock.invocationCallOrder[0]
+    );
+    expect(state.player.setTrack).not.toHaveBeenCalled();
+    expect(state.player.play).not.toHaveBeenCalled();
+    expect(state.router.push).not.toHaveBeenCalled();
   });
 
   it('ignores downloads without an output path', () => {

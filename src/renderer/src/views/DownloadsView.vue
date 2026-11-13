@@ -18,6 +18,8 @@ import DownloadRow from '@renderer/components/downloads/DownloadRow.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import type { DownloadTask } from '@renderer/types/online';
 import type { MediaFile } from '@renderer/types/media';
+import type { FileItem } from '@renderer/types/explorer';
+import { AUDIO_EXTS, IMAGE_EXTS, VIDEO_EXTS } from '@shared/constants';
 import { Download } from '@lucide/vue';
 
 const yt = useOnlineStore();
@@ -48,21 +50,55 @@ function playDownload(t: DownloadTask) {
   if (!t.outputPath) return;
   // Serwer mediów serwuje pliki tylko z przyznanych katalogów głównych — pobranie
   // spoza biblioteki (np. domyślne Pobrane) trzeba zatwierdzić przed odtwarzaniem.
+  const extWithDot = t.outputPath.slice(t.outputPath.lastIndexOf('.')).toLowerCase();
+  const ext = extWithDot.replace(/^\./, '');
+  if (IMAGE_EXTS.includes(extWithDot)) {
+    openDownloadedImage(t, ext);
+    return;
+  }
   void window.api?.grantMediaAccess(t.outputPath);
-  const ext = t.outputPath.slice(t.outputPath.lastIndexOf('.')).toLowerCase();
+  // Rozszerzenie jest prawdą o pliku; `kind` bywa tylko deklaracją zadania
+  // (np. obraz/pobranie z nietypowego źródła), więc używamy go jedynie jako fallbacku.
+  const type: MediaFile['type'] = VIDEO_EXTS.includes(extWithDot)
+    ? 'video'
+    : AUDIO_EXTS.includes(extWithDot)
+      ? 'audio'
+      : t.kind === 'video'
+        ? 'video'
+        : 'audio';
   const file: MediaFile = {
     id: `dl-${t.id}`,
     name: t.title,
     path: t.outputPath,
-    extension: ext.replace(/^\./, ''),
+    extension: ext,
     mimeType: '',
     size: 0,
-    type: t.kind === 'video' ? 'video' : 'audio',
+    type,
     addedAt: t.startedAt,
     playCount: 0
   };
   player.setTrack(file);
   player.play();
+  void router.push(type === 'video' ? '/player' : '/audio');
+}
+
+function openDownloadedImage(t: DownloadTask, ext: string): void {
+  if (!t.outputPath) return;
+  const file: FileItem = {
+    name: t.outputPath.split(/[/\\]/).pop() || t.title,
+    path: t.outputPath,
+    isDirectory: false,
+    size: 0,
+    modifiedAt: t.startedAt,
+    createdAt: t.startedAt,
+    extension: ext,
+    mimeType: ''
+  };
+  // Obrazy otwieramy w dedykowanym oknie podglądu, a nie w odtwarzaczu wideo.
+  void (async () => {
+    await window.api?.grantMediaAccess(t.outputPath!);
+    await window.api?.invoke('imageViewer:open', [file], 0);
+  })();
 }
 
 const metaTarget = ref<DownloadTask | null>(null);
