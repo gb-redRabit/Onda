@@ -44,4 +44,45 @@ describe('Button', () => {
     const wrapper = mountButton({ size: 'icon', label: 'Close' });
     expect(wrapper.attributes('aria-label')).toBe('Close');
   });
+
+  it('warns in development about an icon button without a label', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    mountButton({ size: 'icon' });
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a label'));
+    warn.mockRestore();
+  });
+
+  it('skips the warning outside development', () => {
+    vi.stubEnv('DEV', false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      mountButton({ size: 'icon' });
+
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('sizes the loading spinner for large buttons', () => {
+    const large = mountButton({ loading: true, size: 'lg', label: 'Load' });
+    const normal = mountButton({ loading: true, label: 'Load' });
+
+    expect(large.findComponent({ name: 'Spinner' }).props('size')).toBe(18);
+    expect(normal.findComponent({ name: 'Spinner' }).props('size')).toBe(15);
+  });
+
+  it('keeps slots visible but transparent while loading', () => {
+    const wrapper = mount(Button, {
+      props: { loading: true, label: 'Save' },
+      slots: { default: 'Save', leading: '<i data-leading />', trailing: '<i data-trailing />' }
+    });
+
+    expect(wrapper.find('[data-leading]').exists()).toBe(true);
+    expect(wrapper.find('[data-trailing]').exists()).toBe(true);
+    expect(wrapper.find('span.opacity-0').exists()).toBe(true);
+  });
 });

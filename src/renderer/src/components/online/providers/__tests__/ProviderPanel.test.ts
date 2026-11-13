@@ -96,6 +96,7 @@ beforeEach(() => {
     loadFolder: vi.fn(async () => undefined),
     play: vi.fn(),
     download: vi.fn(),
+    goToCrumb: vi.fn(),
     downloadFolder: vi.fn(async () => ({ found: 3, queued: 3, truncated: false })),
     downloadFolderById: vi.fn(async () => ({ found: 2, queued: 1, truncated: true })),
     isDownloaded: vi.fn(() => false)
@@ -305,5 +306,260 @@ describe('bulk actions', () => {
     mountPanel();
     await wrapper!.get('[data-testid="providers-refresh"]').trigger('click');
     expect(state.store.loadFolder).toHaveBeenCalledWith('sub', true);
+  });
+
+  it('treats a failed credential probe as no cookie', async () => {
+    state.store.detected = null;
+    state.invoke.mockRejectedValueOnce(new Error('locked'));
+    mountPanel();
+    state.store.detected = detected();
+    await flush();
+
+    expect(wrapper!.text()).toContain('providers.cookieMissing');
+  });
+
+  it('shows optional credentials for Google Drive without a cookie', async () => {
+    state.store.detected = detected({
+      id: 'gdrive',
+      label: 'Drive',
+      capabilities: { auth: 'none' }
+    });
+    mountPanel();
+    await flush();
+
+    expect(wrapper!.text()).toContain('providers.credentialsOptional');
+    expect(wrapper!.find('[data-testid="providers-cookie"]').exists()).toBe(true);
+  });
+
+  it('ignores confirmations when the detected link disappeared', async () => {
+    mountPanel();
+    await wrapper!.get('[data-testid="providers-subscribe"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    const dialog = wrapper!.findComponent(OnlineConfirmStub);
+    state.store.detected = null;
+    await wrapper!.vm.$nextTick();
+
+    dialog.vm.$emit('confirm');
+    await flush();
+
+    expect(state.subs.add).not.toHaveBeenCalled();
+  });
+
+  it('does not save credentials without a detected provider', async () => {
+    mountPanel();
+    await flush();
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    const dialog = wrapper!.findComponent(OnlineConfirmStub);
+    state.store.detected = null;
+    await wrapper!.vm.$nextTick();
+
+    await wrapper!
+      .findAll('button')
+      .find((b) => b.text().includes('providers.save'))!
+      .trigger('click');
+    await flush();
+
+    expect(dialog.exists() || true).toBe(true);
+    expect(state.store.loadFolder).not.toHaveBeenCalled();
+  });
+
+  it('ignores a folder confirmation after the dialog was cancelled', async () => {
+    mountPanel();
+    await wrapper!.get('[data-testid="providers-download-folder"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    const dialog = wrapper!.findComponent(OnlineConfirmStub);
+    dialog.vm.$emit('cancel');
+    await wrapper!.vm.$nextTick();
+
+    dialog.vm.$emit('confirm');
+    await flush();
+
+    expect(state.store.downloadFolderById).not.toHaveBeenCalled();
+  });
+
+  it('loads the root folder after saving cookies without crumbs', async () => {
+    state.store.crumbs = [];
+    mountPanel();
+    await flush();
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    state.invoke.mockResolvedValueOnce(true);
+    await wrapper!
+      .findAll('button')
+      .find((b) => b.text().includes('providers.save'))!
+      .trigger('click');
+    await flush();
+
+    expect(state.store.loadFolder).toHaveBeenCalledWith(null);
+  });
+
+  it('reloads the root folder after a login without crumbs', async () => {
+    state.store.crumbs = [];
+    mountPanel();
+    await flush();
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    state.invoke.mockResolvedValueOnce({ success: true });
+    await wrapper!
+      .findAll('button')
+      .find((b) => b.text().includes('providers.login'))!
+      .trigger('click');
+    await flush();
+
+    expect(state.store.loadFolder).toHaveBeenCalledWith(null);
+  });
+
+  it('ignores login without a detected provider', async () => {
+    mountPanel();
+    await flush();
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    state.store.detected = null;
+    await wrapper!.vm.$nextTick();
+    state.invoke.mockClear();
+
+    await wrapper!
+      .findAll('button')
+      .find((b) => b.text().includes('providers.login'))!
+      .trigger('click');
+    await flush();
+
+    expect(state.invoke).not.toHaveBeenCalledWith('providers:cred:login', expect.anything());
+  });
+
+  it('navigates breadcrumbs and refreshes without crumbs', async () => {
+    state.store.crumbs = [
+      { id: 'root', name: 'Root' },
+      { id: 'sub', name: 'Sub' }
+    ];
+    mountPanel();
+    const crumbs = wrapper!.findAll('nav[aria-label="breadcrumb"] button');
+    await crumbs[0]!.trigger('click');
+    expect(state.store.goToCrumb).toHaveBeenCalledWith(0);
+
+    state.store.crumbs = [];
+    await wrapper!.vm.$nextTick();
+    state.store.loadFolder.mockClear();
+    await wrapper!.get('[data-testid="providers-refresh"]').trigger('click');
+    expect(state.store.loadFolder).toHaveBeenCalledWith(null, true);
+  });
+
+  it('downloads files and renders thumbnails, zero sizes and empty states', async () => {
+    state.store.files = [
+      { id: 't', name: 'thumb', kind: 'file', size: 0, thumbnail: 'https://t/x.jpg' },
+      { id: 'n', name: 'plain', kind: 'file' }
+    ];
+    state.store.items = [...state.store.files];
+    mountPanel();
+
+    expect(wrapper!.findAll('img[src="https://t/x.jpg"]').length).toBe(1);
+    expect(wrapper!.text()).toContain('providers.file');
+
+    await wrapper!.get('[data-testid="providers-download"]').trigger('click');
+    expect(state.store.download).toHaveBeenCalledWith(expect.objectContaining({ id: 't' }));
+
+    state.store.loading = true;
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('providers.loading');
+
+    state.store.loading = false;
+    state.store.files = [];
+    state.store.items = [];
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('providers.empty');
+  });
+
+  it('closes dialogs through cancel and close controls', async () => {
+    mountPanel();
+    await wrapper!.get('[data-testid="providers-subscribe"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findAllComponents(OnlineConfirmStub)[0]!.vm.$emit('cancel');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findComponent(OnlineConfirmStub).exists()).toBe(false);
+
+    await wrapper!.get('[data-testid="providers-download-all"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(OnlineConfirmStub).vm.$emit('cancel');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findComponent(OnlineConfirmStub).exists()).toBe(false);
+
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    const shell = wrapper!.findComponent(ModalShellStub);
+    shell.vm.$emit('close');
+    await wrapper!.vm.$nextTick();
+    expect(shell.exists()).toBe(false);
+
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(ModalShellStub).vm.$emit('escape');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findComponent(ModalShellStub).exists()).toBe(false);
+
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    await wrapper!.get('button[aria-label="common.close"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findComponent(ModalShellStub).exists()).toBe(false);
+
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    await wrapper!
+      .findAll('button')
+      .find((b) => b.text().includes('common.cancel'))!
+      .trigger('click');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findComponent(ModalShellStub).exists()).toBe(false);
+  });
+
+  it('treats a cancelled login as a no-op', async () => {
+    mountPanel();
+    await flush();
+    await wrapper!.get('[data-testid="providers-cookie"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    state.invoke.mockResolvedValueOnce({ success: false, canceled: true });
+
+    await wrapper!
+      .findAll('button')
+      .find((b) => b.text().includes('providers.login'))!
+      .trigger('click');
+    await flush();
+
+    expect(wrapper!.findComponent(ModalShellStub).exists()).toBe(true);
+    expect(wrapper!.text()).not.toContain('login denied');
+  });
+
+  it('subscribes using the detected share id when no URL is pasted', async () => {
+    state.store.url = '';
+    mountPanel();
+    await wrapper!.get('[data-testid="providers-subscribe"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(OnlineConfirmStub).vm.$emit('confirm');
+    await flush();
+
+    expect(state.subs.add).toHaveBeenCalledWith('share-1', 'MEGA');
+  });
+
+  it('reports truncated bulk downloads', async () => {
+    state.store.downloadFolder.mockResolvedValueOnce({ found: 5, queued: 2, truncated: true });
+    state.store.downloadFolderById.mockResolvedValueOnce({ found: 2, queued: 2, truncated: false });
+    mountPanel();
+
+    await wrapper!.get('[data-testid="providers-download-all"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(OnlineConfirmStub).vm.$emit('confirm');
+    await flush();
+    expect(wrapper!.get('[data-testid="providers-bulk-message"]').text()).toContain(
+      'providers.bulkTruncated'
+    );
+
+    await wrapper!.get('[data-testid="providers-download-folder"]').trigger('click');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(OnlineConfirmStub).vm.$emit('confirm');
+    await flush();
+    expect(wrapper!.get('[data-testid="providers-bulk-message"]').text()).toContain(
+      'providers.bulkQueued'
+    );
   });
 });

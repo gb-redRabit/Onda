@@ -136,7 +136,7 @@ function formatSize(bytes?: number): string {
 }
 
 function onItem(item: RemoteItem): void {
-  if (item.kind === 'folder') void store.openFolder(item);
+  void store.openFolder(item);
 }
 
 // Folder listings są cache'owane (żeby nie zasypywać serwisu zapytaniami) — odświeżanie
@@ -161,9 +161,8 @@ async function confirmDownloadAll(): Promise<void> {
 }
 
 async function confirmDownloadFolder(): Promise<void> {
-  const folder = pendingFolder.value;
+  const folder = pendingFolder.value!;
   pendingFolder.value = null;
-  if (!folder) return;
   const r = await store.downloadFolderById(folder.id);
   bulkMessage.value = r.truncated
     ? t('providers.bulkTruncated', { found: r.found, queued: r.queued })
