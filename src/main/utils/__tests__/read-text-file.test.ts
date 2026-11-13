@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtemp, writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -123,5 +123,80 @@ describe('readTextFileWithinBounds', () => {
     expect(SUBTITLE_EXTS.has('.txt')).toBe(false);
     expect(TEXT_EXTS.has('.txt')).toBe(true);
     expect(TEXT_EXTS.has('.srt')).toBe(false);
+  });
+
+  it('rejects a disallowed extension with a logged warning', async () => {
+    const p = await write('notes.txt', 'plain');
+    const result = await readTextFileWithinBounds(p, SUBTITLE_EXTS, SUBTITLE_MAX_BYTES, 'test');
+
+    expect(result).toEqual({ ok: false, reason: 'forbidden' });
+  });
+
+  it('checks protected and sensitive paths outside the temp folder', async () => {
+    const path = process.platform === 'win32' ? 'C:\\media\\notes.srt' : '/opt/media/notes.srt';
+    const result = await readTextFileWithinBounds(path, SUBTITLE_EXTS, SUBTITLE_MAX_BYTES, 'test', {
+      stat: async () => ({ isFile: () => true, size: 1 }),
+      readFile: async () => Buffer.from('x')
+    });
+
+    expect(result).toEqual({ ok: true, text: 'x' });
+  });
+
+  it('falls back to latin1 when the CP1250 decoder is unavailable', async () => {
+    const decode = vi.fn(() => {
+      throw new Error('decoder missing');
+    });
+    vi.stubGlobal(
+      'TextDecoder',
+      class {
+        decode = decode;
+      }
+    );
+    try {
+      const result = await readTextFileWithinBounds(
+        join(dir, 'legacy.srt'),
+        SUBTITLE_EXTS,
+        SUBTITLE_MAX_BYTES,
+        'test',
+        {
+          stat: async () => ({ isFile: () => true, size: 3 }),
+          readFile: async () => Buffer.from([0x5b, 0xe9, 0x5d])
+        }
+      );
+      expect(result).toEqual({ ok: true, text: '[é]' });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('falls back to latin1 when CP1250 produces C1 control characters', async () => {
+    const result = await readTextFileWithinBounds(
+      join(dir, 'c1.srt'),
+      SUBTITLE_EXTS,
+      SUBTITLE_MAX_BYTES,
+      'test',
+      {
+        stat: async () => ({ isFile: () => true, size: 1 }),
+        readFile: async () => Buffer.from([0x81])
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.text).toBe('\u0081');
+  });
+
+  it('reports a read error as unreadable', async () => {
+    const result = await readTextFileWithinBounds(
+      join(dir, 'unreadable.srt'),
+      SUBTITLE_EXTS,
+      SUBTITLE_MAX_BYTES,
+      'test',
+      {
+        stat: async () => ({ isFile: () => true, size: 1 }),
+        readFile: async () => Promise.reject(new Error('EIO'))
+      }
+    );
+
+    expect(result).toEqual({ ok: false, reason: 'unreadable' });
   });
 });

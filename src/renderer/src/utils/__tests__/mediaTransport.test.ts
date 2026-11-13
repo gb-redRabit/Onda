@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import {
   applyVolumeTarget,
@@ -7,6 +7,23 @@ import {
   getTargetPosition,
   clampSpeed
 } from '@renderer/utils/mediaTransport';
+
+const runtime = vi.hoisted(() => ({ coreShell: false }));
+const audio = vi.hoisted(() => ({
+  setVolume: vi.fn(),
+  seek: vi.fn(),
+  currentTime: { value: 12 },
+  duration: { value: 80 }
+}));
+
+vi.mock('@renderer/utils/runtimeMode', () => ({ isCoreShell: () => runtime.coreShell }));
+vi.mock('@renderer/composables/useAudioPlayer', () => ({
+  useAudioPlayer: () => audio
+}));
+
+beforeEach(() => {
+  runtime.coreShell = false;
+});
 
 const stubVideo = () => ({ currentTime: 30, duration: 120 }) as HTMLVideoElement;
 
@@ -76,6 +93,45 @@ describe('mediaTransport', () => {
       duration: 40
     } as HTMLAudioElement);
     expect(getTargetPosition(null)).toEqual({ currentTime: 5, duration: 40 });
+  });
+
+  it('treats a missing or zero video duration as zero', () => {
+    expect(getTargetPosition({ currentTime: 3, duration: 0 } as HTMLVideoElement)).toEqual({
+      currentTime: 3,
+      duration: 0
+    });
+    expect(
+      getTargetPosition({ currentTime: 3, duration: undefined } as unknown as HTMLVideoElement)
+    ).toEqual({ currentTime: 3, duration: 0 });
+    vi.spyOn(audioEngine, 'getMediaElement').mockReturnValue({
+      currentTime: 2,
+      duration: 0
+    } as HTMLAudioElement);
+    expect(getTargetPosition(null)).toEqual({ currentTime: 2, duration: 0 });
+  });
+});
+
+describe('mediaTransport in the core shell', () => {
+  beforeEach(() => {
+    runtime.coreShell = true;
+    audio.setVolume.mockClear();
+    audio.seek.mockClear();
+  });
+
+  afterEach(() => {
+    runtime.coreShell = false;
+  });
+
+  it('routes volume, seek and position through the audio player', () => {
+    applyVolumeTarget(null, false, 0.3);
+    expect(audio.setVolume).toHaveBeenCalledWith(0.3);
+
+    seekTarget(null, 20);
+    expect(audio.seek).toHaveBeenCalledWith(20);
+
+    expect(getTargetPosition(null)).toEqual({ currentTime: 12, duration: 80 });
+    expect(skipTarget(null, 8)).toBe(20);
+    expect(audio.seek).toHaveBeenLastCalledWith(20);
   });
 });
 

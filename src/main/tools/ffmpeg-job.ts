@@ -61,7 +61,6 @@ export async function runFfmpegJob(options: FfmpegJobOptions): Promise<MediaConv
     let lastPercent = 0;
     let stderrTail = '';
     let settled = false;
-    let timedOut = false;
 
     const finish = (result: MediaConvertResult): void => {
       if (settled) return;
@@ -76,7 +75,6 @@ export async function runFfmpegJob(options: FfmpegJobOptions): Promise<MediaConv
     };
 
     const timer = setTimeout(() => {
-      timedOut = true;
       active.canceled = true;
       try {
         child.kill();
@@ -89,7 +87,7 @@ export async function runFfmpegJob(options: FfmpegJobOptions): Promise<MediaConv
     child.stdout.on('data', (chunk: Buffer) => {
       stdoutBuffer += chunk.toString('utf-8');
       const lines = stdoutBuffer.split(/\r?\n/);
-      stdoutBuffer = lines.pop() ?? '';
+      stdoutBuffer = lines.pop()!;
       for (const line of lines) {
         const [key, raw] = line.split('=', 2);
         if (!key) continue;
@@ -126,10 +124,6 @@ export async function runFfmpegJob(options: FfmpegJobOptions): Promise<MediaConv
     child.on('close', (code) => {
       if (active.canceled) {
         finish({ success: false, canceled: true });
-        return;
-      }
-      if (timedOut) {
-        finish({ success: false, canceled: true, error: options.timeoutMessage });
         return;
       }
       if (code === 0 && existsSync(options.outputPath)) {

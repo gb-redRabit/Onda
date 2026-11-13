@@ -107,4 +107,104 @@ describe('auto updater', () => {
     replayUpdaterEvent(late as never);
     expect(late.send).toHaveBeenCalledWith('updater:event', { event: 'update-not-available' });
   });
+
+  it('reports the checking state and skips a dev-mode check', async () => {
+    const { checkForUpdates } = await import('../updater');
+    await expect(checkForUpdates()).resolves.toEqual({ checking: false });
+    expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+
+    appState.packaged = true;
+    const {
+      initAutoUpdater,
+      checkForUpdates: packagedCheck,
+      getUpdaterState
+    } = await import('../updater');
+    const target = makeTarget();
+    initAutoUpdater(() => target as never);
+
+    autoUpdater.emit('checking-for-update');
+    expect(getUpdaterState().status).toBe('checking');
+    expect(target.send).toHaveBeenLastCalledWith('updater:event', {
+      event: 'checking-for-update'
+    });
+
+    await expect(packagedCheck()).resolves.toEqual({ checking: true });
+    expect(getUpdaterState().status).toBe('checking');
+  });
+
+  it('records check failures with Error and non-Error values', async () => {
+    appState.packaged = true;
+    const { initAutoUpdater, checkForUpdates, getUpdaterState } = await import('../updater');
+    initAutoUpdater(() => makeTarget() as never);
+
+    autoUpdater.checkForUpdates.mockRejectedValueOnce(new Error('offline'));
+    await expect(checkForUpdates()).resolves.toEqual({ checking: false });
+    expect(getUpdaterState()).toMatchObject({ status: 'error', error: 'offline' });
+
+    autoUpdater.checkForUpdates.mockRejectedValueOnce('plain failure');
+    await checkForUpdates();
+    expect(getUpdaterState()).toMatchObject({ status: 'error', error: 'plain failure' });
+  });
+
+  it('records download failures without rejecting', async () => {
+    appState.packaged = true;
+    const { initAutoUpdater, downloadUpdate, getUpdaterState } = await import('../updater');
+    initAutoUpdater(() => makeTarget() as never);
+    autoUpdater.emit('update-available', { version: '1.0.1' });
+
+    autoUpdater.downloadUpdate.mockRejectedValueOnce(new Error('disk full'));
+    expect(downloadUpdate()).toBe(true);
+    await vi.waitFor(() =>
+      expect(getUpdaterState()).toMatchObject({ status: 'error', error: 'disk full' })
+    );
+
+    autoUpdater.emit('update-available', { version: '1.0.1' });
+    autoUpdater.downloadUpdate.mockRejectedValueOnce('plain failure');
+    expect(downloadUpdate()).toBe(true);
+    await vi.waitFor(() =>
+      expect(getUpdaterState()).toMatchObject({ status: 'error', error: 'plain failure' })
+    );
+  });
+
+  it('skips sending to missing or destroyed windows', async () => {
+    appState.packaged = true;
+    const { initAutoUpdater, replayUpdaterEvent } = await import('../updater');
+    initAutoUpdater(() => null);
+
+    expect(() => autoUpdater.emit('update-not-available')).not.toThrow();
+    expect(() => replayUpdaterEvent()).not.toThrow();
+
+    const destroyed = { isDestroyed: () => true, send: vi.fn() };
+    replayUpdaterEvent(destroyed as never);
+    expect(destroyed.send).not.toHaveBeenCalled();
+  });
+
+  it('replays nothing before the first event', async () => {
+    appState.packaged = true;
+    const { initAutoUpdater, replayUpdaterEvent } = await import('../updater');
+    const target = makeTarget();
+    initAutoUpdater(() => target as never);
+
+    replayUpdaterEvent(target as never);
+
+    expect(target.send).not.toHaveBeenCalled();
+  });
+
+  it('stringifies non-Error updater errors', async () => {
+    appState.packaged = true;
+    const { initAutoUpdater, getUpdaterState } = await import('../updater');
+    initAutoUpdater(() => makeTarget() as never);
+
+    autoUpdater.emit('error', 'plain failure');
+
+    expect(getUpdaterState()).toMatchObject({ status: 'error', error: 'plain failure' });
+  });
+
+  it('uses the default window getter before initialization', async () => {
+    appState.packaged = true;
+    const { checkForUpdates, getUpdaterState } = await import('../updater');
+
+    await expect(checkForUpdates()).resolves.toEqual({ checking: true });
+    expect(getUpdaterState().status).toBe('checking');
+  });
 });
