@@ -1,11 +1,20 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 
-vi.mock('../ipc/youtube/youtube-utils', () => ({ isValidCookieFile: () => false }));
+const h = vi.hoisted(() => ({
+  isValidCookieFile: vi.fn(() => false),
+  readFile: vi.fn()
+}));
+
+vi.mock('../ipc/youtube/youtube-utils', () => ({
+  isValidCookieFile: h.isValidCookieFile
+}));
+vi.mock('fs/promises', () => ({ readFile: h.readFile }));
 
 import {
   SESSION_COOKIE_NAMES,
   cookieOnDomain,
-  hasSessionCookies
+  hasSessionCookies,
+  isValidCookieFileAt
 } from '../youtube/youtube-auth-cookies';
 
 function cookie(name: string, domain: string, value = 'v'): Electron.Cookie {
@@ -56,8 +65,46 @@ describe('hasSessionCookies', () => {
     expect(hasSessionCookies(cookies, 'youtube.com')).toHaveLength(0);
   });
 
+  it('ignores entries without a cookie domain when a host is required', () => {
+    const cookieWithoutDomain = { name: 'SID', value: 'v', sameSite: 'no_restriction' } as never;
+
+    expect(hasSessionCookies([cookieWithoutDomain], 'youtube.com')).toHaveLength(0);
+    expect(hasSessionCookies([cookieWithoutDomain])).toHaveLength(1);
+  });
+
   it('exposes the SID-family names used for detection', () => {
     expect(SESSION_COOKIE_NAMES).toContain('__Secure-3PSID');
     expect(SESSION_COOKIE_NAMES).toContain('LOGIN_INFO');
+  });
+});
+
+beforeEach(() => {
+  h.isValidCookieFile.mockReset().mockReturnValue(false);
+  h.readFile.mockReset().mockResolvedValue('cookie-content');
+});
+
+describe('isValidCookieFileAt', () => {
+  it('rejects a missing path without reading', async () => {
+    await expect(isValidCookieFileAt(undefined)).resolves.toBe(false);
+    await expect(isValidCookieFileAt('')).resolves.toBe(false);
+    expect(h.readFile).not.toHaveBeenCalled();
+  });
+
+  it('reads and validates the file contents', async () => {
+    h.isValidCookieFile.mockReturnValue(true);
+
+    await expect(isValidCookieFileAt('D:/cookies.txt')).resolves.toBe(true);
+    expect(h.readFile).toHaveBeenCalledWith('D:/cookies.txt', 'utf-8');
+    expect(h.isValidCookieFile).toHaveBeenCalledWith('cookie-content');
+  });
+
+  it('returns false for invalid contents', async () => {
+    await expect(isValidCookieFileAt('D:/cookies.txt')).resolves.toBe(false);
+  });
+
+  it('swallows read failures', async () => {
+    h.readFile.mockRejectedValue(new Error('ENOENT'));
+
+    await expect(isValidCookieFileAt('D:/missing.txt')).resolves.toBe(false);
   });
 });
