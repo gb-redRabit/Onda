@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesShortcut, navShortcutBindings } from '../shortcuts';
+import { matchesPluginShortcut, matchesShortcut, navShortcutBindings } from '../shortcuts';
 import { DEFAULT_SHORTCUTS } from '../constants';
 import { SHORTCUT_LABELS } from '../shortcutLabels';
 
@@ -37,7 +37,25 @@ describe('matchesShortcut', () => {
   it('matches Space / Enter / Escape', () => {
     expect(matchesShortcut('Space', keyEvent({ key: ' ' }))).toBe(true);
     expect(matchesShortcut('Enter', keyEvent({ key: 'Enter' }))).toBe(true);
+    expect(matchesShortcut('Tab', keyEvent({ key: 'Tab' }))).toBe(true);
     expect(matchesShortcut('Escape', keyEvent({ key: 'Escape' }))).toBe(true);
+  });
+
+  it('rejects unknown multi-character keys', () => {
+    expect(matchesShortcut('Foo', keyEvent({ key: 'Foo' }))).toBe(false);
+  });
+
+  it('handles events without explicit modifier flags', () => {
+    const event = { key: 'k' } as KeyboardEvent;
+
+    expect(matchesShortcut('Ctrl+K', event)).toBe(false);
+    expect(matchesShortcut('K', event)).toBe(true);
+  });
+
+  it('rejects Meta when the shortcut does not ask for it', () => {
+    expect(matchesShortcut('Ctrl+K', keyEvent({ key: 'k', ctrlKey: true, metaKey: true }))).toBe(
+      false
+    );
   });
 
   it('matches F-keys, arrows and media keys', () => {
@@ -108,6 +126,38 @@ describe('matchesShortcut', () => {
   it('gives every action a human-readable label (Settings shows no raw ids)', () => {
     const unlabelled = Object.keys(DEFAULT_SHORTCUTS).filter((action) => !SHORTCUT_LABELS[action]);
     expect(unlabelled).toEqual([]);
+  });
+});
+
+describe('matchesPluginShortcut', () => {
+  it('canonicalizes modifiers and uppercases a single-character key', () => {
+    expect(matchesPluginShortcut(keyEvent({ key: 'k', ctrlKey: true, shiftKey: true }))).toBe(
+      'Ctrl+Shift+K'
+    );
+    expect(matchesPluginShortcut(keyEvent({ key: 'F5', altKey: true }))).toBe('Alt+F5');
+  });
+
+  it('keeps multi-character keys verbatim', () => {
+    expect(matchesPluginShortcut(keyEvent({ key: 'F12', ctrlKey: true }))).toBe('Ctrl+F12');
+    expect(matchesPluginShortcut(keyEvent({ key: 'MediaPlayPause', metaKey: true }))).toBe(
+      'Meta+MediaPlayPause'
+    );
+  });
+
+  it('returns null without any modifier', () => {
+    expect(matchesPluginShortcut(keyEvent({ key: 'k' }))).toBeNull();
+  });
+
+  it('ignores modifier keys pressed on their own', () => {
+    for (const key of ['Shift', 'Control', 'Alt', 'Meta']) {
+      expect(matchesPluginShortcut(keyEvent({ key, ctrlKey: true }))).toBeNull();
+    }
+  });
+
+  it('ignores keys that cannot be plugin shortcuts', () => {
+    expect(matchesPluginShortcut(keyEvent({ key: '', ctrlKey: true }))).toBeNull();
+    expect(matchesPluginShortcut(keyEvent({ key: '`', ctrlKey: true }))).toBeNull();
+    expect(matchesPluginShortcut({ ctrlKey: true } as KeyboardEvent)).toBeNull();
   });
 });
 

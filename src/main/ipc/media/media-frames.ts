@@ -58,11 +58,13 @@ export async function getVideoFps(filePath: string): Promise<number> {
     );
     // csv=p=0 → np. "24000/1001,24000/1001"
     const [rate, avg] = stdout.trim().split(',');
-    const fps = parseFrameRate(rate ?? '') || parseFrameRate(avg ?? '') || FPS_FALLBACK;
+    // `split` zawsze zwraca pierwszy element; brak drugiego oznacza jedno pole.
+    const fps = parseFrameRate(rate!) || parseFrameRate(avg ?? '') || FPS_FALLBACK;
     fpsCache.set(filePath, { fps, mtimeMs: s.mtimeMs });
     if (fpsCache.size > FPS_CACHE_MAX) {
-      const oldest = fpsCache.keys().next();
-      if (!oldest.done) fpsCache.delete(oldest.value);
+      // Rozmiar > MAX gwarantuje co najmniej jeden klucz (FIFO — najstarszy wpis).
+      const oldestKey = fpsCache.keys().next().value as string;
+      fpsCache.delete(oldestKey);
     }
     return fps;
   } catch (e) {

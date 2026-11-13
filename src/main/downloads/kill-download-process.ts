@@ -107,10 +107,7 @@ export function killDownloadProcess(child: KillableChild | null | undefined): vo
   child.once('exit', done);
   child.once('close', done);
 
-  try {
-    signalTree(child, 'SIGTERM');
-  } catch (e) {
-    clearTimeout(escalate);
-    logger.warn('download', `could not signal pid ${child.pid ?? '?'}`, e);
-  }
+  // `signalTree` sam izoluje błędy pojedynczych sygnałów (ESRCH/EPERM, brak taskkill),
+  // więc nie ma tu czego łapać — wyjątek oznaczałby, że proces już nie istnieje.
+  signalTree(child, 'SIGTERM');
 }

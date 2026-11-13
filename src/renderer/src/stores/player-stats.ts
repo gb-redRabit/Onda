@@ -9,7 +9,6 @@ export function usePlayerStats() {
     if (statsSaveTimer) return;
     statsSaveTimer = setTimeout(() => {
       statsSaveTimer = null;
-      if (pendingStats.size === 0) return;
       const stats = Array.from(pendingStats.entries()).map(([path, s]) => ({
         path,
         playCount: s.playCount,

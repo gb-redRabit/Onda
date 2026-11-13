@@ -28,13 +28,14 @@ function isValidStationUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-    if (parsed.hostname.length === 0) return false;
     if (parsed.username || parsed.password) return false;
     // Z góry odrzucamy dosłowny cel loopback / link-local. Stacja w sieci LAN
     // użytkownika jest legalna, ale adres loopback zawsze wskazuje na
     // coś działającego na tej maszynie, a proxy strumienia byłoby wtedy
     // sposobem na jego odczytanie. Nazwy hostów są rozwiązywane później, w momencie żądania.
-    if (isIP(parsed.hostname) && isNeverPublicAddress(parsed.hostname)) return false;
+    // IPv6 w URL jest w nawiasach (`[::1]`), a `isIP` ich nie akceptuje.
+    const hostname = parsed.hostname.replace(/^\[|\]$/g, '');
+    if (isIP(hostname) && isNeverPublicAddress(hostname)) return false;
     return true;
   } catch {
     return false;

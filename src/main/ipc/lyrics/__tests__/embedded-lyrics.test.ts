@@ -1,6 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ILyricsTag } from 'music-metadata';
-import { mapEmbeddedLyrics } from '../embedded-lyrics';
+
+// Embedded lyrics: SYLT/LRC/text tags are mapped locally, and any metadata failure
+// degrades to "no embedded lyrics" instead of failing the request.
+
+const h = vi.hoisted(() => ({
+  parseFile: vi.fn(),
+  loadMusicMetadata: vi.fn()
+}));
+
+vi.mock('../../../utils/lazy-music-metadata', () => ({
+  loadMusicMetadata: h.loadMusicMetadata
+}));
+
+import { mapEmbeddedLyrics, readEmbeddedLyrics } from '../embedded-lyrics';
 
 function tag(overrides: Partial<ILyricsTag>): ILyricsTag {
   return {
@@ -10,6 +23,11 @@ function tag(overrides: Partial<ILyricsTag>): ILyricsTag {
     ...overrides
   } as ILyricsTag;
 }
+
+beforeEach(() => {
+  h.parseFile.mockReset();
+  h.loadMusicMetadata.mockReset().mockResolvedValue({ parseFile: h.parseFile });
+});
 
 describe('mapEmbeddedLyrics', () => {
   it('prefers synchronized SYLT entries', () => {
@@ -30,6 +48,23 @@ describe('mapEmbeddedLyrics', () => {
         { timeMs: 1000, text: 'first' },
         { timeMs: 2000, text: 'second' }
       ]
+    });
+  });
+
+  it('clamps negative timestamps and skips blank synchronized lines', () => {
+    const result = mapEmbeddedLyrics([
+      tag({
+        syncText: [
+          { text: '   ', timestamp: 500 },
+          { text: 'late', timestamp: -20 }
+        ]
+      })
+    ]);
+
+    expect(result).toEqual({
+      kind: 'synced',
+      source: 'tag',
+      lines: [{ timeMs: 0, text: 'late' }]
     });
   });
 
@@ -58,5 +93,54 @@ describe('mapEmbeddedLyrics', () => {
     expect(mapEmbeddedLyrics(undefined)).toBe(null);
     expect(mapEmbeddedLyrics([])).toBe(null);
     expect(mapEmbeddedLyrics([tag({ text: '   ' })])).toBe(null);
+    expect(mapEmbeddedLyrics([tag({ text: undefined })])).toBe(null);
+  });
+
+  it('tolerates tags without syncText and entries without timestamps', () => {
+    expect(mapEmbeddedLyrics([tag({ syncText: undefined })])).toBe(null);
+
+    expect(mapEmbeddedLyrics([tag({ syncText: [{ text: 'now' }] as never })])).toEqual({
+      kind: 'synced',
+      source: 'tag',
+      lines: [{ timeMs: 0, text: 'now' }]
+    });
+  });
+
+  it('ignores text tags that contain only metadata', () => {
+    expect(mapEmbeddedLyrics([tag({ text: '[ar:Artist]' })])).toBe(null);
+  });
+});
+
+describe('readEmbeddedLyrics', () => {
+  it('parses tags from the file and skips covers', async () => {
+    h.parseFile.mockResolvedValue({ common: { lyrics: [tag({ text: '[00:02.00]Hi' })] } });
+
+    await expect(readEmbeddedLyrics('/music/a.mp3')).resolves.toEqual({
+      kind: 'synced',
+      source: 'tag',
+      lines: [{ timeMs: 2000, text: 'Hi' }]
+    });
+    expect(h.parseFile).toHaveBeenCalledWith('/music/a.mp3', {
+      duration: false,
+      skipCovers: true
+    });
+  });
+
+  it('returns null when the file has no lyrics tag', async () => {
+    h.parseFile.mockResolvedValue({ common: {} });
+
+    await expect(readEmbeddedLyrics('/music/a.mp3')).resolves.toBeNull();
+  });
+
+  it('returns null when the file cannot be parsed', async () => {
+    h.parseFile.mockRejectedValue(new Error('unsupported format'));
+
+    await expect(readEmbeddedLyrics('/music/a.bin')).resolves.toBeNull();
+  });
+
+  it('returns null when music-metadata cannot be loaded', async () => {
+    h.loadMusicMetadata.mockRejectedValue(new Error('missing dependency'));
+
+    await expect(readEmbeddedLyrics('/music/a.mp3')).resolves.toBeNull();
   });
 });
