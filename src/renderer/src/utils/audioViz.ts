@@ -9,6 +9,8 @@ export function getFrequencyBins(
     analyser.getByteFrequencyData(raw);
     const bins: number[] = [];
     const binSize = Math.floor(len / count);
+    // Za mało danych na żądaną liczbę koszy — dzielenie przez zero dałoby NaN.
+    if (binSize < 1) return [];
     for (let i = 0; i < count; i++) {
       let sum = 0;
       const start = i * binSize;
