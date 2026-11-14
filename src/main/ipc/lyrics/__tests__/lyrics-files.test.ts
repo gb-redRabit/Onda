@@ -60,4 +60,10 @@ describe('findLyricsSidecar', () => {
 
     expect(await findLyricsSidecar(join(dir, 'song.mp3'))).toBe(null);
   });
+
+  it('returns null when the directory cannot be read', async () => {
+    expect(
+      await findLyricsSidecar(join(tmpdir(), 'onda-missing-lyrics-dir', 'song.mp3'))
+    ).toBeNull();
+  });
 });

@@ -45,4 +45,36 @@ describe('direct provider', () => {
       ).rejects.toThrow();
     }
   });
+
+  it('parses a valid link into a ref', () => {
+    expect(directProvider.parse('https://host/a/movie.mp4')).toEqual({
+      provider: 'direct',
+      shareId: 'https://host/a/movie.mp4'
+    });
+  });
+
+  it('rejects non-string input, credentials and malformed urls', () => {
+    expect(directProvider.match(null as never)).toBe(false);
+    expect(directProvider.match(42 as never)).toBe(false);
+    expect(directProvider.match('https://user:pass@host/a.mp4')).toBe(false);
+    expect(directProvider.match('https://:pass@host/a.mp4')).toBe(false);
+    expect(directProvider.match('https://[::1/x.mp4')).toBe(false);
+  });
+
+  it('falls back to the host or raw url when the path has no usable file name', async () => {
+    await expect(
+      directProvider.listFolder({ provider: 'direct', shareId: 'https://example.com?x=.mp4' })
+    ).resolves.toEqual([
+      {
+        id: 'https://example.com?x=.mp4',
+        name: 'example.com',
+        kind: 'file',
+        parentId: null
+      }
+    ]);
+
+    await expect(
+      directProvider.listFolder({ provider: 'direct', shareId: 'https://host/a/%E0%A4%A.mp4' })
+    ).resolves.toMatchObject([{ name: 'https://host/a/%E0%A4%A.mp4' }]);
+  });
 });

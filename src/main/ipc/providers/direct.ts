@@ -16,7 +16,6 @@ function isValidDirectUrl(raw: string): boolean {
   if (!/^https?:\/\//i.test(trimmed) || !DIRECT_EXT.test(trimmed)) return false;
   try {
     const u = new URL(trimmed);
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
     if (u.username || u.password || !u.hostname) return false;
     const host = u.hostname.replace(/^\[|\]$/g, '');
     if (isLoopbackHost(host)) return false;

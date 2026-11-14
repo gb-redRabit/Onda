@@ -75,4 +75,56 @@ describe('useLoudnessAnalysis', () => {
 
     expect(invoke).toHaveBeenCalledWith('library:loudnessCancel');
   });
+
+  it('subscribes once and ignores empty progress payloads', async () => {
+    const loudness = await loadComposable();
+    const mod = await import('../useLoudnessAnalysis');
+    const second = mod.useLoudnessAnalysis();
+
+    expect(second.running.value).toBe(false);
+
+    progressCallback?.();
+    progressCallback?.({ current: undefined, total: undefined });
+    expect(loudness.current.value).toBe(0);
+    expect(loudness.total.value).toBe(0);
+
+    progressCallback?.({ current: 3 });
+    expect(loudness.current.value).toBe(3);
+    progressCallback?.({ total: 4 });
+    expect(loudness.total.value).toBe(4);
+  });
+
+  it('ignores a second analyze while one is running', async () => {
+    let resolve!: (value: unknown) => void;
+    invoke.mockReturnValueOnce(
+      new Promise((done) => {
+        resolve = done;
+      })
+    );
+    const loudness = await loadComposable();
+
+    const first = loudness.analyze();
+    expect(loudness.running.value).toBe(true);
+    await loudness.analyze();
+    resolve(null);
+    await first;
+
+    expect(loudness.running.value).toBe(false);
+    expect(loudness.result.value).toBeNull();
+  });
+
+  it('captures thrown errors of any type', async () => {
+    invoke.mockRejectedValueOnce(new Error('boom'));
+    const loudness = await loadComposable();
+
+    await loudness.analyze();
+    expect(loudness.error.value).toBe('boom');
+
+    vi.resetModules();
+    invoke.mockRejectedValueOnce('plain');
+    const reloaded = await loadComposable();
+
+    await reloaded.analyze();
+    expect(reloaded.error.value).toBe('plain');
+  });
 });
