@@ -48,4 +48,12 @@ describe('clearAppCaches', () => {
     expect(result.bytesFreed).toBe(0);
     expect(result.error).toBe('EBUSY');
   });
+
+  it('stringifies non-Error failures', async () => {
+    mocks.clearCoverCache.mockRejectedValue('plain failure');
+
+    const result = await clearAppCaches();
+
+    expect(result).toMatchObject({ success: false, error: 'plain failure' });
+  });
 });

@@ -47,4 +47,8 @@ describe('redactSecrets', () => {
     expect(redactSecrets(line)).toBe(line);
     expect(redactSecrets('plugin e2e-channel enabled')).toBe('plugin e2e-channel enabled');
   });
+
+  it('returns empty input unchanged', () => {
+    expect(redactSecrets('')).toBe('');
+  });
 });

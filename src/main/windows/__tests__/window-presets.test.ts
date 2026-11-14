@@ -1,7 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { GLASS_WINDOW_OPTS } from '../window-presets';
+
+const PLATFORM = process.platform;
+
+function setPlatform(value: NodeJS.Platform): void {
+  Object.defineProperty(process, 'platform', { value, configurable: true });
+}
+
+afterEach(() => {
+  setPlatform(PLATFORM);
+  vi.resetModules();
+});
 
 const ROOT = process.cwd();
 const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
@@ -14,6 +25,27 @@ describe('GLASS_WINDOW_OPTS', () => {
     expect(GLASS_WINDOW_OPTS.transparent).toBe(false);
     expect(GLASS_WINDOW_OPTS.hasShadow).toBe(true);
     expect(GLASS_WINDOW_OPTS.backgroundColor).toBeTruthy();
+  });
+
+  it('adds macOS vibrancy only on darwin', async () => {
+    setPlatform('darwin');
+    vi.resetModules();
+    const mod = await import('../window-presets');
+
+    expect(mod.GLASS_WINDOW_OPTS).toMatchObject({
+      vibrancy: 'sidebar',
+      visualEffectState: 'active'
+    });
+    expect(mod.GLASS_WINDOW_OPTS).not.toHaveProperty('backgroundMaterial');
+  });
+
+  it('omits platform materials on other systems', async () => {
+    setPlatform('linux');
+    vi.resetModules();
+    const mod = await import('../window-presets');
+
+    expect(mod.GLASS_WINDOW_OPTS).not.toHaveProperty('vibrancy');
+    expect(mod.GLASS_WINDOW_OPTS).not.toHaveProperty('backgroundMaterial');
   });
 });
 
