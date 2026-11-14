@@ -205,6 +205,59 @@ describe('local engine bootstrap', () => {
     remote.useAudioPlayer();
     expect(state.engine.loadTrack).not.toHaveBeenCalled();
   });
+
+  it('applies defaults for omitted playback settings', async () => {
+    const playback = state.settings.playback as Record<string, unknown>;
+    playback.replayGainMode = undefined;
+    playback.equalizerPreamp = undefined;
+    playback.equalizerUserPresets = undefined;
+    playback.audioDelayMs = undefined;
+    playback.subtitleDelayMs = undefined;
+
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+
+    expect(state.engine.setReplayGainMode).toHaveBeenCalledWith('off');
+    expect(state.engine.setEqPreamp).toHaveBeenCalledWith(0);
+    expect(state.engine.setAudioDelayMs).toHaveBeenCalledWith(0);
+    expect(state.fx.equalizerUserPresets).toEqual({});
+    expect(state.subtitleDelay.value).toBe(0);
+  });
+
+  it('resumes an existing stream that was already playing', async () => {
+    state.player.currentTrack = track('stream', '/live');
+    state.player.isPlaying = true;
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+    vi.advanceTimersByTime(50);
+
+    expect(state.engine.loadRemote).toHaveBeenCalledWith('/live');
+    expect(state.engine.resume).toHaveBeenCalled();
+    expect(state.engine.play).toHaveBeenCalled();
+  });
+
+  it('initializes the module only once and wires state providers', async () => {
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+    mod.useAudioPlayer();
+
+    expect(state.wireEvents).toHaveBeenCalledTimes(1);
+    const provider = state.engine.setStateProvider.mock.calls.at(-1)![0];
+    expect(provider.getCurrentTrackPath()).toBeNull();
+    expect(provider.isMuted()).toBe(false);
+    expect(provider.getVolume()).toBe(0.8);
+    expect(provider.isPlaying()).toBe(false);
+
+    state.player.currentTrack = track('audio', '/music/a.mp3');
+    expect(provider.getCurrentTrackPath()).toBe('/music/a.mp3');
+    expect(provider.getCurrentTrack()).toBe(state.player.currentTrack);
+  });
+
+  it('ignores the local video bootstrap outside Core shell', async () => {
+    const mod = await loadModule();
+    mod.ensureLocalVideoAudio();
+    expect(state.wireEvents).not.toHaveBeenCalled();
+  });
 });
 
 describe('local API', () => {
@@ -318,6 +371,88 @@ describe('local watchers', () => {
     expect(state.engine.play).toHaveBeenCalled();
   });
 
+  it('skips gapless preload without a usable next track', async () => {
+    state.settings.playback.gaplessPlayback = true;
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+
+    state.player.currentTrack = track('audio', '/music/a.mp3');
+    await nextTick();
+    expect(state.engine.preloadNext).not.toHaveBeenCalled();
+
+    state.player.pendingQueue = [track('video', '/v.mp4')];
+    state.player.currentTrack = track('audio', '/music/b.mp3');
+    await nextTick();
+    expect(state.engine.preloadNext).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the main queue for gapless preload', async () => {
+    state.settings.playback.gaplessPlayback = true;
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+    const next = track('audio', '/music/next.mp3');
+    state.player.queue = [next];
+
+    state.player.currentTrack = track('audio', '/music/a.mp3');
+    await nextTick();
+
+    expect(state.engine.preloadNext).toHaveBeenCalledWith(next);
+  });
+
+  it('ignores play toggles for videos and exposes progress', async () => {
+    const mod = await loadModule();
+    const api = mod.useAudioPlayer();
+
+    state.player.currentTrack = track('video', '/v.mp4');
+    await nextTick();
+    state.engine.resume.mockClear();
+    state.engine.play.mockClear();
+    state.player.isPlaying = true;
+    await nextTick();
+    expect(state.engine.resume).not.toHaveBeenCalled();
+
+    expect(api.progress.value).toBe(0);
+    api.duration.value = 100;
+    api.currentTime.value = 25;
+    expect(api.progress.value).toBe(0.25);
+  });
+
+  it('resets the EQ debounce and clamps non-numeric delays', async () => {
+    const mod = await loadModule();
+    const api = mod.useAudioPlayer();
+
+    api.applyEqBands([band(1)]);
+    api.applyEqBands([band(2)]);
+    vi.advanceTimersByTime(120);
+
+    expect(state.engine.setEqBands).toHaveBeenCalledTimes(1);
+    expect(state.engine.setEqBands).toHaveBeenCalledWith([band(2)]);
+
+    api.setAudioDelay(Number.NaN);
+    expect(state.engine.setAudioDelayMs).toHaveBeenLastCalledWith(0);
+  });
+
+  it('falls back to the default replay gain mode', async () => {
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+
+    state.settings.playback.replayGainMode = undefined;
+    await nextTick();
+
+    expect(state.engine.setReplayGainMode).toHaveBeenLastCalledWith('off');
+  });
+
+  it('ignores unknown track types', async () => {
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+
+    state.player.currentTrack = track('image', '/pics/a.jpg');
+    await nextTick();
+
+    expect(state.engine.loadTrack).not.toHaveBeenCalled();
+    expect(state.engine.loadRemote).not.toHaveBeenCalled();
+  });
+
   it('handles stream and video track changes', async () => {
     const mod = await loadModule();
     mod.useAudioPlayer();
@@ -397,6 +532,107 @@ describe('Core shell remote player', () => {
     state.coreShell = true;
   });
 
+  it('seeks a video without an attached element', async () => {
+    state.player.currentTrack = track('video', '/v.mp4');
+    const mod = await loadModule();
+    const api = mod.useAudioPlayer();
+    vi.spyOn(document, 'querySelector').mockReturnValue(null);
+
+    api.seek(5);
+
+    expect(state.player.currentTime).toBe(5);
+  });
+
+  it('initializes the core client once and returns a null audio context', async () => {
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+    mod.ensureLocalVideoAudio();
+    const second = mod.useAudioPlayer();
+
+    expect(state.initCoreClient).toHaveBeenCalledTimes(1);
+    expect(second.getAudioContext()).toBeNull();
+  });
+
+  it('re-subscribes viz after core ready and the first state tick', async () => {
+    const mod = await loadModule();
+    const api = mod.useAudioPlayer();
+    api.setVizActive(true);
+    state.sendCoreCommand.mockClear();
+
+    const ready = state.apiOn.mock.calls.find((c) => c[0] === 'core:ready')![1] as () => void;
+    ready();
+    expect(state.sendCoreCommand).toHaveBeenCalledWith({ type: 'viz', active: true });
+
+    state.sendCoreCommand.mockClear();
+    state.coreState.value = {
+      current: track('audio'),
+      currentTime: 1,
+      duration: 10,
+      buffered: 0,
+      enginePlaying: true,
+      volume: 0.6,
+      isLoading: false,
+      error: null
+    };
+    await nextTick();
+    expect(state.sendCoreCommand).toHaveBeenCalledWith({ type: 'viz', active: true });
+
+    state.sendCoreCommand.mockClear();
+    state.coreState.value = null;
+    await nextTick();
+    state.coreState.value = {
+      current: track('audio'),
+      currentTime: 2,
+      duration: 10,
+      buffered: 0,
+      enginePlaying: true,
+      volume: 0.6,
+      isLoading: false,
+      error: null
+    };
+    await nextTick();
+    expect(state.sendCoreCommand).toHaveBeenCalledWith({ type: 'viz', active: true });
+  });
+
+  it('ignores viz toggles for video and reports remote progress', async () => {
+    state.player.currentTrack = track('video', '/v.mp4');
+    const mod = await loadModule();
+    const api = mod.useAudioPlayer();
+
+    state.sendCoreCommand.mockClear();
+    api.setVizActive(true);
+    expect(state.sendCoreCommand).not.toHaveBeenCalled();
+    expect(api.progress.value).toBe(0);
+    api.duration.value = 200;
+    api.currentTime.value = 50;
+    expect(api.progress.value).toBe(0.25);
+  });
+
+  it('ignores local watchers in Core shell', async () => {
+    const mod = await loadModule();
+    mod.ensureLocalVideoAudio();
+    mod.ensureLocalVideoAudio();
+    expect(state.wireEvents).toHaveBeenCalledTimes(1);
+
+    state.player.currentTrack = track('video', '');
+    await nextTick();
+    state.engine.pause.mockClear();
+    state.player.currentTrack = null;
+    await nextTick();
+    expect(state.engine.pause).not.toHaveBeenCalled();
+
+    state.player.currentTrack = track('audio');
+    await nextTick();
+    state.player.isPlaying = true;
+    state.player.isMuted = true;
+    state.player.volume = 0.1;
+    await nextTick();
+
+    expect(state.engine.resume).not.toHaveBeenCalled();
+    expect(state.engine.setMuted).not.toHaveBeenCalled();
+    expect(state.engine.setVolume).not.toHaveBeenCalled();
+  });
+
   it('initializes the core client and listens for viz/ready', async () => {
     const mod = await loadModule();
     const api = mod.useAudioPlayer();
@@ -435,6 +671,19 @@ describe('Core shell remote player', () => {
     expect(api.isPlaying.value).toBe(true);
     expect(api.volume.value).toBe(0.5);
     expect(api.isReady.value).toBe(true);
+
+    state.coreState.value = {
+      current: track('audio'),
+      currentTime: 44,
+      duration: 120,
+      buffered: 61,
+      enginePlaying: true,
+      volume: 0.5,
+      isLoading: false,
+      error: null
+    };
+    await nextTick();
+    expect(api.currentTime.value).toBe(44);
   });
 
   it('ignores core ticks for video and tracks readiness resets', async () => {
@@ -455,6 +704,7 @@ describe('Core shell remote player', () => {
     expect(api.currentTime.value).toBe(0);
 
     const ready = state.apiOn.mock.calls.find((c) => c[0] === 'core:ready')![1] as () => void;
+    state.sendCoreCommand.mockClear();
     ready();
     expect(state.sendCoreCommand).not.toHaveBeenCalled();
   });
@@ -488,6 +738,7 @@ describe('Core shell remote player', () => {
     api.setEqUserPresets({ p: [] });
     api.setEqMulticolor(true);
     api.setEqSnap(true);
+    api.setAudioDelay(Number.NaN);
 
     expect(state.sendCoreCommand).toHaveBeenCalledWith({
       type: 'eqBands',
@@ -502,6 +753,7 @@ describe('Core shell remote player', () => {
     expect(state.sendCoreCommand).toHaveBeenCalledWith({ type: 'eqMono', on: true });
     expect(state.sendCoreCommand).toHaveBeenCalledWith({ type: 'nightMode', on: true });
     expect(state.sendCoreCommand).toHaveBeenCalledWith({ type: 'audioDelay', ms: 500 });
+    expect(state.sendCoreCommand).toHaveBeenLastCalledWith({ type: 'audioDelay', ms: 0 });
     expect(state.settings.updatePlayback).toHaveBeenCalledWith({ equalizerUserPresets: { p: [] } });
   });
 
