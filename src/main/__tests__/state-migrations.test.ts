@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterAll } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -168,5 +168,17 @@ describe('ensureStoreBackup', () => {
     await ensureStoreBackup(configPath);
     expect(readFileSync(`${configPath}.bak.1`, 'utf-8')).toBe('v4');
     expect(readFileSync(`${configPath}.bak.3`, 'utf-8')).toBe('v2');
+  });
+
+  it('reports a failed backup when the source cannot be copied', async () => {
+    const failing = mkdtempSync(join(tmpdir(), 'onda-backup-fail-'));
+    try {
+      const directoryAsConfig = join(failing, 'config.json');
+      mkdirSync(directoryAsConfig);
+
+      await expect(ensureStoreBackup(directoryAsConfig)).resolves.toBe(false);
+    } finally {
+      rmSync(failing, { recursive: true, force: true });
+    }
   });
 });
