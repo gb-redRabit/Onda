@@ -60,4 +60,39 @@ describe('v-activate', () => {
     key(el, 'keyup', ' ');
     expect(click).not.toHaveBeenCalled();
   });
+
+  it('supports the legacy Spacebar key and ignores unrelated keys', () => {
+    const { el, click } = setup();
+
+    key(el, 'keydown', 'a');
+    key(el, 'keydown', 'Spacebar');
+    expect(click).not.toHaveBeenCalled();
+
+    key(el, 'keyup', 'Spacebar');
+    expect(click).toHaveBeenCalledTimes(1);
+
+    key(el, 'keyup', 'Enter');
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps existing role and tabindex attributes', () => {
+    const el = document.createElement('div');
+    el.setAttribute('role', 'tab');
+    el.setAttribute('tabindex', '-1');
+
+    (vActivate as unknown as DirectiveLike).mounted(el);
+
+    expect(el.getAttribute('role')).toBe('tab');
+    expect(el.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('ignores keyup bubbling from a nested control', () => {
+    const { el, click } = setup();
+    const child = document.createElement('button');
+    el.appendChild(child);
+
+    child.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+
+    expect(click).not.toHaveBeenCalled();
+  });
 });

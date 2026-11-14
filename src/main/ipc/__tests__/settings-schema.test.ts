@@ -198,6 +198,38 @@ describe('sanitizeSettings', () => {
     });
   });
 
+  it('sanitizes api key entries with optional values and invalid shapes', () => {
+    const { sanitized, droppedKeys } = sanitizeSettings({
+      apiKeys: {
+        keys: [
+          'nope',
+          null,
+          {
+            id: 7,
+            name: ['bad'],
+            service: false,
+            key: 'k',
+            isActive: 'yes',
+            values: { region: 'eu', retries: 3, enabled: true, junk: null }
+          }
+        ]
+      },
+      playback: {
+        equalizerBands: [{ type: 'peaking', frequency: 1000, q: 1, gain: 6 }]
+      },
+      general: 'nope',
+      shortcuts: 42
+    });
+
+    expect(sanitized.apiKeys).toEqual({
+      keys: [{ key: 'k', values: { region: 'eu', retries: 3, enabled: true } }]
+    });
+    expect((sanitized.playback as { equalizerBands?: unknown[] }).equalizerBands).toHaveLength(1);
+    expect('general' in sanitized).toBe(false);
+    expect('shortcuts' in sanitized).toBe(false);
+    expect(droppedKeys).toEqual(expect.arrayContaining(['general', 'shortcuts']));
+  });
+
   it('validates nested network.proxy and drops mistyped fields', () => {
     const { sanitized } = sanitizeSettings({
       network: {
