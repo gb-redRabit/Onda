@@ -81,13 +81,9 @@ async function extractClientId(): Promise<string | null> {
     .map((m) => m[1])
     .filter((src) => src.includes('/assets/') && /\.js(?:[?#].*)?$/.test(src))
     .map((src) => {
-      try {
-        if (/^https?:\/\//i.test(src)) return src;
-        if (src.startsWith('//')) return `https:${src}`;
-        return new URL(src, SC_HOME).toString();
-      } catch {
-        return '';
-      }
+      if (/^https?:\/\//i.test(src)) return src;
+      if (src.startsWith('//')) return `https:${src}`;
+      return new URL(src, SC_HOME).toString();
     })
     .filter(Boolean);
   const unique = [...new Set(bundleUrls)].slice(-MAX_BUNDLE_PROBES).reverse();
@@ -133,7 +129,7 @@ export function resetClientIdCache(): void {
 type ScParamValue = string | number | boolean | undefined | null;
 
 async function scApi<T>(path: string, params: Record<string, ScParamValue>): Promise<T> {
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     const clientId = await getClientId(attempt > 0);
     if (!clientId) throw new ScApiError('SoundCloud client_id unavailable');
     const url = new URL(`${SC_API_BASE}${path}`);
@@ -157,7 +153,6 @@ async function scApi<T>(path: string, params: Record<string, ScParamValue>): Pro
       throw new ScApiError('Invalid JSON from SoundCloud API');
     }
   }
-  throw new ScApiError('SoundCloud API unavailable');
 }
 
 // ---------------------------------------------------------------------------

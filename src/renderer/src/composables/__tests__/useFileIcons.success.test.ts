@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp, h } from 'vue';
 import type { FileItem } from '@renderer/types/explorer';
 
@@ -48,15 +48,23 @@ function file(path: string, overrides: Partial<FileItem> = {}): FileItem {
   };
 }
 
-const flush = () => new Promise((resolve) => setTimeout(resolve, 25));
+const flush = async (): Promise<void> => {
+  await vi.runAllTimersAsync();
+  await Promise.resolve();
+};
 
 beforeEach(() => {
+  vi.useFakeTimers();
   mocks.cached.mockReset().mockReturnValue(null);
   mocks.setCached.mockClear();
   mocks.usable.mockReset().mockReturnValue(true);
   mocks.loggerError.mockClear();
   mocks.invoke.mockReset().mockResolvedValue('data:image/png;base64,ICON');
   (window as unknown as { api: unknown }).api = { invoke: mocks.invoke };
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('useFileIcons success path', () => {
@@ -168,19 +176,14 @@ describe('useFileIcons lifecycle', () => {
   });
 
   it('cancels a pending render on unmount', async () => {
-    vi.useFakeTimers();
-    try {
-      const { api, unmount } = mountUseFileIcons();
+    const { api, unmount } = mountUseFileIcons();
 
-      api.extraSmallIcon(file('/pending.mp3'));
-      await vi.advanceTimersByTimeAsync(0);
+    api.extraSmallIcon(file('/pending.mp3'));
+    await vi.advanceTimersByTimeAsync(0);
 
-      unmount();
-      vi.advanceTimersByTime(0);
+    unmount();
+    vi.advanceTimersByTime(0);
 
-      expect(api.extraSmallIcons.value).toEqual({});
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(api.extraSmallIcons.value).toEqual({});
   });
 });
