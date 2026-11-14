@@ -73,4 +73,37 @@ describe('useVirtualGrid', () => {
 
     grid.destroy();
   });
+
+  it('supports a dynamic column width and ignores empty or zero layouts', () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    const scrollRef = ref<HTMLElement | null>(null);
+    const grid = useVirtualGrid(scrollRef, () => 160, 6);
+
+    grid.update();
+    expect(grid.cols.value).toBe(6);
+
+    scrollRef.value = elementWithWidth(640);
+    grid.update();
+    expect(grid.cols.value).toBe(4);
+
+    const zeroRef = ref<HTMLElement | null>(elementWithWidth(640));
+    const zeroGrid = useVirtualGrid(zeroRef, 0, 6);
+    zeroGrid.update();
+    expect(zeroGrid.cols.value).toBe(6);
+  });
+
+  it('observes only once and tolerates repeated teardown', () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    const scrollRef = ref<HTMLElement | null>(elementWithWidth(600));
+    const grid = useVirtualGrid(scrollRef, 100, 6);
+
+    grid.observe();
+    const first = FakeResizeObserver.instances.at(-1)!;
+    grid.observe();
+    expect(FakeResizeObserver.instances.length).toBe(2);
+    expect(first.disconnected).toBe(true);
+
+    grid.destroy();
+    grid.destroy();
+  });
 });
