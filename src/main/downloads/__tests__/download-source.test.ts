@@ -64,9 +64,13 @@ describe('buildJobSource', () => {
     const source = buildJobSource({
       mode: 'http',
       sourceId: 'src-1',
-      fileName: '..\\..\\escape.bat'
+      fileName: '..\\..\\escape.bat',
+      apiKeyId: 'key-1',
+      headerName: 'X-Api-Key'
     });
     expect(source?.fileName).toBe('escape.bat');
+    expect(source?.apiKeyId).toBe('key-1');
+    expect(source?.headerName).toBe('X-Api-Key');
   });
 
   it('keeps the provider ref/item and sanitizes fileName for a provider job', () => {
@@ -94,5 +98,42 @@ describe('buildJobSource', () => {
     });
     expect(source?.mode).toBe('provider');
     expect(source?.providerRef).toBeUndefined();
+  });
+
+  it('handles null or empty provider refs and non-string identifiers', () => {
+    expect(
+      buildJobSource({ mode: 'provider', providerRef: null as never })?.providerRef
+    ).toBeUndefined();
+    expect(
+      buildJobSource({ mode: 'provider', providerRef: { provider: '', shareId: '' } as never })
+        ?.providerRef
+    ).toEqual({ provider: '', shareId: '' });
+
+    const ids = buildJobSource({
+      mode: 'ytdlp',
+      sourceId: 42 as never,
+      sourceItemId: null as never
+    });
+    expect(ids?.sourceId).toBeUndefined();
+    expect(ids?.sourceItemId).toBeUndefined();
+  });
+
+  it('keeps ytdlp secrets and only string headers', () => {
+    const source = buildJobSource({
+      mode: 'ytdlp',
+      apiKeyId: 'key-1',
+      headerName: 'X-Api-Key',
+      headers: { a: '1', b: 2 as never, c: true as never }
+    });
+
+    expect(source).toMatchObject({
+      apiKeyId: 'key-1',
+      headerName: 'X-Api-Key',
+      headers: { a: '1' }
+    });
+  });
+
+  it('drops file names that sanitize to nothing', () => {
+    expect(safeDownloadFileName('...')).toBeUndefined();
   });
 });

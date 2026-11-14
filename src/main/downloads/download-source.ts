@@ -12,11 +12,10 @@ const MAX_FILE_NAME = 200;
  */
 export function safeDownloadFileName(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined;
-  const last =
-    raw
-      .trim()
-      .split(/[\\/]+/)
-      .pop() ?? '';
+  const last = raw
+    .trim()
+    .split(/[\\/]+/)
+    .pop()!;
   if (!last || last === '.' || last === '..') return undefined;
   return sanitizeFilename(last, { maxLength: MAX_FILE_NAME, fallback: '' }) || undefined;
 }
@@ -83,11 +82,7 @@ export function buildJobSource(
     headerName: typeof input.headerName === 'string' ? input.headerName.slice(0, 100) : undefined,
     headers:
       input.headers && typeof input.headers === 'object'
-        ? Object.fromEntries(
-            Object.entries(input.headers).filter(
-              ([k, v]) => typeof k === 'string' && typeof v === 'string'
-            )
-          )
+        ? Object.fromEntries(Object.entries(input.headers).filter(([, v]) => typeof v === 'string'))
         : undefined
   };
 }

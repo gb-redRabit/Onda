@@ -49,6 +49,33 @@ describe('SoundCloud summary', () => {
     const items = buildSubscribeSummary(input({ isSc: true, filenameTemplate: '  {title}  ' }), t);
     expect(byLabel(items, 'youtube.prefTemplate')).toBe('{title}');
   });
+
+  it('falls back to folder labels and shows the yes value', () => {
+    expect(
+      byLabel(
+        buildSubscribeSummary(input({ isSc: true, folderMode: 'channel', channelFolder: '' }), t),
+        'SoundCloud MP3'
+      )
+    ).toBe('youtube.prefOutputDirChannel');
+    expect(
+      byLabel(
+        buildSubscribeSummary(input({ isSc: true, folderMode: 'custom', outputDir: '' }), t),
+        'SoundCloud MP3'
+      )
+    ).toBe('youtube.prefOutputDirCustom');
+    expect(
+      byLabel(
+        buildSubscribeSummary(input({ isSc: true, folderMode: 'global' }), t),
+        'SoundCloud MP3'
+      )
+    ).toBe('youtube.prefOutputDirGlobal');
+    expect(
+      byLabel(
+        buildSubscribeSummary(input({ isSc: true, addToLibrary: true }), t),
+        'youtube.addToLibraryPref'
+      )
+    ).toBe('common.yes');
+  });
 });
 
 describe('YouTube summary', () => {
@@ -122,5 +149,27 @@ describe('YouTube summary', () => {
   it('always ends with the addToLibrary item', () => {
     const items = buildSubscribeSummary(input({ addToLibrary: true }), t);
     expect(items.at(-1)).toEqual({ label: 'youtube.addToLibraryPref', value: 'common.yes' });
+  });
+
+  it('falls back to folder labels and includes language/template', () => {
+    expect(
+      byLabel(
+        buildSubscribeSummary(input({ folderMode: 'channel', channelFolder: '' }), t),
+        'youtube.prefOutputDir'
+      )
+    ).toBe('youtube.prefOutputDirChannel');
+    expect(
+      byLabel(
+        buildSubscribeSummary(input({ folderMode: 'custom', outputDir: '' }), t),
+        'youtube.prefOutputDir'
+      )
+    ).toBe('youtube.prefOutputDirCustom');
+
+    const items = buildSubscribeSummary(
+      input({ audioLanguage: ' pl ', filenameTemplate: ' {title} ' }),
+      t
+    );
+    expect(byLabel(items, 'youtube.audioLanguage')).toBe('pl');
+    expect(byLabel(items, 'youtube.prefTemplate')).toBe('{title}');
   });
 });
