@@ -26,7 +26,10 @@ import { runCommand } from '../../utils/exec';
 
 // Sondy wersji są zamockowane: ścieżki zarejestrowane w `brokenPaths` nie przechodzą sondy,
 // każdy inny kandydat zgłasza działającą wersję.
-const probeState = vi.hoisted(() => ({ brokenPaths: new Set<string>() }));
+const probeState = vi.hoisted(() => ({
+  brokenPaths: new Set<string>(),
+  mkvCandidates: new Set<string>()
+}));
 
 vi.mock('../../utils/exec', () => ({
   runCommand: vi.fn(async (bin: string) => {
@@ -34,6 +37,14 @@ vi.mock('../../utils/exec', () => ({
     return '2026.09.01';
   })
 }));
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>();
+  return {
+    ...actual,
+    existsSync: (path: Parameters<typeof actual.existsSync>[0]) =>
+      probeState.mkvCandidates.has(String(path)) || actual.existsSync(path)
+  };
+});
 
 describe('ytdlpBinaryName', () => {
   it('returns the right file name for the current platform', () => {
@@ -109,6 +120,7 @@ describe('ffmpegDownloadUrl / ffmpegSha256', () => {
     const managed = binaries.ffmpeg.managed as Record<string, { sha256: string }>;
     expect(ffmpegSha256('win32', 'x64')).toBe(managed['win32-x64'].sha256);
     expect(ffmpegSha256('win32', 'x64')).toMatch(/^[0-9a-f]{64}$/);
+    expect(ffmpegSha256('win32', 'mips')).toBeNull();
   });
 });
 
@@ -194,6 +206,7 @@ describe('inferPkgManager', () => {
     expect(inferPkgManager('C:\\Users\\x\\scoop\\shims\\ffmpeg.exe')).toBe('scoop');
     expect(inferPkgManager('/opt/homebrew/bin/ffmpeg')).toBe('brew');
     expect(inferPkgManager('C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe')).toBeNull();
+    expect(inferPkgManager(null)).toBeNull();
   });
 });
 
@@ -216,6 +229,7 @@ describe('getMkvExtractCandidates', () => {
 });
 
 describe('resolveBinary', () => {
+  const originalRun = vi.mocked(runCommand).getMockImplementation();
   let binDir: string;
   let pathDir: string;
   let resourcesDir: string;
@@ -248,6 +262,8 @@ describe('resolveBinary', () => {
       rmSync(dir, { recursive: true, force: true });
     }
     probeState.brokenPaths.clear();
+    probeState.mkvCandidates.clear();
+    vi.mocked(runCommand).mockImplementation(originalRun!);
   });
 
   it('falls back to a working system binary when the managed one is broken', async () => {
@@ -342,6 +358,68 @@ describe('resolveBinary', () => {
   it('returns null when no candidate exists', async () => {
     expect(await resolveBinary(binDir, 'ffprobe')).toBeNull();
   });
+
+  it('ignores resources that contain no bundled binary', async () => {
+    setResources();
+
+    expect(await resolveBinary(binDir, 'ffprobe')).toBeNull();
+  });
+
+  it('treats an empty yt-dlp version as broken after retrying', async () => {
+    const managed = join(binDir, toolFileName('yt-dlp'));
+    writeFileSync(managed, 'x');
+    vi.mocked(runCommand).mockResolvedValue('');
+
+    const resolved = await resolveBinary(binDir, 'yt-dlp');
+
+    expect(resolved).toMatchObject({ path: managed, broken: true, version: null });
+    expect(resolved?.error).toContain('empty version output');
+    expect(runCommand).toHaveBeenCalledTimes(2);
+  });
+
+  it('parses mkvextract and ffmpeg version output, with an unknown fallback', async () => {
+    const mkv = join(binDir, toolFileName('mkvextract'));
+    writeFileSync(mkv, 'x');
+    vi.mocked(runCommand).mockResolvedValue('mkvextract v12.3.4');
+    expect((await resolveBinary(binDir, 'mkvextract'))?.version).toBe('12.3.4');
+
+    vi.mocked(runCommand).mockResolvedValue('unexpected output');
+    expect((await resolveBinary(binDir, 'mkvextract'))?.version).toBe('unknown');
+
+    const ffmpeg = join(binDir, toolFileName('ffmpeg'));
+    writeFileSync(ffmpeg, 'x');
+    vi.mocked(runCommand).mockResolvedValue('no version marker');
+    expect((await resolveBinary(binDir, 'ffmpeg'))?.version).toBe('unknown');
+
+    vi.mocked(runCommand).mockResolvedValue('ffmpeg version 7.1.5');
+    expect((await resolveBinary(binDir, 'ffmpeg'))?.version).toBe('7.1.5');
+  });
+
+  it('returns the first of several broken candidates', async () => {
+    const managed = join(binDir, toolFileName('ffmpeg'));
+    const system = join(pathDir, toolFileName('ffmpeg'));
+    writeFileSync(managed, 'x');
+    writeFileSync(system, 'x');
+    probeState.brokenPaths.add(managed);
+    probeState.brokenPaths.add(system);
+
+    const resolved = await resolveBinary(binDir, 'ffmpeg');
+
+    expect(resolved).toMatchObject({ path: managed, source: 'managed', broken: true });
+  });
+
+  it('adds known mkvextract install locations that exist', async () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    const candidate = '/opt/homebrew/bin/mkvextract';
+    probeState.mkvCandidates.add(candidate);
+    try {
+      const resolved = await resolveBinary(binDir, 'mkvextract');
+      expect(resolved).toMatchObject({ path: candidate, source: 'system', broken: false });
+    } finally {
+      Object.defineProperty(process, 'platform', { value: original, configurable: true });
+    }
+  });
 });
 
 describe('ffmpeg probe archive', () => {
@@ -364,6 +442,63 @@ describe('toolFileName', () => {
       expect(toolFileName(tool)).toBe(`${tool}${suffix}`);
     }
     expect(toolFileName('yt-dlp')).toBe(`yt-dlp${suffix}`);
+  });
+});
+
+describe('cross-platform helpers', () => {
+  const platform = process.platform;
+  const path = process.env.PATH;
+  const pathext = process.env.PATHEXT;
+  const home = process.env.HOME;
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', { value: platform, configurable: true });
+    if (path === undefined) delete process.env.PATH;
+    else process.env.PATH = path;
+    if (pathext === undefined) delete process.env.PATHEXT;
+    else process.env.PATHEXT = pathext;
+    if (home === undefined) delete process.env.HOME;
+    else process.env.HOME = home;
+  });
+
+  it('uses extensionless names and POSIX candidates on Linux', () => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    delete process.env.HOME;
+
+    expect(toolFileName('ffmpeg')).toBe('ffmpeg');
+    expect(toolFileName('yt-dlp')).toBe('yt-dlp');
+
+    const candidates = getMkvExtractCandidates();
+    expect(candidates).toContain('/usr/local/bin/mkvextract');
+    expect(candidates).toContain('/usr/bin/mkvextract');
+    expect(candidates).toContain('/opt/homebrew/bin/mkvextract');
+  });
+
+  it('searches a POSIX PATH without PATHEXT on Linux', () => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    process.env.PATH = '';
+    delete process.env.PATHEXT;
+
+    expect(whichInPath('ffprobe')).toBeNull();
+  });
+
+  it('handles a missing PATH', () => {
+    delete process.env.PATH;
+    expect(whichInPath('nope')).toBeNull();
+  });
+
+  it('falls back to the default PATHEXT on Windows', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    const dir = mkdtempSync(join(tmpdir(), 'onda-pathext-'));
+    try {
+      writeFileSync(join(dir, 'probe.exe'), 'x');
+      process.env.PATH = dir;
+      delete process.env.PATHEXT;
+
+      expect(whichInPath('probe')).toBe(join(dir, 'probe.exe'));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

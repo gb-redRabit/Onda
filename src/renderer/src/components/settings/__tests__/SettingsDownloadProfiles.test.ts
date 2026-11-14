@@ -29,8 +29,8 @@ vi.mock('@renderer/composables/usePromptDialog', () => ({
 }));
 
 const SettingsGroupStub = { template: '<div><slot /></div>' };
-const ButtonStub = { template: '<button><slot /></button>' };
-const IconButtonStub = { template: '<button><slot /></button>' };
+const ButtonStub = { props: ['disabled'], template: '<button><slot /></button>' };
+const IconButtonStub = { props: ['disabled'], template: '<button><slot /></button>' };
 const InputStub = {
   props: ['modelValue'],
   emits: ['update:modelValue'],
@@ -148,6 +148,44 @@ describe('initial state and defaults', () => {
     expect(selects()[2].props('modelValue')).toBe('1080');
     expect(selects()[3].props('modelValue')).toBe('mp4');
   });
+
+  it('handles empty and unknown profile selections', async () => {
+    mountProfiles();
+
+    selects()[0].vm.$emit('update:modelValue', undefined);
+    await wrapper!.vm.$nextTick();
+    expect(selects()[1].props('modelValue')).toBe('audio');
+
+    selects()[0].vm.$emit('update:modelValue', 'missing');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findComponent(InputStub).props('modelValue')).toBe('');
+  });
+
+  it('loads audio fields without a cover and maps a custom cover to thumbnail', async () => {
+    state.profiles.value.push(
+      {
+        id: 'p2',
+        name: 'Audio',
+        config: { format: 'flac', audioQuality: 'low' }
+      },
+      {
+        id: 'p3',
+        name: 'Custom cover',
+        config: { kind: 'video', cover: { type: 'custom', customPath: 'C:/c.png' } }
+      }
+    );
+    mountProfiles();
+
+    selects()[0].vm.$emit('update:modelValue', 'p2');
+    await wrapper!.vm.$nextTick();
+    expect(selects()[2].props('modelValue')).toBe('flac');
+    expect(selects()[3].props('modelValue')).toBe('low');
+
+    selects()[0].vm.$emit('update:modelValue', 'p3');
+    await wrapper!.vm.$nextTick();
+    expect(selects()[1].props('modelValue')).toBe('video');
+    expect(selects().at(-1)!.props('modelValue')).toBe('thumbnail');
+  });
 });
 
 describe('saving', () => {
@@ -241,6 +279,50 @@ describe('saving', () => {
     await clickSave();
     expect(state.saveProfile).not.toHaveBeenCalled();
   });
+
+  it('saves the selected audio format and quality', async () => {
+    mountProfiles();
+    selects()[2].vm.$emit('update:modelValue', 'flac');
+    selects()[3].vm.$emit('update:modelValue', 'low');
+    await setProfileName('Audio');
+    await clickSave();
+
+    expect(state.saveProfile).toHaveBeenCalledWith(
+      'Audio',
+      expect.objectContaining({ format: 'flac', audioQuality: 'low' }),
+      undefined
+    );
+  });
+
+  it('keeps zero frame and clip times', async () => {
+    mountProfiles();
+    await setProfileName('Zero frame');
+    selects()[4].vm.$emit('update:modelValue', 'frame');
+    await wrapper!.vm.$nextTick();
+    wrapper!.findComponent(NumberFieldStub).vm.$emit('update:modelValue', 0);
+    await clickSave();
+    expect(state.saveProfile).toHaveBeenCalledWith(
+      'Zero frame',
+      expect.objectContaining({ cover: { type: 'frame', frameTime: 0 } }),
+      undefined
+    );
+
+    state.saveProfile.mockClear();
+    await setProfileName('Zero clip');
+    selects()[4].vm.$emit('update:modelValue', 'clip');
+    await wrapper!.vm.$nextTick();
+    const numbers = wrapper!.findAllComponents(NumberFieldStub);
+    numbers[0].vm.$emit('update:modelValue', 0);
+    numbers[1].vm.$emit('update:modelValue', 0);
+    await clickSave();
+    expect(state.saveProfile).toHaveBeenCalledWith(
+      'Zero clip',
+      expect.objectContaining({
+        cover: { type: 'clip', clipStart: 0, clipEnd: 0, clipFormat: 'webm' }
+      }),
+      undefined
+    );
+  });
 });
 
 describe('selecting and deleting profiles', () => {
@@ -295,5 +377,60 @@ describe('selecting and deleting profiles', () => {
     await wrapper!.vm.$nextTick();
     expect(state.removeProfile).toHaveBeenCalledWith('p1');
     expect(wrapper!.findComponent(InputStub).props('modelValue')).toBe('');
+  });
+
+  it('deletes a selected profile that vanished from the list', async () => {
+    mountProfiles();
+    selects()[0].vm.$emit('update:modelValue', 'p1');
+    await wrapper!.vm.$nextTick();
+    state.profiles.value = [];
+
+    await wrapper!.findAllComponents(IconButtonStub)[0].trigger('click');
+    await wrapper!.vm.$nextTick();
+
+    expect(state.t).toHaveBeenCalledWith('settings.profileDeleteConfirm', { name: '' });
+    expect(state.removeProfile).toHaveBeenCalledWith('p1');
+  });
+
+  it('wires the prompt dialog events', async () => {
+    mountProfiles();
+    const prompt = wrapper!.findComponent(PromptStub);
+
+    prompt.vm.$emit('update:value', 'typed');
+    expect(state.prompt.promptValue.value).toBe('typed');
+    prompt.vm.$emit('confirm');
+    prompt.vm.$emit('cancel');
+
+    expect(state.prompt.promptConfirm).toHaveBeenCalled();
+    expect(state.prompt.promptCancel).toHaveBeenCalled();
+  });
+
+  it('fills frame and clip defaults from stored profiles', async () => {
+    state.profiles.value.push(
+      { id: 'f', name: 'Frame', config: { kind: 'video', cover: { type: 'frame' } } },
+      { id: 'c', name: 'Clip', config: { kind: 'video', cover: { type: 'clip' } } }
+    );
+    mountProfiles();
+
+    selects()[0].vm.$emit('update:modelValue', 'f');
+    await wrapper!.vm.$nextTick();
+    await clickSave();
+    expect(state.saveProfile).toHaveBeenCalledWith(
+      'Frame',
+      expect.objectContaining({ cover: { type: 'frame', frameTime: 30 } }),
+      'f'
+    );
+
+    state.saveProfile.mockClear();
+    selects()[0].vm.$emit('update:modelValue', 'c');
+    await wrapper!.vm.$nextTick();
+    await clickSave();
+    expect(state.saveProfile).toHaveBeenCalledWith(
+      'Clip',
+      expect.objectContaining({
+        cover: { type: 'clip', clipStart: 0, clipEnd: 30, clipFormat: 'webm' }
+      }),
+      'c'
+    );
   });
 });

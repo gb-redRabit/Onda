@@ -329,7 +329,7 @@ interface PkgCommand {
 }
 
 function joinCmd(argv: string[]): string {
-  return argv.map((a) => (/[\s"'\\]/.test(a) ? `"${a}"` : a)).join(' ');
+  return argv.join(' ');
 }
 
 function wingetInstallId(tool: BinTool): string {
