@@ -17,6 +17,8 @@ import {
   mapVideoEntry,
   pickChannelThumbnail,
   extractAvatarUrl,
+  isSafeThumbnailUrl,
+  isStableAvatarUrl,
   parseNetscapeCookies,
   buildStreamGetArgs,
   parseStreamGetOutput
@@ -81,6 +83,34 @@ describe('pickThumbnail', () => {
   it('ignores thumbnails without url', () => {
     const entry = { id: 'abc', thumbnails: [{ width: 720 }, { url: '', width: 1280 }] };
     expect(pickThumbnail(entry)).toBe('https://i.ytimg.com/vi/abc/hqdefault.jpg');
+  });
+
+  it('treats a missing width as zero when sorting', () => {
+    const entry = {
+      thumbnails: [
+        { url: 'https://img/wide', width: 100 },
+        { url: 'https://img/no-width' },
+        { url: 'https://img/no-width-2' }
+      ]
+    };
+    expect(pickThumbnail(entry)).toMatch(/^https:\/\/img\//);
+  });
+});
+
+describe('thumbnail safety', () => {
+  it('rejects loopback, non-https and malformed thumbnail urls', () => {
+    expect(isSafeThumbnailUrl('https://localhost/x.jpg')).toBe(false);
+    expect(isSafeThumbnailUrl('https://127.0.0.1/x.jpg')).toBe(false);
+    expect(isSafeThumbnailUrl('http://img/x.jpg')).toBe(false);
+    expect(isSafeThumbnailUrl('not a url')).toBe(false);
+    expect(isSafeThumbnailUrl('https://i.ytimg.com/x.jpg')).toBe(true);
+  });
+
+  it('rejects avatars carrying expiring signatures', () => {
+    expect(isStableAvatarUrl('https://yt3.ggpht.com/a=s48?expire=1')).toBe(false);
+    expect(isStableAvatarUrl('https://yt3.ggpht.com/a=s48?sig=x')).toBe(false);
+    expect(isStableAvatarUrl('https://yt3.ggpht.com/a=s48?signature=x')).toBe(false);
+    expect(isStableAvatarUrl('https://yt3.ggpht.com/a=s48')).toBe(true);
   });
 });
 
@@ -400,6 +430,16 @@ describe('mapResolvedEntry', () => {
   it('preserves explicit non-playable state', () => {
     expect(mapResolvedEntry({ id: 'x', title: 'X', is_playable: false }).isPlayable).toBe(false);
   });
+
+  it('falls back to empty strings for a bare entry', () => {
+    expect(mapResolvedEntry({})).toMatchObject({
+      id: '',
+      title: '',
+      thumbnail: '',
+      channelTitle: '',
+      channelId: ''
+    });
+  });
 });
 
 describe('mapResolvedContainer', () => {
@@ -515,6 +555,18 @@ describe('pickChannelThumbnail', () => {
     expect(pickChannelThumbnail({ thumbnails: [{ width: 100 }] })).toBe('');
     expect(pickChannelThumbnail({ thumbnails: [{ url: 'http://img/x' }] })).toBe('');
   });
+
+  it('treats a missing width as zero when ranking avatars', () => {
+    expect(
+      pickChannelThumbnail({
+        thumbnails: [
+          { url: 'https://img/wide', width: 100 },
+          { url: 'https://img/no-width' },
+          { url: 'https://img/no-width-2' }
+        ]
+      })
+    ).toMatch(/^https:\/\/img\//);
+  });
 });
 
 describe('extractAvatarUrl', () => {
@@ -535,6 +587,15 @@ describe('extractAvatarUrl', () => {
   it('returns empty string when no avatar URL is present', () => {
     expect(extractAvatarUrl('<html><body>no avatar here</body></html>')).toBe('');
     expect(extractAvatarUrl('')).toBe('');
+  });
+
+  it('skips signed matches and returns the first stable avatar', () => {
+    expect(extractAvatarUrl('"https://yt3.ggpht.com/signed=s1?expire=1"')).toBe('');
+    expect(
+      extractAvatarUrl(
+        '"https://yt3.ggpht.com/signed=s1?expire=1","https://yt3.ggpht.com/stable=s48"'
+      )
+    ).toBe('https://yt3.ggpht.com/stable=s48');
   });
 });
 
@@ -725,6 +786,46 @@ describe('mapExternalResolvedEntry', () => {
       id: 'abc',
       title: 'Generic media',
       url: 'https://vimeo.com/abc',
+      thumbnail: ''
+    });
+  });
+
+  it('ranks thumbnail lists and fills missing fields from the fallback', () => {
+    const mapped = mapExternalResolvedEntry(
+      {
+        webpage_url: 'https://vimeo.com/abc',
+        thumbnails: [
+          { url: 'https://img/small', width: 10 },
+          { url: 'https://img/no-width' },
+          { url: 'https://img/big', width: 20 }
+        ]
+      },
+      'https://fallback'
+    );
+
+    expect(mapped).toMatchObject({
+      id: 'https://vimeo.com/abc',
+      title: 'https://fallback',
+      url: 'https://vimeo.com/abc'
+    });
+    expect(typeof mapped.thumbnail).toBe('string');
+    expect(mapped.thumbnail.length).toBeGreaterThan(0);
+  });
+
+  it('uses url and fallback for the remaining id/title/url fields', () => {
+    const urlOnly = mapExternalResolvedEntry({ url: 'https://cdn/x.mp4' }, 'https://fallback');
+    expect(urlOnly).toMatchObject({
+      id: 'https://cdn/x.mp4',
+      title: 'https://fallback',
+      url: 'https://cdn/x.mp4',
+      thumbnail: ''
+    });
+
+    const empty = mapExternalResolvedEntry({}, 'https://fallback');
+    expect(empty).toMatchObject({
+      id: 'https://fallback',
+      title: 'https://fallback',
+      url: 'https://fallback',
       thumbnail: ''
     });
   });

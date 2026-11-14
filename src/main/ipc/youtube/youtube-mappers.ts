@@ -67,12 +67,8 @@ export function isSafeThumbnailUrl(url: string): boolean {
 // aby martwy link nigdy nie został zapisany jako miniatura kanału.
 export function isStableAvatarUrl(url: string): boolean {
   if (!isSafeThumbnailUrl(url)) return false;
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return false;
-  }
+  // `isSafeThumbnailUrl` already parsed the URL, so this cannot throw.
+  const parsed = new URL(url);
   if (
     parsed.searchParams.has('expire') ||
     parsed.searchParams.has('sig') ||
@@ -86,8 +82,8 @@ export function isStableAvatarUrl(url: string): boolean {
 export function pickThumbnail(entry: YtDlpEntry): string {
   const thumbs = (entry.thumbnails || []).filter((t) => t.url && isSafeThumbnailUrl(t.url));
   if (thumbs.length) {
-    const best = [...thumbs].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
-    if (best?.url) return best.url;
+    const best = [...thumbs].sort((a, b) => (b.width || 0) - (a.width || 0))[0]!;
+    return best.url as string;
   }
   const fallback = entry.id ? `https://i.ytimg.com/vi/${entry.id}/hqdefault.jpg` : '';
   return isSafeThumbnailUrl(fallback) ? fallback : '';
@@ -160,8 +156,8 @@ export function pickChannelThumbnail(entry: YtDlpEntry): string {
   if (thumbs.length) {
     const avatars = thumbs.filter((t) => t.width && t.height && t.width === t.height);
     const pool = avatars.length ? avatars : thumbs;
-    const best = [...pool].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
-    if (best?.url) return best.url;
+    const best = [...pool].sort((a, b) => (b.width || 0) - (a.width || 0))[0]!;
+    return best.url as string;
   }
   if (entry.thumbnail && isStableAvatarUrl(entry.thumbnail)) {
     return entry.thumbnail;

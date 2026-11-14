@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
 import { createSSRApp, h } from 'vue';
 import PipTransport from '../PipTransport.vue';
@@ -104,5 +105,16 @@ describe('PipTransport', () => {
     expect(custom).toContain('my-btn');
     expect(custom).toContain('my-play');
     expect(custom).not.toContain('h-7');
+  });
+
+  it('sends the clicked action', async () => {
+    const handler = vi.fn();
+    const wrapper = mount(PipTransport, {
+      props: { send: handler, isPlaying: false, shuffle: false, repeat: 'none' }
+    });
+
+    await wrapper.get('[data-testid="pip-playPause"]').trigger('click');
+
+    expect(handler).toHaveBeenCalledWith('playPause');
   });
 });

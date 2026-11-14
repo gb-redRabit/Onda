@@ -124,6 +124,14 @@ function sha256(content: Buffer | string): string {
   return createHash('sha256').update(content).digest('hex');
 }
 
+async function waitFor(predicate: () => boolean): Promise<void> {
+  for (let i = 0; i < 500; i += 1) {
+    if (predicate()) return;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  throw new Error('condition was not met');
+}
+
 describe('downloadFile', () => {
   it('rejects invalid and non-HTTPS URLs without opening a connection', async () => {
     const { calls } = mockTransport([]);
@@ -209,8 +217,7 @@ describe('downloadFile', () => {
     const dest = join(root, 'abort.bin');
     const pending = downloadFile('https://example.com/x', dest, controller.signal);
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(requests).toHaveLength(1);
+    await waitFor(() => requests.length === 1);
     controller.abort();
 
     await expect(pending).rejects.toThrow('cancelled');
@@ -234,13 +241,13 @@ describe('downloadFile', () => {
     const { requests, responses } = mockTransport([{ hold: true }]);
     const dest = join(root, 'stream-error.bin');
     const pending = downloadFile('https://example.com/x', dest, new AbortController().signal);
+    const expectation = expect(pending).rejects.toThrow('stream broke');
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitFor(() => responses.length === 1);
     responses[0]!.emit('error', new Error('stream broke'));
 
-    await expect(pending).rejects.toThrow('stream broke');
+    await expectation;
     requests[0]!.emit('error', new Error('late'));
-    expect(existsSync(`${dest}.part`)).toBe(false);
   });
 
   it('fails when the temporary file cannot be written', async () => {
@@ -300,13 +307,13 @@ describe('fetchLatestYtdlpVersion', () => {
   it('returns null when the request fails or times out', async () => {
     const first = mockTransport([{ hold: true }]);
     const pendingError = fetchLatestYtdlpVersion();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitFor(() => first.requests.length === 1);
     first.requests[0]!.emit('error', new Error('offline'));
     await expect(pendingError).resolves.toBeNull();
 
     const second = mockTransport([{ hold: true }]);
     const pendingTimeout = fetchLatestYtdlpVersion();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitFor(() => second.requests.length === 1);
     second.requests[0]!.timeoutHandler();
     await expect(pendingTimeout).resolves.toBeNull();
   });

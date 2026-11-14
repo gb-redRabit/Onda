@@ -45,7 +45,6 @@ vi.mock('../../../shared/logger', () => ({
 }));
 
 async function load() {
-  vi.resetModules();
   const module = await import('../dialog-handlers');
   module.registerDialogHandlers();
   return state.handlers;
@@ -114,6 +113,47 @@ describe('registration and parent window', () => {
     expect(state.showOpenDialog).toHaveBeenLastCalledWith(
       expect.objectContaining({ properties: ['openFile'] })
     );
+  });
+
+  it('opens every dialog without a parent window when none exists', async () => {
+    const h = await load();
+    state.fromWebContents.mockReturnValue(null);
+    state.getFocusedWindow.mockReturnValue(null);
+    state.getAllWindows.mockReturnValue([]);
+    state.showOpenDialog.mockResolvedValue(result(true, []));
+
+    await h['dialog:openImage']({ sender });
+    await h['dialog:openSubtitle']({ sender });
+    await h['dialog:openFile']({ sender });
+    await h['dialog:openFolder']({ sender });
+    await h['dialog:openFolderFiles']({ sender });
+
+    expect(state.showOpenDialog).toHaveBeenCalledTimes(5);
+    for (const call of state.showOpenDialog.mock.calls) {
+      expect(call).toHaveLength(1);
+    }
+  });
+
+  it('covers confirmed and canceled selections in one module instance', async () => {
+    const h = await load();
+
+    state.showOpenDialog
+      .mockResolvedValueOnce(result(false, ['C:/subs/a.srt']))
+      .mockResolvedValueOnce(result(true, []));
+    await h['dialog:openSubtitle']({ sender });
+    await h['dialog:openSubtitle']({ sender });
+
+    state.showOpenDialog
+      .mockResolvedValueOnce(result(false, ['C:/media/a.mp4']))
+      .mockResolvedValueOnce(result(true, []));
+    await h['dialog:openFile']({ sender });
+    await h['dialog:openFile']({ sender });
+
+    state.showOpenDialog
+      .mockResolvedValueOnce(result(false, ['C:/folder']))
+      .mockResolvedValueOnce(result(true, []));
+    await h['dialog:openFolder']({ sender });
+    await h['dialog:openFolder']({ sender });
   });
 });
 

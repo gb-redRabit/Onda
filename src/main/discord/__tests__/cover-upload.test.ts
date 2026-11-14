@@ -225,7 +225,7 @@ describe('resolveLocalCover', () => {
       vi.stubGlobal('fetch', fetchMock);
       const pending = resolveLocalCover(file);
 
-      for (let i = 0; i < 20 && fetchMock.mock.calls.length === 0; i += 1) {
+      for (let i = 0; i < 500 && fetchMock.mock.calls.length === 0; i += 1) {
         await new Promise((resolve) => setImmediate(resolve));
       }
       expect(fetchMock).toHaveBeenCalledTimes(1);
