@@ -119,7 +119,7 @@ export function registerSoundcloudHandlers(): void {
             meta: {
               channelId: p.user?.permalink || '',
               channelTitle: p.user?.username || '',
-              totalItems: count ?? null,
+              totalItems: count,
               hasMore: page.items.length >= 30 && page.items.length < count
             },
             items: page.items.map((v) => ({
@@ -239,7 +239,7 @@ export function registerSoundcloudHandlers(): void {
             return {
               ...base,
               thumbnail: scThumbFromEntry(e),
-              url: entryUrl(e) || (/^https:\/\//i.test(base.id) ? base.id : undefined)
+              url: entryUrl(e) || undefined
             };
           });
           const count = parsed.playlist_count;

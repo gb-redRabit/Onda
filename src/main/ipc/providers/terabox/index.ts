@@ -54,7 +54,8 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 function nameOf(e: TbEntry): string {
-  return String(e.server_filename ?? e.filename ?? e.fs_id ?? '');
+  // Wywoływane tylko dla wpisów z `fs_id` (patrz `toItem`), więc zawsze jest nazwa.
+  return String(e.server_filename ?? e.filename ?? e.fs_id);
 }
 
 function isDir(e: TbEntry): boolean {

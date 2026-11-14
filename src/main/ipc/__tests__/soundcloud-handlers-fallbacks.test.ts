@@ -238,6 +238,31 @@ describe('sc:resolveMore', () => {
     expect(res).toMatchObject({ success: true, totalItems: 5, hasMore: false });
   });
 
+  it('defaults the range and reports an unknown total with a full page', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'playlist',
+      playlist: { id: 4 }
+    } as never);
+    vi.mocked(sc.scPlaylistTracks).mockResolvedValueOnce({
+      items: Array.from({ length: 30 }, (_, i) => ({
+        id: String(i),
+        title: `T${i}`,
+        duration: 1,
+        thumbnail: null
+      }))
+    } as never);
+
+    const res = await call('sc:resolveMore', {
+      url: 'https://soundcloud.com/artist/sets/x',
+      start: 0,
+      end: 0
+    });
+
+    expect(sc.scPlaylistTracks).toHaveBeenCalledWith(4, 30, 0);
+    expect(res).toMatchObject({ success: true, totalItems: null, hasMore: true });
+    expect(res.items[0]).toMatchObject({ url: '' });
+  });
+
   it('returns empty for non-playlist resources', async () => {
     vi.mocked(sc.scResolve).mockResolvedValueOnce({ kind: 'track' } as never);
     await expect(
@@ -272,6 +297,73 @@ describe('sc:resolveMore', () => {
     expect(res.success).toBe(true);
     expect(res.items).toHaveLength(1);
     expect(res.totalItems).toBe(2);
+  });
+
+  it('normalizes fallback entries and their url fallbacks', async () => {
+    vi.mocked(sc.scResolve).mockRejectedValueOnce(new Error('api'));
+    vi.mocked(fetchRangeJson).mockResolvedValueOnce({
+      entries: [
+        { title: 'Https id', id: 'https://soundcloud.com/a/https' },
+        { title: 'Url', id: '42', url: 'https://soundcloud.com/a/url' },
+        { title: 'No url', id: '43' },
+        { title: 'No id at all' },
+        { id: 'filtered' }
+      ],
+      playlist_count: null
+    } as never);
+
+    const res = await call('sc:resolveMore', {
+      url: 'https://soundcloud.com/artist/sets/x',
+      start: 1,
+      end: 30
+    });
+
+    expect(res.items).toHaveLength(3);
+    expect(res.items[0].url).toBe('https://soundcloud.com/a/https');
+    expect(res.items[1].url).toBe('https://soundcloud.com/a/url');
+    expect(res.items[2].url).toBeUndefined();
+    expect(res.totalItems).toBeNull();
+    expect(res.hasMore).toBe(false);
+  });
+
+  it('marks a full fallback page with known and unknown totals', async () => {
+    const entries = Array.from({ length: 30 }, (_, i) => ({
+      title: `T${i}`,
+      id: `e${i}`
+    }));
+
+    vi.mocked(sc.scResolve).mockRejectedValueOnce(new Error('api'));
+    vi.mocked(fetchRangeJson).mockResolvedValueOnce({
+      entries,
+      playlist_count: 31
+    } as never);
+    const known = await call('sc:resolveMore', {
+      url: 'https://soundcloud.com/artist/sets/x',
+      start: 1,
+      end: 30
+    });
+    expect(known).toMatchObject({ success: true, totalItems: 31, hasMore: true });
+
+    vi.mocked(sc.scResolve).mockRejectedValueOnce(new Error('api'));
+    vi.mocked(fetchRangeJson).mockResolvedValueOnce({
+      entries,
+      playlist_count: null
+    } as never);
+    const unknown = await call('sc:resolveMore', {
+      url: 'https://soundcloud.com/artist/sets/x',
+      start: 1,
+      end: 30
+    });
+    expect(unknown).toMatchObject({ success: true, totalItems: null, hasMore: true });
+
+    vi.mocked(sc.scResolve).mockRejectedValueOnce(new Error('api'));
+    vi.mocked(fetchRangeJson).mockResolvedValueOnce({} as never);
+    const empty = await call('sc:resolveMore', {
+      url: 'https://soundcloud.com/artist/sets/x',
+      start: 1,
+      end: 30
+    });
+    expect(empty).toMatchObject({ success: true, items: [], totalItems: null });
   });
 
   it('reports fallback failures', async () => {
@@ -310,6 +402,77 @@ describe('sc:channel', () => {
     await expect(
       call('sc:channel', { url: 'https://soundcloud.com/artist', start: 1, end: 30 })
     ).resolves.toMatchObject({ success: true, hasMore: true });
+  });
+
+  it('falls back for non-user resources and profiles without an id', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({ kind: 'playlist' } as never);
+    vi.mocked(ch.fallbackChannelPage)
+      .mockResolvedValueOnce({
+        channel: { id: 'artist' },
+        items: [],
+        hasMore: false
+      } as never)
+      .mockResolvedValueOnce({
+        channel: { id: 'artist' },
+        items: [],
+        hasMore: false
+      } as never);
+    await expect(
+      call('sc:channel', { url: 'https://soundcloud.com/artist' })
+    ).resolves.toMatchObject({ success: true, channel: { id: 'artist' } });
+
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({ kind: 'user', user: {} } as never);
+    await expect(
+      call('sc:channel', { url: 'https://soundcloud.com/artist' })
+    ).resolves.toMatchObject({ success: true });
+  });
+
+  it('marks a full profile page as having more items', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'user',
+      user: { id: 8, permalink: 'artist', track_count: 31 }
+    } as never);
+    vi.mocked(sc.scUserTracks).mockResolvedValueOnce({
+      items: Array.from({ length: 30 }, () => VIDEO_ITEM),
+      total: null
+    } as never);
+
+    const res = await call('sc:channel', {
+      url: 'https://soundcloud.com/artist',
+      start: 1,
+      end: 30
+    });
+
+    expect(res).toMatchObject({ success: true, hasMore: true });
+  });
+
+  it('resolves a minimal profile and a full unknown-count page', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'user',
+      user: { id: 7 }
+    } as never);
+    vi.mocked(sc.scUserTracks).mockResolvedValueOnce({
+      items: Array.from({ length: 30 }, () => VIDEO_ITEM),
+      total: null
+    } as never);
+
+    const res = await call('sc:channel', {
+      url: 'https://soundcloud.com/artist',
+      start: 1,
+      end: 30
+    });
+
+    expect(res.channel).toMatchObject({
+      id: '7',
+      url: 'https://soundcloud.com/artist',
+      title: '',
+      thumbnail: '',
+      bannerUrl: undefined,
+      description: '',
+      videoCount: 30
+    });
+    expect(res.hasMore).toBe(true);
+    expect(res.items).toHaveLength(30);
   });
 
   it('reports channel failures', async () => {

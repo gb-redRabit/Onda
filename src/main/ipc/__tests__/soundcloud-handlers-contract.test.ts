@@ -156,6 +156,111 @@ describe('sc:resolve', () => {
     expect(sc.scResolve).not.toHaveBeenCalled();
   });
 
+  it('marks a full playlist page as having more items', async () => {
+    const items = Array.from({ length: 30 }, (_, i) => ({
+      id: String(i),
+      title: `T${i}`,
+      duration: 1,
+      thumbnail: null
+    }));
+
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'playlist',
+      playlist: { id: 1, title: 'P', track_count: 31 }
+    } as never);
+    vi.mocked(sc.scPlaylistTracks).mockResolvedValueOnce({ items } as never);
+    const more = (await call('sc:resolve', 'https://soundcloud.com/a/sets/x')) as {
+      result: { meta: { hasMore: boolean } };
+    };
+    expect(more.result.meta.hasMore).toBe(true);
+
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'playlist',
+      playlist: { id: 1, title: 'P', track_count: 30 }
+    } as never);
+    vi.mocked(sc.scPlaylistTracks).mockResolvedValueOnce({ items } as never);
+    const exact = (await call('sc:resolve', 'https://soundcloud.com/a/sets/x')) as {
+      result: { meta: { hasMore: boolean } };
+    };
+    expect(exact.result.meta.hasMore).toBe(false);
+  });
+
+  it('resolves a minimal track without user metadata', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'track',
+      track: { id: 5, permalink_url: 'https://soundcloud.com/x', artwork_url: null }
+    } as never);
+
+    const res = (await call('sc:resolve', 'https://soundcloud.com/artist/x')) as {
+      result: { title: string; meta: Record<string, unknown>; items: unknown[] };
+    };
+
+    expect(res.result.title).toBe('');
+    expect(res.result.meta).toEqual({ channelId: '', channelTitle: '' });
+    expect(res.result.items).toHaveLength(1);
+  });
+
+  it('resolves a minimal playlist and falls back for missing item fields', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'playlist',
+      playlist: { id: 9, title: '' }
+    } as never);
+    vi.mocked(sc.scPlaylistTracks).mockResolvedValueOnce({
+      items: [{ id: '1', title: 'T', duration: 1, thumbnail: null }]
+    } as never);
+
+    const res = (await call('sc:resolve', 'https://soundcloud.com/a/sets/x')) as {
+      result: {
+        title: string;
+        meta: { totalItems: number; channelId: string; channelTitle: string };
+        items: Array<{ channelTitle: string; channelId: string; url: string }>;
+      };
+    };
+
+    expect(res.result.title).toBe('');
+    expect(res.result.meta).toMatchObject({ totalItems: 1, channelId: '', channelTitle: '' });
+    expect(res.result.items[0]).toMatchObject({ channelTitle: '', channelId: '', url: '' });
+  });
+
+  it('falls back when a playlist has no id', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({ kind: 'playlist', playlist: {} } as never);
+    vi.mocked(fb.fallbackResolvePage).mockResolvedValueOnce({
+      title: 'Fallback playlist',
+      resolvedItems: [VIDEO_ITEM],
+      totalItems: 1,
+      hasMore: false
+    } as never);
+
+    const res = (await call('sc:resolve', 'https://soundcloud.com/a/sets/x')) as {
+      result: { kind: string; title: string };
+    };
+    expect(res.result).toMatchObject({ kind: 'playlist', title: 'Fallback playlist' });
+  });
+
+  it('opens an unknown resource kind as a channel marker', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({ kind: 'user', user: {} } as never);
+
+    const res = (await call('sc:resolve', 'https://soundcloud.com/artist/x')) as {
+      result: { kind: string; items: unknown[] };
+    };
+    expect(res.result).toMatchObject({ kind: 'channel', items: [] });
+  });
+
+  it('returns an empty video item list when the fallback resolves nothing', async () => {
+    vi.mocked(sc.scResolve).mockRejectedValueOnce(new Error('api'));
+    vi.mocked(fb.fallbackResolvePage).mockResolvedValueOnce({
+      title: 'Empty',
+      resolvedItems: [],
+      totalItems: 0,
+      hasMore: false
+    } as never);
+
+    const res = (await call('sc:resolve', 'https://soundcloud.com/artist/x')) as {
+      result: { kind: string; items: unknown[] };
+    };
+    expect(res.result).toMatchObject({ kind: 'video', items: [] });
+  });
+
   it('rejects personalized discover sets with an unsupported code', async () => {
     const res = (await call(
       'sc:resolve',
@@ -209,6 +314,24 @@ describe('sc:resolveMore', () => {
     })) as { success: boolean; items: unknown[] };
     expect(res.success).toBe(true);
     expect(res.items).toHaveLength(1);
+  });
+
+  it('marks a full API page with a larger known total', async () => {
+    vi.mocked(sc.scResolve).mockResolvedValueOnce({
+      kind: 'playlist',
+      playlist: { id: 556, title: 'P', track_count: 31 }
+    });
+    vi.mocked(sc.scPlaylistTracks).mockResolvedValueOnce({
+      items: Array.from({ length: 30 }, (_, i) => ({ ...VIDEO_ITEM, id: String(i) }))
+    });
+
+    const res = (await call('sc:resolveMore', {
+      url: 'https://soundcloud.com/artist/sets/best-of',
+      start: 1,
+      end: 30
+    })) as { success: boolean; hasMore: boolean; totalItems: number };
+
+    expect(res).toMatchObject({ success: true, hasMore: true, totalItems: 31 });
   });
 });
 

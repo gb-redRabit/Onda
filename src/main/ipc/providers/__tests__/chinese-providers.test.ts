@@ -10,7 +10,7 @@ import { pan123Provider } from '../pan123';
 // Siatka regresyjna 123pan: listowanie, hasło, podfoldery oraz rozwiązywanie URL pobierania.
 // `fetch` mockowany.
 
-const fetchMock = vi.fn(async (raw: unknown) => {
+const fetchMock = vi.fn(async (raw: unknown, _init?: RequestInit) => {
   const url = String(raw);
   let body: unknown = {};
   if (url.includes('/api/share/download/info'))
@@ -50,6 +50,86 @@ describe('123pan', () => {
     ]);
   });
 
+  it('rejects foreign hosts and urls without a share id', () => {
+    expect(pan123Provider.parse('https://example.com/s/ABC')).toBeNull();
+    expect(pan123Provider.parse('https://www.123pan.com/folder/1')).toBeNull();
+    expect(pan123Provider.parse('https://www.123pan.com/s/PLAIN')).toEqual({
+      provider: '123pan',
+      shareId: 'PLAIN'
+    });
+  });
+
+  it('normalizes alternate field names and skips entries without ids', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          code: 0,
+          data: {
+            infoList: [
+              {},
+              { fileId: 10, fileName: 'lower', Type: 0, size: '7' },
+              { FileId: 11, Type: '1' },
+              { FileId: 12, FileName: 'bad-size', Size: 'abc' }
+            ]
+          }
+        })
+    });
+
+    const items = await pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' });
+
+    expect(items).toEqual([
+      { id: '10', name: 'lower', kind: 'file', size: 7, parentId: null },
+      { id: '11', name: '11', kind: 'folder', size: undefined, parentId: null },
+      { id: '12', name: 'bad-size', kind: 'file', size: 0, parentId: null }
+    ]);
+  });
+
+  it('tolerates empty and non-JSON responses', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => '' });
+    await expect(
+      pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' })
+    ).resolves.toEqual([]);
+
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => 'not json' });
+    await expect(
+      pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' })
+    ).resolves.toEqual([]);
+  });
+
+  it('sends the stored cookie and reports HTTP failures', async () => {
+    cookieRef.value = 'session=abc';
+    await pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' });
+    const init = fetchMock.mock.calls.at(-1)?.[1] as { headers: Record<string, string> };
+    expect(init.headers.Cookie).toBe('session=abc');
+
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 502, text: async () => '' });
+    await expect(pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' })).rejects.toThrow(
+      /HTTP 502/
+    );
+  });
+
+  it('throws provider errors with and without a message', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ code: 1, message: 'expired' })
+    });
+    await expect(pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' })).rejects.toThrow(
+      /code 1: expired/
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ code: 2 })
+    });
+    await expect(pan123Provider.listFolder({ provider: '123pan', shareId: 'ABC' })).rejects.toThrow(
+      /link wygas/i
+    );
+  });
+
   it('carries the share password in the ref and lists subfolders by parentFileId', async () => {
     expect(pan123Provider.parse('https://www.123pan.com/s/ABC?pwd=1234')).toEqual({
       provider: '123pan',
@@ -72,6 +152,13 @@ describe('123pan', () => {
       status: 200,
       text: async () => JSON.stringify({ code: 1, message: 'need login' })
     }));
+    await expect(
+      pan123Provider.resolveFileUrl({ provider: '123pan', shareId: 'ABC' }, '1')
+    ).rejects.toThrow(/URL|logowania/i);
+  });
+
+  it('rejects an empty download response', async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => '' });
     await expect(
       pan123Provider.resolveFileUrl({ provider: '123pan', shareId: 'ABC' }, '1')
     ).rejects.toThrow(/URL|logowania/i);
