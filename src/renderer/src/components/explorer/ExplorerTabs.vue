@@ -47,8 +47,7 @@ function onTabMouseDown(e: MouseEvent) {
 }
 
 function onTabDragStart(e: DragEvent, idx: number) {
-  const tab = explorer.tabs[idx];
-  if (!tab) return;
+  const tab = explorer.tabs[idx]!;
   isDraggingTab.value = true;
   draggingTabIdx.value = idx;
   beginTabDrag(tab.path);

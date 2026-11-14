@@ -63,13 +63,13 @@ function tabs() {
   ];
 }
 
-function mountTabs() {
+function mountTabs(provideConfirm = true) {
   wrapper = mount(ExplorerTabs, {
     attachTo: document.body,
     global: {
       directives: { activate: {} },
       mocks: { $t: (key: string) => key },
-      provide: { showConfirm: state.confirm }
+      provide: provideConfirm ? { showConfirm: state.confirm } : {}
     }
   });
   return wrapper;
@@ -164,6 +164,16 @@ describe('rendering and clicks', () => {
     expect(document.body.querySelector('button')).toBeNull();
   });
 
+  it('renders computer tabs and adds a tab without a path', () => {
+    state.explorer.tabs = [{ id: 'a', path: '', label: 'PC' }];
+    state.explorer.currentPath = '';
+    mountTabs();
+
+    expect(tabButtons()[0].textContent).toContain('PC');
+    document.body.querySelectorAll('button')[1].click();
+    expect(state.explorer.addTab).toHaveBeenCalledWith('');
+  });
+
   it('switches tabs and closes via the close icon', async () => {
     mountTabs();
     const buttons = tabButtons();
@@ -193,6 +203,19 @@ describe('rendering and clicks', () => {
     Object.defineProperty(event, 'button', { value: 1 });
     const notCanceled = tabButtons()[0].dispatchEvent(event);
     expect(notCanceled).toBe(false);
+  });
+
+  it('ignores primary-button aux and mousedown events', () => {
+    mountTabs();
+    const button = tabButtons()[0];
+    const aux = new MouseEvent('auxclick', { bubbles: true, cancelable: true });
+    Object.defineProperty(aux, 'button', { value: 0 });
+    button.dispatchEvent(aux);
+    expect(state.explorer.closeTab).not.toHaveBeenCalled();
+
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    Object.defineProperty(down, 'button', { value: 0 });
+    expect(button.dispatchEvent(down)).toBe(true);
   });
 });
 
@@ -282,6 +305,84 @@ describe('tab drag', () => {
     await nextTick();
     expect(tabButtons()[1].className).not.toContain('ring-2');
   });
+
+  it('keeps the target while nested drag enters remain', async () => {
+    mountTabs();
+    tabButtons()[1].dispatchEvent(new Event('dragenter', { bubbles: true }));
+    tabButtons()[1].dispatchEvent(new Event('dragenter', { bubbles: true }));
+    tabButtons()[1].dispatchEvent(new Event('dragleave', { bubbles: true }));
+    await nextTick();
+    expect(tabButtons()[1].className).toContain('ring-2');
+    tabButtons()[1].dispatchEvent(new Event('dragleave', { bubbles: true }));
+    await nextTick();
+    expect(tabButtons()[1].className).not.toContain('ring-2');
+  });
+
+  it('clears a pending hover switch on dragend and drop', async () => {
+    mountTabs();
+    tabButtons()[1].dispatchEvent(
+      Object.assign(new Event('dragover', { bubbles: true }), {
+        dataTransfer: dragEvent().dataTransfer
+      })
+    );
+    vi.advanceTimersByTime(300);
+    tabButtons()[0].dispatchEvent(new Event('dragend', { bubbles: true }));
+    vi.advanceTimersByTime(600);
+    expect(state.explorer.switchTab).not.toHaveBeenCalled();
+
+    tabButtons()[1].dispatchEvent(
+      Object.assign(new Event('dragover', { bubbles: true }), {
+        dataTransfer: dragEvent().dataTransfer
+      })
+    );
+    tabButtons()[1].dispatchEvent(new Event('drop', { bubbles: true }));
+    await vi.waitFor(() => expect(state.handleTabDrop).toHaveBeenCalled());
+    vi.advanceTimersByTime(600);
+    expect(state.explorer.switchTab).not.toHaveBeenCalled();
+  });
+
+  it('ignores hover switching and leave bookkeeping during its own drag', async () => {
+    mountTabs();
+    tabButtons()[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    tabButtons()[1].dispatchEvent(
+      Object.assign(new Event('dragover', { bubbles: true }), {
+        dataTransfer: dragEvent().dataTransfer
+      })
+    );
+    tabButtons()[1].dispatchEvent(new Event('dragenter', { bubbles: true }));
+    tabButtons()[1].dispatchEvent(new Event('dragleave', { bubbles: true }));
+    await nextTick();
+    vi.advanceTimersByTime(600);
+
+    expect(state.explorer.switchTab).not.toHaveBeenCalled();
+    expect(tabButtons()[1].className).not.toContain('ring-2');
+  });
+
+  it('handles dragover without data and over the active tab', async () => {
+    state.explorer.activeTabIndex = 0;
+    mountTabs();
+    tabButtons()[0].dispatchEvent(new Event('dragover', { bubbles: true }));
+    vi.advanceTimersByTime(600);
+
+    expect(state.explorer.switchTab).not.toHaveBeenCalled();
+  });
+
+  it('skips window creation when the drag disappears or the tab is gone', async () => {
+    state.getActiveTabDrag.mockReturnValueOnce({ path: 'C:\\one', claimed: false });
+    mountTabs();
+    tabButtons()[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    tabButtons()[0].dispatchEvent(new Event('dragend', { bubbles: true }));
+    state.getActiveTabDrag.mockReturnValueOnce(null);
+    vi.advanceTimersByTime(200);
+    expect(state.invoke).not.toHaveBeenCalled();
+
+    state.getActiveTabDrag.mockReturnValue({ path: 'C:\\missing', claimed: false });
+    tabButtons()[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    tabButtons()[0].dispatchEvent(new Event('dragend', { bubbles: true }));
+    vi.advanceTimersByTime(200);
+    expect(state.invoke).toHaveBeenCalledWith('explorer:create', 'C:\\missing');
+    expect(state.explorer.closeTab).not.toHaveBeenCalled();
+  });
 });
 
 describe('drops', () => {
@@ -344,5 +445,51 @@ describe('drops', () => {
     tabButtons()[1].dispatchEvent(new Event('drop', { bubbles: true }));
     await vi.waitFor(() => expect(state.handleTabDrop).toHaveBeenCalled());
     expect(state.invoke).not.toHaveBeenCalled();
+  });
+
+  it('claims a same-index drop without reordering', async () => {
+    state.parseTabPayload.mockReturnValue({ wid: 1, path: 'C:\\one' });
+    mountTabs();
+    tabButtons()[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    tabButtons()[0].dispatchEvent(new Event('drop', { bubbles: true }));
+    await vi.waitFor(() => expect(state.claimTabDrag).toHaveBeenCalledWith('C:\\one'));
+    expect(state.explorer.reorderTab).not.toHaveBeenCalled();
+  });
+
+  it('drops plain-text paths', async () => {
+    mountTabs();
+    const data = new Map([['text/plain', 'C:\\a\nC:\\b']]);
+    const dataTransfer = {
+      getData: (type: string) => data.get(type) ?? '',
+      setData: vi.fn(),
+      dropEffect: '',
+      effectAllowed: ''
+    };
+    tabButtons()[1].dispatchEvent(
+      Object.assign(new Event('drop', { bubbles: true }), { dataTransfer })
+    );
+
+    await vi.waitFor(() =>
+      expect(state.invoke).toHaveBeenCalledWith('fs:move', ['C:\\a', 'C:\\b'], 'C:\\two')
+    );
+  });
+
+  it('falls back to the default confirm and empty dir label', async () => {
+    state.explorer.tabs[1].path = '';
+    state.settings.explorer.confirmBeforeMove = true;
+    mountTabs(false);
+    const data = new Map([['text/plain', 'C:\\a']]);
+    const dataTransfer = {
+      getData: (type: string) => data.get(type) ?? '',
+      setData: vi.fn(),
+      dropEffect: '',
+      effectAllowed: ''
+    };
+    tabButtons()[1].dispatchEvent(
+      Object.assign(new Event('drop', { bubbles: true }), { dataTransfer })
+    );
+
+    await vi.waitFor(() => expect(state.invoke).toHaveBeenCalledWith('fs:move', ['C:\\a'], ''));
+    expect(state.t).toHaveBeenCalledWith('explorer.moveConfirm', { n: 1, dir: '' });
   });
 });
