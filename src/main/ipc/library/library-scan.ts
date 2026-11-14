@@ -47,7 +47,6 @@ async function getAudioMetadata(
   channels: number;
   format: string;
   codec?: string;
-  isVideo: boolean;
   size: number;
   replayGainTrackGain?: number;
   replayGainAlbumGain?: number;
@@ -75,7 +74,6 @@ async function getAudioMetadata(
       channels: formatInfo?.numberOfChannels || 0,
       format: formatInfo?.container || ext.slice(1),
       codec: formatInfo?.codec || undefined,
-      isVideo: false,
       size: s.size,
       hasCover: fastScan ? undefined : (meta.common.picture?.length ?? 0) > 0,
       replayGainTrackGain:
@@ -89,55 +87,6 @@ async function getAudioMetadata(
     };
   } catch (e) {
     logger.warn('library', `getAudioMetadata failed for ${filePath}`, e);
-    return null;
-  }
-}
-
-async function getMetadata(
-  filePath: string,
-  ext: string,
-  s: Stats,
-  fastScan = false
-): Promise<{
-  title: string;
-  artist: string;
-  album: string;
-  year?: number;
-  genre?: string;
-  track?: { no: number; of?: number };
-  duration: number;
-  bitrate: number;
-  sampleRate: number;
-  channels: number;
-  format: string;
-  codec?: string;
-  isVideo: boolean;
-  size: number;
-  replayGainTrackGain?: number;
-  replayGainAlbumGain?: number;
-  hasCover?: boolean;
-} | null> {
-  try {
-    const isVideo = VIDEO_EXTS.includes(ext);
-
-    if (!isVideo) {
-      return getAudioMetadata(filePath, ext, s, fastScan);
-    }
-
-    return {
-      title: basename(filePath, ext),
-      artist: '',
-      album: '',
-      duration: 0,
-      bitrate: 0,
-      sampleRate: 0,
-      channels: 0,
-      format: ext.slice(1),
-      isVideo: true,
-      size: s.size
-    };
-  } catch (e) {
-    logger.warn('library', `getMetadata failed for ${filePath}`, e);
     return null;
   }
 }
@@ -164,7 +113,7 @@ async function processAudioFile(
   ) {
     return { file: prev };
   }
-  const meta = await getMetadata(fullPath, ext, s, fastScan);
+  const meta = await getAudioMetadata(fullPath, ext, s, fastScan);
   return {
     file: {
       id: fullPath,
@@ -246,7 +195,7 @@ async function processImageFile(
       name: entryName,
       path: fullPath,
       extension: ext,
-      mimeType: MIME_TYPES[ext] || '',
+      mimeType: MIME_TYPES[ext],
       size: s.size,
       type: 'image',
       addedAt: s.birthtimeMs ?? Date.now(),
@@ -395,12 +344,9 @@ export async function scanDir(
           chunk.push(audioTasks[ai++]);
         } else if (ii < imageTasks.length && (vi >= videoTasks.length || chunk.length % 3 === 1)) {
           chunk.push(imageTasks[ii++]);
-        } else if (vi < videoTasks.length) {
+        } else {
+          // Po wyczerpaniu audio i obrazów zostają tylko wideo.
           chunk.push(videoTasks[vi++]);
-        } else if (ai < audioTasks.length) {
-          chunk.push(audioTasks[ai++]);
-        } else if (ii < imageTasks.length) {
-          chunk.push(imageTasks[ii++]);
         }
       }
       const results = await Promise.all(chunk.map((fn) => fn()));

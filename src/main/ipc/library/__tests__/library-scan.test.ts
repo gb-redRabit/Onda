@@ -263,6 +263,37 @@ describe('scanFilePaths', () => {
     state.stat.mockRejectedValue(new Error('ENOENT'));
     await expect(scanFiles(['D:/video/clip.mp4', 'D:/pics/a.png'])).resolves.toEqual([]);
   });
+
+  it('omits a missing track total', async () => {
+    const base = meta();
+    state.parseFile.mockResolvedValueOnce({
+      ...base,
+      common: { ...base.common, track: { no: 3, of: null } }
+    });
+
+    const files = await scanFiles(['D:/music/track.mp3']);
+
+    expect(files[0].metadata!.track).toEqual({ no: 3, of: undefined });
+  });
+
+  it('falls back to the current time for videos without a birth time', async () => {
+    state.stat.mockResolvedValueOnce({ size: 10, mtimeMs: 5 } as Stats);
+    const before = Date.now();
+
+    const files = await scanFiles(['D:/video/clip.mp4']);
+
+    expect(files[0].addedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  it('falls back to the current time for images without a birth time', async () => {
+    state.stat.mockResolvedValueOnce({ size: 10, mtimeMs: 5 } as Stats);
+    const before = Date.now();
+
+    const files = await scanFiles(['D:/pics/a.png']);
+
+    expect(files[0]).toMatchObject({ type: 'image', mimeType: 'image/png' });
+    expect(files[0].addedAt).toBeGreaterThanOrEqual(before);
+  });
 });
 
 describe('scanDir', () => {
@@ -386,6 +417,66 @@ describe('scanDir', () => {
 
     expect(files.files[0]).toBe(cached);
     expect(state.parseFile).not.toHaveBeenCalled();
+  });
+
+  it('stops walking entries as soon as the signal aborts', async () => {
+    state.readdir.mockResolvedValue([entry('a.mp3'), entry('b.mp3')]);
+    let calls = 0;
+    const signal = {
+      get aborted() {
+        return calls++ > 0;
+      }
+    } as AbortSignal;
+
+    const res = await scanDir('D:/music', 10, 0, signal);
+
+    expect(res).toEqual({ files: [], audioCount: 0, videoCount: 0, imageCount: 0 });
+  });
+
+  it('returns empty when the signal aborts before processing tasks', async () => {
+    state.readdir.mockResolvedValue([entry('a.mp3')]);
+    let calls = 0;
+    const signal = {
+      get aborted() {
+        return calls++ > 1;
+      }
+    } as AbortSignal;
+
+    const res = await scanDir('D:/music', 10, 0, signal);
+
+    expect(res).toEqual({ files: [], audioCount: 0, videoCount: 0, imageCount: 0 });
+  });
+
+  it('ignores entries that are neither files nor directories', async () => {
+    state.readdir.mockResolvedValue([
+      { name: 'link', isDirectory: () => false, isFile: () => false }
+    ]);
+
+    const res = await scanDir('D:/music');
+
+    expect(res).toEqual({ files: [], audioCount: 0, videoCount: 0, imageCount: 0 });
+  });
+
+  it('falls back to videos and leftover audio when filling a chunk', async () => {
+    state.readdir.mockResolvedValue([
+      entry('a.mp3'),
+      entry('b.mp3'),
+      ...Array.from({ length: 12 }, (_, i) => entry(`v${i}.mp4`))
+    ]);
+
+    const res = await scanDir('D:/music');
+
+    expect(res.files).toHaveLength(14);
+    expect(res.videoCount).toBe(12);
+  });
+
+  it('falls back to leftover audio when images and videos are exhausted', async () => {
+    state.readdir.mockResolvedValue([entry('a.mp3'), entry('b.mp3')]);
+
+    const res = await scanDir('D:/music');
+
+    expect(res.files).toHaveLength(2);
+    expect(res.audioCount).toBe(2);
   });
 });
 
