@@ -31,7 +31,8 @@ const state = vi.hoisted(() => ({
   drawSplash: vi.fn(),
   resetGradients: vi.fn(),
   getFreqData: vi.fn(() => new Uint8Array([10, 20, 30, 40])),
-  smoothData: vi.fn((data: Uint8Array) => data)
+  smoothData: vi.fn((data: Uint8Array) => data),
+  isCoreShell: false
 }));
 
 vi.mock('@renderer/composables/useAudioPlayer', () => ({
@@ -63,7 +64,7 @@ vi.mock('@renderer/utils/visualizerBuffers', () => ({
 vi.mock('@renderer/composables/useVizConfig', () => ({
   useVizConfig: () => ({ vizCfg: state.vizCfg, quality: state.quality })
 }));
-vi.mock('@renderer/utils/runtimeMode', () => ({ isCoreShell: () => false }));
+vi.mock('@renderer/utils/runtimeMode', () => ({ isCoreShell: () => state.isCoreShell }));
 
 let wrapper: VueWrapper | null = null;
 let canvas: HTMLCanvasElement;
@@ -106,6 +107,7 @@ beforeEach(() => {
   state.vizCfg.fpsCap = 60;
   state.vizCfg.smoothing = 0.8;
   state.vizCfg.sensitivity = 1;
+  state.isCoreShell = false;
   state.rafCallbacks.clear();
   state.rafId = 0;
   state.cancelRaf.mockReset();
@@ -284,6 +286,109 @@ describe('draw loop', () => {
     runFrame(100);
     expect(state.rafCallbacks.size).toBe(1);
   });
+
+  it('stops the loop in Core shell without an analyser', () => {
+    state.isPlaying.value = true;
+    state.isCoreShell = true;
+    state.getAnalyserNode.mockReturnValue(null);
+    mountViz();
+
+    runFrame(100);
+    expect(state.rafCallbacks.size).toBe(0);
+  });
+
+  it('returns early when the canvas is gone', () => {
+    state.isPlaying.value = true;
+    mountViz();
+    const callbacks = [...state.rafCallbacks.values()];
+    state.rafCallbacks.clear();
+    wrapper!.unmount();
+    wrapper = null;
+
+    expect(() => callbacks.forEach((callback) => callback(100))).not.toThrow();
+  });
+
+  it('falls back to 60 fps when the cap is zero', () => {
+    state.isPlaying.value = true;
+    state.vizCfg.fpsCap = 0;
+    mountViz();
+
+    runFrame(100);
+    state.drawBars.mockClear();
+    runFrame(110);
+    expect(state.drawBars).not.toHaveBeenCalled();
+    runFrame(120);
+    expect(state.drawBars).toHaveBeenCalled();
+  });
+
+  it('resets the crossfade alpha after it fades out', () => {
+    state.isPlaying.value = true;
+    const wrapperRef = mountViz('bars');
+    const alphas: number[] = [];
+    state.drawSpectrum.mockImplementation(() => {
+      alphas.push(state.ctx.globalAlpha);
+    });
+
+    runFrame(100);
+    (wrapperRef.vm as unknown as { cycleStyle: () => void }).cycleStyle();
+    for (let i = 1; i <= 13; i += 1) runFrame(100 + i * 100);
+
+    expect(alphas.at(-1)).toBe(1);
+    expect(state.drawSpectrum).toHaveBeenCalled();
+  });
+
+  it('grows the particle set when the quality target rises', () => {
+    state.isPlaying.value = true;
+    state.quality.value = { dprCap: 2, particleCount: 2 };
+    mountViz('particles');
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+
+    runFrame(100);
+    expect(state.ctx.arc).toHaveBeenCalledTimes(2);
+
+    state.quality.value = { dprCap: 2, particleCount: 5 };
+    runFrame(200);
+    expect(state.ctx.arc).toHaveBeenCalledTimes(7);
+  });
+
+  it('wraps particles around the canvas edges', () => {
+    state.isPlaying.value = true;
+    state.quality.value = { dprCap: 2, particleCount: 2 };
+    mountViz('particles');
+    vi.spyOn(Math, 'random').mockReturnValue(1);
+
+    for (let i = 1; i <= 400; i += 1) runFrame(i * 100);
+
+    expect(state.ctx.arc).toHaveBeenCalled();
+    expect(state.ctx.clearRect).toHaveBeenCalled();
+
+    vi.mocked(Math.random).mockReturnValue(0);
+    for (let i = 401; i <= 900; i += 1) runFrame(i * 100);
+
+    expect(state.ctx.arc).toHaveBeenCalled();
+  });
+
+  it('wraps particles back from the top and left edges', () => {
+    state.isPlaying.value = true;
+    state.quality.value = { dprCap: 2, particleCount: 2 };
+    mountViz('particles');
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    for (let i = 1; i <= 400; i += 1) runFrame(i * 100);
+
+    expect(state.ctx.arc).toHaveBeenCalled();
+  });
+
+  it('skips rendering for an unknown style', async () => {
+    state.isPlaying.value = true;
+    mountViz('bars');
+    state.settings.playback.visualization.mode = 'bogus';
+    await nextTick();
+
+    runFrame(100);
+    expect(state.drawBars).not.toHaveBeenCalled();
+    expect(state.ctx.clearRect).toHaveBeenCalled();
+  });
 });
 
 describe('styles and controls', () => {
@@ -337,6 +442,81 @@ describe('styles and controls', () => {
     Object.defineProperty(document, 'hidden', { value: false, configurable: true });
     document.dispatchEvent(new Event('visibilitychange'));
     expect(state.rafCallbacks.size).toBe(1);
+  });
+
+  it('does not repaint an empty frame twice in none mode', async () => {
+    state.isPlaying.value = true;
+    mountViz();
+    const callback = [...state.rafCallbacks.values()][0];
+    state.rafCallbacks.clear();
+
+    state.settings.playback.visualization.mode = 'none';
+    await nextTick();
+    callback(100);
+    state.ctx.clearRect.mockClear();
+    callback(200);
+
+    expect(state.ctx.clearRect).not.toHaveBeenCalled();
+  });
+
+  it('ignores a settings mode that already matches the current style', async () => {
+    mountViz('bars');
+    (wrapper!.vm as { style?: string }).style = 'wave';
+    await nextTick();
+
+    state.settings.playback.visualization.mode = 'wave';
+    await nextTick();
+    expect((wrapper!.vm as unknown as { style: string }).style).toBe('wave');
+  });
+
+  it('starts drawing when the style leaves none while playing', async () => {
+    state.isPlaying.value = true;
+    mountViz('none');
+    expect(state.rafCallbacks.size).toBe(0);
+
+    state.settings.playback.visualization.mode = 'wave';
+    await nextTick();
+    expect(state.rafCallbacks.size).toBe(1);
+  });
+
+  it('ignores visibility changes without a frame or playback', () => {
+    mountViz();
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(state.cancelRaf).not.toHaveBeenCalled();
+
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(state.rafCallbacks.size).toBe(0);
+  });
+
+  it('stops playback without a frame to cancel', async () => {
+    state.isPlaying.value = true;
+    mountViz();
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    state.isPlaying.value = false;
+    await nextTick();
+    expect(state.cancelRaf).toHaveBeenCalledTimes(1);
+  });
+
+  it('updates smoothing only when an analyser exists', async () => {
+    state.getAnalyserNode.mockReturnValue(null);
+    mountViz();
+
+    state.settings.playback.visualization.smoothing = 0.4;
+    await nextTick();
+    expect(state.setVizActive).toHaveBeenCalledWith(true);
+  });
+
+  it('uses the default smoothing when settings omit it', () => {
+    state.settings.playback.visualization.smoothing = undefined;
+    const analyser = { frequencyBinCount: 4, smoothingTimeConstant: 0.2 };
+    state.getAnalyserNode.mockReturnValue(analyser);
+    mountViz();
+
+    expect(analyser.smoothingTimeConstant).toBe(0.8);
   });
 
   it('shows the no-track overlay and hides it while playing', async () => {
