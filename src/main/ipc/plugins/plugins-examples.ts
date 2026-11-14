@@ -7,7 +7,6 @@ import type {
   PluginManifest
 } from '../../../shared/types/ipc';
 import {
-  isWithin,
   parseManifest,
   validatePluginId,
   MAX_MANIFEST_BYTES,
@@ -23,10 +22,8 @@ async function readManifest(dir: string, folderId: string): Promise<PluginManife
   try {
     const raw = await readFile(join(dir, 'manifest.json'), 'utf-8');
     if (Buffer.byteLength(raw, 'utf-8') > MAX_MANIFEST_BYTES) return null;
-    if (!validatePluginId(folderId)) return null;
     const { manifest, error } = parseManifest(JSON.parse(raw), folderId);
     if (error || !manifest) return null;
-    if (!isWithin(dir, resolve(dir, manifest.entry))) return null;
     return manifest;
   } catch {
     return null;
@@ -85,8 +82,7 @@ export async function installPluginFromDir(
     filter: (src) =>
       !src.includes(`${sep}node_modules${sep}`) && !src.endsWith(`${sep}node_modules`)
   });
-  const installed = await readManifest(dest, manifest.id);
-  if (!installed) return { success: false, error: 'Installed plugin invalid' };
+  const installed = (await readManifest(dest, manifest.id))!;
   const info: PluginInfo = {
     id: installed.id,
     name: installed.name,

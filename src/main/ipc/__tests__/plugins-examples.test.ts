@@ -28,6 +28,28 @@ describe('plugins-examples', () => {
     try {
       await makeExample(examples, 'demo');
       await mkdir(join(examples, 'not-a-plugin'));
+      await writeFile(join(examples, 'README.md'), 'not a plugin');
+
+      await mkdir(join(examples, 'bad-manifest'));
+      await writeFile(join(examples, 'bad-manifest', 'manifest.json'), '{"name":"x"}');
+
+      await mkdir(join(examples, 'huge-manifest'));
+      await writeFile(
+        join(examples, 'huge-manifest', 'manifest.json'),
+        JSON.stringify({
+          name: 'Huge',
+          version: '1.0.0',
+          entry: 'index.js',
+          description: 'x'.repeat(70 * 1024)
+        })
+      );
+
+      await mkdir(join(examples, 'escaping'));
+      await writeFile(
+        join(examples, 'escaping', 'manifest.json'),
+        JSON.stringify({ name: 'Escape', version: '1.0.0', entry: '../outside.js' })
+      );
+
       const list = await listPluginExamples(examples);
       expect(list).toHaveLength(1);
       expect(list[0]).toMatchObject({
@@ -79,6 +101,34 @@ describe('plugins-examples', () => {
         error: 'Invalid plugin id'
       });
     } finally {
+      await rm(dest, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a directory entry', async () => {
+    const examples = await mkdtemp(join(tmpdir(), 'onda-examples-'));
+    const dest = await mkdtemp(join(tmpdir(), 'onda-plugins-'));
+    try {
+      await mkdir(join(examples, 'dir-entry'));
+      await mkdir(join(examples, 'dir-entry', 'sub.js'));
+      await writeFile(
+        join(examples, 'dir-entry', 'manifest.json'),
+        JSON.stringify({ name: 'Dir', version: '1.0.0', entry: 'sub.js' })
+      );
+      await expect(
+        installPluginFromDir(join(examples, 'dir-entry'), dest, 'dir-entry')
+      ).resolves.toMatchObject({ success: false, error: 'Entry file missing' });
+
+      await mkdir(join(examples, 'missing-entry'));
+      await writeFile(
+        join(examples, 'missing-entry', 'manifest.json'),
+        JSON.stringify({ name: 'Missing', version: '1.0.0', entry: 'gone.js' })
+      );
+      await expect(
+        installPluginFromDir(join(examples, 'missing-entry'), dest, 'missing-entry')
+      ).resolves.toMatchObject({ success: false, error: 'Entry file missing' });
+    } finally {
+      await rm(examples, { recursive: true, force: true });
       await rm(dest, { recursive: true, force: true });
     }
   });
