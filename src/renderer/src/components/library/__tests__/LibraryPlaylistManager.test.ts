@@ -25,8 +25,15 @@ vi.mock('@renderer/composables/useCountLabel', () => ({
   useCountLabel: () => ({ trackCount: state.trackCount })
 }));
 vi.mock('@renderer/composables/useVirtualList', () => ({
-  useVirtualList: (options: { count: () => number; estimateSize: () => number }) => ({
-    getTotalSize: () => options.count() * options.estimateSize(),
+  useVirtualList: (options: {
+    count: () => number;
+    estimateSize: () => number;
+    scrollEl: () => unknown;
+  }) => ({
+    getTotalSize: () => {
+      options.scrollEl();
+      return options.count() * options.estimateSize();
+    },
     getVirtualItems: () =>
       Array.from({ length: options.count() }, (_, index) => ({
         index,
@@ -375,6 +382,76 @@ describe('drag and drop', () => {
     await flush();
 
     expect(state.library.reorderPlaylistTrack).toHaveBeenCalledWith('p1', 0, 1);
+  });
+
+  it('highlights the track row under a drag', async () => {
+    mountManager();
+    await playlistButtons()[0].trigger('click');
+    const row = wrapper!.findAll('[data-testid="track-row"]')[1].element.parentElement!;
+
+    row.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }));
+    await flush();
+    expect(row.className).toContain('ring-1');
+
+    row.dispatchEvent(new Event('dragleave', { bubbles: true }));
+    await flush();
+    expect(row.className).not.toContain('ring-1');
+  });
+
+  it('reorders upward when dropped above the source row', async () => {
+    mountManager();
+    await playlistButtons()[0].trigger('click');
+    const row = wrapper!.findAll('[data-testid="track-row"]')[0].element.parentElement!;
+    const event = new Event('drop', { bubbles: true, cancelable: true }) as Event;
+    Object.defineProperty(event, 'dataTransfer', {
+      value: { getData: () => JSON.stringify({ playlistId: 'p1', dragIndex: 2, paths: [] }) }
+    });
+
+    row.dispatchEvent(event);
+    await flush();
+
+    expect(state.library.reorderPlaylistTrack).toHaveBeenCalledWith('p1', 2, 0);
+  });
+
+  it('adds library tracks dropped onto a track row', async () => {
+    mountManager();
+    await playlistButtons()[0].trigger('click');
+    const row = wrapper!.findAll('[data-testid="track-row"]')[1].element.parentElement!;
+    const event = new Event('drop', { bubbles: true, cancelable: true }) as Event;
+    Object.defineProperty(event, 'dataTransfer', {
+      value: {
+        getData: () => JSON.stringify({ paths: ['C:\\music\\First.mp3', 'C:\\music\\Missing.mp3'] })
+      }
+    });
+
+    row.dispatchEvent(event);
+    await flush();
+
+    expect(state.library.addToPlaylist).toHaveBeenCalledTimes(1);
+    expect(state.library.addToPlaylist).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ id: 't1' })
+    );
+    expect(state.ui.notify).toHaveBeenCalledWith('success', expect.stringContaining('2'));
+  });
+
+  it('ignores track drops without a usable payload', async () => {
+    mountManager();
+    await playlistButtons()[0].trigger('click');
+    const row = wrapper!.findAll('[data-testid="track-row"]')[1].element.parentElement!;
+    const drop = (dataTransfer: unknown): void => {
+      const event = new Event('drop', { bubbles: true, cancelable: true }) as Event;
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer });
+      row.dispatchEvent(event);
+    };
+
+    drop(null);
+    drop({ getData: () => '' });
+    drop({ getData: () => 'not json' });
+    await flush();
+
+    expect(state.library.addToPlaylist).not.toHaveBeenCalled();
+    expect(state.library.reorderPlaylistTrack).not.toHaveBeenCalled();
   });
 
   it('adds library tracks dropped on the track list', async () => {

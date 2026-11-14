@@ -138,15 +138,15 @@ async function loadCover(): Promise<void> {
 }
 
 async function pickCover() {
-  if (!props.track) return;
+  const track = props.track!;
   const picked = await pickImagePath();
   if (!picked) return;
   uploadingCover.value = true;
   try {
-    const r = await window.api?.writeCover(props.track.path, picked);
+    const r = await window.api?.writeCover(track.path, picked);
     if (r?.success) {
       ui.notify('success', t('tags.coverSaved'));
-      player.invalidateCoverCache(props.track.path);
+      player.invalidateCoverCache(track.path);
       void loadCover();
     } else {
       ui.notify('error', t('tags.coverError'), r?.error);
@@ -158,13 +158,13 @@ async function pickCover() {
 }
 
 async function save() {
-  if (!props.track) return;
+  const track = props.track!;
   saving.value = true;
   const hasRename =
-    name.value && name.value + (props.track.name.match(/\.[^.]+$/)?.[0] || '') !== props.track.name;
+    name.value && name.value + (track.name.match(/\.[^.]+$/)?.[0] || '') !== track.name;
   let newPath: string | undefined;
   if (hasRename) {
-    const r = await window.api?.renameFile(props.track.path, name.value);
+    const r = await window.api?.renameFile(track.path, name.value);
     if (!r?.success) {
       ui.notify('error', t('tags.renameError'), r?.error);
       saving.value = false;
@@ -180,7 +180,7 @@ async function save() {
     genre: genre.value || undefined,
     trackNumber: trackNumber.value || undefined
   };
-  const result = await window.api?.writeTags(newPath || props.track.path, tags);
+  const result = await window.api?.writeTags(newPath || track.path, tags);
   if (result?.success) {
     emit('saved', {
       title: title.value || undefined,

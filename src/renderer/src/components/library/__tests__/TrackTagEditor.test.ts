@@ -191,6 +191,89 @@ describe('initial values and covers', () => {
     await flush();
     expect(wrapper!.findComponent(ModalShellStub).props('visible')).toBe(false);
   });
+
+  it('leaves empty fields blank and shows a file-path cover as video', async () => {
+    state.getCover.mockResolvedValue({ type: 'image', data: 'C:/covers/a.jpg' });
+    mountEditor({
+      track: track('bare.mp3', {
+        title: undefined,
+        artist: undefined,
+        album: undefined,
+        year: undefined,
+        genre: undefined,
+        track: undefined
+      })
+    });
+    await flush();
+
+    expect(inputs().map((input) => (input.element as HTMLInputElement).value)).toEqual([
+      'bare',
+      '',
+      '',
+      '',
+      '',
+      '',
+      ''
+    ]);
+    expect(wrapper!.findComponent(MediaCoverStub).props('cover')).toEqual({
+      type: 'video',
+      data: 'C:/covers/a.jpg'
+    });
+  });
+
+  it('uses a default mime for embedded covers', async () => {
+    state.getCover.mockResolvedValue(null);
+    state.readCover.mockResolvedValue({ data: [1], mime: undefined });
+    mountEditor({ track: track() });
+    await flush();
+
+    expect(state.createObjectURL).toHaveBeenCalled();
+  });
+
+  it('ignores a stale embedded cover response', async () => {
+    state.getCover.mockResolvedValue(null);
+    let resolveRead!: (value: unknown) => void;
+    state.readCover.mockReturnValueOnce(new Promise((resolve) => (resolveRead = resolve)));
+    mountEditor({ track: track('first.mp3') });
+    await flush();
+
+    state.getCover.mockResolvedValue(null);
+    state.readCover.mockResolvedValue(null);
+    await wrapper!.setProps({ track: track('second.mp3') });
+    await flush();
+    resolveRead({ data: [1], mime: 'image/png' });
+    await flush();
+
+    expect(wrapper!.findComponent(MediaCoverStub).props('cover')).toBeUndefined();
+  });
+
+  it('logs cover load failures', async () => {
+    state.getCover.mockRejectedValue(new Error('io'));
+    mountEditor({ track: track() });
+    await flush();
+
+    expect(state.loggerWarn).toHaveBeenCalledWith('tags', 'loadCover failed', expect.any(Error));
+  });
+
+  it('ignores cover failures from a superseded request', async () => {
+    let rejectFirst!: (error: unknown) => void;
+    state.getCover.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectFirst = reject;
+      })
+    );
+    mountEditor({ track: track('first.mp3') });
+    await flush();
+
+    state.getCover.mockResolvedValue(null);
+    state.readCover.mockResolvedValue(null);
+    await wrapper!.setProps({ track: track('second.mp3') });
+    await flush();
+    rejectFirst(new Error('late io'));
+    await flush();
+
+    expect(state.loggerWarn).not.toHaveBeenCalled();
+  });
 });
 
 describe('saving', () => {
@@ -265,6 +348,56 @@ describe('saving', () => {
     await flush();
     expect(state.notify).toHaveBeenCalledWith('error', 'tags.saveError', 'locked');
   });
+
+  it('writes empty fields as undefined and emits empty tags', async () => {
+    mountEditor({ track: track() });
+    await flush();
+    for (let i = 0; i < 7; i += 1) await inputs()[i].setValue('');
+
+    await saveButton().trigger('click');
+    await flush();
+
+    expect(state.writeTags).toHaveBeenCalledWith('C:\\music\\song.mp3', {
+      title: undefined,
+      artist: undefined,
+      album: undefined,
+      year: undefined,
+      genre: undefined,
+      trackNumber: undefined
+    });
+    expect(wrapper!.emitted('saved')?.[0]?.[0]).toEqual({
+      title: undefined,
+      artist: undefined,
+      album: undefined,
+      year: undefined,
+      genre: undefined,
+      track: undefined,
+      name: undefined,
+      path: undefined
+    });
+  });
+
+  it('defaults a non-numeric track number to one', async () => {
+    mountEditor({ track: track() });
+    await flush();
+    await inputs()[6].setValue('abc');
+
+    await saveButton().trigger('click');
+    await flush();
+
+    expect(wrapper!.emitted('saved')?.[0]?.[0]).toMatchObject({ track: { no: 1 } });
+  });
+
+  it('handles tracks without an extension when checking renames', async () => {
+    mountEditor({ track: track('song') });
+    await flush();
+
+    await saveButton().trigger('click');
+    await flush();
+
+    expect(state.renameFile).not.toHaveBeenCalled();
+    expect(state.writeTags).toHaveBeenCalledWith('C:\\music\\song', expect.any(Object));
+  });
 });
 
 describe('covers and closing', () => {
@@ -316,5 +449,53 @@ describe('covers and closing', () => {
 
     wrapper!.findComponent(ModalShellStub).vm.$emit('escape');
     expect(wrapper!.emitted('close')).toHaveLength(1);
+  });
+
+  it('tracks every edited field and reports close hints', async () => {
+    mountEditor({ track: track() });
+    await flush();
+    const options = state.overlayOptions;
+    expect(options.isDirty()).toBe(false);
+
+    const edits: Array<[number, string]> = [
+      [1, 'New title'],
+      [2, 'New artist'],
+      [3, 'New album'],
+      [4, '1999'],
+      [5, 'Jazz'],
+      [6, '9'],
+      [0, 'renamed']
+    ];
+    for (const [index, value] of edits) {
+      const original = (inputs()[index].element as HTMLInputElement).value;
+      await inputs()[index].setValue(value);
+      expect(options.isDirty()).toBe(true);
+      await inputs()[index].setValue(original);
+      expect(options.isDirty()).toBe(false);
+    }
+
+    options.onDirtyHint();
+    expect(state.notify).toHaveBeenCalledWith('warning', 'common.unsavedChangesClickAgain');
+    options.onCleanHint();
+    expect(state.notify).toHaveBeenCalledWith('info', 'common.clickAgainToClose');
+
+    options.onClose();
+    expect(wrapper!.emitted('close')).toHaveLength(1);
+  });
+
+  it('is clean without a track', () => {
+    mountEditor({ track: null });
+    expect(state.overlayOptions.isDirty()).toBe(false);
+  });
+
+  it('closes from the header and cancel buttons', async () => {
+    mountEditor({ track: track() });
+    await flush();
+
+    await wrapper!.get('button[aria-label="common.close"]').trigger('click');
+    const cancel = wrapper!.findAll('button').find((b) => b.text() === 'common.cancel')!;
+    await cancel.trigger('click');
+
+    expect(wrapper!.emitted('close')).toHaveLength(2);
   });
 });

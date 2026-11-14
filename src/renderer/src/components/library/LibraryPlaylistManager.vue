@@ -59,8 +59,7 @@ function createPlaylist() {
 }
 
 async function deleteSelected() {
-  const pl = selectedPlaylist.value;
-  if (!pl) return;
+  const pl = selectedPlaylist.value!;
   const ok = await prompt.showConfirm(t('library.playlistDeleteConfirm', { name: pl.name }));
   if (!ok) return;
   library.deletePlaylist(pl.id);
@@ -72,8 +71,7 @@ function onPlaylistDrop(e: DragEvent, playlistId: string) {
   if (!raw) return;
   const payload = parseDragPayload(raw);
   if (!payload) return;
-  const playlist = library.playlists.find((p) => p.id === playlistId);
-  if (!playlist) return;
+  const playlist = library.playlists.find((p) => p.id === playlistId)!;
   payload.paths!.forEach((path: string) => {
     const track = library.tracks.find((t) => t.path === path);
     if (track) library.addToPlaylist(playlistId, track);
@@ -99,8 +97,7 @@ function onTrackDrop(e: DragEvent, toIdx: number) {
     return;
   }
   // upuszczenie z biblioteki → dodaj do playlisty
-  const playlist = selectedPlaylist.value;
-  if (!playlist) return;
+  const playlist = selectedPlaylist.value!;
   payload.paths!.forEach((path: string) => {
     const track = library.tracks.find((t) => t.path === path);
     if (track) library.addToPlaylist(playlist.id, track);
@@ -112,14 +109,13 @@ function onTrackDrop(e: DragEvent, toIdx: number) {
 }
 
 function playFromPlaylist(index: number) {
-  if (!selectedPlaylist.value) return;
-  const tracks = selectedPlaylist.value.tracks;
-  if (!tracks[index]) return;
+  const playlist = selectedPlaylist.value!;
+  const tracks = playlist.tracks;
   player.clearQueue();
   if (index + 1 < tracks.length) {
     player.addToQueueMultiple(tracks.slice(index + 1));
   }
-  player.setTrack(tracks[index]);
+  player.setTrack(tracks[index]!);
   player.play();
 }
 
@@ -128,8 +124,7 @@ function playAll() {
 }
 
 function renameSelected() {
-  const pl = selectedPlaylist.value;
-  if (!pl) return;
+  const pl = selectedPlaylist.value!;
   void prompt.showPrompt(t('ctx.playlistRename'), pl.name).then((name) => {
     if (name) {
       library.renamePlaylist(pl.id, name);
@@ -138,8 +133,7 @@ function renameSelected() {
 }
 
 function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
-  const pl = library.playlists.find((p) => p.id === playlistId);
-  if (!pl) return;
+  const pl = library.playlists.find((p) => p.id === playlistId)!;
   contextMenu.showPlaylistMenu(e, pl, () => {
     selectedPlaylistId.value = pl.id;
     renameSelected();
@@ -150,7 +144,7 @@ function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
 // (plan 1.6).
 const playlistListRef = ref<HTMLElement | null>(null);
 const playlistVirtualizer = useVirtualList({
-  count: () => selectedPlaylist.value?.tracks.length ?? 0,
+  count: () => selectedPlaylist.value!.tracks.length,
   scrollEl: () => playlistListRef.value,
   estimateSize: () => 56,
   overscan: 8
