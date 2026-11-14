@@ -104,6 +104,15 @@ describe('navigation buttons', () => {
     expect(state.explorer.goBack).toHaveBeenCalledTimes(1);
     expect(state.explorer.goUp).toHaveBeenCalledTimes(1);
   });
+
+  it('forwards the forward button when history allows it', async () => {
+    state.explorer.canGoForward = true;
+    setup();
+
+    await buttonByName('explorer.forward').trigger('click');
+
+    expect(state.explorer.goForward).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('crumbs', () => {
@@ -167,6 +176,25 @@ describe('drag highlighting', () => {
     crumb(1).element.dispatchEvent(drag('dragleave'));
     await nextTick();
     expect(crumb(1).classes()).not.toContain('ring-2');
+  });
+
+  it('highlights the computer root and tolerates a missing dataTransfer', async () => {
+    setup();
+    const home = buttonByName('explorer.home');
+    const dt = { dropEffect: '' };
+
+    home.element.dispatchEvent(drag('dragover', { dataTransfer: dt, ctrlKey: true }));
+    home.element.dispatchEvent(drag('dragenter'));
+    await nextTick();
+    expect(home.classes()).toContain('ring-2');
+    expect(dt.dropEffect).toBe('copy');
+
+    const noData = drag('dragover', { dataTransfer: null });
+    const prevent = vi.spyOn(noData, 'preventDefault');
+    home.element.dispatchEvent(noData);
+    await nextTick();
+    expect(prevent).toHaveBeenCalled();
+    expect(home.classes()).toContain('ring-2');
   });
 });
 
@@ -264,5 +292,17 @@ describe('dropping files', () => {
 
     expect(confirm).toHaveBeenCalledWith('explorer.moveConfirm');
     expect(state.invoke).toHaveBeenCalledWith('fs:move', ['a'], 'C:\\Music');
+  });
+
+  it('confirms a drop onto the computer root with an empty directory label', async () => {
+    state.settings.explorer.confirmBeforeMove = true;
+    setup();
+    const dt = { getData: vi.fn(() => 'a') };
+
+    buttonByName('explorer.home').element.dispatchEvent(drag('drop', { dataTransfer: dt }));
+    await flush();
+
+    expect(state.t).toHaveBeenCalledWith('explorer.moveConfirm', { n: 1, dir: '' });
+    expect(state.invoke).toHaveBeenCalledWith('fs:move', ['a'], '');
   });
 });

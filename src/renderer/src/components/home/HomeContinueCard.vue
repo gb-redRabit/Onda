@@ -19,9 +19,8 @@ const emit = defineEmits<{ (e: 'play'): void; (e: 'playFromStart'): void }>();
 const duration = computed(() => props.track.duration || props.track.metadata?.duration || 0);
 const title = computed(() => props.track.metadata?.title || props.track.name);
 const subtitle = computed(() => props.track.metadata?.artist || props.track.metadata?.album || '');
-const percent = computed(() =>
-  duration.value > 0 ? Math.min(100, (props.position / duration.value) * 100) : 0
-);
+// Rendered only when `duration > 0`; `Math.max` keeps the divisor safe.
+const percent = computed(() => Math.min(100, (props.position / Math.max(1, duration.value)) * 100));
 const hasProgress = computed(() => props.position > RESUME_MIN_SECONDS);
 const isVideo = computed(() => props.track.type === 'video');
 const typeLabel = computed(() => (isVideo.value ? 'home.mediaTypeVideo' : 'home.mediaTypeAudio'));

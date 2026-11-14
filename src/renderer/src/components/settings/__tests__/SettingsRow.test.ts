@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { defineComponent, h as createElement, inject } from 'vue';
 import { createI18n } from 'vue-i18n';
+import { SETTINGS_ROW_LABEL } from '../settingsRowLabel';
 
 // Testy montujące wiersza ustawień: etykieta/opis, dostępna nazwa grupy,
 // kropka "zmienione" i reset pojedynczego ustawienia.
@@ -72,5 +74,32 @@ describe('SettingsRow — modification state', () => {
     h.value = 42;
     const w = mountRow({ path: 'playback.buffer' });
     expect(w.find('[title="42"]').exists()).toBe(true);
+  });
+
+  it('leaves the tooltip empty for non-text values', () => {
+    h.value = true;
+    const w = mountRow({ path: 'playback.enabled' });
+    expect(w.html()).not.toContain('title="true"');
+  });
+
+  it('widens the control column in wide mode', () => {
+    const w = mountRow({ wide: true });
+    expect(w.get('[role="group"]').classes()).toContain('w-64');
+  });
+
+  it('shares the label with slotted controls', () => {
+    const Reader = defineComponent({
+      setup() {
+        const label = inject(SETTINGS_ROW_LABEL);
+        return () => createElement('span', { 'data-testid': 'injected' }, label?.value);
+      }
+    });
+    const w = mount(SettingsRow, {
+      props: { label: 'Volume' },
+      slots: { default: () => createElement(Reader) },
+      global: { plugins: [i18n] }
+    });
+
+    expect(w.get('[data-testid="injected"]').text()).toBe('Volume');
   });
 });

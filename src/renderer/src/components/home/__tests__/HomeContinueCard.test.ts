@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
 import { createSSRApp, h } from 'vue';
 import { createI18n } from 'vue-i18n';
@@ -99,5 +100,36 @@ describe('HomeContinueCard', () => {
     const html = await renderCard(mockAudioTrack, 50, 'en');
     expect(html).toContain('Resume');
     expect(html).toContain('Play from start');
+  });
+
+  it('shows only the total duration before meaningful progress', async () => {
+    const html = await renderCard({ ...mockAudioTrack, duration: 120 }, 0, 'pl');
+    expect(html).toContain('2:00');
+    expect(html).not.toContain('progressbar');
+  });
+
+  it('renders a video without a subtitle or format label', async () => {
+    const html = await renderCard(
+      { ...mockAudioTrack, type: 'video', extension: '', metadata: { album: 'Record' } },
+      0,
+      'pl'
+    );
+    expect(html).toContain('Wideo');
+    expect(html).toContain('Record');
+    expect(html).not.toContain('>MP3<');
+  });
+
+  it('emits play and playFromStart from the buttons', async () => {
+    const wrapper = mount(HomeContinueCard, {
+      props: { track: { ...mockAudioTrack, duration: 180 }, position: 60 },
+      global: { mocks: { $t: (key: string) => key } }
+    });
+
+    const buttons = wrapper.findAll('button');
+    await buttons[0]!.trigger('click');
+    await buttons[1]!.trigger('click');
+
+    expect(wrapper.emitted('play')).toHaveLength(1);
+    expect(wrapper.emitted('playFromStart')).toHaveLength(1);
   });
 });

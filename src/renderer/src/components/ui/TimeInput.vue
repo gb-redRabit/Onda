@@ -27,8 +27,8 @@ const rest = computed(() => {
 const text = ref(format(props.modelValue));
 const parseFailed = ref(false);
 
-function format(seconds: number | null): string {
-  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '';
+function format(seconds: number | null | 'invalid'): string {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) return '';
   const total = Math.floor(seconds);
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
@@ -80,7 +80,7 @@ function onBlur(): void {
   }
   // Normalizuj zapis (np. "5" → "00:05") po opuszczeniu pola.
   const parsed = parse(text.value);
-  if (parsed !== 'invalid') text.value = format(parsed);
+  text.value = format(parsed);
 }
 
 const isInvalid = computed(() => props.invalid || parseFailed.value);
@@ -91,7 +91,8 @@ const classes = computed(() =>
     props.size === 'sm' ? 'h-8 px-2.5 text-xs' : 'h-9 px-3 text-sm',
     isInvalid.value
       ? 'border-error focus:border-error focus:ring-error/20'
-      : 'border-hairline/80 focus:border-primary/50'
+      : 'border-hairline/80 focus:border-primary/50',
+    attrs.class as string | undefined
   )
 );
 </script>
