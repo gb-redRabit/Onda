@@ -176,7 +176,7 @@ async function runSearch(): Promise<void> {
           os.results.map((r) => ({
             source: 'os' as const,
             fileId: r.fileId,
-            language: r.language,
+            language: r.language || '',
             release: r.release,
             downloads: r.downloads
           }))

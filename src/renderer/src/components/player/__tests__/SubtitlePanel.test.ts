@@ -135,6 +135,24 @@ describe('track list', () => {
     wrapper!.get('[data-testid="subtitle-panel-close"]').trigger('click');
     expect(state.player.toggleSubtitlePanel).toHaveBeenCalled();
   });
+
+  it('selects folder and custom tracks and marks the active row', async () => {
+    state.player.activeSubtitleId = 'x1';
+    mountPanel();
+    expect(buttonByText('Folder track').classList.contains('text-primary-text')).toBe(true);
+    buttonByText('Folder track').click();
+    expect(state.player.setActiveSubtitle).toHaveBeenCalledWith('x1');
+
+    state.player.activeSubtitleId = 'c1';
+    await wrapper!.vm.$nextTick();
+    expect(buttonByText('Custom track').classList.contains('text-primary-text')).toBe(true);
+    buttonByText('Custom track').click();
+    expect(state.player.setActiveSubtitle).toHaveBeenCalledWith('c1');
+
+    state.player.activeSubtitleId = 'e1';
+    await wrapper!.vm.$nextTick();
+    expect(buttonByText('subtitles.disable').classList.contains('text-primary-text')).toBe(false);
+  });
 });
 
 describe('uploading and delay', () => {
@@ -259,6 +277,67 @@ describe('online search', () => {
     await flush();
     expect(state.api.openSubtitlesSearch).not.toHaveBeenCalled();
   });
+
+  it('survives provider transport failures', async () => {
+    state.player.currentTrack = { name: 'No path' };
+    state.api.napiProjektCheck.mockRejectedValueOnce(new Error('napi'));
+    state.api.animeSubSearch.mockRejectedValueOnce(new Error('anime'));
+    state.api.openSubtitlesSearch.mockRejectedValueOnce(new Error('os'));
+    mountPanel();
+    await wrapper!.find('input').setValue('failure');
+    await wrapper!.get('[data-testid="subtitle-online-search"]').trigger('click');
+    await flush();
+
+    expect(wrapper!.text()).toContain('subtitles.onlineNoResults');
+  });
+
+  it('continues when the napi check rejects for a video path', async () => {
+    state.api.napiProjektCheck.mockRejectedValueOnce(new Error('napi down'));
+    mountPanel();
+    await wrapper!.find('input').setValue('query');
+    await wrapper!.get('[data-testid="subtitle-online-search"]').trigger('click');
+    await flush();
+
+    expect(wrapper!.text()).toContain('Open release');
+  });
+
+  it('defaults missing anime language and empty search language', async () => {
+    state.api.animeSubSearch.mockResolvedValue({
+      success: true,
+      results: [{ id: 'an2', sh: 'hash', title: 'Bare anime' }]
+    });
+    mountPanel();
+    await wrapper!.find('input').setValue('query');
+    await wrapper!.find('select').setValue('');
+    await wrapper!.get('[data-testid="subtitle-online-search"]').trigger('click');
+    await flush();
+
+    expect(state.api.openSubtitlesSearch).toHaveBeenCalledWith({
+      query: 'query',
+      languages: undefined
+    });
+    expect(wrapper!.text()).toContain('Bare anime');
+    expect(wrapper!.text()).toContain('AN');
+  });
+
+  it('maps the missing-query error and unknown provider errors', async () => {
+    state.api.napiProjektCheck.mockResolvedValue({ found: false });
+    state.api.animeSubSearch.mockResolvedValue({ success: false, results: [] });
+    state.api.openSubtitlesSearch.mockResolvedValueOnce({
+      success: false,
+      error: 'missing-query'
+    });
+    mountPanel();
+    await wrapper!.find('input').setValue('query');
+    await wrapper!.get('[data-testid="subtitle-online-search"]').trigger('click');
+    await flush();
+    expect(wrapper!.text()).toContain('subtitles.onlineQueryRequired');
+
+    state.api.openSubtitlesSearch.mockResolvedValueOnce({ success: false });
+    await wrapper!.get('[data-testid="subtitle-online-search"]').trigger('click');
+    await flush();
+    expect(wrapper!.text()).toContain('unknown');
+  });
 });
 
 describe('downloading results', () => {
@@ -305,5 +384,50 @@ describe('downloading results', () => {
     state.api.openSubtitlesDownload.mockRejectedValueOnce(new Error('network'));
     await searchAndClickResult('Open release');
     expect(state.notify).toHaveBeenCalledWith('error', 'subtitles.onlineError', 'Error: network');
+  });
+
+  it('falls back to empty ids and the current language', async () => {
+    state.api.animeSubSearch.mockResolvedValue({
+      success: true,
+      results: [{ title: 'Bare anime' }]
+    });
+    state.api.openSubtitlesSearch.mockResolvedValue({
+      success: true,
+      results: [{ release: 'Bare release' }]
+    });
+    state.api.animeSubDownload.mockResolvedValueOnce({ success: false, error: 'bad' });
+    state.api.openSubtitlesDownload.mockResolvedValueOnce({ success: false, error: 'bad' });
+
+    await searchAndClickResult('Bare anime');
+    expect(state.api.animeSubDownload).toHaveBeenCalledWith({
+      id: '',
+      sh: '',
+      videoPath: 'C:\\video\\movie.mp4'
+    });
+
+    await searchAndClickResult('Bare release');
+    expect(state.api.openSubtitlesDownload).toHaveBeenCalledWith({
+      fileId: 0,
+      videoPath: 'C:\\video\\movie.mp4',
+      language: 'pl'
+    });
+  });
+
+  it('reports a failed custom-subtitle import after a successful download', async () => {
+    state.player.loadCustomSubtitles.mockResolvedValue(0);
+    await searchAndClickResult('Open release');
+
+    expect(state.notify).toHaveBeenCalledWith('error', 'subtitles.onlineError', undefined);
+  });
+
+  it('downloads without a current track', async () => {
+    state.player.currentTrack = null;
+    await searchAndClickResult('Open release');
+
+    expect(state.api.openSubtitlesDownload).toHaveBeenCalledWith({
+      fileId: 7,
+      videoPath: undefined,
+      language: 'en'
+    });
   });
 });

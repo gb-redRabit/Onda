@@ -109,9 +109,8 @@ export function pickCoverUrl(results: unknown, query: DiscordCoverQuery): string
 function remember(key: string, url: string | null): void {
   cache.set(key, { url, at: Date.now() });
   while (cache.size > MAX_CACHE_ENTRIES) {
-    const oldest = cache.keys().next();
-    if (oldest.done) break;
-    cache.delete(oldest.value);
+    const oldest = cache.keys().next().value as string;
+    cache.delete(oldest);
   }
 }
 
