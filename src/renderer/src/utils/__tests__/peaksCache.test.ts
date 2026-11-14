@@ -7,6 +7,7 @@ describe('peaks cache', () => {
     expect(hasCachedPeaks('/a.mp3')).toBe(true);
     expect(getCachedPeaks('/a.mp3')).toBeNull();
     expect(hasCachedPeaks('/missing.mp3')).toBe(false);
+    expect(getCachedPeaks('/missing.mp3')).toBeNull();
   });
 
   it('evicts the oldest entry after the limit', () => {

@@ -22,6 +22,5 @@ export function setCachedPeaks(path: string, value: number[] | null): void {
   cache.delete(path);
   cache.set(path, value);
   if (cache.size <= MAX_ENTRIES) return;
-  const oldest = cache.keys().next().value;
-  if (oldest !== undefined) cache.delete(oldest);
+  cache.delete(cache.keys().next().value as string);
 }

@@ -62,7 +62,6 @@ export function validateShortcut(shortcut: string | undefined): boolean {
   if (parts.length < 2) return false;
   const modifiers = parts.slice(0, -1);
   const key = parts[parts.length - 1];
-  if (modifiers.length === 0) return false;
   if (modifiers.some((m) => !['Ctrl', 'Meta', 'Alt', 'Shift'].includes(m))) return false;
   if (!/^[A-Z0-9]|^(F\d{1,2}|Media\w+)$/i.test(key)) return false;
   const seen = new Set<string>();

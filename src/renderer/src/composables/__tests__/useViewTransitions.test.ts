@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { effectScope } from 'vue';
 import { useViewTransitions, supportsViewTransitions } from '../useViewTransitions';
 
 // Guard routera dla View Transitions: musi puścić nawigację dokładnie raz,
@@ -131,5 +132,69 @@ describe('useViewTransitions', () => {
     useViewTransitions(router as never);
 
     await expect(router.run({ name: 'library' }, { name: 'home' })).resolves.toBeUndefined();
+  });
+
+  it('does nothing when the browser lacks the API', () => {
+    Reflect.deleteProperty(document, 'startViewTransition');
+    const router = fakeRouter();
+    useViewTransitions(router as never);
+
+    expect(router.registered).toBe(false);
+  });
+
+  it('assumes motion is allowed when matchMedia is unavailable', () => {
+    Object.defineProperty(window, 'matchMedia', { value: undefined, configurable: true });
+    const api = stubViewTransition();
+    const router = fakeRouter();
+    useViewTransitions(router as never);
+
+    expect(router.run({ name: 'library' }, { name: 'home' })).toBeInstanceOf(Promise);
+    expect(api.calls).toBe(1);
+  });
+
+  it('releases only once when the API calls back and then throws', async () => {
+    Object.defineProperty(document, 'startViewTransition', {
+      value: (callback: () => unknown) => {
+        void callback();
+        throw new Error('late failure');
+      },
+      configurable: true
+    });
+    const router = fakeRouter();
+    useViewTransitions(router as never);
+
+    await expect(router.run({ name: 'library' }, { name: 'home' })).resolves.toBeUndefined();
+  });
+
+  it('recovers when the transition finishes with an error', async () => {
+    let calls = 0;
+    Object.defineProperty(document, 'startViewTransition', {
+      value: (callback: () => unknown) => {
+        calls++;
+        void Promise.resolve().then(callback);
+        return { finished: Promise.reject(new Error('aborted')) };
+      },
+      configurable: true
+    });
+    const router = fakeRouter();
+    useViewTransitions(router as never);
+
+    await router.run({ name: 'library' }, { name: 'home' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    await router.run({ name: 'settings' }, { name: 'library' });
+    expect(calls).toBe(2);
+  });
+
+  it('unregisters the guard when the scope is disposed', () => {
+    stubViewTransition();
+    const router = fakeRouter();
+    const scope = effectScope(true);
+    scope.run(() => useViewTransitions(router as never));
+
+    expect(router.registered).toBe(true);
+    scope.stop();
+    expect(router.registered).toBe(false);
   });
 });
