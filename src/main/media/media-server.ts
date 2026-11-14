@@ -181,8 +181,7 @@ async function statSize(filePath: string): Promise<number> {
   const s = await fs.promises.stat(filePath);
   statCache.set(filePath, { size: s.size, at: Date.now() });
   if (statCache.size > MAX_STAT_ENTRIES) {
-    const oldest = statCache.keys().next().value;
-    if (oldest !== undefined) statCache.delete(oldest);
+    statCache.delete(statCache.keys().next().value as string);
   }
   return s.size;
 }
@@ -200,8 +199,7 @@ async function resolveAllowedMediaPath(rawPath: string): Promise<MediaPathResolu
   const resolution = await computeAllowedMediaPath(normalized);
   pathResolveCache.set(normalized, { at: Date.now(), resolution });
   if (pathResolveCache.size > MAX_PATH_RESOLVE_ENTRIES) {
-    const oldest = pathResolveCache.keys().next().value;
-    if (oldest !== undefined) pathResolveCache.delete(oldest);
+    pathResolveCache.delete(pathResolveCache.keys().next().value as string);
   }
   return resolution;
 }
