@@ -356,6 +356,10 @@ describe('tabs and layout', () => {
     mountView();
     await flush();
     expect(comp('library-overview-tab').exists()).toBe(true);
+
+    state.route.query = { tab: 'bogus' };
+    await flush();
+    expect(comp('library-overview-tab').exists()).toBe(true);
   });
 
   it('reacts to route tab changes', async () => {
@@ -364,6 +368,56 @@ describe('tabs and layout', () => {
     state.route.query = { tab: 'images' };
     await flush();
     expect(comp('library-images-tab').exists()).toBe(true);
+  });
+
+  it('loads every lazy tab and binds toolbar filters', async () => {
+    mountView();
+    await flush();
+
+    const lazyTabs: Record<string, string> = {
+      artists: 'library-artists-tab',
+      albums: 'library-albums-tab',
+      playlists: 'library-playlist-manager',
+      smart: 'library-smart-tab',
+      folders: 'library-folders-tab'
+    };
+    for (const [tab, name] of Object.entries(lazyTabs)) {
+      comp('library-tabbar').vm.$emit('update:modelValue', tab);
+      await flush();
+      expect(comp(name).exists()).toBe(true);
+    }
+
+    comp('library-toolbar').vm.$emit('update:query', 'abc');
+    comp('library-toolbar').vm.$emit('update:sortKey', 'title');
+    comp('library-toolbar').vm.$emit('update:sortDir', 'asc');
+    comp('library-toolbar').vm.$emit('update:chip', 'liked');
+    await flush();
+
+    expect(comp('library-toolbar').props('query')).toBe('abc');
+    expect(comp('library-toolbar').props('sortKey')).toBe('title');
+    expect(comp('library-toolbar').props('sortDir')).toBe('asc');
+    expect(comp('library-toolbar').props('chip')).toBe('liked');
+  });
+
+  it('ignores scroll events from non-scrollable targets', async () => {
+    mountView();
+    await flush();
+    const root = wrapper!.get('[data-testid="library-view"]');
+
+    const empty = new Event('scroll');
+    Object.defineProperty(empty, 'target', { value: {} });
+    root.element.dispatchEvent(empty);
+
+    const scrolled = new Event('scroll');
+    Object.defineProperty(scrolled, 'target', { value: { scrollTop: 20 } });
+    root.element.dispatchEvent(scrolled);
+    root.element.dispatchEvent(scrolled);
+
+    const backToTop = new Event('scroll');
+    Object.defineProperty(backToTop, 'target', { value: { scrollTop: 0 } });
+    root.element.dispatchEvent(backToTop);
+
+    expect(root.attributes('data-testid')).toBe('library-view');
   });
 
   it('shows a loading skeleton until the library is loaded', async () => {
@@ -693,5 +747,57 @@ describe('modals and events', () => {
     expect(() =>
       window.dispatchEvent(new CustomEvent('onda:openMusicbrainz', { detail: { query: 'late' } }))
     ).not.toThrow();
+  });
+});
+
+describe('folder navigation', () => {
+  it('expands root-level paths without looping', async () => {
+    mountView();
+    await flush();
+    comp('library-tabbar').vm.$emit('update:modelValue', 'tracks');
+    await flush();
+
+    comp('library-tracks-tab').vm.$emit('navigate-folder', '/a');
+    await flush();
+
+    expect(state.writeJson).toHaveBeenCalledWith(
+      'onda.libraryExpanded',
+      expect.arrayContaining(['/a'])
+    );
+  });
+
+  it('clears the query for a path without a file name', async () => {
+    mountView();
+    await flush();
+    comp('library-tabbar').vm.$emit('update:modelValue', 'tracks');
+    await flush();
+
+    comp('library-tracks-tab').vm.$emit('navigate-folder', '/');
+    await flush();
+
+    expect(state.filters.query.value).toBe('');
+  });
+});
+
+describe('overview sections', () => {
+  it('handles the random section', async () => {
+    mountView();
+    await flush();
+
+    comp('library-overview-tab').vm.$emit('show-all', 'random');
+    await flush();
+
+    expect(comp('library-tracks-tab').exists()).toBe(true);
+    expect(state.filters.query.value).toBe('');
+  });
+
+  it('ignores an unknown section and still opens tracks', async () => {
+    mountView();
+    await flush();
+
+    comp('library-overview-tab').vm.$emit('show-all', 'other');
+    await flush();
+
+    expect(comp('library-tracks-tab').exists()).toBe(true);
   });
 });

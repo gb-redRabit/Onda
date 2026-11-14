@@ -517,6 +517,15 @@ describe('panels and content', () => {
       defaults: { q: 'x' }
     });
 
+    wrapper!.findComponent(FilterStub).vm.$emit('update:filterText', 'abc');
+    wrapper!.findComponent(FilterStub).vm.$emit('update:sortMode', 'date');
+    wrapper!.findComponent(BuilderStub).vm.$emit('update:modelValue', { q: 'y' });
+    await wrapper!.vm.$nextTick();
+
+    expect(state.view.filterText.value).toBe('abc');
+    expect(state.view.sortMode.value).toBe('date');
+    expect(state.view.builderValues.value).toEqual({ q: 'y' });
+
     state.view.isPage.value = true;
     await wrapper!.vm.$nextTick();
     expect(wrapper!.find('[data-testid="filter-bar"]').exists()).toBe(false);
