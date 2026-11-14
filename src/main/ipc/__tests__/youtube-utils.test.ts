@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+const fetchPage = vi.hoisted(() => vi.fn());
+vi.mock('../player-scraper', () => ({ fetchPageText: fetchPage }));
+
 import {
   formatDuration,
   formatUploadDate,
@@ -19,6 +23,7 @@ import {
   extractAvatarUrl,
   isSafeThumbnailUrl,
   isStableAvatarUrl,
+  resolveChannelAvatar,
   parseNetscapeCookies,
   buildStreamGetArgs,
   parseStreamGetOutput
@@ -151,6 +156,31 @@ describe('detectJsRuntime', () => {
       )
     ).toBe(null);
   });
+
+  it('scans a POSIX PATH and returns null when nothing matches', () => {
+    expect(
+      detectJsRuntime({ PATH: '/usr/bin:/usr/local/bin' } as NodeJS.ProcessEnv, probe, 'linux')
+    ).toBe('/usr/bin/node');
+    expect(
+      detectJsRuntime({ PATH: '/nope' } as NodeJS.ProcessEnv, () => false, 'linux')
+    ).toBeNull();
+  });
+
+  it('uses default Windows locations when env values are missing', () => {
+    const env = { PATH: '' } as NodeJS.ProcessEnv;
+    expect(
+      detectJsRuntime(
+        env,
+        (path) =>
+          path === 'C:\\Program Files\\nodejs\\node.exe' ||
+          path === 'C:\\Windows\\System32\\node.exe',
+        'win32'
+      )
+    ).toBe('C:\\Program Files\\nodejs\\node.exe');
+    expect(
+      detectJsRuntime(env, (path) => path === 'C:\\Windows\\System32\\node.exe', 'win32')
+    ).toBe('C:\\Windows\\System32\\node.exe');
+  });
 });
 
 describe('buildYtArgs', () => {
@@ -282,6 +312,31 @@ describe('buildYtArgs', () => {
   it('leaves a -- separator unchanged when no extras are added', () => {
     const withSep = ['-J', '--', 'https://example.com/watch?v=1'];
     expect(buildYtArgs(withSep, { method: 'none' }, null)).toEqual(withSep);
+  });
+
+  it('resolves and caches the host JS runtime when not provided', () => {
+    const first = buildYtArgs(base, null);
+    const second = buildYtArgs(base, null);
+
+    expect(first).toBeInstanceOf(Array);
+    expect(second).toEqual(first);
+  });
+
+  it('treats an empty extractor-args value as not set', () => {
+    const args = [
+      '--write-subs',
+      '--extractor-args',
+      '',
+      '--',
+      'https://www.youtube.com/watch?v=x'
+    ];
+    const result = buildYtArgs(args, { method: 'manual', cookiesPath: '/tmp/c.txt' }, null);
+    expect(result).toContain('youtube:player_client=web_creator,web_embedded');
+  });
+
+  it('serializes cookies without optional fields', () => {
+    const line = serializeCookies([{ name: 'SID', value: undefined as never }]);
+    expect(line).toContain('\tTRUE\t/\tFALSE\t0\tSID\t');
   });
 });
 
@@ -599,6 +654,22 @@ describe('extractAvatarUrl', () => {
   });
 });
 
+describe('resolveChannelAvatar', () => {
+  it('returns an empty string without a channel id', async () => {
+    fetchPage.mockClear();
+    await expect(resolveChannelAvatar('')).resolves.toBe('');
+    expect(fetchPage).not.toHaveBeenCalled();
+  });
+
+  it('extracts the avatar or falls back on fetch failures', async () => {
+    fetchPage.mockResolvedValueOnce('"https://yt3.ggpht.com/abc=s48"');
+    await expect(resolveChannelAvatar('UC1')).resolves.toBe('https://yt3.ggpht.com/abc=s48');
+
+    fetchPage.mockRejectedValueOnce(new Error('offline'));
+    await expect(resolveChannelAvatar('UC1')).resolves.toBe('');
+  });
+});
+
 describe('serializeCookies', () => {
   const cookie = {
     name: 'SID',
@@ -711,6 +782,21 @@ describe('parseNetscapeCookies', () => {
       '# Netscape HTTP Cookie File\nbroken line\n.youtube.com\tTRUE\t/\tTRUE\t1710000000\tSID\tabc\n'
     );
     expect(parsed).toHaveLength(1);
+  });
+
+  it('skips rows with an empty name, value or domain', () => {
+    const parsed = parseNetscapeCookies(
+      [
+        '\tTRUE\t/\tTRUE\t1710000000\tSID\tabc',
+        '.youtube.com\tTRUE\t/\tTRUE\t1710000000\t\tabc',
+        '.youtube.com\tTRUE\t/\tTRUE\t1710000000\tSID\t',
+        '.youtube.com\tTRUE\t/\tTRUE\t1710000000\tKEEP\tvalue',
+        '.youtube.com\tTRUE\t\tTRUE\t1710000000\tKEEP2\tvalue'
+      ].join('\n')
+    );
+
+    expect(parsed.map((cookie) => cookie.name)).toEqual(['KEEP', 'KEEP2']);
+    expect(parsed[1].path).toBe('/');
   });
 
   it('round-trips a full serialized export losslessly', () => {

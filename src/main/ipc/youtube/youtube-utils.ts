@@ -193,7 +193,7 @@ export interface StreamGetOutput {
 // Odrzuca puste wyjście, wartości inne niż http(s) i playlisty HLS (Chromium
 // <audio> nie odtworzy .m3u8 bez hls.js).
 export function parseStreamGetOutput(stdout: string): StreamGetOutput {
-  const firstLine = stdout.trim().split(/\r?\n/, 1)[0]?.trim() ?? '';
+  const firstLine = stdout.trim().split(/\r?\n/, 1)[0].trim();
   if (!firstLine || !/^https?:\/\//i.test(firstLine)) {
     return { ok: false, code: 'invalid' };
   }
