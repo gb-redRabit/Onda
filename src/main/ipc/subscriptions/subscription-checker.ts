@@ -29,8 +29,7 @@ async function collectOutputFiles(root: string): Promise<OutputFileRef[]> {
   const out: OutputFileRef[] = [];
   const queue: Array<{ dir: string; depth: number }> = [{ dir: root, depth: 0 }];
   while (queue.length > 0 && out.length < MAX_BACKFILL_FILES) {
-    const current = queue.shift();
-    if (!current) break;
+    const current = queue.shift()!;
     let entries;
     try {
       entries = await readdir(current.dir, { withFileTypes: true });
@@ -302,7 +301,7 @@ async function runCheck(
               if (suspects.length <= Math.max(1, Math.floor(matchedCount * 0.1))) {
                 for (const id of suspects) {
                   const item = all.find((i) => i.id === id);
-                  missingById.set(id, { id, title: item?.title || id });
+                  missingById.set(id, { id, title: item!.title });
                 }
               }
             }
@@ -394,8 +393,7 @@ async function runCheck(
             url: `https://www.youtube.com/watch?v=${i.id}`,
             title: i.title,
             thumbnail: i.thumbnail,
-            kind: (sub.downloadPrefs?.kind || globalConfig.defaultKind || 'audio') as
-              'audio' | 'video',
+            kind: (sub.downloadPrefs?.kind || globalConfig.defaultKind) as 'audio' | 'video',
             format: sub.downloadPrefs?.format || globalConfig.defaultAudioFormat,
             quality: sub.downloadPrefs?.quality || globalConfig.defaultVideoQuality,
             outputDir: sub.downloadPrefs?.outputDir || globalConfig.defaultPath,

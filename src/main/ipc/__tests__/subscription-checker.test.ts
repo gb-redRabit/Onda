@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -35,6 +35,7 @@ vi.mock('../../utils/broadcast', () => ({ broadcastToAllWindows: vi.fn() }));
 
 import { fetchChannelItems, fetchChannelAll } from '../youtube/youtube-handlers';
 import { scProfileSnapshot } from '../soundcloud/soundcloud-client';
+import { getStore } from '../cover/cover-cache';
 import { addDownloadJobs, listDownloadJobs } from '../../downloads/download-manager';
 import { broadcastToAllWindows } from '../../utils/broadcast';
 import {
@@ -126,6 +127,100 @@ describe('seedSubscriptionBaseline', () => {
     const sub = (await loadSubscriptions(file))[0];
     expect(sub.baselineVideoId).toBe('99');
   });
+
+  it('handles legacy subscriptions without id lists', async () => {
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      file,
+      JSON.stringify([
+        {
+          channelId: 'UC1',
+          channelTitle: 'Chan',
+          channelThumbnail: '',
+          baselineVideoId: 'v1',
+          autoDownload: false,
+          addedAt: 1
+        }
+      ])
+    );
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'New one' },
+        { id: 'v1', title: 'Baseline' }
+      ]) as never
+    );
+
+    const res = await checkSubscriptions(file);
+
+    expect(res).toMatchObject({ checked: 1, newVideos: 1, errors: 0 });
+  });
+
+  it('handles legacy downloadedFiles during reconcile', async () => {
+    await mkdir(dir, { recursive: true });
+    const existing = join(dir, 'subscriptions.json');
+    await writeFile(
+      file,
+      JSON.stringify([
+        {
+          channelId: 'UC1',
+          channelTitle: 'Chan',
+          channelThumbnail: '',
+          baselineVideoId: 'v1',
+          autoDownload: false,
+          downloadedFiles: { v2: existing },
+          addedAt: 1
+        }
+      ])
+    );
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    expect(res).toMatchObject({ checked: 1, errors: 0 });
+  });
+
+  it('skips the SoundCloud baseline when the profile has no tracks', async () => {
+    await addSubscription(file, {
+      channelId: 'empty',
+      channelTitle: 'E',
+      channelThumbnail: '',
+      platform: 'soundcloud'
+    });
+    vi.mocked(scProfileSnapshot).mockResolvedValueOnce({
+      channel: { id: 'empty', url: '', title: 'E', thumbnail: '' },
+      items: []
+    });
+
+    await seedSubscriptionBaseline(file, 'empty');
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.baselineVideoId).toBeUndefined();
+    expect(fetchChannelItems).not.toHaveBeenCalled();
+  });
+
+  it('skips the YouTube baseline for empty or failed fetches and swallows errors', async () => {
+    await seedYtSub();
+    vi.mocked(fetchChannelItems).mockResolvedValueOnce({ success: false, items: [] } as never);
+    await seedSubscriptionBaseline(file, 'UC1');
+    expect((await loadSubscriptions(file))[0].baselineVideoId).toBeUndefined();
+
+    vi.mocked(fetchChannelItems).mockRejectedValueOnce(new Error('down'));
+    await expect(seedSubscriptionBaseline(file, 'UC1')).resolves.toBeUndefined();
+  });
+
+  it('treats an unknown channel as YouTube and tolerates a no-op update', async () => {
+    vi.mocked(fetchChannelItems).mockResolvedValueOnce(
+      ytSnapshot([{ id: 'newest', title: 'N' }]) as never
+    );
+
+    await expect(seedSubscriptionBaseline(file, 'missing')).resolves.toBeUndefined();
+    expect(fetchChannelItems).toHaveBeenCalled();
+  });
 });
 
 describe('checkSubscriptions', () => {
@@ -147,6 +242,26 @@ describe('checkSubscriptions', () => {
     const sub = (await loadSubscriptions(file))[0];
     expect(sub.pendingCount).toBe(2); // pozostaje liczba niepobranych (v1 i v2)
     expect(sub.newArrivals).toBe(1);
+  });
+
+  it('falls back to stored metadata when the channel snapshot is bare', async () => {
+    await seedYtSub({ baselineVideoId: 'v1' });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce({
+      success: true,
+      channel: { id: 'UC1', url: '', title: '', thumbnail: '' },
+      items: [{ id: 'v2', title: 'New', thumbnail: '' }]
+    } as never);
+
+    const res = await checkSubscriptions(file);
+
+    expect(res).toMatchObject({ newVideos: 1 });
+    expect(broadcastToAllWindows).toHaveBeenCalledWith(
+      'yt:newVideos',
+      expect.objectContaining({ channelTitle: 'Chan' })
+    );
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.channelTitle).toBe('Chan');
+    expect(sub.channelThumbnail).toBe('');
   });
 
   it('queues new YouTube videos and remembers them in queuedVideoIds', async () => {
@@ -226,6 +341,147 @@ describe('checkSubscriptions', () => {
     expect(jobs[0].source?.fileName).toMatch(/\.mp3$/);
   });
 
+  it('applies every global auto-download default', async () => {
+    h.download = {
+      autoDownloadSubscriptions: true,
+      defaultPath: 'C:/dl',
+      defaultAudioFormat: 'm4a',
+      defaultVideoQuality: '720',
+      filenameTemplate: '{title}',
+      defaultKind: 'video',
+      defaultSubs: true,
+      defaultSubsLangs: 'en,de',
+      defaultAudioQuality: 'high'
+    };
+    await seedYtSub({ baselineVideoId: 'v1', autoDownload: true });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'New one' },
+        { id: 'v1', title: 'Baseline' }
+      ]) as never
+    );
+    vi.mocked(addDownloadJobs).mockImplementationOnce(async (jobs) => jobs as never);
+
+    await checkSubscriptions(file);
+
+    const job = (
+      vi.mocked(addDownloadJobs).mock.calls[0][0] as unknown as Array<Record<string, unknown>>
+    )[0];
+    expect(job).toMatchObject({
+      kind: 'video',
+      format: 'm4a',
+      quality: '720',
+      outputDir: 'C:/dl',
+      filenameTemplate: '{title}',
+      audioQuality: 'high',
+      subsLangs: 'en,de'
+    });
+  });
+
+  it('prefers per-subscription download prefs over globals', async () => {
+    h.download = { autoDownloadSubscriptions: true, defaultSubs: false };
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      autoDownload: true,
+      downloadPrefs: {
+        kind: 'audio',
+        format: 'mp3',
+        quality: 'best',
+        outputDir: 'D:/prefs',
+        filenameTemplate: '{artist}',
+        audioQuality: 'low',
+        subsLangs: 'fr',
+        addToLibrary: true
+      }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'New one' },
+        { id: 'v1', title: 'Baseline' }
+      ]) as never
+    );
+    vi.mocked(addDownloadJobs).mockImplementationOnce(async (jobs) => jobs as never);
+
+    await checkSubscriptions(file);
+
+    const job = (
+      vi.mocked(addDownloadJobs).mock.calls[0][0] as unknown as Array<Record<string, unknown>>
+    )[0];
+    expect(job).toMatchObject({
+      format: 'mp3',
+      outputDir: 'D:/prefs',
+      filenameTemplate: '{artist}',
+      audioQuality: 'low',
+      subsLangs: 'fr',
+      addToLibrary: true
+    });
+  });
+
+  it('does not queue when global auto-download is disabled', async () => {
+    h.download = { autoDownloadSubscriptions: false };
+    await seedYtSub({ baselineVideoId: 'v1', autoDownload: true });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'New one' },
+        { id: 'v1', title: 'Baseline' }
+      ]) as never
+    );
+
+    const res = await checkSubscriptions(file);
+
+    expect(res.queued).toBe(0);
+    expect(addDownloadJobs).not.toHaveBeenCalled();
+  });
+
+  it('falls back to built-in defaults when the settings store fails', async () => {
+    vi.mocked(getStore).mockRejectedValueOnce(new Error('store down'));
+    await seedYtSub({ baselineVideoId: 'v1' });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([{ id: 'v1', title: 'Baseline' }]) as never
+    );
+
+    const res = await checkSubscriptions(file);
+
+    expect(res).toMatchObject({ checked: 1, errors: 0 });
+  });
+
+  it('queues SoundCloud tracks without a canonical url using the profile url', async () => {
+    h.download = { autoDownloadSubscriptions: true, defaultPath: 'C:/dl' };
+    await addSubscription(file, {
+      channelId: 'artist',
+      channelTitle: 'A',
+      channelThumbnail: '',
+      platform: 'soundcloud'
+    });
+    await updateSubscription(file, 'artist', { baselineVideoId: 't1', autoDownload: true });
+    vi.mocked(scProfileSnapshot).mockResolvedValueOnce({
+      channel: { id: 'artist', url: '', title: '', thumbnail: '' },
+      items: [
+        {
+          id: 't2',
+          title: 'Fresh',
+          description: '',
+          thumbnail: '',
+          channelTitle: '',
+          channelId: 'artist',
+          publishedAt: ''
+        }
+      ]
+    });
+    vi.mocked(addDownloadJobs).mockImplementationOnce(async (jobs) => jobs as never);
+
+    await checkSubscriptions(file);
+
+    const job = (
+      vi.mocked(addDownloadJobs).mock.calls[0][0] as unknown as Array<Record<string, unknown>>
+    )[0];
+    expect(job).toMatchObject({
+      url: 'https://soundcloud.com/artist',
+      channelTitle: 'A',
+      thumbnail: ''
+    });
+  });
+
   it('re-queues stale queuedVideoIds whose download task vanished', async () => {
     h.download = { autoDownloadSubscriptions: true };
     // v2 jest w kolejce, ale nie ma aktywnego zadania i nie jest pobrane → ponowne zakolejkowanie.
@@ -255,6 +511,26 @@ describe('checkSubscriptions', () => {
       { id: 'job1', videoId: 'v2', status: 'downloading' } as never
     ]);
     const res = await checkSubscriptions(file);
+    expect(res.queued).toBe(0);
+    expect(addDownloadJobs).not.toHaveBeenCalled();
+  });
+
+  it('treats paused and missing job ids as inactive', async () => {
+    h.download = { autoDownloadSubscriptions: true };
+    await seedYtSub({ baselineVideoId: 'v1', autoDownload: true, queuedVideoIds: ['v2'] });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'New one' },
+        { id: 'v1', title: 'Baseline' }
+      ]) as never
+    );
+    vi.mocked(listDownloadJobs).mockReturnValue([
+      { id: 'job1', status: 'pending' } as never,
+      { id: 'job2', videoId: 'v2', status: 'paused' } as never
+    ]);
+
+    const res = await checkSubscriptions(file);
+
     expect(res.queued).toBe(0);
     expect(addDownloadJobs).not.toHaveBeenCalled();
   });
@@ -334,6 +610,209 @@ describe('file reconciliation (manual checks)', () => {
     expect(sub.downloadedFiles).toEqual({ v2: existing });
     expect(sub.pendingCount).toBe(2);
     expect(res.missing).toEqual([{ id: 'v3', title: 'Three' }]);
+  });
+
+  it('ignores a missing output folder during backfill', async () => {
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadPrefs: { outputDir: join(dir, 'does-not-exist') }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual(['v2']);
+  });
+
+  it('walks nested output folders only up to the depth limit', async () => {
+    const outputDir = join(dir, 'out');
+    const deep = join(outputDir, 'a', 'b', 'c', 'd');
+    const tooDeep = join(deep, 'e');
+    await mkdir(tooDeep, { recursive: true });
+    const two = join(deep, 'Two - Chan.mp3');
+    await writeFile(two, 'x');
+    await writeFile(join(tooDeep, 'Three - Chan.mp3'), 'x');
+    await writeFile(join(outputDir, 'notes.txt'), 'x');
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2', 'v3'],
+      downloadPrefs: { outputDir }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v3', title: 'Three' },
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedFiles).toEqual({ v2: two });
+    expect(res.missing).toEqual([{ id: 'v3', title: 'Three' }]);
+  });
+
+  it('uses the video extension preference when matching files', async () => {
+    const outputDir = join(dir, 'out-video');
+    await mkdir(outputDir, { recursive: true });
+    const filePath = join(outputDir, 'Two - Chan.mp4');
+    await writeFile(filePath, 'x');
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadPrefs: { outputDir, kind: 'video' }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedFiles).toEqual({ v2: filePath });
+  });
+
+  it('skips backfill when no file matches', async () => {
+    const outputDir = join(dir, 'out-nomatch');
+    await mkdir(outputDir, { recursive: true });
+    await writeFile(join(outputDir, 'Unknown - Chan.mp3'), 'x');
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadPrefs: { outputDir, format: 'mp3' }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedFiles ?? {}).toEqual({});
+  });
+
+  it('reports removed files that are no longer in the channel list', async () => {
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['ghost'],
+      downloadedFiles: { ghost: join(dir, 'gone.mp3') }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([{ id: 'v1', title: 'One' }]) as never
+    );
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    expect(res.missing).toEqual([{ id: 'ghost', title: 'ghost' }]);
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedVideoIds).toEqual([]);
+  });
+
+  it('suppresses mass-missing reports when matching is unreliable', async () => {
+    const outputDir = join(dir, 'out-mass');
+    await mkdir(outputDir, { recursive: true });
+    await writeFile(join(outputDir, 'Episode 0 - Chan.mp3'), 'x');
+    const ids = Array.from({ length: 20 }, (_, i) => `v${i}`);
+    const items = ids.map((id, i) => ({ id, title: `Episode ${i}` }));
+    await seedYtSub({
+      baselineVideoId: 'base',
+      downloadedVideoIds: ids,
+      downloadPrefs: { outputDir }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([...items, { id: 'base', title: 'Base' }]) as never
+    );
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    expect(res.missing).toBeUndefined();
+  });
+
+  it('uses the stored channel title when the snapshot has none', async () => {
+    const outputDir = join(dir, 'out-title');
+    await mkdir(outputDir, { recursive: true });
+    const filePath = join(outputDir, 'Two - Chan.mp3');
+    await writeFile(filePath, 'x');
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadPrefs: { outputDir }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce({
+      success: true,
+      channel: { id: 'UC1', url: '', title: '', thumbnail: '' },
+      items: [
+        { id: 'v2', title: 'Two', thumbnail: '' },
+        { id: 'v1', title: 'One', thumbnail: '' }
+      ]
+    } as never);
+
+    await checkSubscriptions(file, undefined, true);
+
+    const sub = (await loadSubscriptions(file))[0];
+    expect(sub.downloadedFiles).toEqual({ v2: filePath });
+  });
+
+  it('tolerates a subscription removed mid-check', async () => {
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadedFiles: { v2: join(dir, 'subscriptions.json') }
+    });
+    vi.mocked(fetchChannelAll).mockImplementationOnce(async () => {
+      await rm(file, { force: true });
+      return ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never;
+    });
+
+    const res = await checkSubscriptions(file, undefined, true);
+
+    expect(res).toMatchObject({ checked: 1, errors: 0 });
+  });
+
+  it('skips non-file entries in output folders', async (ctx) => {
+    const outputDir = join(dir, 'out-links');
+    await mkdir(outputDir, { recursive: true });
+    const target = join(outputDir, 'Two - Chan.mp3');
+    await writeFile(target, 'x');
+    const link = join(outputDir, 'link.mp3');
+    try {
+      await symlink(target, link, 'file');
+    } catch {
+      ctx.skip();
+      return;
+    }
+    await seedYtSub({
+      baselineVideoId: 'v1',
+      downloadedVideoIds: ['v2'],
+      downloadPrefs: { outputDir }
+    });
+    vi.mocked(fetchChannelAll).mockResolvedValueOnce(
+      ytSnapshot([
+        { id: 'v2', title: 'Two' },
+        { id: 'v1', title: 'One' }
+      ]) as never
+    );
+
+    await checkSubscriptions(file, undefined, true);
+
+    expect(fetchChannelAll).toHaveBeenCalled();
   });
 
   it('keeps downloaded entries whose files still exist', async () => {
@@ -418,6 +897,33 @@ describe('startSubscriptionChecker', () => {
       await new Promise((r) => setTimeout(r, 5));
     }
     expect(fetchChannelAll).toHaveBeenCalled();
+    stopSubscriptionChecker();
+    stopSubscriptionChecker();
+  });
+
+  it('uses the default interval when none is provided', async () => {
+    await seedYtSub({ baselineVideoId: 'v1' });
+    vi.mocked(fetchChannelAll).mockResolvedValue(ytSnapshot([]) as never);
+
+    startSubscriptionChecker(file);
+
+    for (let i = 0; i < 100 && !vi.mocked(fetchChannelAll).mock.calls.length; i++) {
+      await new Promise((r) => setTimeout(r, 5));
+    }
+    expect(fetchChannelAll).toHaveBeenCalled();
+    stopSubscriptionChecker();
+  });
+
+  it('runs another check on the configured interval', async () => {
+    await seedYtSub({ baselineVideoId: 'v1' });
+    vi.mocked(fetchChannelAll).mockResolvedValue(ytSnapshot([]) as never);
+
+    startSubscriptionChecker(file, 20);
+    for (let i = 0; i < 200 && vi.mocked(fetchChannelAll).mock.calls.length < 2; i += 1) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+
+    expect(vi.mocked(fetchChannelAll).mock.calls.length).toBeGreaterThanOrEqual(2);
     stopSubscriptionChecker();
   });
 });
