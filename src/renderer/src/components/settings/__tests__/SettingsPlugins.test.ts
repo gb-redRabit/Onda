@@ -147,6 +147,73 @@ describe('rendering', () => {
     expect(wrapper!.text()).toContain('boom');
     expect(wrapper!.get('[data-testid="plugins-refresh"]').attributes('disabled')).toBeDefined();
   });
+
+  it('renders loading, new and unknown statuses with their badges', () => {
+    state.store.plugins = [
+      plugin({ id: 'pl', status: 'loading' }),
+      plugin({ id: 'pn', status: 'new' }),
+      plugin({ id: 'px', status: 'weird' })
+    ];
+    mountSettings();
+
+    expect(wrapper!.get('[data-testid="plugin-card-pl"]').text()).toContain(
+      'plugins.status.loading'
+    );
+    expect(wrapper!.get('[data-testid="plugin-card-pl"]').html()).toContain('bg-info/15');
+    expect(wrapper!.get('[data-testid="plugin-card-pn"]').text()).toContain('plugins.status.new');
+    expect(wrapper!.get('[data-testid="plugin-card-px"]').text()).toContain('weird');
+    expect(wrapper!.get('[data-testid="plugin-card-px"]').html()).toContain('bg-base-content/10');
+  });
+
+  it('falls back to the id when a plugin has no author or description', () => {
+    state.store.plugins = [plugin({ author: '', description: '' })];
+    mountSettings();
+
+    expect(wrapper!.get('[data-testid="plugin-card-p1"]').text()).toContain('p1');
+  });
+
+  it('renders the empty state without plugins', () => {
+    state.store.plugins = [];
+    mountSettings();
+
+    expect(wrapper!.text()).toContain('plugins.empty');
+  });
+
+  it('renders examples without author, description or capabilities but with hooks and slots', () => {
+    state.store.examples = [
+      example({
+        author: undefined,
+        description: '',
+        permissions: {
+          storage: false,
+          notifications: false,
+          player: false,
+          visual: false,
+          network: { allow: [] }
+        },
+        hooks: ['track:play'],
+        layoutElements: [
+          { element: 'audio-view', variant: 'compact' },
+          { element: 'player', variant: 'full' }
+        ]
+      })
+    ];
+    mountSettings();
+
+    const text = wrapper!.text();
+    expect(text).toContain('ex1');
+    expect(text).toContain('track:play');
+    expect(text).toContain('audio-view · compact');
+    expect(text).toContain(', player · full');
+    expect(text).not.toContain('plugins.permissionStorage');
+  });
+
+  it('renders an example author when present', () => {
+    state.store.examples = [example({ author: 'Alice' })];
+    mountSettings();
+
+    expect(wrapper!.text()).toContain('Alice ·');
+  });
 });
 
 describe('toggles and permissions', () => {
@@ -261,6 +328,20 @@ describe('logs, commands and settings', () => {
     await logs.trigger('click');
     await wrapper!.vm.$nextTick();
     expect(wrapper!.text()).toContain('first log line');
+
+    await logs.trigger('click');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).not.toContain('first log line');
+  });
+
+  it('shows a no-logs hint when the plugin has no entries', async () => {
+    mountSettings();
+    const logs = wrapper!.findAll('button').find((b) => b.text().includes('plugins.logs'))!;
+
+    await logs.trigger('click');
+    await wrapper!.vm.$nextTick();
+
+    expect(wrapper!.text()).toContain('plugins.noLogs');
   });
 
   it('dispatches plugin commands', async () => {
@@ -275,7 +356,8 @@ describe('logs, commands and settings', () => {
     state.store.settingFields.mockReturnValue([
       { key: 'name', label: 'Name', type: 'text', default: 'default' },
       { key: 'count', label: 'Count', type: 'number', default: 2, min: 0, max: 10 },
-      { key: 'flag', label: 'Flag', type: 'boolean', default: true }
+      { key: 'flag', label: 'Flag', type: 'boolean', default: true },
+      { key: 'maybe', label: 'Maybe', type: 'text', default: null }
     ]);
     state.store.settingsOf.mockReturnValue({ name: 'stored', flag: false });
     mountSettings();
@@ -285,10 +367,18 @@ describe('logs, commands and settings', () => {
     expect(text.element).toHaveProperty('value', '');
     const number = wrapper!.findAllComponents(InputStub)[1];
     expect(number.props('modelValue')).toBe(2);
+    expect(wrapper!.findAllComponents(InputStub)[2].props('modelValue')).toBe('');
 
     (text.element as HTMLInputElement).value = 'new';
     await text.trigger('change');
     expect(state.store.saveSetting).toHaveBeenCalledWith('p1', 'name', 'new');
+
+    (number.element as HTMLInputElement).value = '5';
+    await number.trigger('change');
+    expect(state.store.saveSetting).toHaveBeenCalledWith('p1', 'count', 5);
+
+    await wrapper!.get('[data-testid="plugin-setting-p1-flag"]').trigger('click');
+    expect(state.store.saveSetting).toHaveBeenCalledWith('p1', 'flag', true);
   });
 
   it('opens and closes the plugins guide', async () => {

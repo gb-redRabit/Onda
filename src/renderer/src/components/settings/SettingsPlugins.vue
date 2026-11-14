@@ -67,9 +67,8 @@ function onToggle(plugin: PluginUiInfo): void {
 }
 
 async function confirmEnable(): Promise<void> {
-  const plugin = enableReviewPlugin.value;
+  const plugin = enableReviewPlugin.value!;
   enableReviewPlugin.value = null;
-  if (!plugin) return;
   const enabled = await store.approveAndEnable(plugin.id);
   if (!enabled) {
     ui.notify('error', t('plugins.enableFailed'), t('plugins.permissionChangedWarning'));
