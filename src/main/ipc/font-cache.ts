@@ -60,22 +60,26 @@ function indexPath(): string {
 }
 
 let index: FontCacheIndex | null = null;
+let indexLoad: Promise<FontCacheIndex> | null = null;
 let writeLock: Promise<void> | null = null;
 
 async function loadIndex(): Promise<FontCacheIndex> {
   if (index) return index;
-  try {
-    const raw = await readFile(indexPath(), 'utf-8');
-    const parsed = JSON.parse(raw) as Partial<FontCacheIndex>;
-    index = {
-      fonts: parsed.fonts && typeof parsed.fonts === 'object' ? parsed.fonts : {},
-      videos: parsed.videos && typeof parsed.videos === 'object' ? parsed.videos : {}
-    };
-  } catch {
-    // brak pliku lub uszkodzony JSON — zaczynamy od pustego cache
-    index = { fonts: {}, videos: {} };
-  }
-  return index;
+  indexLoad ??= (async () => {
+    try {
+      const raw = await readFile(indexPath(), 'utf-8');
+      const parsed = JSON.parse(raw) as Partial<FontCacheIndex>;
+      index = {
+        fonts: parsed.fonts && typeof parsed.fonts === 'object' ? parsed.fonts : {},
+        videos: parsed.videos && typeof parsed.videos === 'object' ? parsed.videos : {}
+      };
+    } catch {
+      // brak pliku lub uszkodzony JSON — zaczynamy od pustego cache
+      index = { fonts: {}, videos: {} };
+    }
+    return index!;
+  })();
+  return indexLoad;
 }
 
 async function saveIndex(): Promise<void> {
@@ -87,7 +91,7 @@ async function saveIndex(): Promise<void> {
   try {
     const file = indexPath();
     await mkdir(dirname(file), { recursive: true });
-    await writeFile(file, JSON.stringify(index ?? { fonts: {}, videos: {} }), 'utf-8');
+    await writeFile(file, JSON.stringify(index), 'utf-8');
   } catch (e) {
     logger.warn('fontCache', 'saveIndex failed', e);
   } finally {

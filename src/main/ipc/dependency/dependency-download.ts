@@ -50,9 +50,10 @@ export function downloadFile(
   url: string,
   dest: string,
   signal: AbortSignal,
-  onProgress?: (received: number, total: number) => void
+  onProgress?: (received: number, total: number) => void,
+  maxBytes = MAX_DOWNLOAD_BYTES
 ): Promise<void> {
-  return downloadFileInternal(url, dest, signal, onProgress, 0);
+  return downloadFileInternal(url, dest, signal, onProgress, 0, maxBytes);
 }
 
 function downloadFileInternal(
@@ -60,7 +61,8 @@ function downloadFileInternal(
   dest: string,
   signal: AbortSignal,
   onProgress: ((received: number, total: number) => void) | undefined,
-  redirectCount: number
+  redirectCount: number,
+  maxBytes: number
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -103,7 +105,7 @@ function downloadFileInternal(
         const next = new URL(res.headers.location, url).toString();
         clearTimeout(timeout);
         signal.removeEventListener('abort', onAbort);
-        downloadFileInternal(next, dest, signal, onProgress, redirectCount + 1)
+        downloadFileInternal(next, dest, signal, onProgress, redirectCount + 1, maxBytes)
           .then(resolve)
           .catch(reject);
         return;
@@ -114,7 +116,7 @@ function downloadFileInternal(
         return;
       }
       const total = Number(res.headers['content-length'] || 0);
-      if (total > MAX_DOWNLOAD_BYTES) {
+      if (total > maxBytes) {
         res.destroy();
         fail(new Error('download exceeds size limit'));
         return;
@@ -124,7 +126,7 @@ function downloadFileInternal(
       const file = createWriteStream(tempDest);
       res.on('data', (chunk: Buffer) => {
         received += chunk.length;
-        if (received > MAX_DOWNLOAD_BYTES) {
+        if (received > maxBytes) {
           res.destroy(new Error('download exceeds size limit'));
           return;
         }
@@ -145,7 +147,7 @@ function downloadFileInternal(
             resolve();
           } catch (err) {
             settled = true;
-            reject(err instanceof Error ? err : new Error(String(err)));
+            reject(err);
           }
         });
       });
@@ -193,9 +195,8 @@ export async function fetchLatestYtdlpVersion(): Promise<string | null> {
 // Strumieniowe SHA-256 (współdzielone z detekcją duplikatów) — bez wczytywania
 // całej binarki (setki MB) do pamięci.
 async function sha256OfFile(filePath: string): Promise<string> {
-  const hash = await hashFile(filePath);
-  if (hash === null) throw new Error(`could not hash ${basename(filePath)}`);
-  return hash;
+  // Without a byte budget `hashFile` either returns the digest or rejects.
+  return (await hashFile(filePath)) as string;
 }
 
 // Weryfikuje pobrany plik względem wbudowanego pinu SHA-256 (używane przez zarządzane

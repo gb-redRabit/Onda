@@ -172,6 +172,21 @@ describe('progress emit throttling', () => {
     expect(emit).toHaveBeenCalledTimes(1);
     expect(state.jobs.has(job.id)).toBe(false);
   });
+
+  it('drops a trailing tick when the job vanished without forgetJob', async () => {
+    const state = await loadState();
+    state.setDownloadEmit(emit);
+    const job = { id: 'job-w', url: 'https://x/y', title: 't', status: 'downloading' } as any;
+    state.jobs.set(job.id, job);
+
+    state.persistThrottled(job); // natychmiast (1)
+    state.persistThrottled(job); // zakolejkowane
+    state.jobs.delete(job.id);
+    await vi.advanceTimersByTimeAsync(600);
+
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(state.jobs.has(job.id)).toBe(false);
+  });
 });
 
 describe('queueOrder removal', () => {
@@ -222,5 +237,66 @@ describe('reportCompleted routing', () => {
     state.reportCompleted({ source: { sourceId: 'src' } } as any);
 
     expect(sources).not.toHaveBeenCalled();
+  });
+
+  it('routes a provider job to the provider handler', async () => {
+    const state = await loadState();
+    const providers = vi.fn();
+    state.setProviderItemDownloadedHandler(providers);
+
+    state.reportCompleted({
+      source: {
+        mode: 'provider',
+        providerId: 'mega',
+        providerRef: { provider: 'mega', shareId: 'share' },
+        providerItemId: 'item'
+      }
+    } as any);
+
+    expect(providers).toHaveBeenCalledWith('mega', { provider: 'mega', shareId: 'share' }, 'item');
+  });
+});
+
+describe('queue persistence', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    emit.mockReset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('debounces queue writes and flushes when idle', async () => {
+    const state = await loadState();
+    const store = await import('../download-queue-store');
+    const persist = vi.mocked(store.persistJobs);
+    persist.mockClear();
+
+    await state.flushQueueNow();
+    expect(persist).toHaveBeenCalledTimes(1);
+
+    const job = { id: 'job-q', url: 'https://x/y', title: 't', status: 'pending' } as any;
+    state.jobs.set(job.id, job);
+    state.persist(job);
+    expect(persist).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(persist).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels a pending debounce when flushed early', async () => {
+    const state = await loadState();
+    const store = await import('../download-queue-store');
+    const persist = vi.mocked(store.persistJobs);
+    persist.mockClear();
+
+    const job = { id: 'job-r', url: 'https://x/y', title: 't', status: 'pending' } as any;
+    state.jobs.set(job.id, job);
+    state.persist(job);
+    await state.flushQueueNow();
+    expect(persist).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(persist).toHaveBeenCalledTimes(1);
   });
 });

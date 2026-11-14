@@ -1,8 +1,16 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { Readable } from 'node:stream';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { PassThrough, Readable } from 'node:stream';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -13,6 +21,9 @@ const state = vi.hoisted(() => ({
   get: null as null | ((url: string, options: unknown, callback: (res: unknown) => void) => unknown)
 }));
 
+// Channel can be flipped to exercise both release repositories.
+const channel = vi.hoisted(() => ({ value: 'nightly' }));
+
 vi.mock('https', () => ({
   default: {
     get: (url: string, options: unknown, callback: (res: unknown) => void) =>
@@ -20,6 +31,15 @@ vi.mock('https', () => ({
   }
 }));
 vi.mock('../../binaries', () => ({ getBinDir: () => state.binDir }));
+vi.mock('../dependency/dependency-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../dependency/dependency-utils')>();
+  return {
+    ...actual,
+    get YTDLP_CHANNEL() {
+      return channel.value;
+    }
+  };
+});
 
 const {
   emitProgress,
@@ -46,32 +66,58 @@ interface FakeInit {
   statusCode?: number;
   headers?: Record<string, string>;
   body?: string | Buffer;
+  chunks?: unknown[];
+  hold?: boolean;
+  error?: Error;
 }
 
 function fakeResponse(init: FakeInit): Readable {
-  const body = init.body === undefined ? [] : [Buffer.from(init.body)];
+  if (init.hold) {
+    const stream = new PassThrough();
+    Object.assign(stream, {
+      statusCode: init.statusCode ?? 200,
+      headers: init.headers ?? {}
+    });
+    return stream;
+  }
+  const body = init.chunks ?? (init.body === undefined ? [] : [Buffer.from(init.body)]);
   const stream = Readable.from(body);
   Object.assign(stream, {
     statusCode: init.statusCode ?? 200,
     headers: init.headers ?? {}
   });
+  if (init.error) process.nextTick(() => stream.emit('error', init.error));
   return stream;
 }
 
-function mockTransport(sequence: FakeInit[]): { calls: Array<{ url: string }>; requests: any[] } {
+function mockTransport(sequence: FakeInit[]): {
+  calls: Array<{ url: string }>;
+  requests: any[];
+  responses: Readable[];
+} {
   const calls: Array<{ url: string }> = [];
   const requests: any[] = [];
+  const responses: Readable[] = [];
   state.get = (url, _options, callback) => {
     calls.push({ url });
     const req = new EventEmitter() as EventEmitter & Record<string, unknown>;
-    req.destroy = vi.fn();
-    req.setTimeout = vi.fn();
+    req.destroy = vi.fn((err?: Error) => {
+      if (err) req.emit('error', err);
+    });
+    req.timeoutHandler = null;
+    req.setTimeout = vi.fn((_ms: number, cb: () => void) => {
+      req.timeoutHandler = cb;
+    });
     requests.push(req);
     const next = sequence.shift() ?? {};
-    process.nextTick(() => callback(fakeResponse(next)));
+    process.nextTick(() => {
+      const res = fakeResponse(next);
+      responses.push(res);
+      callback(res);
+    });
     return req;
   };
-  return { calls, requests };
+  return { calls, requests, responses };
 }
 
 function sha256(content: Buffer | string): string {
@@ -156,6 +202,85 @@ describe('downloadFile', () => {
       downloadFile('https://example.com/huge', join(root, 'huge.bin'), new AbortController().signal)
     ).rejects.toThrow('download exceeds size limit');
   });
+
+  it('cancels an in-flight download when the signal aborts', async () => {
+    const { requests } = mockTransport([{ hold: true }]);
+    const controller = new AbortController();
+    const dest = join(root, 'abort.bin');
+    const pending = downloadFile('https://example.com/x', dest, controller.signal);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(requests).toHaveLength(1);
+    controller.abort();
+
+    await expect(pending).rejects.toThrow('cancelled');
+  });
+
+  it('aborts when the streamed body exceeds the byte budget', async () => {
+    mockTransport([{ body: 'abcdef' }]);
+
+    await expect(
+      downloadFile(
+        'https://example.com/x',
+        join(root, 'budget.bin'),
+        new AbortController().signal,
+        undefined,
+        3
+      )
+    ).rejects.toThrow('download exceeds size limit');
+  });
+
+  it('fails on a response stream error and ignores a later request error', async () => {
+    const { requests, responses } = mockTransport([{ hold: true }]);
+    const dest = join(root, 'stream-error.bin');
+    const pending = downloadFile('https://example.com/x', dest, new AbortController().signal);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    responses[0]!.emit('error', new Error('stream broke'));
+
+    await expect(pending).rejects.toThrow('stream broke');
+    requests[0]!.emit('error', new Error('late'));
+    expect(existsSync(`${dest}.part`)).toBe(false);
+  });
+
+  it('fails when the temporary file cannot be written', async () => {
+    const dest = join(root, 'blocked.bin');
+    mkdirSync(`${dest}.part`, { recursive: true });
+    mockTransport([{ body: 'x' }]);
+
+    await expect(
+      downloadFile('https://example.com/x', dest, new AbortController().signal)
+    ).rejects.toThrow();
+  });
+
+  it('rejects when the final rename fails', async () => {
+    const dest = join(root, 'rename-target');
+    mkdirSync(dest);
+    mockTransport([{ body: 'x' }]);
+
+    await expect(
+      downloadFile('https://example.com/x', dest, new AbortController().signal)
+    ).rejects.toThrow();
+  });
+
+  it('times out a stalled request', async () => {
+    vi.useFakeTimers();
+    try {
+      mockTransport([{ hold: true }]);
+      const pending = downloadFile(
+        'https://example.com/x',
+        join(root, 'timeout.bin'),
+        new AbortController().signal
+      );
+      const expectation = expect(pending).rejects.toThrow('download timed out');
+
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('fetchLatestYtdlpVersion', () => {
@@ -170,6 +295,20 @@ describe('fetchLatestYtdlpVersion', () => {
 
     mockTransport([{ body: 'not json' }]);
     expect(await fetchLatestYtdlpVersion()).toBeNull();
+  });
+
+  it('returns null when the request fails or times out', async () => {
+    const first = mockTransport([{ hold: true }]);
+    const pendingError = fetchLatestYtdlpVersion();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    first.requests[0]!.emit('error', new Error('offline'));
+    await expect(pendingError).resolves.toBeNull();
+
+    const second = mockTransport([{ hold: true }]);
+    const pendingTimeout = fetchLatestYtdlpVersion();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    second.requests[0]!.timeoutHandler();
+    await expect(pendingTimeout).resolves.toBeNull();
   });
 });
 
@@ -261,5 +400,21 @@ describe('checksum verification', () => {
       )
     ).rejects.toThrow('Checksum mismatch');
     expect(readdirSync(state.binDir)).toEqual(['asset2']);
+  });
+});
+
+describe('release channel', () => {
+  it('checks the stable repository when the channel is not nightly', async () => {
+    channel.value = 'stable';
+    try {
+      vi.resetModules();
+      const mod = await import('../dependency/dependency-download');
+      const { calls } = mockTransport([{ body: JSON.stringify({ tag_name: 'v1.2.3' }) }]);
+
+      await expect(mod.fetchLatestYtdlpVersion()).resolves.toBe('1.2.3');
+      expect(calls[0]?.url).toContain('repos/yt-dlp/yt-dlp/releases/latest');
+    } finally {
+      channel.value = 'nightly';
+    }
   });
 });
