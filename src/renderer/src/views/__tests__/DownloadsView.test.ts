@@ -34,11 +34,19 @@ vi.mock('@renderer/utils/downloadsView', () => ({
   buildDownloadFilters: state.buildFilters
 }));
 vi.mock('@renderer/composables/useVirtualList', () => ({
-  useVirtualList: () =>
+  useVirtualList: (options: any) =>
     ref({
       getVirtualItems: () => state.rowItems,
-      getTotalSize: () => state.total,
-      measureElement: state.measureElement
+      getTotalSize: () => {
+        options.count();
+        options.scrollEl();
+        options.estimateSize();
+        return state.total;
+      },
+      measureElement: (element: Element) => {
+        options.measureElement(element);
+        return state.measureElement(element);
+      }
     })
 }));
 
@@ -293,6 +301,19 @@ describe('row actions', () => {
       expect.objectContaining({ extension: 'bin', type: 'video' })
     );
     expect(state.router.push).toHaveBeenCalledWith('/player');
+  });
+
+  it('falls back to audio for an unknown extension and audio kind', async () => {
+    const item = task('a', { outputPath: 'C:/out/file.bin', kind: 'audio' });
+    state.visibleDownloads.mockReturnValue([item]);
+    mountView();
+    wrapper!.findComponent(RowStub).vm.$emit('play');
+    await flushPromises();
+
+    expect(state.player.setTrack).toHaveBeenCalledWith(
+      expect.objectContaining({ extension: 'bin', type: 'audio' })
+    );
+    expect(state.router.push).toHaveBeenCalledWith('/audio');
   });
 
   it('opens an image in the image viewer instead of the player', async () => {

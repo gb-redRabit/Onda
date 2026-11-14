@@ -83,10 +83,11 @@ function playDownload(t: DownloadTask) {
 }
 
 function openDownloadedImage(t: DownloadTask, ext: string): void {
-  if (!t.outputPath) return;
+  // `playDownload` sprawdza `outputPath` przed wywołaniem tej funkcji.
+  const outputPath = t.outputPath!;
   const file: FileItem = {
-    name: t.outputPath.split(/[/\\]/).pop() || t.title,
-    path: t.outputPath,
+    name: outputPath.split(/[/\\]/).pop()!,
+    path: outputPath,
     isDirectory: false,
     size: 0,
     modifiedAt: t.startedAt,
