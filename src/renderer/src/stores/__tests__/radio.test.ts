@@ -29,6 +29,36 @@ describe('radio store', () => {
     expect(mockRadioLoad).toHaveBeenCalledTimes(1);
   });
 
+  it('shares an in-flight load and handles an empty payload', async () => {
+    mockRadioLoad.mockResolvedValue(undefined);
+    const store = useRadioStore();
+
+    const first = store.ensureLoaded();
+    const second = store.ensureLoaded();
+    await Promise.all([first, second]);
+
+    expect(store.stations).toEqual([]);
+    expect(mockRadioLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects invalid and duplicate stations without persisting', async () => {
+    const store = useRadioStore();
+
+    expect(
+      await store.addStations([
+        { name: '   ', url: 'http://blank.example/stream' },
+        { name: 'No URL', url: '' }
+      ])
+    ).toBe(0);
+    expect(mockRadioSave).not.toHaveBeenCalled();
+
+    await store.addStations([{ name: 'A', url: 'http://a.example/stream' }]);
+    mockRadioSave.mockClear();
+
+    expect(await store.addStations([{ name: 'Dup', url: 'http://a.example/stream' }])).toBe(0);
+    expect(mockRadioSave).not.toHaveBeenCalled();
+  });
+
   it('adds stations deduping by url', async () => {
     const store = useRadioStore();
     const added = await store.addStations([
@@ -85,10 +115,56 @@ describe('radio store', () => {
   it('tracks the playing station id', () => {
     const store = useRadioStore();
     expect(store.playingStationId).toBeNull();
+    expect(store.isPlaying).toBe(false);
+
     const player = usePlayerStore();
     player.setTrack(
       store.buildRadioTrack({ id: 'r9', name: 'X', url: 'http://x.example/stream', addedAt: 1 })
     );
     expect(store.playingStationId).toBe('r9');
+
+    player.isPlaying = true;
+    expect(store.isPlaying).toBe(true);
+  });
+
+  it('starts a station in the player', () => {
+    const store = useRadioStore();
+    const player = usePlayerStore();
+
+    store.playStation({
+      id: 'r2',
+      name: 'Station',
+      url: 'http://r.example/stream',
+      addedAt: 1
+    });
+
+    expect(player.currentTrack).toMatchObject({
+      id: 'radio:r2',
+      name: 'Station',
+      path: 'http://r.example/stream',
+      type: 'stream'
+    });
+  });
+
+  it('ignores no-op renames and moves and removals', async () => {
+    const store = useRadioStore();
+    await store.addStations([
+      { name: 'A', url: 'http://a.example/stream' },
+      { name: 'B', url: 'http://b.example/stream' }
+    ]);
+    const [a] = store.stations;
+    mockRadioSave.mockClear();
+
+    await store.renameStation(a!.id, '   ');
+    expect(store.stations[0]!.name).toBe('A');
+
+    await store.moveToTop(a!.id);
+    expect(store.stations[0]!.id).toBe(a!.id);
+
+    await store.moveToTop('missing');
+    await store.removeStation('missing');
+
+    expect(store.stations).toHaveLength(2);
+    expect(mockRadioSave).not.toHaveBeenCalled();
   });
 });

@@ -104,4 +104,38 @@ describe('useResumePrompt', () => {
     expect(player.resumePrompt).toBeNull();
     scope.stop();
   });
+
+  it('ignores arming without a prompt and falls back to seven seconds', async () => {
+    const { api, scope } = mount({ onContinue: vi.fn() });
+    await nextTick();
+
+    api.resume();
+    vi.advanceTimersByTime(7000);
+    expect(player.resumePrompt).toBeNull();
+
+    settings.playback.resumePromptTimeout = 0;
+    player.resumePrompt = { path: '/d.mp3', position: 1 };
+    await nextTick();
+    api.resume();
+
+    vi.advanceTimersByTime(6999);
+    expect(player.resumePrompt).not.toBeNull();
+    vi.advanceTimersByTime(1);
+    expect(player.resumePrompt).toBeNull();
+    scope.stop();
+  });
+
+  it('clears missing prompts without calling handlers', async () => {
+    const onContinue = vi.fn();
+    const onStart = vi.fn();
+    const { api, scope } = mount({ onContinue, onStart });
+    await nextTick();
+
+    api.onContinue();
+    api.onStart();
+
+    expect(onContinue).not.toHaveBeenCalled();
+    expect(onStart).not.toHaveBeenCalled();
+    scope.stop();
+  });
 });
