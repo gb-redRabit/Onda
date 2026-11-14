@@ -64,6 +64,14 @@ describe('useAlwaysOnTop', () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
+  it('applies a different value without persisting it', async () => {
+    await useAlwaysOnTop().apply(true);
+
+    expect(invoke).toHaveBeenCalledWith('window:setAlwaysOnTop', true);
+    expect(useAlwaysOnTop().pinned.value).toBe(true);
+    expect(mocks.updateAppearance).not.toHaveBeenCalled();
+  });
+
   it('keeps the toggle state when the IPC call fails', async () => {
     invoke.mockRejectedValueOnce(new Error('boom'));
     const { pinned, togglePin } = useAlwaysOnTop();

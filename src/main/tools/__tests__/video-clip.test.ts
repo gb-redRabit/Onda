@@ -10,6 +10,7 @@ import {
   resolveClipOutputPath,
   resolveConcatOutputPath
 } from '../video-clip';
+import { parseTimeToSeconds } from '../video-clip-args';
 
 const dirs: string[] = [];
 
@@ -99,6 +100,16 @@ describe('video clip args', () => {
     expect(args).toContain('-an');
   });
 
+  it('builds a GIF without a rotation filter', () => {
+    const args = buildClipArgs('/in.mp4', '/out.gif', 0, 1, {
+      container: 'mp4',
+      mode: 'copy',
+      format: 'gif'
+    });
+    expect(args.join(' ')).not.toContain('transpose');
+    expect(args.join(' ')).toContain('fps=12,scale=480');
+  });
+
   it('caps video bitrate for a target file size', () => {
     const args = buildClipArgs('/in.mp4', '/out.mp4', 0, 10, {
       container: 'mp4',
@@ -110,6 +121,55 @@ describe('video clip args', () => {
     expect(args).toContain('8000k');
     expect(args).not.toContain('-crf');
   });
+
+  it('maps rotation 270 and the mpeg4 encoder for a target size', () => {
+    const rotated = buildClipArgs('/in.mp4', '/out.mp4', 0, 1, {
+      container: 'mp4',
+      mode: 'exact',
+      rotation: 270
+    });
+    expect(rotated).toContain('transpose=2');
+
+    const mpeg = buildClipArgs('/in.mp4', '/out.mp4', 0, 10, {
+      container: 'mp4',
+      mode: 'exact',
+      targetSizeMb: 5,
+      encoder: 'mpeg4'
+    });
+    expect(mpeg).toContain('mpeg4');
+    expect(mpeg).not.toContain('-preset');
+  });
+
+  it('encodes WebM with a target bitrate and without audio', () => {
+    const args = buildClipArgs('/in.mp4', '/out.webm', 0, 10, {
+      container: 'webm',
+      mode: 'exact',
+      targetSizeMb: 5,
+      audio: 'remove'
+    });
+    expect(args).toContain('libvpx-vp9');
+    expect(args).toContain('-b:v');
+    expect(args).toContain('-an');
+  });
+
+  it('falls back to mpeg4 for other encoders and mutes exact output', () => {
+    const fallback = buildClipArgs('/in.mp4', '/out.mp4', 0, 1, {
+      container: 'mp4',
+      mode: 'exact',
+      encoder: 'mpeg4'
+    });
+    expect(fallback).toContain('mpeg4');
+    expect(fallback).toContain('-q:v');
+
+    const hardware = buildClipArgs('/in.mp4', '/out.mp4', 0, 1, {
+      container: 'mp4',
+      mode: 'exact',
+      encoder: 'h264_mf',
+      audio: 'remove'
+    });
+    expect(hardware).toContain('h264_mf');
+    expect(hardware).toContain('-an');
+  });
 });
 
 describe('parseFrameRate', () => {
@@ -118,6 +178,19 @@ describe('parseFrameRate', () => {
     expect(parseFrameRate('25')).toBe(25);
     expect(parseFrameRate('0/0')).toBe(0);
     expect(parseFrameRate('')).toBe(0);
+  });
+
+  it('rejects non-string, non-finite and out-of-range values', () => {
+    expect(parseFrameRate(null)).toBe(0);
+    expect(parseFrameRate('abc')).toBe(0);
+    expect(parseFrameRate('1001/1')).toBe(0);
+  });
+});
+
+describe('parseTimeToSeconds', () => {
+  it('parses HH:MM:SS and rejects malformed values', () => {
+    expect(parseTimeToSeconds('01:02:03.5')).toBeCloseTo(3723.5);
+    expect(parseTimeToSeconds('bad')).toBe(0);
   });
 });
 
@@ -150,6 +223,13 @@ describe('video clip thumbnails', () => {
     ]);
     expect(args).toContain('fps=30.000000,scale=160:-2');
   });
+
+  it('falls back to defaults for an empty duration and count', () => {
+    const args = buildClipThumbnailArgs('/in.mp4', '/tmp/thumb-%02d.jpg', 0, 0);
+    expect(args).toContain('fps=1.000000,scale=160:-2');
+    expect(args).toContain('10');
+    expect(args).not.toContain('-ss');
+  });
 });
 
 describe('video concat args', () => {
@@ -178,6 +258,56 @@ describe('video concat args', () => {
     expect(args).toContain('libopenh264');
     expect(args).not.toContain('copy');
   });
+
+  it('removes audio in copy mode and encodes WebM exactly', () => {
+    const copy = buildConcatArgs('/tmp/inputs.txt', '/out.mkv', {
+      container: 'mkv',
+      mode: 'copy',
+      audio: 'remove'
+    });
+    expect(copy).toContain('-an');
+    expect(copy).not.toContain('0:a:0?');
+
+    const webm = buildConcatArgs('/tmp/inputs.txt', '/out.webm', {
+      container: 'webm',
+      mode: 'exact',
+      audio: 'remove'
+    });
+    expect(webm).toContain('libvpx-vp9');
+    expect(webm).toContain('-an');
+
+    const webmWithAudio = buildConcatArgs('/tmp/inputs.txt', '/out.webm', {
+      container: 'webm',
+      mode: 'exact'
+    });
+    expect(webmWithAudio).toContain('libvpx-vp9');
+    expect(webmWithAudio).not.toContain('-an');
+  });
+
+  it('reencodes concat output with the selected encoder', () => {
+    const x264 = buildConcatArgs('/tmp/inputs.txt', '/out.mkv', {
+      container: 'mkv',
+      mode: 'exact',
+      encoder: 'libx264'
+    });
+    expect(x264).toContain('-crf');
+
+    const hardware = buildConcatArgs('/tmp/inputs.txt', '/out.mkv', {
+      container: 'mkv',
+      mode: 'exact',
+      encoder: 'h264_mf'
+    });
+    expect(hardware).toContain('h264_mf');
+
+    const mpeg = buildConcatArgs('/tmp/inputs.txt', '/out.mkv', {
+      container: 'mkv',
+      mode: 'exact',
+      encoder: 'mpeg4',
+      audio: 'remove'
+    });
+    expect(mpeg).toContain('mpeg4');
+    expect(mpeg).toContain('-an');
+  });
 });
 
 describe('resolveClipOutputPath', () => {
@@ -204,6 +334,18 @@ describe('resolveClipOutputPath', () => {
     await writeFile(input, '');
     expect(resolveConcatOutputPath([input], undefined, 'mp4')).toBe(
       join(dir, 'movie (concat).mp4')
+    );
+  });
+
+  it('accepts a leading dot and avoids concat collisions', async () => {
+    const dir = await makeDir();
+    const input = join(dir, 'movie.mp4');
+    await writeFile(input, '');
+    expect(resolveClipOutputPath(input, dir, '.webm')).toBe(join(dir, 'movie (clip).webm'));
+
+    await writeFile(join(dir, 'movie (concat).mp4'), '');
+    expect(resolveConcatOutputPath([input], undefined, 'mp4')).toBe(
+      join(dir, 'movie (concat 2).mp4')
     );
   });
 });

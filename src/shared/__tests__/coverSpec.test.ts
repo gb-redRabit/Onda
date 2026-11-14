@@ -8,6 +8,7 @@ describe('buildCoverSpec', () => {
   });
 
   it('requires a non-empty path for custom', () => {
+    expect(buildCoverSpec({ type: 'custom' })).toBeUndefined();
     expect(buildCoverSpec({ type: 'custom', customPath: '  ' })).toBeUndefined();
     expect(buildCoverSpec({ type: 'custom', customPath: ' C:/c.png ' })).toEqual({
       type: 'custom',
@@ -57,5 +58,22 @@ describe('buildCoverSpec', () => {
       clipEnd: 10,
       clipFormat: 'webm'
     });
+  });
+
+  it('parses numeric strings and falls back for invalid ones', () => {
+    expect(buildCoverSpec({ type: 'frame', frameTime: '12.5' })).toEqual({
+      type: 'frame',
+      frameTime: 12.5
+    });
+    expect(buildCoverSpec({ type: 'clip', clipStart: 'abc' }, { clipStart: 4 })).toEqual({
+      type: 'clip',
+      clipStart: 4,
+      clipEnd: COVER_CLIP_END_DEFAULT,
+      clipFormat: 'webm'
+    });
+  });
+
+  it('returns undefined for an unknown type', () => {
+    expect(buildCoverSpec({ type: 'bogus' } as never)).toBeUndefined();
   });
 });
