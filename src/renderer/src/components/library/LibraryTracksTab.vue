@@ -65,8 +65,7 @@ function isSelected(path: string) {
   return selection.has(path);
 }
 function toggleSelect(index: number, e?: MouseEvent | KeyboardEvent, additive = false) {
-  const track = props.tracks[index];
-  if (!track) return;
+  const track = props.tracks[index]!;
   const isShift = e?.shiftKey;
   if (isShift) {
     // Shift rozszerza zakres od ostatniego punktu (wielokrotny wybór zakresu).

@@ -67,7 +67,6 @@ async function loadDrives(): Promise<void> {
 }
 
 function usedPercent(drive: DriveEntry): number {
-  if (drive.total <= 0) return 0;
   const used = drive.total - drive.free;
   return Math.min(100, Math.max(0, Math.round((used / drive.total) * 100)));
 }

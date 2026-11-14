@@ -31,13 +31,27 @@ vi.mock('@renderer/composables/useVirtualList', () => ({
     if (options.estimateSize() === 48) {
       return {
         getVirtualItems: () => state.listItems,
-        getTotalSize: () => state.listTotal
+        getTotalSize: () => {
+          options.count();
+          options.scrollEl();
+          return state.listTotal;
+        }
       };
     }
     return ref({
       getVirtualItems: () => state.rowItems,
-      getTotalSize: () => state.rowTotal,
-      measureElement: state.measureElement
+      getTotalSize: () => {
+        options.count();
+        options.scrollEl();
+        return state.rowTotal;
+      },
+      measureElement: (el: Element | null) => {
+        if (el) {
+          options.measureElement(el);
+          return state.measureElement(el);
+        }
+        return 0;
+      }
     });
   }
 }));

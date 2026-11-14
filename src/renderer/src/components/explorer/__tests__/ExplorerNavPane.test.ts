@@ -26,12 +26,12 @@ vi.mock('@renderer/utils/formatters', () => ({
 
 let wrapper: VueWrapper | null = null;
 
-function mountPane(props: Record<string, unknown> = {}) {
+function mountPane(props: Record<string, unknown> = {}, provideConfirm = true) {
   wrapper = mount(ExplorerNavPane, {
     props,
     global: {
       mocks: { $t: state.t },
-      provide: { showConfirm: state.showConfirm }
+      provide: provideConfirm ? { showConfirm: state.showConfirm } : {}
     }
   });
   return wrapper;
@@ -277,6 +277,9 @@ describe('drag and drop', () => {
     await folder.trigger('dragover', { dataTransfer: dt });
     expect(dt.dropEffect).toBe('move');
 
+    await folder.trigger('dragover');
+    expect(folder.classes()).toContain('ring-2');
+
     await folder.trigger('dragenter');
     await folder.trigger('dragenter');
     await folder.trigger('dragleave');
@@ -347,6 +350,64 @@ describe('drag and drop', () => {
     expect(state.showConfirm).toHaveBeenCalledWith(
       `explorer.moveConfirm:${JSON.stringify({ n: 1, dir: 'Music' })}`
     );
+  });
+
+  it('handles drag events on quick links and drives', async () => {
+    mountPane();
+    await flushPromises();
+    const dt = dataTransfer('');
+
+    const pc = quickButtons()[0];
+    await pc.trigger('dragover', { dataTransfer: dt });
+    await pc.trigger('dragenter');
+    await pc.trigger('dragleave');
+    await pc.trigger('drop', { dataTransfer: dataTransfer('C:/a.mp3') });
+    expect(state.invoke).toHaveBeenCalledWith('fs:move', ['C:/a.mp3'], '');
+
+    const system = driveButtons()[0];
+    await system.trigger('dragover', { dataTransfer: dt });
+    await system.trigger('dragenter');
+    await system.trigger('dragleave');
+    await system.trigger('drop', { dataTransfer: dataTransfer('C:/b.mp3') });
+    expect(state.invoke).toHaveBeenCalledWith('fs:move', ['C:/b.mp3'], 'C:\\');
+  });
+
+  it('ignores drops without a data transfer', async () => {
+    mountPane();
+    await flushPromises();
+    state.invoke.mockClear();
+
+    await folderButtons()[0].trigger('drop', { dataTransfer: null });
+    await quickButtons()[0].trigger('drop', { dataTransfer: null });
+
+    expect(state.invoke).not.toHaveBeenCalled();
+  });
+
+  it('falls back to window.confirm without an injection', async () => {
+    state.settings.explorer.confirmBeforeMove = true;
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mountPane({}, false);
+    await flushPromises();
+
+    await folderButtons()[0].trigger('drop', { dataTransfer: dataTransfer('C:/a.mp3') });
+
+    expect(confirm).toHaveBeenCalledWith(
+      `explorer.moveConfirm:${JSON.stringify({ n: 1, dir: 'C:/Music' })}`
+    );
+    expect(state.invoke).toHaveBeenCalledWith('fs:move', ['C:/a.mp3'], 'C:/Music');
+  });
+
+  it('uses an empty directory label for a drop on This PC', async () => {
+    state.settings.explorer.confirmBeforeMove = true;
+    mountPane();
+    await flushPromises();
+
+    await quickButtons()[0].trigger('drop', { dataTransfer: dataTransfer('C:/a.mp3') });
+
+    expect(state.showConfirm).toHaveBeenCalledWith(
+      `explorer.moveConfirm:${JSON.stringify({ n: 1, dir: '' })}`
+    );
+    expect(state.invoke).toHaveBeenCalledWith('fs:move', ['C:/a.mp3'], '');
   });
 });
 
