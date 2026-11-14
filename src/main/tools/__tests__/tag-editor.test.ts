@@ -1,23 +1,28 @@
-import { mkdtemp, rm, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { parseFileMock, updateMock, runCommandMock, replaceMock, safeRmMock } = vi.hoisted(() => ({
-  parseFileMock: vi.fn(),
-  updateMock: vi.fn(async () => true),
-  runCommandMock: vi.fn(async (_bin: string, _args: string[]): Promise<string> => ''),
-  replaceMock: vi.fn(async () => undefined),
-  safeRmMock: vi.fn(async () => undefined)
-}));
+const { parseFileMock, updateMock, runCommandMock, replaceMock, safeRmMock, resolveBinMock } =
+  vi.hoisted(() => ({
+    parseFileMock: vi.fn(),
+    updateMock: vi.fn(async () => true),
+    runCommandMock: vi.fn(async (_bin: string, _args: string[]): Promise<string> => ''),
+    replaceMock: vi.fn(async () => undefined),
+    safeRmMock: vi.fn(async () => undefined),
+    resolveBinMock: vi.fn(async () => '/usr/bin/ffmpeg')
+  }));
 
 vi.mock('music-metadata', () => ({ parseFile: parseFileMock }));
 vi.mock('node-id3', () => ({ default: { Promise: { update: updateMock } } }));
-vi.mock('../../binaries', () => ({ resolveBin: vi.fn(async () => '/usr/bin/ffmpeg') }));
+vi.mock('../../binaries', () => ({ resolveBin: resolveBinMock }));
 vi.mock('../../utils/exec', () => ({ runCommand: runCommandMock }));
 vi.mock('../../utils/fs-atomic', () => ({
   replaceFileAtomic: replaceMock,
   safeRm: safeRmMock
+}));
+vi.mock('../../path-policy', () => ({
+  isProtectedPath: (path: string) => String(path).includes('protected')
 }));
 
 import {
@@ -72,6 +77,12 @@ describe('tagsFromMetadata', () => {
   it('omits fields that are missing', () => {
     expect(tagsFromMetadata({})).toEqual({});
   });
+
+  it('normalizes empty and string genres', () => {
+    expect(tagsFromMetadata({ genre: [] })).toEqual({});
+    expect(tagsFromMetadata({ genre: '' as never })).toEqual({});
+    expect(tagsFromMetadata({ genre: 'Rock' as never })).toEqual({ genre: 'Rock' });
+  });
 });
 
 describe('sanitizeTagFields', () => {
@@ -83,6 +94,12 @@ describe('sanitizeTagFields', () => {
 
   it('keeps an explicit empty string so a field can be cleared', () => {
     expect(sanitizeTagFields({ title: '' })).toEqual({ title: '' });
+  });
+
+  it('returns an empty object for non-object payloads', () => {
+    expect(sanitizeTagFields(null)).toEqual({});
+    expect(sanitizeTagFields([])).toEqual({});
+    expect(sanitizeTagFields('title')).toEqual({});
   });
 });
 
@@ -134,6 +151,28 @@ describe('readAudioTags', () => {
 
     const [file] = await readAudioTags([filePath]);
     expect(file.error).toContain('bad tag');
+  });
+
+  it('returns no files for invalid input and rejects unsupported formats', async () => {
+    await expect(readAudioTags(null)).resolves.toEqual([]);
+    await expect(readAudioTags([])).resolves.toEqual([]);
+
+    const text = join(dir, 'notes.txt');
+    await writeFile(text, '');
+    await expect(readAudioTags([text])).resolves.toMatchObject([
+      { path: text, writable: false, error: 'Unsupported audio format' }
+    ]);
+  });
+
+  it('reports non-files and stringifies non-Error failures', async () => {
+    const folder = join(dir, 'folder.mp3');
+    await mkdir(folder);
+    await expect(readAudioTags([folder])).resolves.toMatchObject([{ error: 'Not a file' }]);
+
+    const filePath = join(dir, 'plain.mp3');
+    await writeFile(filePath, '');
+    parseFileMock.mockRejectedValueOnce('plain failure');
+    await expect(readAudioTags([filePath])).resolves.toMatchObject([{ error: 'plain failure' }]);
   });
 });
 
@@ -199,5 +238,66 @@ describe('writeAudioTags', () => {
   it('rejects unsafe paths', async () => {
     const [result] = await writeAudioTags([{ path: 'relative/song.mp3', tags: {} }]);
     expect(result).toEqual({ path: 'relative/song.mp3', success: false, error: 'Invalid path' });
+  });
+
+  it('returns no results for invalid input and skips malformed entries', async () => {
+    await expect(writeAudioTags(null)).resolves.toEqual([]);
+    await expect(writeAudioTags([])).resolves.toEqual([]);
+
+    const filePath = join(dir, 'song.mp3');
+    await writeFile(filePath, '');
+    await expect(
+      writeAudioTags([null, 'x', [], { path: filePath, tags: { title: 'T' } }])
+    ).resolves.toEqual([{ path: filePath, success: true }]);
+  });
+
+  it('uses an empty path for a non-string entry path', async () => {
+    const [result] = await writeAudioTags([{ path: 42, tags: {} }]);
+    expect(result).toEqual({ path: '', success: false, error: 'Invalid path' });
+  });
+
+  it('refuses protected paths', async () => {
+    const [result] = await writeAudioTags([
+      { path: join(dir, 'protected.mp3'), tags: { title: 'T' } }
+    ]);
+    expect(result).toMatchObject({ success: false, error: 'Protected path' });
+  });
+
+  it('skips an empty ID3 payload', async () => {
+    const filePath = join(dir, 'empty.mp3');
+    await writeFile(filePath, '');
+
+    await expect(writeAudioTags([{ path: filePath, tags: {} }])).resolves.toEqual([
+      { path: filePath, success: true }
+    ]);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('writes album and genre ID3 frames', async () => {
+    const filePath = join(dir, 'album.mp3');
+    await writeFile(filePath, '');
+
+    await writeAudioTags([{ path: filePath, tags: { album: 'A', genre: 'Rock' } }]);
+
+    expect(updateMock).toHaveBeenCalledWith({ album: 'A', genre: 'Rock' }, filePath);
+  });
+
+  it('falls back to the ffmpeg binary name', async () => {
+    resolveBinMock.mockResolvedValueOnce('');
+    const filePath = join(dir, 'fallback.flac');
+    await writeFile(filePath, '');
+
+    await writeAudioTags([{ path: filePath, tags: { title: 'T' } }]);
+
+    expect(runCommandMock).toHaveBeenCalledWith('ffmpeg', expect.any(Array), expect.any(Object));
+  });
+
+  it('reports non-files and write failures', async () => {
+    const folder = join(dir, 'folder.flac');
+    await mkdir(folder);
+
+    const [result] = await writeAudioTags([{ path: folder, tags: { title: 'T' } }]);
+
+    expect(result).toEqual({ path: folder, success: false, error: 'Not a file' });
   });
 });
