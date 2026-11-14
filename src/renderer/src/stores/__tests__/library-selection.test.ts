@@ -61,4 +61,28 @@ describe('library selection store', () => {
     expect(s.count).toBe(0);
     expect(s.anchorPath).toBeNull();
   });
+
+  it('handles toggles, missing entries and unknown anchors', () => {
+    const s = useLibrarySelectionStore();
+    s.toggle('/a.mp3');
+    expect(s.has('/a.mp3')).toBe(true);
+    s.toggle('/a.mp3');
+    expect(s.has('/a.mp3')).toBe(false);
+
+    s.remove('/missing.mp3');
+    expect(s.count).toBe(0);
+
+    s.selectRange(list, '/missing.mp3');
+    expect(s.count).toBe(0);
+
+    s.clear();
+    s.selectRange(list, '/b.mp3');
+    expect(s.paths).toEqual(['/b.mp3']);
+    expect(s.anchorPath).toBe('/b.mp3');
+
+    s.replaceWith('/not-in-list.mp3');
+    s.selectRange(list, '/c.mp3');
+    expect(s.paths).toEqual(['/c.mp3']);
+    expect(s.anchorPath).toBe('/c.mp3');
+  });
 });

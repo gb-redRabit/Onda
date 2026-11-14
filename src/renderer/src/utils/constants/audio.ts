@@ -37,7 +37,7 @@ export const DEFAULT_EQ_BANDS: EqBand[] = [
 ];
 
 function withGains(gains: number[]): EqBand[] {
-  return DEFAULT_EQ_BANDS.map((b, i) => ({ ...b, gain: gains[i] ?? 0 }));
+  return DEFAULT_EQ_BANDS.map((b, i) => ({ ...b, gain: gains[i] }));
 }
 
 export const EQUALIZER_PRESETS: Record<string, EqBand[]> = {

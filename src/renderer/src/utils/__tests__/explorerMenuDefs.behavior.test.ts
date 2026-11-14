@@ -330,3 +330,29 @@ describe('properties', () => {
     expect(ctx.openProperties as any).not.toHaveBeenCalled();
   });
 });
+
+describe('defensive branches', () => {
+  it('handles separators, missing items and directory-only actions', () => {
+    const { defs, menuCtx } = menu.itemMenu(file('song.mp3', '.mp3'));
+
+    action(defs, 'explorer.openImage').action?.({ item: null } as never);
+    action(defs, 'explorer.openInTerminal').action?.({ item: null } as never);
+    expect(ctx.openImageViewer as any).not.toHaveBeenCalled();
+    expect(state.terminal).not.toHaveBeenCalled();
+
+    const terminal = action(defs, 'explorer.openInTerminal');
+    expect(terminal.when?.({ item: dir('Music') } as never)).toBe(true);
+
+    const del = action(defs, 'common.delete');
+    expect(del.disabledWhen?.({ item: null } as never)).toBe(false);
+
+    for (const def of defs.filter((entry) => entry.separator)) {
+      if (def.when) def.when(menuCtx);
+    }
+
+    const empty = menu.emptyMenu();
+    for (const def of empty.defs.filter((entry) => entry.separator)) {
+      def.when?.(empty.menuCtx);
+    }
+  });
+});

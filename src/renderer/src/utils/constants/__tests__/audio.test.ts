@@ -4,6 +4,7 @@ import {
   EQUALIZER_PRESETS,
   EQ_LIMITS,
   cloneEqBands,
+  eqBandColor,
   matchesEqPreset,
   snapFrequency
 } from '../audio';
@@ -36,6 +37,13 @@ describe('parametric EQ model', () => {
     const tweaked = cloneEqBands(EQUALIZER_PRESETS.flat);
     tweaked[0].gain = 3;
     expect(matchesEqPreset(tweaked, EQUALIZER_PRESETS.flat)).toBe(false);
+    expect(matchesEqPreset(EQUALIZER_PRESETS.flat.slice(1), EQUALIZER_PRESETS.flat)).toBe(false);
+  });
+
+  it('produces a stable per-band color', () => {
+    expect(eqBandColor(0)).toMatch(/^hsl\(0 72% 62%\)$/);
+    expect(eqBandColor(1)).toMatch(/^hsl\(\d+ 72% 62%\)$/);
+    expect(eqBandColor(1)).not.toBe(eqBandColor(0));
   });
 
   it('exposes wider, parametryczne limits', () => {

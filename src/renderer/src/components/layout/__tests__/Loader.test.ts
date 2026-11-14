@@ -146,6 +146,24 @@ describe('canvas setup', () => {
     expect(() => mountLoader()).not.toThrow();
     expect(state.raf).not.toHaveBeenCalled();
   });
+
+  it('falls back to a device pixel ratio of one', () => {
+    Object.defineProperty(window, 'devicePixelRatio', { configurable: true, value: 0 });
+    state.reducedMotion = true;
+    mountLoader();
+
+    const canvas = wrapper!.find('canvas').element as HTMLCanvasElement;
+    expect(canvas.width).toBe(96);
+    expect(canvas.height).toBe(96);
+  });
+
+  it('draws an occasional random burst', () => {
+    state.reducedMotion = true;
+    vi.spyOn(Math, 'random').mockReturnValue(0.01);
+    mountLoader();
+
+    expect(state.ctx.stroke).toHaveBeenCalled();
+  });
 });
 
 describe('animation lifecycle', () => {
