@@ -429,3 +429,190 @@ describe('crash recovery', () => {
     expect(core.webContents.reload).not.toHaveBeenCalled();
   });
 });
+
+describe('verbose mode and shutdown timers', () => {
+  it('logs verbose traffic and tears down the test shell', () => {
+    start({ testShell: true });
+    const core = coreWindow();
+    const shell = state.created[1];
+
+    core.webContents.emit('did-finish-load');
+    core.webContents.emit('console-message', {}, 'warn', 'hello');
+    listener('core:command')(eventFor(shell), { type: 'play' });
+    listener('core:command')(eventFor(shell), null);
+    listener('core:viz')({ sender: { id: 999 } }, [1]);
+    listener('core:tick')(eventFor(core), {
+      revision: 1,
+      currentTime: 5,
+      duration: 10,
+      isPlaying: true,
+      enginePlaying: true,
+      error: null
+    });
+    listener('core:tick')(eventFor(core), {
+      revision: 2,
+      currentTime: 6,
+      duration: 10,
+      isPlaying: true,
+      enginePlaying: true,
+      error: 'boom'
+    });
+    shell.emit('closed');
+
+    expect(state.logger.info).toHaveBeenCalledWith('core-service', 'core console [warn]: hello');
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'core-service',
+      expect.stringContaining('core: play')
+    );
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'core-service',
+      expect.stringContaining('tick rev=1')
+    );
+    expect(state.logger.info).toHaveBeenCalledWith('core-service', 'test shell closed');
+  });
+
+  it('clears a scheduled restart on shutdown', () => {
+    start();
+    const core = coreWindow();
+    core.webContents.emit('render-process-gone', {}, { reason: 'crash' });
+
+    stopCoreService();
+    vi.advanceTimersByTime(10_000);
+
+    expect(core.webContents.reload).not.toHaveBeenCalled();
+  });
+});
+
+describe('core spike edge paths', () => {
+  it('logs the full state and periodic ticks in verbose mode', () => {
+    start({ testShell: true });
+    const core = coreWindow();
+
+    listener('core:state')(eventFor(core), fullState());
+    for (let i = 0; i < 48; i += 1) {
+      listener('core:tick')(eventFor(core), {
+        revision: i,
+        currentTime: i,
+        duration: 100,
+        isPlaying: false,
+        enginePlaying: false,
+        error: undefined
+      });
+    }
+
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'core-service',
+      expect.stringContaining('full rev=1')
+    );
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'core-service',
+      expect.stringContaining('tick rev=47')
+    );
+  });
+
+  it('ignores console messages outside verbose mode', () => {
+    start();
+    coreWindow().webContents.emit('console-message', {}, 'log', 'quiet');
+
+    expect(state.logger.info).not.toHaveBeenCalledWith(
+      'core-service',
+      expect.stringContaining('core console')
+    );
+  });
+
+  it('reports a failed autoplay tone and skips duplicate restarts', async () => {
+    process.env.ONDA_CORE_SPIKE_AUTOPLAY = '1';
+    state.writeFile.mockRejectedValueOnce(new Error('disk full'));
+    start();
+    const core = coreWindow();
+
+    listener('core:ready')(eventFor(core));
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.logger.error).toHaveBeenCalledWith(
+      'core-service',
+      'autoplay tone failed',
+      expect.any(Error)
+    );
+
+    core.webContents.emit('render-process-gone', {}, { reason: 'crash' });
+    core.webContents.emit('render-process-gone', {}, { reason: 'crash' });
+    expect(
+      state.logger.warn.mock.calls.filter((call) => String(call[1]).includes('restarting Core in'))
+    ).toHaveLength(1);
+  });
+
+  it('does not restart a closed window after shutdown', () => {
+    start();
+    const core = coreWindow();
+    stopCoreService();
+
+    core.emit('closed');
+    vi.advanceTimersByTime(5000);
+
+    expect(core.webContents.reload).not.toHaveBeenCalled();
+  });
+});
+
+describe('core state restore variants', () => {
+  it('restores a minimal state and a single-repeat cycle', () => {
+    start();
+    const core = coreWindow();
+    listener('core:state')(
+      eventFor(core),
+      fullState({
+        currentTime: 0,
+        isMuted: false,
+        shuffle: false,
+        repeat: 'one',
+        pipActive: false,
+        isPlaying: false
+      })
+    );
+
+    core.webContents.emit('render-process-gone', {}, { reason: 'crash' });
+    vi.advanceTimersByTime(400);
+    listener('core:ready')(eventFor(core));
+
+    expect(coreCommands(core)).toEqual([
+      {
+        type: 'load',
+        track,
+        autoplay: false,
+        resume: false,
+        queue: [],
+        pendingQueue: []
+      },
+      { type: 'setVolume', value: 0.5 },
+      { type: 'cycleRepeat' }
+    ]);
+  });
+
+  it('logs a missing current track in verbose state updates', () => {
+    start({ testShell: true });
+    const core = coreWindow();
+
+    listener('core:state')(eventFor(core), fullState({ current: null }));
+
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'core-service',
+      expect.stringContaining('track=none')
+    );
+  });
+});
+
+describe('core state repeat mode', () => {
+  it('restores without repeat cycles for the default mode', () => {
+    start();
+    const core = coreWindow();
+    listener('core:state')(eventFor(core), fullState({ repeat: 'none' }));
+
+    core.webContents.emit('render-process-gone', {}, { reason: 'crash' });
+    vi.advanceTimersByTime(400);
+    listener('core:ready')(eventFor(core));
+
+    expect(
+      coreCommands(core).some((command) => (command as { type: string }).type === 'cycleRepeat')
+    ).toBe(false);
+  });
+});
