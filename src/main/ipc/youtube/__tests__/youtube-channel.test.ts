@@ -323,3 +323,119 @@ describe('searchYoutube', () => {
     });
   });
 });
+
+describe('youtube channel fallbacks', () => {
+  it('defaults paging and channel metadata for a bare playlist', async () => {
+    mocks.runYtDlp.mockResolvedValue(JSON.stringify({ entries: [{ id: 'a', title: 'A' }] }));
+
+    const result = await fetchChannelItems({ url: 'u', start: 0, end: Number.NaN });
+
+    expect(result).toMatchObject({
+      success: true,
+      channel: {
+        id: '',
+        title: '',
+        description: '',
+        videoCount: 1,
+        bannerUrl: undefined
+      }
+    });
+    expect(result.items).toHaveLength(1);
+    expect(mocks.resolveAvatar).toHaveBeenCalledWith('');
+  });
+
+  it('falls back to uploader fields and a picked thumbnail', async () => {
+    mocks.pickThumbnail.mockReturnValue('thumb.png');
+    mocks.runYtDlp.mockResolvedValue(
+      JSON.stringify({
+        uploader_id: 'uploader',
+        uploader: 'Uploader',
+        entries: [{ id: 'a', title: 'A' }]
+      })
+    );
+
+    const result = await fetchChannelItems({ url: 'u' });
+
+    expect(result.channel).toMatchObject({
+      id: 'uploader',
+      title: 'Uploader',
+      thumbnail: 'thumb.png',
+      bannerUrl: 'thumb.png'
+    });
+    expect(mocks.resolveAvatar).not.toHaveBeenCalled();
+  });
+
+  it('reports non-Error failures when loading a channel page', async () => {
+    mocks.runYtDlp.mockRejectedValue('');
+
+    await expect(fetchChannelItems({ url: 'u' })).resolves.toMatchObject({
+      success: false,
+      error: 'Could not load this channel',
+      code: 'code:',
+      items: []
+    });
+    expect(mocks.loggerWarn).toHaveBeenCalledWith('yt', 'channel failed', '');
+  });
+
+  it('loads shorts and bare channel payloads', async () => {
+    mocks.runYtDlp.mockResolvedValue(JSON.stringify({}));
+
+    const result = await fetchChannelAll({ url: 'u', tab: 'shorts' });
+
+    expect(mocks.runYtDlp).toHaveBeenCalledWith(
+      [
+        'https://youtube.com/@channel/shorts',
+        '--flat-playlist',
+        '--no-warnings',
+        '-J',
+        '--proxy',
+        'x'
+      ],
+      120000
+    );
+    expect(result).toMatchObject({
+      success: true,
+      channel: { id: '', title: '', videoCount: 0 },
+      items: []
+    });
+  });
+
+  it('reports non-Error channel-all failures', async () => {
+    mocks.runYtDlp.mockRejectedValue('boom');
+
+    await expect(fetchChannelAll({ url: 'u' })).resolves.toMatchObject({
+      success: false,
+      error: 'Could not load this channel',
+      code: 'code:'
+    });
+  });
+
+  it('handles bare and failing search payloads', async () => {
+    mocks.runYtDlp.mockResolvedValue(JSON.stringify({}));
+    await expect(searchYoutube('mix')).resolves.toMatchObject({
+      success: true,
+      items: []
+    });
+
+    mocks.runYtDlp.mockRejectedValue('plain');
+    await expect(searchYoutube('mix')).resolves.toMatchObject({
+      success: false,
+      error: 'YouTube search failed',
+      code: 'code:'
+    });
+  });
+});
+
+describe('youtube channel empty payloads', () => {
+  it('tolerates a playlist without entries', async () => {
+    mocks.runYtDlp.mockResolvedValue(JSON.stringify({}));
+
+    const result = await fetchChannelItems({ url: 'u' });
+
+    expect(result).toMatchObject({
+      success: true,
+      items: [],
+      channel: { videoCount: 0 }
+    });
+  });
+});

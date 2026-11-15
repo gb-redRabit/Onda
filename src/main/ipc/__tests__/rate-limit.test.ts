@@ -48,4 +48,18 @@ describe('createRateLimiter', () => {
     rl.reset();
     expect(rl.tryAcquire('b')).toBe(true);
   });
+
+  it('uses the system clock and keeps live entries during a sweep', () => {
+    const real = createRateLimiter({ maxCalls: 3, windowMs: 50 });
+    expect(real.tryAcquire('now')).toBe(true);
+
+    let clock = 0;
+    const rl = createRateLimiter({ maxCalls: 3, windowMs: 1000, now: () => clock });
+    rl.tryAcquire('a');
+    clock = 900;
+    rl.tryAcquire('a');
+    clock = 1000;
+    rl.tryAcquire('a');
+    expect(rl.tryAcquire('a')).toBe(true);
+  });
 });

@@ -74,7 +74,7 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
    */
   function playerSpectrum(bins: number): unknown {
     const analyser = useAudioPlayer().getAnalyserNode();
-    const count = Math.max(4, Math.min(64, Math.floor(bins) || 32));
+    const count = Math.max(4, Math.min(64, Math.floor(bins)));
     if (!analyser) return { bins: new Array<number>(count).fill(0), available: false };
     const spectrum = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(spectrum);
@@ -106,7 +106,7 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
 
   function librarySearch(query: string, limit: number): unknown {
     const library = useLibraryStore();
-    const cap = Math.max(1, Math.min(30, Math.floor(limit) || 30));
+    const cap = Math.max(1, Math.min(30, Math.floor(limit)));
     const results = query ? library.search(query) : library.tracks.slice(0, cap);
     return {
       tracks: results.slice(0, cap).map((t) => {

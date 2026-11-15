@@ -39,6 +39,10 @@ describe('findSiblingSubtitleFiles', () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it('returns an empty list when the media folder does not exist', async () => {
+    await expect(findSiblingSubtitleFiles('/missing/onda/dir/Song.mp3')).resolves.toEqual([]);
+  });
 });
 
 describe('moveSubtitlesToFolder', () => {

@@ -478,3 +478,70 @@ describe('unknown operations', () => {
     await expect(setup().op('nope')).rejects.toThrow('unknown-op');
   });
 });
+
+describe('missing arguments and defaults', () => {
+  it('handles absent names, payloads and keys', async () => {
+    const api = setup();
+
+    await expect(api.dispatch('query', [], 'plugin-1')).rejects.toThrow('unknown-query');
+    await expect(api.dispatch('action', [], 'plugin-1')).rejects.toThrow('unknown-action');
+    await expect(api.dispatch('action', ['notify'], 'plugin-1')).rejects.toThrow(
+      'notify:missing-title'
+    );
+    await expect(api.dispatch('ui:set', [], 'plugin-1')).rejects.toThrow('unknown-visual-key');
+    await expect(api.dispatch('ui:set', ['visual'], 'plugin-1')).rejects.toThrow(
+      'unknown-visual-element'
+    );
+    await expect(api.dispatch('ui:slot', [], 'plugin-1')).rejects.toThrow('ui-slot:unknown-slot');
+
+    await api.op('storage:get');
+    expect(state.storageGet).toHaveBeenLastCalledWith('plugin-1', '');
+    await api.op('storage:set', undefined, 1);
+    expect(state.storageSet).toHaveBeenLastCalledWith('plugin-1', '', 1);
+    await api.op('storage:remove');
+    expect(state.storageRemove).toHaveBeenLastCalledWith('plugin-1', '');
+    await expect(api.op('settings:get')).resolves.toBeNull();
+    await expect(api.op('settings:set')).rejects.toThrow('setting-unknown');
+  });
+
+  it('uses default spectrum bins and search limits', async () => {
+    const api = setup();
+
+    const spectrum = (await api.query('player:spectrum')) as { bins: number[] };
+    expect(spectrum.bins).toHaveLength(32);
+
+    const search = (await api.query('library:search')) as { tracks: unknown[] };
+    expect(state.library.search).not.toHaveBeenCalled();
+    expect(search.tracks).toHaveLength(2);
+
+    const capped = (await api.query('library:search', { query: '', limit: 0 })) as {
+      tracks: unknown[];
+    };
+    expect(capped.tracks).toHaveLength(2);
+  });
+
+  it('defaults fetch options and reports anonymous failures', async () => {
+    state.pluginsFetch.mockResolvedValueOnce({ success: false });
+    const api = setup();
+
+    await expect(api.op('fetch')).rejects.toThrow('fetch-failed');
+    expect(state.pluginsFetch).toHaveBeenCalledWith('plugin-1', '', {
+      method: undefined,
+      headers: undefined,
+      body: undefined,
+      responseType: 'text',
+      timeoutMs: undefined
+    });
+  });
+
+  it('rejects non-array enqueues and denied favorites', async () => {
+    const api = setup();
+
+    await expect(api.action('player:enqueue', { tracks: 'nope' })).resolves.toBe(0);
+
+    state.manifests['plugin-1'] = manifest({ permissions: { player: false } });
+    await expect(api.action('track:toggleFavorite', { path: 'D:/a' })).rejects.toThrow(
+      'permission-denied:player'
+    );
+  });
+});

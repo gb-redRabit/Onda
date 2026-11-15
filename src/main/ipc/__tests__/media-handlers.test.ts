@@ -613,3 +613,145 @@ describe('coverCache:clear', () => {
     expect(await handler('coverCache:clear')({})).toEqual({ success: false, error: 'locked' });
   });
 });
+
+describe('media handler edge paths', () => {
+  it('embeds covers from files with fallback mime and overrides', async () => {
+    const audio = tempFile('cover-edge.m4a');
+    const gif = tempFile('cover-edge.gif');
+    writeFileSync(gif, 'gif');
+
+    await writeCoverToAudioFile(audio, gif);
+    expect(mocks.embedCover).toHaveBeenLastCalledWith(audio, {
+      buffer: Buffer.from('gif'),
+      mime: 'image/jpeg'
+    });
+
+    await writeCoverToAudioFile(audio, [1, 2], 'image/webp');
+    expect(mocks.embedCover).toHaveBeenLastCalledWith(audio, {
+      buffer: Buffer.from([1, 2]),
+      mime: 'image/webp'
+    });
+
+    mocks.coverEmbedSupported.mockReturnValueOnce(false);
+    const unsupported = await writeCoverToAudioFile(tempFile('cover-edge'), [1]);
+    expect(unsupported.error).toContain('unknown');
+  });
+
+  it('ignores embedded covers without a buffer', async () => {
+    const file = tempFile('read-edge.mp3');
+    mocks.readable.add(file);
+    mocks.id3Read.mockResolvedValueOnce({ image: {} });
+
+    expect(await handler('media:readCover')({}, file)).toBeNull();
+  });
+
+  it('logs non-ENOENT cover failures', async () => {
+    const file = tempFile('read-edge2.mp3');
+    mocks.readable.add(file);
+    mocks.id3Read.mockRejectedValueOnce(new Error('corrupt'));
+
+    expect(await handler('media:readCover')({}, file)).toBeNull();
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      'media',
+      expect.stringContaining('readCover failed'),
+      expect.any(Error)
+    );
+  });
+
+  it('rejects absolute but unreadable media paths', async () => {
+    const file = tempFile('unreadable.mp3');
+
+    expect(await handler('media:checkAudioCodec')({}, file)).toBeNull();
+    expect(await handler('media:transcodeAudioChunk')({}, file, 0, 1)).toBeNull();
+    expect(await handler('media:transcodeAudio')({}, file)).toBeNull();
+    expect(await handler('media:transcodeVideo')({}, file)).toBeNull();
+    expect(await handler('media:getDuration')({}, file)).toBe(0);
+    expect(await handler('media:getWaveform')({}, file)).toEqual([]);
+  });
+
+  it('falls back through ffprobe when metadata parsing fails', async () => {
+    const file = tempFile('duration-edge.mp3');
+    mocks.parseFile.mockRejectedValueOnce(new Error('bad metadata'));
+    mocks.resolveBin.mockResolvedValueOnce('');
+    mocks.runCommand.mockResolvedValueOnce('not-a-number');
+
+    await expect(getDuration(file)).resolves.toBe(0);
+    expect(mocks.runCommand).toHaveBeenCalledWith(
+      'ffprobe',
+      expect.any(Array),
+      expect.objectContaining({ timeout: 10000 })
+    );
+
+    mocks.parseFile.mockRejectedValueOnce(new Error('bad metadata'));
+    mocks.runCommand.mockRejectedValueOnce(new Error('no ffprobe'));
+    await expect(getDuration(file)).resolves.toBe(0);
+  });
+
+  it('handles a missing file during the duration stat', async () => {
+    const file = tempFile('duration-gone.mp3');
+    rmSync(file);
+    mocks.parseFile.mockResolvedValueOnce({} as never);
+
+    await expect(getDuration(file)).resolves.toBe(0);
+  });
+});
+
+describe('media handler remaining branches', () => {
+  it('keeps the extension when the new name already has it', async () => {
+    const file = tempFile('rename-keep.mp3', 'audio');
+    const result = await handler('media:renameFile')({}, file, 'same.mp3');
+
+    expect(result).toEqual({ success: true, newPath: join(root, 'same.mp3') });
+  });
+
+  it('reports cache-map write failures', async () => {
+    const audio = tempFile('cover-map.mp3');
+    mocks.readCoverMap.mockResolvedValueOnce({
+      [audio]: { cacheFile: 'old.jpg', mtime: 1 }
+    });
+    mocks.writeCoverMap.mockRejectedValueOnce(new Error('map locked'));
+    const result = await writeCoverToAudioFile(audio, [1]);
+
+    expect(result).toEqual({ success: false, error: 'map locked' });
+  });
+
+  it('defaults the embedded cover mime', async () => {
+    const file = tempFile('read-mime.mp3');
+    mocks.readable.add(file);
+    mocks.id3Read.mockResolvedValueOnce({
+      image: { imageBuffer: Buffer.from([7]) }
+    });
+
+    expect(await handler('media:readCover')({}, file)).toEqual({
+      mime: 'image/jpeg',
+      data: [7]
+    });
+  });
+
+  it('falls back to the plain ffprobe binary for codec checks', async () => {
+    const file = tempFile('codec-fallback.mp3');
+    mocks.readable.add(file);
+    mocks.resolveBin.mockResolvedValueOnce('');
+    mocks.runCommand.mockResolvedValueOnce('aac\n');
+
+    await expect(handler('media:checkAudioCodec')({}, file)).resolves.toEqual({
+      codec: 'aac',
+      supported: true
+    });
+    expect(mocks.runCommand).toHaveBeenCalledWith('ffprobe', expect.any(Array), expect.any(Object));
+  });
+
+  it('rejects unsafe chunk and video transcode paths', async () => {
+    expect(await handler('media:transcodeAudioChunk')({}, 'relative.mp3', 0, 1)).toBeNull();
+    expect(await handler('media:transcodeVideo')({}, 'relative.mp4')).toBeNull();
+  });
+
+  it('handles a missing file during ffprobe duration probing', async () => {
+    const file = tempFile('duration-probe-gone.mp3');
+    rmSync(file);
+    mocks.parseFile.mockRejectedValueOnce(new Error('bad'));
+    mocks.runCommand.mockResolvedValueOnce('1.5');
+
+    await expect(getDuration(file)).resolves.toBe(1.5);
+  });
+});

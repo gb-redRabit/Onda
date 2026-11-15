@@ -41,9 +41,7 @@ async function loadChannelPlaylist(target: string): Promise<YtDlpEntry> {
   const parsed = JSON.parse(stdout) as YtDlpEntry;
   // Zwiąż rozmiar cache (usuwaj najstarsze wpisy przy przekroczeniu limitu).
   while (channelPlaylistCache.size >= CHANNEL_PLAYLIST_MAX) {
-    const oldest = channelPlaylistCache.keys().next().value;
-    if (oldest === undefined) break;
-    channelPlaylistCache.delete(oldest);
+    channelPlaylistCache.delete(channelPlaylistCache.keys().next().value as string);
   }
   channelPlaylistCache.set(target, { at: now, parsed });
   return parsed;
