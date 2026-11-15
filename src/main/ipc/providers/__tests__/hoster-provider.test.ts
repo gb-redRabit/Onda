@@ -137,6 +137,33 @@ describe('hoster providers', () => {
     expect(dropboxProvider.match('https://example.com/x')).toBe(false);
   });
 
+  it('parses matching links and rejects foreign ones', () => {
+    expect(dropboxProvider.parse('https://www.dropbox.com/s/x/y')).toEqual({
+      provider: 'dropbox',
+      shareId: 'https://www.dropbox.com/s/x/y'
+    });
+    expect(dropboxProvider.parse('https://example.com/x')).toBeNull();
+  });
+
+  it('falls back to the first entry and errors on empty listings', async () => {
+    runMock.mockResolvedValueOnce(
+      JSON.stringify({ entries: [{ id: 'a', title: 'A', url: 'https://ia/a.mp3' }] })
+    );
+    const out = await archiveProvider.resolveFileUrl(
+      { provider: 'archive', shareId: 'https://archive.org/details/x' },
+      'missing'
+    );
+    expect(out.url).toBe('https://ia/a.mp3');
+
+    runMock.mockResolvedValueOnce(JSON.stringify({ entries: [] }));
+    await expect(
+      archiveProvider.resolveFileUrl(
+        { provider: 'archive', shareId: 'https://archive.org/details/empty' },
+        'a'
+      )
+    ).rejects.toThrow(/Nie znaleziono/);
+  });
+
   it('passes "--" separator before the URL and rejects CLI flags or mismatched domains', async () => {
     runMock.mockResolvedValueOnce(
       JSON.stringify({ id: 'f1', title: 'clip.mp4', url: 'https://cdn/clip.mp4' })

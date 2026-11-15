@@ -32,4 +32,47 @@ describe('parseSrt', () => {
     expect(parseSrt('not a subtitle file')).toEqual({ kind: 'none', lines: [] });
     expect(parseSrt('')).toEqual({ kind: 'none', lines: [] });
   });
+
+  it('skips malformed timings and empty cue text', () => {
+    const result = parseSrt(
+      [
+        '1',
+        '00:00 --> 00:01',
+        'No timing',
+        '',
+        '2',
+        '00:00:02,000 --> 00:00:03,000',
+        '<i></i>',
+        '',
+        '3',
+        '00:00:04,000 --> 00:00:05,000',
+        '&nbsp;'
+      ].join('\n')
+    );
+
+    expect(result).toEqual({ kind: 'none', lines: [] });
+  });
+
+  it('drops duplicate cues after sorting', () => {
+    const result = parseSrt(
+      [
+        '1',
+        '00:00:02,000 --> 00:00:03,000',
+        'Same',
+        '',
+        '2',
+        '00:00:01,000 --> 00:00:02,000',
+        'First',
+        '',
+        '3',
+        '00:00:02,000 --> 00:00:03,000',
+        'Same'
+      ].join('\n')
+    );
+
+    expect(result.lines).toEqual([
+      { timeMs: 1000, text: 'First' },
+      { timeMs: 2000, text: 'Same' }
+    ]);
+  });
 });

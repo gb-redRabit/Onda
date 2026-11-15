@@ -50,7 +50,19 @@ describe('startBootWatchdog', () => {
     });
 
     stop();
+    stop();
     vi.advanceTimersByTime(2000);
     expect(onTimeout).not.toHaveBeenCalled();
+  });
+
+  it('uses the default interval and deadline', () => {
+    vi.useFakeTimers();
+    const onTimeout = vi.fn();
+    startBootWatchdog({ isRendererReady: () => false, onTimeout });
+
+    vi.advanceTimersByTime(5000);
+    expect(onTimeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(25000);
+    expect(onTimeout).toHaveBeenCalledTimes(1);
   });
 });

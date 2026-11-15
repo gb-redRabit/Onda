@@ -99,4 +99,11 @@ describe('drill-down context for Docchi (list → page table → episode)', () =
     expect(url).toBe('https://api.docchi.pl/v1/episodes/find/nanatsu-no-maken-ga-shihai-suru/3');
     expect(url).not.toContain('{');
   });
+
+  it('handles missing extra data and page context', () => {
+    const bare: SourceItem = { id: 'r', title: 'Row', type: 'file' };
+
+    expect(itemPassContext(bare, listEndpoint)).toEqual({});
+    expect(tableRowPassContext(undefined, bare, pageEndpoint, table)).toEqual({});
+  });
 });
