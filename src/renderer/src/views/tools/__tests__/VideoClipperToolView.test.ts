@@ -536,6 +536,20 @@ describe('single export', () => {
     await wrapper!.get('[data-testid="clip-export"]').trigger('click');
     await flush();
     expect(wrapper!.text()).toContain('bridge crashed');
+
+    state.clipVideo.mockResolvedValueOnce({ success: true });
+    await wrapper!.get('[data-testid="clip-export"]').trigger('click');
+    await flush();
+    expect(wrapper!.get('[data-testid="clip-job"]').attributes('data-status')).toBe('done');
+    expect(state.sendToMain).toHaveBeenCalledWith('clip-complete', {
+      name: 'a.mp4',
+      outputPath: undefined
+    });
+
+    state.clipVideo.mockRejectedValueOnce('plain crash');
+    await wrapper!.get('[data-testid="clip-export"]').trigger('click');
+    await flush();
+    expect(wrapper!.text()).toContain('plain crash');
   });
 
   it('cancels a running export', async () => {
@@ -617,6 +631,19 @@ describe('list export', () => {
     await wrapper!.get('[data-testid="clip-export-list"]').trigger('click');
     await flush();
     expect(wrapper!.text()).toContain('list crash');
+
+    state.clipVideo.mockResolvedValue({ success: true });
+    await wrapper!.get('[data-testid="clip-export-list"]').trigger('click');
+    await flush();
+    expect(state.sendToMain).toHaveBeenCalledWith('clip-complete', {
+      name: 'tools.clipListComplete',
+      outputPath: ''
+    });
+
+    state.clipVideo.mockRejectedValueOnce('plain list crash');
+    await wrapper!.get('[data-testid="clip-export-list"]').trigger('click');
+    await flush();
+    expect(wrapper!.text()).toContain('plain list crash');
   });
 });
 
@@ -790,5 +817,152 @@ describe('thumbnails and cleanup', () => {
     expect(state.thumbs.cancelThumbnails).toHaveBeenCalled();
     expect(state.thumbs.cancelFrameStrip).toHaveBeenCalled();
     expect(video.pause).toHaveBeenCalled();
+  });
+});
+
+describe('edge interactions', () => {
+  it('keeps the loaded video while a list export is running', async () => {
+    let resolveClip!: (value: unknown) => void;
+    state.clipVideo.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveClip = resolve;
+      })
+    );
+    await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-add"]').trigger('click');
+    await wrapper!.get('[data-testid="clip-export-list"]').trigger('click');
+    await flush();
+
+    const calls = state.clipVideo.mock.calls.length;
+    state.invoke.mockClear();
+
+    await wrapper!.get('[data-testid="clip-view"]').trigger('drop', { dataTransfer: {} });
+    await wrapper!.get('[data-testid="clip-add"]').trigger('click');
+    await wrapper!.get('[aria-label="tools.remove"]').trigger('click');
+    await wrapper!.get('[data-testid="clip-export-list"]').trigger('click');
+    wrapper!
+      .get('[data-testid="clip-marker-start"]')
+      .element.dispatchEvent(
+        new PointerEvent('pointerdown', { clientX: 64, clientY: 20, bubbles: true })
+      );
+
+    expect(state.clipVideo.mock.calls.length).toBe(calls);
+    expect(wrapper!.findAll('[data-testid="clip-list"]')).toHaveLength(1);
+
+    resolveClip({ canceled: true });
+    await flush();
+  });
+
+  it('ignores partial progress payloads', async () => {
+    let resolveClip!: (value: unknown) => void;
+    state.clipVideo.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveClip = resolve;
+      })
+    );
+    await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-export"]').trigger('click');
+    await flush();
+    const jobId = state.clipVideo.mock.calls[0][0].jobId;
+
+    state.handlers['tools:progress']({ jobId, percent: -1, speed: '' });
+    await flush();
+    expect(wrapper!.text()).not.toContain('9x');
+
+    resolveClip({ success: false, error: 'failed' });
+    await flush();
+  });
+
+  it('runs fits and drags before metadata is available', async () => {
+    state.context.value = { params: { path: 'C:\\videos\\a.mp4' } };
+    mountView();
+    await flush();
+    stubTimeline();
+
+    await wrapper!.get('[data-testid="clip-fit-second"]').trigger('click');
+    await wrapper!.get('[data-testid="clip-fit-selection"]').trigger('click');
+    await wrapper!.get('[data-testid="clip-export"]').trigger('click');
+    wrapper!
+      .get('[data-testid="clip-timeline"]')
+      .element.dispatchEvent(
+        new PointerEvent('pointerdown', { clientX: 10, clientY: 10, bubbles: true })
+      );
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 20, clientY: 10 }));
+    window.dispatchEvent(new PointerEvent('pointerup'));
+    await flush();
+
+    expect(state.clipVideo).not.toHaveBeenCalled();
+  });
+
+  it('clamps zoom at both limits and handles wheel directions', async () => {
+    await mountLoaded(120);
+    const zoom = () => wrapper!.get('[data-testid="clip-zoom-label"]').text();
+
+    for (let i = 0; i < 16; i += 1) {
+      await wrapper!.get('[data-testid="clip-zoom-in"]').trigger('click');
+    }
+    expect(zoom()).toBe('256×');
+
+    await wrapper!.get('[data-testid="clip-zoom-in"]').trigger('click');
+    expect(zoom()).toBe('256×');
+
+    const scroll = wrapper!.get('[data-testid="clip-timeline-scroll"]');
+    scroll.element.dispatchEvent(
+      new WheelEvent('wheel', { ctrlKey: true, deltaY: -100, cancelable: true })
+    );
+    await flush();
+    expect(zoom()).toBe('256×');
+
+    scroll.element.dispatchEvent(
+      new WheelEvent('wheel', { ctrlKey: true, deltaY: 100, cancelable: true })
+    );
+    await flush();
+    expect(zoom()).not.toBe('256×');
+
+    scroll.element.scrollLeft = 900;
+    await scroll.trigger('scroll');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '+', cancelable: true }));
+    await flush();
+    expect(zoom()).not.toBe('1×');
+  });
+
+  it('drags the end marker and ignores stray pointer moves', async () => {
+    await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-snap"]').trigger('click');
+
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 10 }));
+
+    const marker = wrapper!.get('[data-testid="clip-marker-end"]').element;
+    marker.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 800, clientY: 20, bubbles: true })
+    );
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 600, clientY: 20 }));
+    window.dispatchEvent(new PointerEvent('pointerup'));
+    await flush();
+
+    expect(wrapper!.get('[data-testid="clip-end-label"]').text()).not.toBe(formatTimecode(120, 30));
+  });
+
+  it('ignores resize events before the timeline exists', () => {
+    mountView();
+    window.dispatchEvent(new Event('resize'));
+    expect(wrapper!.find('[data-testid="empty"]').exists()).toBe(true);
+  });
+
+  it('ignores media shortcuts without a loaded video', async () => {
+    mountView();
+    await flush();
+    const key = (init: KeyboardEventInit) =>
+      document.dispatchEvent(new KeyboardEvent('keydown', { cancelable: true, ...init }));
+
+    key({ code: 'Space', key: ' ' });
+    key({ key: 'ArrowRight' });
+    key({ key: '+' });
+    key({ key: '-' });
+    key({ key: '[' });
+    key({ key: ']' });
+    await flush();
+
+    expect(wrapper!.find('[data-testid="empty"]').exists()).toBe(true);
   });
 });
