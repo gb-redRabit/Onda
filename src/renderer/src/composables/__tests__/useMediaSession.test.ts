@@ -383,3 +383,76 @@ describe('position and lifecycle', () => {
     expect(state.session.playbackState).toBe('none');
   });
 });
+
+describe('media session edge branches', () => {
+  it('seeks without media elements', async () => {
+    state.audioElement = null;
+    vi.spyOn(document, 'querySelector').mockReturnValue(null);
+    const controls = useMediaSession();
+    await flush();
+
+    state.handlers.get('seekto')!({ seekTime: 30 });
+    expect(state.player.seek).toHaveBeenCalledWith(30);
+    controls.dispose();
+  });
+
+  it('falls back to the file name and empty artist', async () => {
+    state.player = makePlayer(track({ name: 'Raw name', metadata: undefined }));
+    const controls = useMediaSession();
+    await flush();
+
+    expect(state.session.metadata).toMatchObject({ title: 'Raw name', artist: '', album: '' });
+    controls.dispose();
+  });
+
+  it('ignores non-image covers', async () => {
+    state.player = makePlayer(track({ thumbnail: undefined }));
+    state.getCover.mockResolvedValue({ type: 'video', data: 'x' });
+    const controls = useMediaSession();
+    await flush();
+
+    expect(state.session.metadata?.artwork).toBeUndefined();
+    controls.dispose();
+  });
+
+  it('starts paused and re-applies the same active state', async () => {
+    let shellListener: ((value: unknown) => void) | null = null;
+    state.on.mockImplementation((_channel: string, listener: (value: unknown) => void) => {
+      shellListener = listener;
+      return vi.fn();
+    });
+    state.player = makePlayer(track());
+    state.player.isPlaying = false;
+    state.duration.value = 40;
+    state.currentTime.value = 5;
+    const controls = useMediaSession();
+    await flush();
+
+    expect(state.session.playbackState).toBe('paused');
+    state.session.setPositionState.mockClear();
+    shellListener!(true);
+    expect(state.session.setPositionState).toHaveBeenCalledWith({
+      duration: 40,
+      position: 5,
+      playbackRate: 1
+    });
+
+    controls.dispose();
+  });
+
+  it('ignores watcher updates after disposal', async () => {
+    const controls = useMediaSession();
+    await flush();
+    controls.dispose();
+    state.session.setPositionState.mockClear();
+    state.session.metadata = null;
+
+    state.currentTime.value = 12;
+    state.player.isPlaying = false;
+    state.player.currentTrack = track({ path: '/music/c.mp3' });
+    await flush();
+
+    expect(state.session.metadata).toBeNull();
+    expect(state.session.setPositionState).not.toHaveBeenCalled();
+  });
+});

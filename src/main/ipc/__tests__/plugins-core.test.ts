@@ -546,3 +546,143 @@ describe('plugin permission guards (plan 7.1)', () => {
     expect(settingWriteAllowed({}, undefined, 'shape')).toBe(false);
   });
 });
+
+describe('plugin sanitizer edge cases', () => {
+  it('drops malformed layout elements and sorts equal element keys', () => {
+    const { manifest } = parseManifest(
+      {
+        name: 'Visual',
+        version: '1',
+        entry: 'a.js',
+        permissions: { visual: true },
+        layoutElements: [
+          null,
+          'text',
+          [],
+          { element: 'cover', variant: 'bad variant' },
+          { element: '', variant: 'ok' },
+          { element: 'cover', variant: 'flip' },
+          { element: 'cover', variant: 'flip' }
+        ]
+      },
+      'visual'
+    );
+    expect(manifest?.layoutElements).toEqual([{ element: 'cover', variant: 'flip' }]);
+
+    const empty = parseManifest(
+      {
+        name: 'Visual',
+        version: '1',
+        entry: 'a.js',
+        permissions: { visual: true },
+        layoutElements: [{ element: '', variant: '' }]
+      },
+      'visual'
+    );
+    expect(empty.manifest?.layoutElements).toBeUndefined();
+
+    const hash = pluginCapabilityHash({
+      permissions: {},
+      hooks: [],
+      layoutElements: [
+        { element: 'cover', variant: 'b', label: 'B' },
+        { element: 'cover', variant: 'a', label: 'A' }
+      ],
+      uiSlots: []
+    });
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('drops unknown UI slots', () => {
+    const { manifest } = parseManifest(
+      {
+        name: 'Visual',
+        version: '1',
+        entry: 'a.js',
+        permissions: { visual: true },
+        uiSlots: ['bogus-slot']
+      },
+      'visual'
+    );
+    expect(manifest?.uiSlots).toBeUndefined();
+  });
+
+  it('drops malformed settings and inverted ranges', () => {
+    const { manifest } = parseManifest(
+      {
+        name: 'Cfg',
+        version: '1',
+        entry: 'a.js',
+        settings: [
+          null,
+          'text',
+          [],
+          { key: 'range', label: 'R', type: 'number', min: 10, max: 1 },
+          { key: 'ok', label: 'O', type: 'text' }
+        ]
+      },
+      'cfg'
+    );
+    expect(manifest?.settings?.map((field) => field.key)).toEqual(['ok']);
+  });
+});
+
+describe('state and storage file edge cases', () => {
+  it('ignores non-object state payloads and invalid plugin ids', async () => {
+    const file = join(dir, 'state-shape.json');
+    await writeFile(file, '[]');
+    expect(await loadStateFile(file)).toEqual({});
+
+    await writeFile(file, JSON.stringify({ 'bad id': { enabled: true } }));
+    expect(await loadStateFile(file)).toEqual({});
+  });
+
+  it('returns empty storage for unreadable files', async () => {
+    expect(await readStorageFile(join(dir, 'missing.json'))).toEqual({});
+  });
+
+  it('fails when the target cannot be replaced', async () => {
+    const { mkdir } = await import('fs/promises');
+    const target = join(dir, 'storage-dir');
+    await mkdir(target);
+
+    await expect(writeStorageFile(target, { a: 1 })).rejects.toBeTruthy();
+  });
+});
+
+describe('plugin sanitizer fallbacks', () => {
+  it('ignores malformed network permissions', () => {
+    expect(sanitizePermissions({ network: {} })).toEqual({});
+    expect(sanitizePermissions({ network: { allow: 'x' } })).toEqual({});
+  });
+
+  it('defaults setting labels to the key and drops empty schemas', () => {
+    const labelled = parseManifest(
+      {
+        name: 'Cfg',
+        version: '1',
+        entry: 'a.js',
+        settings: [{ key: 'nolabel', type: 'text' }]
+      },
+      'cfg'
+    );
+    expect(labelled.manifest?.settings?.[0]).toMatchObject({ key: 'nolabel', label: 'nolabel' });
+
+    const empty = parseManifest(
+      { name: 'Cfg', version: '1', entry: 'a.js', settings: [null] },
+      'cfg'
+    );
+    expect(empty.manifest?.settings).toBeUndefined();
+  });
+
+  it('hashes manifests without optional collections', () => {
+    const hash = pluginCapabilityHash({ hooks: [], uiSlots: [] } as never);
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('normalizes scalar state values to empty objects', async () => {
+    const file = join(dir, 'state-scalar.json');
+    await writeFile(file, JSON.stringify({ 'a.b': 5 }));
+    expect(await loadStateFile(file)).toEqual({ 'a.b': { enabled: false } });
+  });
+});

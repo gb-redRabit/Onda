@@ -510,3 +510,96 @@ describe('enqueue', () => {
     expect(state.warn).toHaveBeenCalledWith('sources', 'sources:enqueue failed', expect.any(Error));
   });
 });
+
+describe('sources handlers edge branches', () => {
+  it('normalises non-string ids when clearing marks', async () => {
+    const h = await load();
+    await h['sources:unmarkDownloaded']({}, 7, ['a']);
+    expect(state.removeDownloadedItems).toHaveBeenCalledWith(
+      'C:/userData/sources-downloaded.json',
+      '',
+      ['a']
+    );
+  });
+
+  it('reports non-Error export and import failures', async () => {
+    const h = await load();
+    state.writeFile.mockRejectedValueOnce('plain write');
+    await expect(h['sources:export']({ sender: {} })).resolves.toEqual({
+      success: false,
+      error: 'plain write'
+    });
+
+    state.readFile.mockRejectedValueOnce('plain read');
+    await expect(h['sources:import']({ sender: {} })).resolves.toEqual({
+      success: false,
+      error: 'plain read'
+    });
+  });
+
+  it('imports through a windowless dialog and rejects empty selections', async () => {
+    const h = await load();
+    state.fromWebContents.mockReturnValue(null);
+    await h['sources:import']({ sender: {} });
+    expect(state.showOpenDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Importuj źródła' })
+    );
+
+    state.showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [] });
+    await expect(h['sources:import']({ sender: {} })).resolves.toEqual({
+      success: false,
+      canceled: true
+    });
+  });
+
+  it('falls back to the system downloads folder for empty settings', async () => {
+    state.getStore.mockResolvedValueOnce({ get: () => ({}) });
+    const h = await load();
+    expect(await h['sources:downloadDir']()).toBe('C:/downloads/api');
+  });
+
+  it('rejects missing sources for fetch and table rows', async () => {
+    const h = await load();
+    state.sanitizeSource.mockReturnValueOnce(null);
+    expect(await h['sources:fetch']({}, {}, undefined)).toEqual({
+      items: [],
+      hasMore: false,
+      error: 'Invalid source'
+    });
+
+    state.sanitizeSource.mockReturnValueOnce(null);
+    expect(await h['sources:tableRows']({}, {}, undefined, {})).toEqual([]);
+  });
+
+  it('ignores invalid base urls and non-string source ids when enqueueing', async () => {
+    const h = await load();
+    state.loadSources.mockResolvedValueOnce([
+      source({ id: 's1', baseUrl: 'not a url' }),
+      source({ id: 's2', baseUrl: '' })
+    ]);
+    const job = {
+      url: 'https://cdn.example.com/v.mp4',
+      title: 'V',
+      source: { sourceId: 42, mode: 'ytdlp', apiKeyId: 'k', headerName: 'X-Key' }
+    } as any;
+
+    await h['sources:enqueue']({}, [job]);
+
+    expect(state.resolveSourceHeaders).not.toHaveBeenCalled();
+    expect(job.source.mode).toBe('ytdlp');
+  });
+
+  it('keeps the original url when scraping finds nothing', async () => {
+    const h = await load();
+    const job = {
+      url: 'https://cdn.example.com/embed',
+      title: 'V',
+      source: { sourceId: 's1', mode: 'ytdlp' }
+    } as any;
+    state.scrapePlayerUrl.mockResolvedValueOnce(null);
+
+    await h['sources:enqueue']({}, [job]);
+    expect(job.url).toBe('https://cdn.example.com/embed');
+    expect(job.source.mode).toBe('ytdlp');
+  });
+});

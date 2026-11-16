@@ -416,3 +416,97 @@ describe('import', () => {
     expect(state.logger.warn).toHaveBeenCalled();
   });
 });
+
+describe('settings handler edge cases', () => {
+  it('treats a missing store payload as empty', async () => {
+    state.store.store = undefined as never;
+    state.stored = undefined as never;
+
+    await expect(handler('settings:get')({})).resolves.toBeDefined();
+    expect(state.sanitize).toHaveBeenCalledWith({});
+  });
+
+  it('rethrows unexpected encryption failures', async () => {
+    state.data = { general: {}, apiKeys: { a: 'x' } };
+    state.payload = { general: {}, apiKeys: { a: 'x' } };
+    state.encryptApiKeys.mockImplementationOnce(() => {
+      throw new Error('crypto down');
+    });
+
+    await expect(handler('settings:set')(sender(), state.data)).resolves.toBe(false);
+    expect(state.logger.warn).toHaveBeenCalledWith(
+      'settings',
+      'settings:set failed',
+      expect.any(Error)
+    );
+  });
+
+  it('merges API keys without stored keys', async () => {
+    state.data = { apiKeys: { a: 'new' } };
+    state.payload = { apiKeys: { a: 'new' } };
+    state.storedSanitized = {};
+
+    await handler('settings:set')(sender(), state.data);
+
+    expect(state.decryptApiKeys).not.toHaveBeenCalled();
+    expect(state.mergeApiKeys).toHaveBeenCalledWith({ a: 'new' }, undefined);
+  });
+
+  it('reports non-Error export failures', async () => {
+    state.saveDialog.mockResolvedValue({ canceled: false, filePath: '/tmp/x.json' });
+    state.writeFile.mockRejectedValue('plain write');
+
+    await expect(handler('settings:export')(sender())).resolves.toEqual({
+      success: false,
+      error: 'plain write'
+    });
+  });
+
+  it('reports non-Error import failures', async () => {
+    state.openDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/import.json'] });
+    state.readFile.mockRejectedValue('plain read');
+
+    await expect(handler('settings:import')(sender())).resolves.toEqual({
+      success: false,
+      error: 'plain read'
+    });
+  });
+
+  it('skips side effects for missing import sections', async () => {
+    state.openDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/import.json'] });
+    state.readFile.mockResolvedValue('{}');
+    state.data = { appearance: { locale: 'pl' } };
+    state.payload = { appearance: { locale: 'pl' } };
+
+    await handler('settings:import')(sender());
+
+    expect(state.setCloseToTray).not.toHaveBeenCalled();
+    expect(state.applyCoverCache).not.toHaveBeenCalled();
+    expect(state.configureAutoCheck).not.toHaveBeenCalled();
+    expect(state.syncSubscriptions).not.toHaveBeenCalled();
+    expect(state.syncLinkSubs).not.toHaveBeenCalled();
+  });
+});
+
+describe('settings handler empty store', () => {
+  it('saves when the store has no payload yet', async () => {
+    state.store.store = undefined as never;
+    state.data = { general: {} };
+    state.payload = { general: {} };
+
+    await expect(handler('settings:set')(sender(), state.data)).resolves.toBe(true);
+    expect(state.store.store).toMatchObject({ general: {} });
+    expect(state.setMainLocale).not.toHaveBeenCalled();
+  });
+
+  it('exports settings from an empty store', async () => {
+    state.store.store = undefined as never;
+    state.stored = undefined as never;
+    state.saveDialog.mockResolvedValue({ canceled: false, filePath: '/tmp/x.json' });
+    state.payload = { general: { locale: 'pl' } };
+
+    await expect(handler('settings:export')(sender())).resolves.toEqual({ success: true });
+    const written = JSON.parse(state.writeFile.mock.calls[0][1] as string);
+    expect(written.general).toEqual({ locale: 'pl' });
+  });
+});

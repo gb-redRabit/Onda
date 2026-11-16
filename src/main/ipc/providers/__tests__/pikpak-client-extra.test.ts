@@ -324,3 +324,149 @@ describe('error taxonomy', () => {
     expect(error).toBeInstanceOf(Error);
   });
 });
+
+describe('pikpak client edge branches', () => {
+  it('ignores non-string credentials', () => {
+    const client = new PikPakClient();
+    client.setCookie(null as never);
+    client.setAccessToken(42 as never);
+    expect(client.hasAccessToken()).toBe(false);
+
+    client.setAccessToken('tok');
+    expect(client.hasAccessToken()).toBe(true);
+  });
+
+  it('returns a refreshed access token', async () => {
+    route(() => json({ access_token: 'NEW' }));
+    const client = new PikPakClient();
+    await expect(client.refreshAccessToken('R')).resolves.toBe('NEW');
+  });
+
+  it('wraps non-Error transport failures', async () => {
+    route(() => {
+      throw 'plain failure';
+    });
+    const client = new PikPakClient();
+    await expect(client.listFolder('S')).rejects.toThrow('plain failure');
+  });
+
+  it('returns undefined when the drive file never gets a URL', async () => {
+    vi.useFakeTimers();
+    withCaptcha((url) => {
+      if (url.includes('/drive/v1/files/ID')) return json({ size: 10 });
+      return json({});
+    });
+    const client = new PikPakClient();
+
+    const promise = client.waitDriveFileUrl('ID', 1);
+    await vi.advanceTimersByTimeAsync(5000);
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('reports share status errors with and without text', async () => {
+    route((url) => {
+      if (url.includes('captcha/init')) return json({ captcha_token: 'tok' });
+      return json({ share_status: 'ERROR', share_status_text: 'expired' });
+    });
+    const first = new PikPakClient();
+    await expect(first.listFolder('S')).rejects.toThrow('share_status=ERROR (expired)');
+
+    route((url) => {
+      if (url.includes('captcha/init')) return json({ captcha_token: 'tok' });
+      return json({ share_status: 'ERROR' });
+    });
+    const second = new PikPakClient();
+    await expect(second.listFolder('S')).rejects.toThrow('share_status=ERROR');
+  });
+
+  it('reads share metadata from flat responses and media renditions', async () => {
+    withCaptcha((url) => {
+      if (url.includes('share/file_info')) {
+        return json({ name: 'flat.mp4', medias: [{ link: { url: 'https://dl/media' } }] });
+      }
+      return json({});
+    });
+    const client = new PikPakClient();
+
+    await expect(client.getShareFileMeta('S', 'F')).resolves.toEqual({
+      name: 'flat.mp4',
+      url: 'https://dl/media'
+    });
+  });
+
+  it('uses direct links and anonymous fallbacks for file info', async () => {
+    withCaptcha((url) => {
+      if (url.includes('share/file_info')) {
+        return json({ file_info: { medias: [{ link: { url: 'https://dl/direct' } }] } });
+      }
+      return json({});
+    });
+    const direct = new PikPakClient();
+    await expect(direct.getFileInfo('S', 'F')).resolves.toBe('https://dl/direct');
+
+    let infoCalls = 0;
+    withCaptcha((url) => {
+      if (url.includes('share/file_info')) {
+        infoCalls += 1;
+        if (infoCalls === 1) return json({ file_info: {} });
+        return json({ file_info: { medias: [{ link: { url: 'https://dl/anon' } }] } });
+      }
+      return json({});
+    });
+    const anon = new PikPakClient();
+    anon.setAccessToken('TOK');
+    await expect(anon.getFileInfo('S', 'F')).resolves.toBe('https://dl/anon');
+  });
+
+  it('matches restore events without a file name', async () => {
+    route((url) => {
+      if (url.includes('captcha/init')) return json({ captcha_token: 'tok' });
+      if (url.includes('share/restore')) return json({ ok: true });
+      if (url.includes('/drive/v1/events')) {
+        return json({ events: [{ type: 'TYPE_RESTORE', file_id: 'ID9', file_name: 'other' }] });
+      }
+      return json({});
+    });
+    const client = new PikPakClient();
+    await expect(client.restoreToDrive('S', 'F')).resolves.toBe('ID9');
+  });
+});
+
+describe('pikpak client missing payload fields', () => {
+  it('treats missing restore events as empty', async () => {
+    vi.useFakeTimers();
+    route((url) => {
+      if (url.includes('captcha/init')) return json({ captcha_token: 'tok' });
+      if (url.includes('share/restore')) return json({ ok: true });
+      if (url.includes('/drive/v1/events')) return json({});
+      return json({});
+    });
+    const client = new PikPakClient();
+
+    const promise = client.restoreToDrive('S', 'F');
+    const assertion = expect(promise).rejects.toThrow('restore: nie znaleziono pliku w events');
+    await vi.advanceTimersByTimeAsync(70_000);
+    await assertion;
+  });
+
+  it('falls back to an empty share name', async () => {
+    withCaptcha(() => json({}));
+    const client = new PikPakClient();
+
+    await expect(client.getShareFileMeta('S', 'F')).resolves.toEqual({
+      name: '',
+      url: undefined
+    });
+  });
+
+  it('handles share listings without files', async () => {
+    route((url) => {
+      if (url.includes('captcha/init')) return json({ captcha_token: 'tok' });
+      if (url.includes('share/detail')) return json({ share_status: 'OK' });
+      return json({});
+    });
+    const client = new PikPakClient();
+
+    await expect(client.listFolder('S')).resolves.toEqual([]);
+  });
+});
