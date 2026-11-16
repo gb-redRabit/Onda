@@ -556,3 +556,61 @@ describe('footer states', () => {
     expect(wrapper!.findAllComponents(LoaderStub)).toHaveLength(0);
   });
 });
+
+describe('OnlineChannelView missing state guards', () => {
+  it('ignores follow actions and queue confirms without state', async () => {
+    state.yt.channel = null;
+    mountView();
+    const vm = wrapper!.vm as unknown as {
+      followed: boolean;
+      toggleFollow: () => Promise<void>;
+      confirmSubscribe: (payload: { downloadAll: boolean }) => Promise<void>;
+      confirmUnfollow: () => Promise<void>;
+      confirmQueue: (payload: Record<string, unknown>) => void;
+    };
+
+    expect(vm.followed).toBe(false);
+    await vm.toggleFollow();
+    await vm.confirmSubscribe({ downloadAll: false });
+    await vm.confirmUnfollow();
+    vm.confirmQueue({ kind: 'audio' });
+    await flushPromises();
+
+    expect(state.yt.followChannelWithSetup).not.toHaveBeenCalled();
+    expect(state.yt.unfollowChannel).not.toHaveBeenCalled();
+    expect(state.yt.queueVideo).not.toHaveBeenCalled();
+  });
+
+  it('ignores Escape when no card is expanded', async () => {
+    mountView();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await wrapper!.vm.$nextTick();
+
+    expect(wrapper!.find('[data-testid="media-card"]').exists()).toBe(true);
+  });
+});
+
+describe('OnlineChannelView subscribe close and followed state', () => {
+  it('closes the subscribe dialog on cancel', async () => {
+    mountView();
+    wrapper!.findComponent(HeaderStub).vm.$emit('toggle-follow');
+    await wrapper!.vm.$nextTick();
+
+    wrapper!.findComponent(SubscribeStub).vm.$emit('cancel');
+    await wrapper!.vm.$nextTick();
+
+    expect(wrapper!.find('[data-testid="subscribe-dialog"]').exists()).toBe(false);
+  });
+
+  it('asks for confirmation when the channel is already followed', async () => {
+    state.yt.isSubscribed = vi.fn(() => true);
+    mountView();
+
+    wrapper!.findComponent(HeaderStub).vm.$emit('toggle-follow');
+    await wrapper!.vm.$nextTick();
+
+    expect(wrapper!.find('[data-testid="confirm-dialog"]').exists()).toBe(true);
+    expect(wrapper!.find('[data-testid="subscribe-dialog"]').exists()).toBe(false);
+  });
+});

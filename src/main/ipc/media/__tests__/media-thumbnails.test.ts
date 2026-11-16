@@ -374,3 +374,46 @@ describe('batch thumbnails', () => {
     await expect(batchThumbnails(['D:/doc.pdf'], 64)).resolves.toEqual({});
   });
 });
+
+describe('media thumbnail edge branches', () => {
+  it('falls back to the plain ffmpeg binary', async () => {
+    state.resolveBin.mockResolvedValue(null);
+
+    await expect(videoFrameThumbnail('D:/a.mp4', 100)).resolves.toBeTruthy();
+    expect(state.runCommand).toHaveBeenCalledWith('ffmpeg', expect.any(Array), {
+      timeout: 20000
+    });
+  });
+
+  it('returns null when the extracted frame is empty on the second read', async () => {
+    state.readFile.mockResolvedValueOnce(Buffer.from('raw')).mockResolvedValueOnce(Buffer.alloc(0));
+
+    await expect(videoFrameThumbnail('D:/a.mp4', 100)).resolves.toBeNull();
+  });
+
+  it('returns null for audio without any cover', async () => {
+    state.getThumbnail.mockResolvedValue(null);
+    state.extractCover.mockResolvedValue({ type: null, data: null });
+
+    await expect(getThumbnail('D:/a.mp3', 80)).resolves.toBeNull();
+  });
+
+  it('drops a failed build from the inflight map', async () => {
+    state.writeFile.mockRejectedValueOnce(new Error('disk'));
+
+    await expect(getThumbnail('D:/a.png', 60)).resolves.toBeNull();
+    for (let i = 0; i < 6; i++) await Promise.resolve();
+
+    state.writeFile.mockResolvedValue(undefined);
+    await expect(getThumbnail('D:/a.png', 60)).resolves.toMatch(/^data:image\/jpeg;base64,/);
+    expect(state.nativeThumb).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('media thumbnail read failures', () => {
+  it('treats unreadable frames as missing', async () => {
+    state.readFile.mockRejectedValue(new Error('gone'));
+
+    await expect(videoFrameThumbnail('D:/a.mp4', 100)).resolves.toBeNull();
+  });
+});

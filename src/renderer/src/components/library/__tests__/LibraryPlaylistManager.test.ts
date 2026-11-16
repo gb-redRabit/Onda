@@ -495,3 +495,38 @@ describe('selection resilience', () => {
     expect(wrapper!.text()).toContain('library.selectPlaylistHint');
   });
 });
+
+describe('LibraryPlaylistManager missing targets', () => {
+  it('ignores delete, rename and context actions without a selection', async () => {
+    mountManager();
+    const vm = wrapper!.vm as unknown as {
+      deleteSelected: () => Promise<void>;
+      renameSelected: () => void;
+      onPlaylistContextMenu: (event: MouseEvent, id: string) => void;
+      onPlaylistDrop: (event: unknown, id: string) => void;
+      onTrackDrop: (event: unknown, index: number) => void;
+      playFromPlaylist: (index: number) => void;
+    };
+
+    await vm.deleteSelected();
+    vm.renameSelected();
+    vm.onPlaylistContextMenu(new MouseEvent('contextmenu'), 'missing');
+    vm.onPlaylistDrop(dropEvent({ paths: ['C:\\music\\First.mp3'] }), 'missing');
+    vm.onTrackDrop(dropEvent({ paths: ['C:\\music\\First.mp3'] }), 0);
+    vm.playFromPlaylist(0);
+
+    expect(state.library.deletePlaylist).not.toHaveBeenCalled();
+    expect(state.contextMenu.showPlaylistMenu).not.toHaveBeenCalled();
+    expect(state.library.addToPlaylist).not.toHaveBeenCalled();
+  });
+
+  it('ignores play requests for a missing track index', async () => {
+    mountManager();
+    await playlistButtons()[1].trigger('click');
+    const vm = wrapper!.vm as unknown as { playFromPlaylist: (index: number) => void };
+
+    vm.playFromPlaylist(5);
+
+    expect(state.player.clearQueue).not.toHaveBeenCalled();
+  });
+});

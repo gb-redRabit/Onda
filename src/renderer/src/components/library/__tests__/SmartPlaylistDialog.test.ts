@@ -480,3 +480,33 @@ describe('smart playlist invalid input events', () => {
     });
   });
 });
+
+describe('SmartPlaylistDialog missing rule guards', () => {
+  it('ignores mutations for rules that do not exist', async () => {
+    mountDialog();
+    await flush();
+    const vm = wrapper!.vm as unknown as {
+      setOperator: (index: number, operator: string) => void;
+      setValue: (index: number, value: unknown) => void;
+      setNumberValue: (index: number, raw: string) => void;
+    };
+
+    expect(() => vm.setOperator(9, 'eq')).not.toThrow();
+    expect(() => vm.setValue(9, 'x')).not.toThrow();
+    expect(() => vm.setNumberValue(9, '5')).not.toThrow();
+  });
+
+  it('keeps an existing between range when switching again', async () => {
+    mountDialog();
+    await flush();
+    const vm = wrapper!.vm as unknown as {
+      rules: Array<{ field: string; operator: string; value: unknown }>;
+      setOperator: (index: number, operator: string) => void;
+    };
+
+    vm.setOperator(0, 'between');
+    expect(vm.rules[0].value).toEqual([0, 0]);
+    vm.setOperator(0, 'between');
+    expect(vm.rules[0].value).toEqual([0, 0]);
+  });
+});

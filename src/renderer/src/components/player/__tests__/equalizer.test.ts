@@ -209,3 +209,61 @@ describe('Equalizer — import', () => {
     w.unmount();
   });
 });
+
+describe('Equalizer toggle states', () => {
+  it('marks every active toggle and a positive preamp', async () => {
+    h.fx.equalizerMono = true;
+    h.fx.nightMode = true;
+    h.fx.equalizerSnap = true;
+    h.fx.equalizerMulticolor = true;
+    h.fx.equalizerPreamp = 5;
+    const w = mountEq();
+
+    for (const id of ['eq-power', 'eq-mono', 'eq-night', 'eq-snap', 'eq-multicolor']) {
+      expect(w.get(`[data-testid="${id}"]`).classes()).toContain('text-primary-text');
+    }
+    expect(w.text()).toContain('+5');
+  });
+
+  it('marks the power button inactive when the equalizer is off', () => {
+    h.fx.equalizerEnabled = false;
+    const w = mountEq();
+
+    expect(w.get('[data-testid="eq-power"]').classes()).toContain('text-base-content/55');
+  });
+
+  it('dims disabled bands and scales hovered markers', async () => {
+    h.fx.equalizerBands = [
+      { type: 'peaking', frequency: 1000, q: 1, gain: 0, enabled: false }
+    ] as never;
+    const w = mountEq();
+    const marker = w.get('button[style*="background-color"]');
+
+    expect(marker.attributes('style')).toContain('opacity: 0.35');
+    await marker.trigger('mouseenter');
+    expect(w.get('button[style*="background-color"]').attributes('style')).toContain('scale(1.3)');
+  });
+});
+
+describe('Equalizer band menu placement', () => {
+  it('opens the band menu above markers in the lower half', async () => {
+    h.fx.equalizerBands = [{ type: 'peaking', frequency: 1000, q: 1, gain: -6 }] as never;
+    const w = mountEq();
+
+    await w.get('button[style*="background-color"]').trigger('contextmenu');
+
+    const menu = w.get('.z-50');
+    expect(menu.attributes('style')).toContain('calc(-100% - 14px)');
+  });
+});
+
+describe('Equalizer band menu placement top', () => {
+  it('opens the band menu below markers in the upper half', async () => {
+    h.fx.equalizerBands = [{ type: 'peaking', frequency: 1000, q: 1, gain: 12 }] as never;
+    const w = mountEq();
+
+    await w.get('button[style*="background-color"]').trigger('contextmenu');
+
+    expect(w.get('.z-50').attributes('style')).toContain('translate(-50%, 14px)');
+  });
+});

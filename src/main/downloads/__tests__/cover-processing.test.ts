@@ -397,3 +397,67 @@ describe('processCover fallbacks', () => {
     expect(calls).toContain('yt-dlp');
   });
 });
+
+describe('cover processing edge failures', () => {
+  it('ignores stale work directory cleanup failures', async () => {
+    vi.resetModules();
+    state.rm.mockRejectedValueOnce(new Error('locked'));
+    const fresh = await import('../cover-processing');
+
+    await expect(fresh.processCover(ctx({ type: 'frame', frameTime: 1 }))).resolves.toEqual({
+      status: 'embedded'
+    });
+  });
+
+  it('uses the default custom cover embed error', async () => {
+    state.writeCover.mockResolvedValue({ success: false, error: '' });
+
+    await expect(
+      processCover(ctx({ type: 'custom', customPath: '/pictures/cover.jpg' }))
+    ).resolves.toEqual({ status: 'error', error: 'Failed to embed cover' });
+  });
+
+  it('uses the default frame embed error', async () => {
+    state.writeCover.mockResolvedValue({ success: false, error: '' });
+
+    await expect(processCover(ctx({ type: 'frame' }))).resolves.toEqual({
+      status: 'error',
+      error: 'Failed to embed cover'
+    });
+  });
+
+  it('reports non-Error custom cover failures as text', async () => {
+    state.writeCover.mockRejectedValue('plain cover failure');
+
+    await expect(
+      processCover(ctx({ type: 'custom', customPath: '/pictures/cover.jpg' }))
+    ).resolves.toEqual({ status: 'error', error: 'plain cover failure' });
+  });
+
+  it('falls back to the plain ffprobe binary', async () => {
+    state.resolveBin.mockImplementation((async (tool?: string) =>
+      tool === 'ffprobe' ? null : `/bin/${tool}`) as unknown as (tool?: string) => Promise<string>);
+
+    await processCover(ctx({ type: 'clip', clipFormat: 'mp4' }));
+
+    expect(state.runCommand).toHaveBeenCalledWith(
+      'ffprobe',
+      expect.any(Array),
+      expect.objectContaining({ timeout: 15000 })
+    );
+  });
+
+  it('encodes when the copy attempt throws', async () => {
+    state.runCommand.mockImplementation(async (_bin?: string, args?: string[]) => {
+      if (Array.isArray(args) && args.includes('copy')) throw new Error('copy failed');
+      return '';
+    });
+
+    await processCover(ctx({ type: 'clip', clipFormat: 'mp4' }));
+
+    const encode = state.runCommand.mock.calls.find((call) =>
+      (call[1] as string[]).includes('libopenh264')
+    );
+    expect(encode?.[1]).toEqual(expect.arrayContaining(['-c:v', 'libopenh264']));
+  });
+});
