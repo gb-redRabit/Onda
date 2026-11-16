@@ -425,3 +425,59 @@ describe('stale thumbnail failures', () => {
     expect(thumb.systemIcon.value).toBeNull();
   });
 });
+
+describe('thumbnail icon fallbacks', () => {
+  it('ignores a non-image icon result', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    media.resolve(null);
+    await flush();
+    icon.resolve('not-an-image');
+    await flush();
+
+    expect(thumb.systemIcon.value).toBeNull();
+    expect(state.icons.has('/music/a.jpg')).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('skips the icon request when the bridge disappears', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    delete (window as { api?: unknown }).api;
+    media.resolve(null);
+    await flush();
+
+    expect(thumb.systemIcon.value).toBeNull();
+    expect(state.taskDone).toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('does not request on a path change while hidden', async () => {
+    const path = ref('/music/a.jpg');
+    const { wrapper } = mountThumb({ path });
+    await nextTick();
+
+    path.value = '/music/b.jpg';
+    await nextTick();
+
+    expect(state.tasks).toHaveLength(0);
+    wrapper.unmount();
+  });
+
+  it('skips the icon request after a failure without a bridge', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    delete (window as { api?: unknown }).api;
+    media.reject(new Error('ffmpeg'));
+    await flush();
+
+    expect(thumb.systemIcon.value).toBeNull();
+    wrapper.unmount();
+  });
+});

@@ -535,3 +535,41 @@ describe('load and cookie failures', () => {
     await expect(pending).resolves.toEqual({ success: false, canceled: true });
   });
 });
+
+describe('provider login expiration and popup lifecycle', () => {
+  it('forwards cookie expiration dates when seeding', async () => {
+    h.googleCookies = [
+      { ...providerCookie('.google.com', 'SID', 's1'), expirationDate: 1_700_000_000 }
+    ];
+    const login = await load();
+    const pending = login.startProviderLogin('gdrive');
+    const window = win();
+    await flush();
+
+    const target = h.sessionFromPartition('persist:provider-login-gdrive');
+    expect(target.cookies.set).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'SID', expirationDate: 1_700_000_000 })
+    );
+
+    h.cookies.current = [providerCookie()];
+    window.close();
+    await pending;
+  });
+
+  it('does not wait for popups that are already destroyed', async () => {
+    const login = await load();
+    const pending = login.startProviderLogin('gdrive');
+    const window = win();
+    await flush();
+
+    const popup = new h.FakeBrowserWindow({
+      webPreferences: { partition: 'persist:provider-login-gdrive' }
+    });
+    h.appHandlers['browser-window-created']({}, popup);
+    popup.destroyed = true;
+    window.close();
+    await flush();
+
+    await expect(pending).resolves.toEqual({ success: false, canceled: true });
+  });
+});

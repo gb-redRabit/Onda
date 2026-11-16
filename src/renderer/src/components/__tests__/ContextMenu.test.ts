@@ -748,3 +748,15 @@ describe('type-ahead without submenu children', () => {
     expect(state.ui.contextMenu).not.toBeNull();
   });
 });
+
+describe('context menu leave guard', () => {
+  it('keeps the menu when leaving without a pending submenu timer', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[0].parentElement!.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    await flush();
+
+    expect(menuEl()).not.toBeNull();
+  });
+});
