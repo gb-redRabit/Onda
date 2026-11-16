@@ -341,3 +341,165 @@ describe('conversion', () => {
     expect(state.invoke).toHaveBeenCalledWith('shell:showItemInFolder', '/out/result');
   });
 });
+
+describe('converter busy guards and edge statuses', () => {
+  async function startPending(paths = ['C:\\a.mp3', 'C:\\b.mp3']) {
+    state.context.value = { paths };
+    mountConverter();
+    await flush();
+    const pending = deferred<{ success: boolean }>();
+    state.convertMedia.mockReturnValueOnce(pending.promise);
+    await wrapper!.get('[data-testid="tools-convert"]').trigger('click');
+    await flush();
+    return pending;
+  }
+
+  it('ignores interactions while converting', async () => {
+    const pending = await startPending();
+    const calls = state.convertMedia.mock.calls.length;
+    state.invoke.mockClear();
+
+    wrapper!.findComponent(SegmentedStub).vm.$emit('update:modelValue', 'video');
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp3');
+
+    wrapper!
+      .get('[data-testid="tools-add-files"]')
+      .element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    wrapper!.findAll('section')[0].trigger('drop');
+    await flush();
+    expect(state.invoke).not.toHaveBeenCalled();
+    expect(state.dropped).not.toHaveBeenCalled();
+
+    state.context.value = { paths: ['C:\\other.mp4'] };
+    await flush();
+    expect(wrapper!.text()).toContain('a.mp3');
+
+    wrapper!
+      .findAllComponents(IconButtonStub)[0]
+      .element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp3');
+
+    const clear = wrapper!
+      .findAllComponents(ButtonStub)
+      .find((button) => button.text().includes('tools.clear'))!;
+    clear.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp3');
+
+    wrapper!
+      .get('[data-testid="tools-convert"]')
+      .element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(state.convertMedia.mock.calls.length).toBe(calls);
+
+    pending.resolve({ success: true });
+    await flush();
+  });
+
+  it('ignores unknown and partial progress updates', async () => {
+    let listener: ((payload: unknown) => void) | null = null;
+    state.on.mockImplementation((_channel: string, cb: (payload: unknown) => void) => {
+      listener = cb;
+      return state.off;
+    });
+    await startPending(['C:\\a.mp3']);
+
+    listener!({ jobId: 'other', percent: 50, speed: '9x' });
+    listener!({ jobId: state.convertMedia.mock.calls[0][0].jobId, percent: -1, speed: '' });
+    await flush();
+    expect(wrapper!.text()).not.toContain('9x');
+  });
+
+  it('falls back for missing error messages and non-Error throws', async () => {
+    state.context.value = { paths: ['C:\\a.mp3', 'C:\\b.mp3'] };
+    mountConverter();
+    await flush();
+    state.convertMedia
+      .mockResolvedValueOnce({ success: false })
+      .mockRejectedValueOnce('plain crash');
+
+    await wrapper!.get('[data-testid="tools-convert"]').trigger('click');
+    await flush();
+
+    expect(wrapper!.text()).toContain('tools.convertFailed');
+    expect(wrapper!.text()).toContain('plain crash');
+  });
+
+  it('skips paths without a usable extension', async () => {
+    mountConverter();
+    await flush();
+
+    state.dropped.mockReturnValue(['C:\\no-extension']);
+    wrapper!.findAll('section')[0].trigger('drop');
+    await flush();
+
+    expect(wrapper!.text()).toContain('tools.empty');
+  });
+});
+
+describe('converter remaining branches', () => {
+  it('uses video filters and ignores an empty output folder', async () => {
+    mountConverter();
+    await flush();
+    wrapper!.findComponent(SegmentedStub).vm.$emit('update:modelValue', 'video');
+    await wrapper!.vm.$nextTick();
+
+    state.invoke.mockResolvedValueOnce({ canceled: false, filePaths: ['C:\\v.mp4'] });
+    await wrapper!.get('[data-testid="tools-add-files"]').trigger('click');
+    await flush();
+    expect(state.invoke).toHaveBeenCalledWith('dialog:openFile', {
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'tools.video', extensions: expect.any(Array) }]
+    });
+
+    state.invoke.mockResolvedValueOnce([]);
+    wrapper!.findComponent(PathInputStub).vm.$emit('browse');
+    await flush();
+    expect(wrapper!.findComponent(PathInputStub).props('modelValue')).toBe('');
+  });
+
+  it('renders progress without a speed label', async () => {
+    let listener: ((payload: unknown) => void) | null = null;
+    state.on.mockImplementation((_channel: string, cb: (payload: unknown) => void) => {
+      listener = cb;
+      return state.off;
+    });
+    state.context.value = { paths: ['C:\\a.mp3'] };
+    mountConverter();
+    await flush();
+    const pending = deferred<{ success: boolean }>();
+    state.convertMedia.mockReturnValueOnce(pending.promise);
+    await wrapper!.get('[data-testid="tools-convert"]').trigger('click');
+    await flush();
+
+    listener!({ jobId: state.convertMedia.mock.calls[0][0].jobId, percent: 15, speed: '' });
+    await flush();
+    expect(wrapper!.text()).toContain('tools.progress');
+
+    pending.resolve({ success: true });
+    await flush();
+  });
+});
+
+describe('converter option updates', () => {
+  it('updates audio, video and output options', async () => {
+    mountConverter();
+    await flush();
+
+    let selects = wrapper!.findAllComponents(SelectStub);
+    selects[0].vm.$emit('update:modelValue', 'flac');
+    selects[1].vm.$emit('update:modelValue', 320);
+    wrapper!.findComponent(PathInputStub).vm.$emit('update:modelValue', 'D:/out');
+    await flush();
+
+    wrapper!.findComponent(SegmentedStub).vm.$emit('update:modelValue', 'video');
+    await wrapper!.vm.$nextTick();
+    selects = wrapper!.findAllComponents(SelectStub);
+    selects[0].vm.$emit('update:modelValue', 'mkv');
+    selects[1].vm.$emit('update:modelValue', 'high');
+    await flush();
+
+    expect(wrapper!.findComponent(PathInputStub).props('modelValue')).toBe('D:/out');
+  });
+});
