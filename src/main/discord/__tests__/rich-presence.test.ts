@@ -295,3 +295,96 @@ describe('reconnection and shutdown', () => {
     expect(state.connect).not.toHaveBeenCalled();
   });
 });
+
+describe('rich presence edge branches', () => {
+  it('records non-Error connect failures', async () => {
+    state.connect.mockRejectedValueOnce('plain down');
+    const { configureDiscord, getDiscordStatus } = await load();
+    configureDiscord({ enabled: true, clientId: '1234567890' });
+    await flush();
+
+    expect(getDiscordStatus().error).toBe('plain down');
+    expect(state.loggerInfo).toHaveBeenCalledWith(
+      'discord',
+      'rich presence connect failed: plain down'
+    );
+  });
+
+  it('clears a pending reconnect when disabled', async () => {
+    state.connect.mockRejectedValue(new Error('missing'));
+    const { configureDiscord } = await load();
+    configureDiscord({ enabled: true, clientId: '1234567890' });
+    await flush();
+    const calls = state.connect.mock.calls.length;
+
+    configureDiscord({ enabled: false, clientId: '1234567890' });
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(state.connect).toHaveBeenCalledTimes(calls);
+  });
+
+  it('clears a pending send when disabled', async () => {
+    const { configureDiscord, updatePresence } = await load();
+    configureDiscord({ enabled: true, clientId: '1234567890' });
+    await flush();
+    const conn = state.connections[0];
+
+    updatePresence(presence());
+    configureDiscord({ enabled: false, clientId: '1234567890' });
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(conn.setActivity).not.toHaveBeenCalled();
+  });
+
+  it('reuses an in-flight connection attempt', async () => {
+    let resolveConn!: (value: unknown) => void;
+    state.connect.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveConn = resolve;
+      })
+    );
+    const { configureDiscord, updatePresence } = await load();
+    updatePresence(presence());
+    configureDiscord({ enabled: true, clientId: '1234567890' });
+
+    updatePresence(presence({ title: 'Second' }));
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(state.connect).toHaveBeenCalledTimes(1);
+
+    const conn = makeConnection();
+    resolveConn(conn);
+    await flush();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(conn.setActivity).toHaveBeenCalled();
+  });
+
+  it('coalesces rapid updates into the latest activity', async () => {
+    const { configureDiscord, updatePresence } = await load();
+    configureDiscord({ enabled: true, clientId: '1234567890' });
+    await flush();
+    const conn = state.connections[0];
+
+    updatePresence(presence({ title: 'One' }));
+    state.activity = { details: 'Two' };
+    updatePresence(presence({ title: 'Two' }));
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(conn.setActivity).toHaveBeenCalledTimes(1);
+    expect(conn.setActivity).toHaveBeenCalledWith({ details: 'Two' });
+  });
+
+  it('uses empty fingerprints for sparse presence states', async () => {
+    const { configureDiscord, updatePresence } = await load();
+    configureDiscord({ enabled: true, clientId: '1234567890' });
+    await flush();
+    const conn = state.connections[0];
+
+    updatePresence({} as never);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(conn.setActivity).toHaveBeenCalledWith(state.activity);
+
+    conn.setActivity.mockClear();
+    updatePresence({} as never);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(conn.setActivity).not.toHaveBeenCalled();
+  });
+});

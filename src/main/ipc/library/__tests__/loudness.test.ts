@@ -236,3 +236,94 @@ describe('analyzeLibraryLoudness', () => {
     expect(deps.runCommandResult).not.toHaveBeenCalled();
   });
 });
+
+describe('loudness analysis edge cases', () => {
+  beforeEach(() => {
+    deps.resolveBin.mockReset().mockResolvedValue('/ffmpeg');
+    deps.runCommandResult.mockReset().mockResolvedValue({
+      stdout: '',
+      stderr: EBUR128_OUTPUT
+    });
+  });
+
+  it('requires ffmpeg when there is work to do', async () => {
+    deps.resolveBin.mockResolvedValueOnce(null);
+    const files = [file('/a1.mp3', { duration: 100, metadata: { album: 'A' } })];
+
+    await expect(analyzeLibraryLoudness(files, new AbortController().signal)).rejects.toThrow(
+      'FFmpeg is not available'
+    );
+  });
+
+  it('counts failed measurements without aborting', async () => {
+    deps.runCommandResult.mockRejectedValueOnce(new Error('decoder'));
+    const files = [file('/a1.mp3', { duration: 100, metadata: { album: 'A' } })];
+
+    const { updates, summary } = await analyzeLibraryLoudness(files, new AbortController().signal);
+
+    expect(updates).toHaveLength(0);
+    expect(summary).toMatchObject({ analyzed: 0, failed: 1, aborted: false });
+  });
+
+  it('skips album grouping for files without an album', async () => {
+    const files = [file('/a1.mp3', { duration: 100, metadata: { album: '   ' } })];
+
+    const { updates, summary } = await analyzeLibraryLoudness(files, new AbortController().signal);
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].albumGain).toBeUndefined();
+    expect(summary.albums).toBe(0);
+  });
+
+  it('leaves fully tagged albums untouched', async () => {
+    const tagged = {
+      album: 'A',
+      artist: 'X',
+      replayGainTrackGain: 1,
+      replayGainAlbumGain: 1
+    };
+    const files = [
+      file('/a1.mp3', { duration: 100, metadata: tagged }),
+      file('/a2.mp3', { duration: 100, metadata: tagged })
+    ];
+
+    const { updates, summary } = await analyzeLibraryLoudness(files, new AbortController().signal);
+
+    expect(updates).toHaveLength(0);
+    expect(summary.albums).toBe(0);
+    expect(deps.runCommandResult).not.toHaveBeenCalled();
+  });
+});
+
+describe('loudness analysis abort and duration edges', () => {
+  beforeEach(() => {
+    deps.resolveBin.mockReset().mockResolvedValue('/ffmpeg');
+    deps.runCommandResult.mockReset();
+  });
+
+  it('does not count aborted measurements as failures', async () => {
+    const controller = new AbortController();
+    deps.runCommandResult.mockImplementationOnce(async () => {
+      controller.abort();
+      throw new Error('aborted');
+    });
+    const files = [file('/a1.mp3', { duration: 100, metadata: { album: 'A' } })];
+
+    const { summary } = await analyzeLibraryLoudness(files, controller.signal);
+
+    expect(summary).toMatchObject({ failed: 0, aborted: true });
+  });
+
+  it('skips album gain when a track has no duration', async () => {
+    deps.runCommandResult.mockResolvedValue({ stdout: '', stderr: EBUR128_OUTPUT });
+    const files = [
+      file('/a1.mp3', { duration: undefined, metadata: { album: 'A' } }),
+      file('/a2.mp3', { duration: undefined, metadata: { album: 'A' } })
+    ];
+
+    const { updates, summary } = await analyzeLibraryLoudness(files, new AbortController().signal);
+
+    expect(summary.albums).toBe(0);
+    expect(updates.every((update) => update.albumGain === undefined)).toBe(true);
+  });
+});

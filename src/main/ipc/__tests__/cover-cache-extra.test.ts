@@ -535,3 +535,27 @@ describe('cache maintenance', () => {
     expect(h.loggerInfo).toHaveBeenCalledTimes(2001);
   });
 });
+
+describe('cover extraction without ffmpeg binary', () => {
+  it('falls back to the bare ffmpeg command for audio', async () => {
+    h.resolveBin.mockResolvedValue(null);
+    h.parseFile.mockResolvedValue({ common: {} });
+    const covers = await load();
+
+    await expect(covers.extractAndCacheCover('D:/music/a.mp3')).resolves.toEqual({
+      type: 'image',
+      data: `data:image/jpeg;base64,${Buffer.from('img').toString('base64')}`
+    });
+    expect(h.runCommand).toHaveBeenCalledWith('ffmpeg', expect.any(Array), expect.any(Object));
+  });
+
+  it('falls back to the bare ffmpeg command for video', async () => {
+    h.resolveBin.mockResolvedValue(null);
+    const covers = await load();
+
+    await expect(covers.extractAndCacheCover('D:/video/a.mp4')).resolves.toMatchObject({
+      type: 'image'
+    });
+    expect(h.runCommand).toHaveBeenCalledWith('ffmpeg', expect.any(Array), expect.any(Object));
+  });
+});

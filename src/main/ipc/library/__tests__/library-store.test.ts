@@ -297,3 +297,103 @@ describe('stats updates', () => {
     });
   });
 });
+
+describe('library store edge branches', () => {
+  it('ignores non-numeric sidecar stats', async () => {
+    state.readFile.mockImplementation(async (path: string) => {
+      if (path.endsWith('library-stats.json')) {
+        return JSON.stringify({ a: { playCount: 'x', lastPlayed: 'y' } });
+      }
+      return JSON.stringify({ files: [{ path: 'a', playCount: 0 }], folderTypes: {} });
+    });
+    const store = await load();
+    const data = await store.loadLibraryScanned();
+
+    expect(data?.files[0]).toMatchObject({ path: 'a', playCount: 0 });
+    expect(data?.files[0].lastPlayed).toBeUndefined();
+  });
+
+  it('migrates legacy data without folder types', async () => {
+    state.getStore.mockResolvedValue({
+      get: () => ({ files: [{ path: 'legacy', playCount: 0 }] }),
+      delete: vi.fn()
+    });
+    const store = await load();
+
+    const data = await store.loadLibraryScanned();
+    expect(data?.folderTypes).toEqual({});
+  });
+
+  it('returns empty data before loading', async () => {
+    const store = await load();
+    expect(store.getLibraryScanned()).toEqual({ files: [], folderTypes: {} });
+  });
+
+  it('defaults a missing lastPlayed in the sidecar', async () => {
+    const store = await load();
+    store.setLibraryScanned({
+      files: [{ path: 'a', name: 'a', playCount: 2 } as never],
+      folderTypes: {}
+    });
+    await vi.advanceTimersByTimeAsync(400);
+    await flush();
+
+    const statsCall = state.writeFile.mock.calls.find((call: unknown[]) =>
+      String(call[0]).includes('library-stats.json')
+    );
+    expect(JSON.parse(String(statsCall?.[1]))).toEqual({ a: { playCount: 2, lastPlayed: 0 } });
+  });
+
+  it('keeps lastPlayed when an update omits it', async () => {
+    const store = await load();
+    store.setLibraryScanned(files({ a: 1 }));
+
+    expect(store.updateLibraryStats([{ path: 'a', playCount: 9 } as never])).toBe(true);
+    const file = store.getLibraryScanned().files.find((entry) => entry.path === 'a')!;
+    expect(file.playCount).toBe(9);
+    expect(file.lastPlayed).toBe(5);
+  });
+
+  it('ignores loudness updates for unknown or fully tagged files', async () => {
+    const store = await load();
+    const data = files({ a: 1, b: 1 });
+    data.files[0].metadata = { replayGainTrackGain: 1, replayGainAlbumGain: 2 };
+    store.setLibraryScanned(data);
+
+    expect(
+      store.applyLoudnessUpdates([
+        { path: 'missing', trackGain: 1 },
+        { path: 'a', trackGain: 3, albumGain: 4 }
+      ])
+    ).toBe(0);
+  });
+
+  it('flushes a pending save timer immediately', async () => {
+    const store = await load();
+    store.setLibraryScanned(files({ a: 1 }));
+
+    await store.flushLibraryScanned();
+    expect(state.writeFile).toHaveBeenCalled();
+  });
+
+  it('marks dirty when a flush overlaps a write', async () => {
+    let resolveWrite!: () => void;
+    let calls = 0;
+    state.writeFile.mockImplementation(() => {
+      calls += 1;
+      if (calls === 1) return new Promise<void>((resolve) => (resolveWrite = resolve));
+      return Promise.resolve();
+    });
+    const store = await load();
+    store.setLibraryScanned(files({ a: 1 }));
+
+    const first = store.flushLibraryScanned();
+    await flush();
+    const second = store.flushLibraryScanned();
+    resolveWrite();
+    await first;
+    await second;
+
+    expect(state.writeFile).toHaveBeenCalledTimes(2);
+  });
+});
