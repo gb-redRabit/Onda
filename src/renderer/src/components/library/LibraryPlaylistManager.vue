@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { useI18n } from 'vue-i18n';
 import { useLibraryStore } from '@renderer/stores/library';
@@ -28,6 +28,15 @@ const dragOverTrackIdx = ref<number | null>(null);
 
 const selectedPlaylist = computed(() =>
   library.playlists.find((p) => p.id === selectedPlaylistId.value)
+);
+
+// Usunięcie playlisty (np. z paska bocznego) nie może zostawić martwego id —
+// inaczej wirtualizator i akcje wołają `selectedPlaylist.tracks` na `undefined`.
+watch(
+  () => library.playlists.map((p) => p.id).join('\u0000'),
+  () => {
+    if (selectedPlaylistId.value && !selectedPlaylist.value) selectedPlaylistId.value = null;
+  }
 );
 
 interface PlaylistDragPayload {
@@ -59,7 +68,8 @@ function createPlaylist() {
 }
 
 async function deleteSelected() {
-  const pl = selectedPlaylist.value!;
+  const pl = selectedPlaylist.value;
+  if (!pl) return;
   const ok = await prompt.showConfirm(t('library.playlistDeleteConfirm', { name: pl.name }));
   if (!ok) return;
   library.deletePlaylist(pl.id);
@@ -71,7 +81,8 @@ function onPlaylistDrop(e: DragEvent, playlistId: string) {
   if (!raw) return;
   const payload = parseDragPayload(raw);
   if (!payload) return;
-  const playlist = library.playlists.find((p) => p.id === playlistId)!;
+  const playlist = library.playlists.find((p) => p.id === playlistId);
+  if (!playlist) return;
   payload.paths!.forEach((path: string) => {
     const track = library.tracks.find((t) => t.path === path);
     if (track) library.addToPlaylist(playlistId, track);
@@ -97,7 +108,8 @@ function onTrackDrop(e: DragEvent, toIdx: number) {
     return;
   }
   // upuszczenie z biblioteki → dodaj do playlisty
-  const playlist = selectedPlaylist.value!;
+  const playlist = selectedPlaylist.value;
+  if (!playlist) return;
   payload.paths!.forEach((path: string) => {
     const track = library.tracks.find((t) => t.path === path);
     if (track) library.addToPlaylist(playlist.id, track);
@@ -109,13 +121,16 @@ function onTrackDrop(e: DragEvent, toIdx: number) {
 }
 
 function playFromPlaylist(index: number) {
-  const playlist = selectedPlaylist.value!;
+  const playlist = selectedPlaylist.value;
+  if (!playlist) return;
   const tracks = playlist.tracks;
+  const track = tracks[index];
+  if (!track) return;
   player.clearQueue();
   if (index + 1 < tracks.length) {
     player.addToQueueMultiple(tracks.slice(index + 1));
   }
-  player.setTrack(tracks[index]!);
+  player.setTrack(track);
   player.play();
 }
 
@@ -124,7 +139,8 @@ function playAll() {
 }
 
 function renameSelected() {
-  const pl = selectedPlaylist.value!;
+  const pl = selectedPlaylist.value;
+  if (!pl) return;
   void prompt.showPrompt(t('ctx.playlistRename'), pl.name).then((name) => {
     if (name) {
       library.renamePlaylist(pl.id, name);
@@ -133,7 +149,8 @@ function renameSelected() {
 }
 
 function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
-  const pl = library.playlists.find((p) => p.id === playlistId)!;
+  const pl = library.playlists.find((p) => p.id === playlistId);
+  if (!pl) return;
   contextMenu.showPlaylistMenu(e, pl, () => {
     selectedPlaylistId.value = pl.id;
     renameSelected();
@@ -143,8 +160,9 @@ function onPlaylistContextMenu(e: MouseEvent, playlistId: string) {
 // Wirtualizuj listę utworów playlisty — playlisty mogą trzymać tysiące utworów
 // (plan 1.6).
 const playlistListRef = ref<HTMLElement | null>(null);
+const playlistTracks = computed(() => selectedPlaylist.value?.tracks ?? []);
 const playlistVirtualizer = useVirtualList({
-  count: () => selectedPlaylist.value!.tracks.length,
+  count: () => playlistTracks.value.length,
   scrollEl: () => playlistListRef.value,
   estimateSize: () => 56,
   overscan: 8
@@ -215,7 +233,7 @@ const playlistVirtualizer = useVirtualList({
           <button
             type="button"
             class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-            :disabled="selectedPlaylist.tracks.length === 0"
+            :disabled="playlistTracks.length === 0"
             @click="playAll"
           >
             <Play :size="12" /> {{ $t('library.playAll') }}
@@ -255,7 +273,8 @@ const playlistVirtualizer = useVirtualList({
             @drop.prevent.stop="onTrackDrop($event, v.index)"
           >
             <LibraryTrackRow
-              :track="selectedPlaylist.tracks[v.index]"
+              v-if="playlistTracks[v.index]"
+              :track="playlistTracks[v.index]"
               :playlist-id="selectedPlaylist.id"
               :drag-index="v.index"
               @play="playFromPlaylist(v.index)"
@@ -263,7 +282,7 @@ const playlistVirtualizer = useVirtualList({
           </div>
         </div>
         <div
-          v-if="selectedPlaylist.tracks.length === 0"
+          v-if="playlistTracks.length === 0"
           class="text-xs text-base-content/50 italic p-4 text-center"
         >
           {{ $t('library.playlistEmptyHint') }}

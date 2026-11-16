@@ -29,19 +29,24 @@ vi.mock('@renderer/composables/useVirtualList', () => ({
     count: () => number;
     estimateSize: () => number;
     scrollEl: () => unknown;
-  }) => ({
-    getTotalSize: () => {
-      options.scrollEl();
-      return options.count() * options.estimateSize();
-    },
-    getVirtualItems: () =>
-      Array.from({ length: options.count() }, (_, index) => ({
-        index,
-        key: index,
-        size: options.estimateSize(),
-        start: index * options.estimateSize()
-      }))
-  })
+  }) => {
+    // TanStack czyta `count` już przy tworzeniu wirtualizatora — także wtedy,
+    // gdy żadna playlista nie jest wybrana.
+    options.count();
+    return {
+      getTotalSize: () => {
+        options.scrollEl();
+        return options.count() * options.estimateSize();
+      },
+      getVirtualItems: () =>
+        Array.from({ length: options.count() }, (_, index) => ({
+          index,
+          key: index,
+          size: options.estimateSize(),
+          start: index * options.estimateSize()
+        }))
+    };
+  }
 }));
 
 const TrackRowStub = {
@@ -470,5 +475,23 @@ describe('drag and drop', () => {
       expect.objectContaining({ id: 't1' })
     );
     expect(state.ui.notify).toHaveBeenCalledWith('success', expect.stringContaining('2'));
+  });
+});
+
+describe('selection resilience', () => {
+  it('initializes the virtualizer without a selected playlist', () => {
+    expect(() => mountManager()).not.toThrow();
+    expect(wrapper!.text()).toContain('library.selectPlaylistHint');
+  });
+
+  it('clears the selection when the playlist disappears elsewhere', async () => {
+    mountManager();
+    await playlistButtons()[0].trigger('click');
+    expect(wrapper!.text()).toContain('First');
+
+    state.library.playlists = state.library.playlists.filter((p: { id: string }) => p.id !== 'p1');
+    await flush();
+
+    expect(wrapper!.text()).toContain('library.selectPlaylistHint');
   });
 });
