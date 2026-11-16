@@ -405,3 +405,88 @@ describe('launch panel edge states', () => {
     expect(selected()[0].text()).toContain('hero.png');
   });
 });
+
+describe('ToolLaunchPanel edge guards', () => {
+  function vm() {
+    return wrapper!.vm as unknown as {
+      maxFiles: number;
+      selected: Map<string, unknown>;
+      toggleFile: (item: unknown) => void;
+    };
+  }
+
+  it('falls back to a single file for unknown tools', async () => {
+    mountPanel({ toolId: 'ghost' });
+    await flush();
+
+    expect(vm().maxFiles).toBe(1);
+  });
+
+  it('rejects files outside the locked kind', async () => {
+    mountPanel();
+    await flush();
+    const v = vm();
+    v.toggleFile(fileItem('song.mp3', 'D:\\Music\\song.mp3'));
+    v.toggleFile(fileItem('clip.mp4', 'D:\\Music\\clip.mp4'));
+
+    expect(v.selected.size).toBe(1);
+    expect([...v.selected.keys()]).toEqual(['D:\\Music\\song.mp3']);
+  });
+
+  it('stops selecting at the tool limit', async () => {
+    mountPanel();
+    await flush();
+    const v = vm();
+    for (let i = 0; i < 500; i++) v.selected.set(`D:\\Music\\${i}.mp3`, {});
+
+    v.toggleFile(fileItem('extra.mp3', 'D:\\Music\\extra.mp3'));
+
+    expect(v.selected.size).toBe(500);
+    expect(v.selected.has('D:\\Music\\extra.mp3')).toBe(false);
+  });
+
+  it('marks extensionless drops as unknown kind', async () => {
+    mountPanel();
+    await flush();
+    const v = wrapper!.vm as unknown as {
+      pickedFromPath: (path: string) => { extension: string; kind: string | null };
+      selected: Map<string, unknown>;
+    };
+
+    const picked = v.pickedFromPath('D:\\Drop\\noext');
+    expect(picked.extension).toBe('');
+    v.selected.set('D:\\Drop\\noext', { ...picked, size: 1 });
+    await wrapper!.vm.$nextTick();
+
+    expect(selected()).toHaveLength(1);
+    expect(selected()[0].text()).toContain('tools.typeUnknown');
+    expect(selected()[0].text()).toContain('noext');
+  });
+
+  it('skips dropped paths that are already selected', async () => {
+    mountPanel();
+    await flush();
+    const v = vm();
+    v.toggleFile(fileItem('a.mp3', 'D:\\Drop\\a.mp3'));
+    state.dropped = ['D:\\Drop\\a.mp3'];
+
+    await wrapper!.find('.overflow-auto').trigger('drop', { dataTransfer: {} });
+
+    expect(v.selected.size).toBe(1);
+  });
+});
+
+describe('ToolLaunchPanel drop limit', () => {
+  it('stops adding drops at the tool limit', async () => {
+    mountPanel();
+    await flush();
+    const v = wrapper!.vm as unknown as { selected: Map<string, unknown> };
+    for (let i = 0; i < 500; i++) v.selected.set(`D:\\Music\\${i}.mp3`, {});
+    state.dropped = ['D:\\Drop\\new.mp3'];
+
+    await wrapper!.find('.overflow-auto').trigger('drop', { dataTransfer: {} });
+
+    expect(v.selected.size).toBe(500);
+    expect(v.selected.has('D:\\Drop\\new.mp3')).toBe(false);
+  });
+});

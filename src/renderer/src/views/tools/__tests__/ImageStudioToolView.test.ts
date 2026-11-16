@@ -1200,3 +1200,77 @@ describe('image studio metadata and selection edges', () => {
     expect(canvasEl().getAttribute('data-selected-width')).toBe('');
   });
 });
+
+describe('image studio internal guards', () => {
+  it('ignores empty paths and image-less interactions', async () => {
+    mountView();
+    const vm = wrapper!.vm as unknown as {
+      loadPath: (path: string) => Promise<void>;
+      applyAspect: () => void;
+      renderPreview: () => void;
+      onPointerDown: (event: PointerEvent) => void;
+      hitCropHandle: (event: PointerEvent) => string;
+    };
+    state.imageRead.mockClear();
+
+    await vm.loadPath('');
+    vm.applyAspect();
+    vm.renderPreview();
+    const event = new MouseEvent('pointerdown', { clientX: 10, clientY: 10 }) as PointerEvent;
+    vm.onPointerDown(event);
+    expect(vm.hitCropHandle(event)).toBe('draw');
+
+    expect(state.imageRead).not.toHaveBeenCalled();
+  });
+
+  it('skips cursor updates during an active drag', async () => {
+    await mountLoaded();
+    stubRect();
+    const vm = wrapper!.vm as unknown as { updateCursor: (event: PointerEvent) => void };
+
+    await pointer('pointerdown', 100, 100);
+    expect(() =>
+      vm.updateCursor(new MouseEvent('pointermove', { clientX: 10, clientY: 10 }) as PointerEvent)
+    ).not.toThrow();
+  });
+
+  it('keeps the selection when undoing another annotation', async () => {
+    await mountLoaded();
+    stubRect();
+    await wrapper!.get('[data-testid="image-studio-tool-rect"]').trigger('click');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 300, 250);
+    await pointer('pointerup', 300, 250);
+    await pointer('pointerdown', 100, 100);
+    await pointer('pointermove', 180, 160);
+    await pointer('pointerup', 180, 160);
+
+    await pointer('pointerdown', 220, 170);
+    await pointer('pointerup', 220, 170);
+    expect(canvasEl().getAttribute('data-selected-width')).toBe('8');
+
+    const undo = wrapper!
+      .findAll('button')
+      .find((button) => button.text().includes('tools.imageStudioUndo'))!;
+    await undo.trigger('click');
+    await flush();
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('1');
+    expect(canvasEl().getAttribute('data-selected-width')).toBe('8');
+  });
+});
+
+describe('image studio free crop drag', () => {
+  it('keeps the raw rectangle without an aspect ratio', async () => {
+    await mountLoaded();
+    stubRect();
+    const vm = wrapper!.vm as unknown as {
+      updateCropFromDrag: (sx: number, sy: number, ex: number, ey: number) => void;
+    };
+
+    vm.updateCropFromDrag(10, 10, 200, 150);
+    await flush();
+
+    expect(cropAttr()).toBe('10,10,190,140');
+  });
+});
