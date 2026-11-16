@@ -317,3 +317,31 @@ describe('profile selection', () => {
     expect(form.addToLibrary.value).toBe(true);
   });
 });
+
+describe('profile partial fields', () => {
+  it('keeps cover details when the profile only sets a type', () => {
+    state.profiles.value = [{ id: 'p3', config: {} }];
+    state.downloadProfileToForm.mockReturnValue({ coverType: 'frame' });
+    const form = setup();
+
+    form.onProfileSelect('p3');
+
+    expect(form.coverType.value).toBe('frame');
+    expect(form.customCoverPath.value).toBe('');
+    expect(form.coverFrameTime.value).toBe(30);
+  });
+
+  it('keeps subtitle details when the profile only enables them', () => {
+    state.profiles.value = [{ id: 'p4', config: {} }];
+    state.downloadProfileToForm.mockReturnValue({ subsEnabled: true });
+    const form = setup();
+
+    form.onProfileSelect('p4');
+
+    expect(form.subsEnabled.value).toBe(true);
+    expect(form.subsLangs.value).toBe('pl,en');
+    expect(form.subsFormat.value).toBe('srt');
+    expect(form.subsMode.value).toBe('best');
+    expect(form.subsFolder.value).toBe(false);
+  });
+});

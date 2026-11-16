@@ -347,3 +347,81 @@ describe('stale requests and teardown', () => {
     wrapper.unmount();
   });
 });
+
+describe('stale promise results', () => {
+  it('ignores a thumbnail that resolves after unmount', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    wrapper.unmount();
+    media.resolve('data:image/jpeg;base64,late');
+    await flush();
+
+    expect(thumb.mediaThumb.value).toBeNull();
+    expect(state.thumbs.get('/music/a.jpg')).toBeUndefined();
+  });
+
+  it('ignores a thumbnail from a previous path', async () => {
+    const path = ref('/music/old.jpg');
+    const { thumb, wrapper } = mountThumb({ path });
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    path.value = '/music/new.jpg';
+    await nextTick();
+    media.resolve('data:image/jpeg;base64,old');
+    await flush();
+
+    expect(thumb.mediaThumb.value).toBeNull();
+    wrapper.unmount();
+  });
+
+  it('ignores an icon that resolves after unmount', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    media.resolve(null);
+    await flush();
+    wrapper.unmount();
+    icon.resolve('data:image/png;base64,late');
+    await flush();
+
+    expect(thumb.systemIcon.value).toBeNull();
+  });
+
+  it('logs a failing icon request after a failed thumbnail', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    media.reject(new Error('ffmpeg'));
+    await flush();
+    icon.reject(new Error('icon'));
+    await flush();
+
+    expect(state.loggerError).toHaveBeenCalledWith(
+      'Thumbnail',
+      'getFileIcon (error fallback)',
+      expect.any(Error)
+    );
+    wrapper.unmount();
+  });
+});
+
+describe('stale thumbnail failures', () => {
+  it('ignores a failure after unmount', async () => {
+    const { thumb, wrapper } = mountThumb();
+    await makeVisible(thumb, wrapper);
+    await runTask();
+
+    wrapper.unmount();
+    state.invoke.mockClear();
+    media.reject(new Error('late failure'));
+    await flush();
+
+    expect(state.invoke).not.toHaveBeenCalled();
+    expect(thumb.systemIcon.value).toBeNull();
+  });
+});

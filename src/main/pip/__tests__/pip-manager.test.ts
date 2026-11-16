@@ -441,3 +441,45 @@ describe('preview delegation and teardown', () => {
     expect(state.handlers.has('pip:restore')).toBe(false);
   });
 });
+
+describe('pip manager edge branches', () => {
+  it('sends the video source immediately when preloaded after load', () => {
+    manager.preload('/media/a.mp4', null);
+    finishLoad();
+    win.webContents.send.mockClear();
+
+    manager.preload('/media/b.mp4', null);
+    expect(win.webContents.send).toHaveBeenCalledWith('pip:videoSrc', {
+      src: '/media/b.mp4',
+      start: 0
+    });
+  });
+
+  it('reuses the loaded source when showing the same file', () => {
+    manager.preload('/media/a.mp4', null);
+    finishLoad();
+    win.webContents.send.mockClear();
+
+    expect(manager.show({ src: '/media/a.mp4', startTime: 7 } as never)).toBe(true);
+
+    expect(win.webContents.send).toHaveBeenCalledWith('pip:play', 7);
+    expect(win.webContents.send).not.toHaveBeenCalledWith('pip:videoSrc', expect.anything());
+  });
+
+  it('treats a zero time as zero on maximize', () => {
+    state.listeners.get('pip:maximize')!({}, 0);
+    expect(manager.getTime()).toBe(0);
+  });
+
+  it('ignores window work after destruction', () => {
+    finishLoad();
+    win.destroyed = true;
+
+    expect(() => manager.hide()).not.toThrow();
+    expect(() => manager.stop()).not.toThrow();
+    expect(() => manager.updateSubtitle(null)).not.toThrow();
+    expect(manager.isShowing()).toBe(false);
+    expect(() => manager.destroy()).not.toThrow();
+    expect(win.destroy).not.toHaveBeenCalled();
+  });
+});

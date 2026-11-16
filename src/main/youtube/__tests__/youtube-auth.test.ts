@@ -450,3 +450,134 @@ describe('closeLoginWindow', () => {
     expect(() => closeLoginWindow()).not.toThrow();
   });
 });
+
+describe('login diagnostics', () => {
+  it('denies popups and logs sanitised navigation', async () => {
+    vi.useFakeTimers();
+    state.getSessionCookies.mockResolvedValue([]);
+    const promise = startGoogleLogin();
+
+    const handler = state.window.webContents.setWindowOpenHandler.mock.calls[0][0];
+    expect(handler()).toEqual({ action: 'deny' });
+
+    state.window.webContents.emit('did-navigate', {}, 'https://accounts.google.com/o/oauth?x=1');
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'ytauth',
+      'login nav [navigate] https://accounts.google.com/o/oauth'
+    );
+
+    state.window.webContents.emit('did-fail-load', {}, -3, 'aborted', 'https://youtube.com/watch');
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'ytauth',
+      'login nav [fail -3 aborted] https://youtube.com/watch'
+    );
+
+    state.window.destroyed = true;
+    await vi.advanceTimersByTimeAsync(1000);
+    await promise;
+  });
+
+  it('falls back when the current url cannot be parsed', async () => {
+    vi.useFakeTimers();
+    state.getSessionCookies.mockResolvedValue([]);
+    state.window.webContents.getURL.mockReturnValue('not a url');
+    const promise = startGoogleLogin();
+
+    await vi.advanceTimersByTimeAsync(11_000);
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'ytauth',
+      expect.stringContaining('login poll url=not a url')
+    );
+
+    state.window.destroyed = true;
+    await vi.advanceTimersByTimeAsync(1000);
+    await promise;
+  });
+});
+
+describe('login window guards', () => {
+  it('skips showing a destroyed window and stale close events', async () => {
+    vi.useFakeTimers();
+    state.getSessionCookies.mockResolvedValue([]);
+    const promise = startGoogleLogin();
+
+    state.window.destroyed = true;
+    state.window.emit('ready-to-show');
+    expect(state.window.show).not.toHaveBeenCalled();
+
+    state.window.emit('closed');
+    state.window.emit('closed');
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect(promise).resolves.toMatchObject({ success: false, canceled: true });
+  });
+
+  it('handles non-Error load failures and empty urls', async () => {
+    vi.useFakeTimers();
+    state.window.loadURL = vi.fn(() => Promise.reject('plain load'));
+    state.window.webContents.getURL.mockReturnValue('');
+    state.getSessionCookies.mockResolvedValue([]);
+    const promise = startGoogleLogin();
+
+    await vi.advanceTimersByTimeAsync(11_000);
+    expect(state.logger.warn).toHaveBeenCalledWith(
+      'ytauth',
+      'login window load failed',
+      'plain load'
+    );
+    expect(state.logger.info).toHaveBeenCalledWith(
+      'ytauth',
+      expect.stringContaining('login poll url=?')
+    );
+
+    state.window.destroyed = true;
+    await vi.advanceTimersByTimeAsync(1000);
+    await promise;
+  });
+});
+
+describe('cookie helpers edge cases', () => {
+  it('writes LF line endings outside Windows', async () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'linux' });
+    try {
+      state.writeFileRestricted.mockClear();
+      const result = await importCookiesFromFile('/tmp/cookies.txt');
+
+      expect(result).toEqual({ success: true });
+      expect(state.writeFileRestricted).toHaveBeenCalledWith('/data/cookies.txt', 'cookie-content');
+    } finally {
+      Object.defineProperty(process, 'platform', { configurable: true, value: original });
+    }
+  });
+
+  it('reports non-Error import and export failures', async () => {
+    state.readFile.mockRejectedValueOnce('plain read');
+    await expect(importCookiesFromFile('/tmp/cookies.txt')).resolves.toEqual({
+      success: false,
+      error: 'plain read'
+    });
+
+    state.writeFileRestricted.mockRejectedValueOnce('plain write');
+    await expect(exportCookiesToFile('/tmp/out.txt')).resolves.toEqual({
+      success: false,
+      error: 'plain write'
+    });
+  });
+
+  it('reports non-Error status failures', async () => {
+    state.getAuthSettings.mockResolvedValue({ method: 'electron' });
+    state.exportSessionCookies.mockRejectedValueOnce('plain status');
+    const status = await getAuthStatus();
+    expect(status.error).toBe('plain status');
+  });
+
+  it('returns a temp cookie config without restoring the partition', async () => {
+    state.getAuthSettings.mockResolvedValue({ method: 'electron' });
+    state.writeTempSessionCookies.mockResolvedValue('/tmp/live-cookies.txt');
+
+    await expect(getYtAuthConfig()).resolves.toMatchObject({
+      cookiesPath: '/tmp/live-cookies.txt'
+    });
+    expect(state.restorePartitionSession).not.toHaveBeenCalled();
+  });
+});

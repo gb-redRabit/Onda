@@ -56,3 +56,48 @@ describe('AudioTechnicalInfo', () => {
     expect(wrapper.text()).not.toContain('MB');
   });
 });
+
+describe('AudioTechnicalInfo edge cases', () => {
+  function setTrack(next: unknown): void {
+    (state as { track: unknown }).track = next;
+  }
+
+  it('falls back to the metadata format without an extension', () => {
+    setTrack({
+      path: '/a.bin',
+      size: 0,
+      type: 'audio',
+      metadata: { format: 'mp3', bitrate: 0, sampleRate: -1 }
+    });
+    const text = mountElement().text();
+    expect(text).toContain('MP3');
+    expect(text).not.toContain('kb/s');
+    expect(text).not.toContain('kHz');
+    expect(text).not.toContain('audioView.losslessLabel');
+  });
+
+  it('strips a leading dot from the extension', () => {
+    setTrack({ path: '/a', extension: '.WA V', type: 'audio' });
+    const text = mountElement().text();
+    expect(text).toContain('WA V');
+  });
+
+  it('honours an explicit lossless flag', () => {
+    setTrack({
+      path: '/a.m4a',
+      extension: 'm4a',
+      type: 'audio',
+      metadata: { lossless: true, sampleRate: 48_000 }
+    });
+    const text = mountElement().text();
+    expect(text).toContain('audioView.losslessLabel');
+    expect(text).toContain('48 kHz');
+  });
+
+  it('renders with a track that has no metadata', () => {
+    setTrack({ path: '/a', type: 'audio' });
+    const wrapper = mountElement();
+    expect(wrapper.find('[data-testid="audio-technical"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('audioView.losslessLabel');
+  });
+});

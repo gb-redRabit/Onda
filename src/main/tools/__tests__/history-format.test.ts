@@ -119,3 +119,87 @@ describe('serializeHistory', () => {
     expect(JSON.parse(serializeHistory(rows, 'json'))).toEqual(rows);
   });
 });
+
+describe('history format edge data', () => {
+  it('maps full metadata, dates and missing play counts', () => {
+    const files = [
+      track({
+        path: '/full',
+        duration: 30,
+        addedAt: 1000,
+        lastPlayed: 2000,
+        metadata: {
+          title: 'Full',
+          artist: 'Artist',
+          album: 'Album',
+          albumArtist: 'Album Artist',
+          genre: 'Rock',
+          year: 1999
+        }
+      }),
+      track({
+        path: '/no-title.mp3',
+        name: 'no-title.mp3',
+        playCount: undefined,
+        addedAt: 0,
+        metadata: { artist: '' }
+      })
+    ];
+
+    const rows = buildHistoryRows(files, { onlyPlayed: false, type: 'all', sort: 'title' });
+
+    expect(rows[0]).toMatchObject({
+      title: 'Full',
+      albumArtist: 'Album Artist',
+      genre: 'Rock',
+      year: '1999',
+      playCount: 0,
+      lastPlayed: new Date(2000).toISOString(),
+      addedAt: new Date(1000).toISOString()
+    });
+    expect(rows[1]).toMatchObject({ title: 'no-title.mp3', addedAt: '' });
+  });
+
+  it('breaks play count and last played ties by title', () => {
+    const files = [
+      track({ path: '/b', playCount: 2, metadata: { title: 'Beta' } }),
+      track({ path: '/a', playCount: 2, metadata: { title: 'Alpha' } }),
+      track({ path: '/c', playCount: 1, metadata: { title: 'Gamma' } }),
+      track({ path: '/d', playCount: 1, metadata: { title: 'Delta' } })
+    ];
+
+    expect(
+      buildHistoryRows(files, { onlyPlayed: false, type: 'all', sort: 'playCount' }).map(
+        (row) => row.title
+      )
+    ).toEqual(['Alpha', 'Beta', 'Delta', 'Gamma']);
+    expect(
+      buildHistoryRows(files, { onlyPlayed: false, type: 'all', sort: 'lastPlayed' }).map(
+        (row) => row.title
+      )
+    ).toEqual(['Alpha', 'Beta', 'Delta', 'Gamma']);
+  });
+
+  it('serialises empty values without quotes', () => {
+    const rows = [
+      {
+        title: null as never,
+        artist: '',
+        album: '',
+        albumArtist: '',
+        genre: '',
+        year: '',
+        type: 'audio' as const,
+        durationSec: 0,
+        duration: '0:00',
+        path: '/x',
+        playCount: 0,
+        lastPlayed: '',
+        addedAt: ''
+      }
+    ];
+
+    const csv = serializeHistory(rows, 'csv');
+    expect(csv).toContain('\r\n,');
+  });
+});
