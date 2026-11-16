@@ -580,3 +580,20 @@ describe('settings unknown section', () => {
     expect(state.nav.activeTab.value).toBe('playback');
   });
 });
+
+describe('SettingsView menu guards', () => {
+  it('ignores menu keys without a menu or items', () => {
+    mountView();
+    const vm = wrapper!.vm as unknown as {
+      menuRef: HTMLElement | null;
+      onMenuKeydown: (event: KeyboardEvent) => void;
+      hits: unknown[];
+    };
+
+    vm.onMenuKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    vm.menuRef = document.createElement('div');
+    vm.onMenuKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(vm.hits).toEqual([]);
+  });
+});

@@ -4,6 +4,7 @@ import {
   MAX_THUMBNAILS,
   MIN_THUMBNAILS,
   buildTimelineTicks,
+  chooseTickStep,
   computeFrameStripWindow,
   desiredThumbnailCount,
   extensionOf,
@@ -147,5 +148,81 @@ describe('videoClipper — geometria', () => {
         viewportWidth: 300
       })
     ).toBe(false);
+  });
+});
+
+describe('video clipper helper edges', () => {
+  it('falls back to the raw path for empty file names', () => {
+    expect(fileNameOf('')).toBe('');
+  });
+
+  it('formats invalid timecodes and zero fps', () => {
+    expect(formatTimecode(Number.NaN, 30)).toBe('00:00:00:00');
+    expect(formatTimecode(-1, 30)).toBe('00:00:00:00');
+    expect(formatTimecode(1, 0)).toBe('00:00:01:00');
+  });
+
+  it('snaps with fallbacks for fps, pixels and excluded targets', () => {
+    const base = {
+      duration: 100,
+      targets: { start: 10, end: 20, playhead: 30 }
+    };
+
+    expect(snapTimeToTargets(10.01, { ...base, enabled: true, fps: 0, pixelsPerSecond: 0 })).toBe(
+      10
+    );
+
+    expect(
+      snapTimeToTargets(10.01, {
+        ...base,
+        enabled: true,
+        fps: 30,
+        pixelsPerSecond: 100,
+        exclude: 'start'
+      })
+    ).toBe(10);
+
+    expect(
+      snapTimeToTargets(20.01, {
+        ...base,
+        enabled: true,
+        fps: 30,
+        pixelsPerSecond: 100,
+        exclude: 'end'
+      })
+    ).toBe(20);
+
+    expect(
+      snapTimeToTargets(30.01, {
+        ...base,
+        enabled: true,
+        fps: 30,
+        pixelsPerSecond: 100,
+        exclude: 'playhead'
+      })
+    ).toBe(30);
+  });
+
+  it('returns zero times for empty durations', () => {
+    expect(timeAtPercent(50, 0)).toBe(0);
+  });
+
+  it('falls back to the largest tick step', () => {
+    expect(chooseTickStep(0.01, 10_000)).toBeGreaterThan(0);
+  });
+
+  it('builds frame ticks on a zoomed timeline', () => {
+    const ticks = buildTimelineTicks({
+      duration: 2,
+      widthPx: 1000,
+      viewportWidth: 1000,
+      scrollLeft: 0,
+      pixelsPerSecond: 200,
+      zoom: 32,
+      frameWidthPx: 10,
+      frameDuration: 0.04
+    });
+
+    expect(ticks.some((tick) => tick.kind === 'frame')).toBe(true);
   });
 });

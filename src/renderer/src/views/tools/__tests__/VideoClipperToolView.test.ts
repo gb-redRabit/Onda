@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   sendToMain: vi.fn(),
   dropped: [] as string[],
   thumbs: null as any,
+  thumbsOptions: null as any,
   invoke: vi.fn(),
   clipVideo: vi.fn(),
   cancelVideoClip: vi.fn(),
@@ -29,7 +30,10 @@ vi.mock('@renderer/utils/mediaUrl', () => ({
   toMediaServerUrl: (path: string) => `media://${path}`
 }));
 vi.mock('@renderer/composables/useVideoThumbnails', () => ({
-  useVideoThumbnails: () => state.thumbs
+  useVideoThumbnails: (options: unknown) => {
+    state.thumbsOptions = options;
+    return state.thumbs;
+  }
 }));
 
 const SelectStub = {
@@ -1159,5 +1163,112 @@ describe('clipper metadata fallback', () => {
 
     expect(wrapper!.get('[data-testid="clip-export"]').attributes('disabled')).toBeDefined();
     expect(wrapper!.get('[data-testid="clip-add"]').attributes('disabled')).toBeDefined();
+  });
+});
+
+describe('VideoClipperToolView guards', () => {
+  type Vm = Record<string, any>;
+
+  it('ignores media actions before a video is loaded', async () => {
+    mountView();
+    const vm = wrapper!.vm as Vm;
+
+    expect(() => {
+      vm.onTimeUpdate();
+      vm.clampRange();
+      vm.fitSelection();
+      vm.fitSecond();
+      vm.keepPlayheadVisible();
+      vm.onPointerMove(new MouseEvent('pointermove'));
+      vm.applyDrag(new MouseEvent('pointermove'));
+      vm.openPath();
+    }).not.toThrow();
+    await vm.previewClip();
+
+    expect(vm.ratioFromEvent(new MouseEvent('pointermove'))).toBeNull();
+    expect(state.clipVideo).not.toHaveBeenCalled();
+  });
+
+  it('skips picking while busy', async () => {
+    mountView();
+    const vm = wrapper!.vm as Vm;
+    vm.busy = true;
+    state.invoke.mockClear();
+
+    await vm.pickVideo();
+
+    expect(state.invoke).not.toHaveBeenCalled();
+  });
+
+  it('rejects clips shorter than one frame', async () => {
+    mountView();
+    const vm = wrapper!.vm as Vm;
+    vm.duration = 10;
+    vm.startSec = 5;
+    vm.endSec = 5;
+
+    vm.addClip();
+    expect(vm.clips).toHaveLength(0);
+
+    vm.videoPath = 'C:\\videos\\a.mp4';
+    vm.duration = 0.06;
+    vm.startSec = 0.02;
+    vm.endSec = 0.07;
+    await vm.startClip();
+
+    expect(vm.error).toBe('tools.clipInvalidRange');
+    expect(state.clipVideo).not.toHaveBeenCalled();
+  });
+
+  it('ignores cancelling without an active job', () => {
+    mountView();
+    const vm = wrapper!.vm as Vm;
+
+    vm.cancelClip();
+
+    expect(state.cancelVideoClip).not.toHaveBeenCalled();
+  });
+
+  it('formats fractional zoom and fps labels', () => {
+    mountView();
+    const vm = wrapper!.vm as Vm;
+    vm.timelineZoom = 1.25;
+    vm.videoFps = 29.97;
+
+    expect(vm.zoomLabel).toBe('1.3');
+    expect(vm.fpsLabel).toBe('29.97');
+  });
+
+  it('falls back to the maximum zoom level', () => {
+    mountView();
+    const vm = wrapper!.vm as Vm;
+    vm.timelineZoom = 1000;
+
+    vm.zoomBy(1);
+
+    // No timeline elements yet, so applyZoom bails out without changing the value.
+    expect(vm.timelineZoom).toBe(1000);
+  });
+});
+
+describe('VideoClipperToolView option callbacks', () => {
+  it('exposes the frame strip activity flag', () => {
+    mountView();
+
+    expect(state.thumbsOptions.frameStripActive()).toBe(false);
+  });
+
+  it('formats an integer zoom label and clamps a zero end time', () => {
+    mountView();
+    const vm = wrapper!.vm as Record<string, any>;
+    vm.timelineZoom = 1;
+    vm.duration = 10;
+    vm.startSec = 0;
+    vm.endSec = 0;
+
+    vm.clampRange();
+
+    expect(vm.zoomLabel).toBe('1');
+    expect(vm.endSec).toBe(0.05);
   });
 });

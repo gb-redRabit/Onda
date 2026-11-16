@@ -368,3 +368,45 @@ describe('broadcast batching', () => {
     expect(h['yt:download:add']).toBeTypeOf('function');
   });
 });
+
+describe('downloads handler non-Error failures', () => {
+  it('stringifies plain export failures', async () => {
+    const h = await load();
+    state.writeFile.mockRejectedValueOnce('plain disk error');
+
+    await expect(h['yt:download:export']({ sender: {} })).resolves.toEqual({
+      success: false,
+      error: 'plain disk error'
+    });
+  });
+
+  it('handles windowless imports, empty picks and plain errors', async () => {
+    const h = await load();
+    state.fromWebContents.mockReturnValue(null);
+    state.showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [] });
+
+    await expect(h['yt:download:import']({ sender: {} })).resolves.toEqual({
+      success: false,
+      canceled: true
+    });
+    expect(state.showOpenDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ name: 'JSON', extensions: ['json'] }] })
+    );
+
+    state.readFile.mockRejectedValueOnce('plain read error');
+    await expect(h['yt:download:import']({ sender: {} })).resolves.toEqual({
+      success: false,
+      error: 'plain read error'
+    });
+  });
+
+  it('stringifies plain metadata failures', async () => {
+    const h = await load();
+    state.applyMeta.mockRejectedValueOnce('plain tag error');
+
+    await expect(h['yt:download:updateMetadata']({}, 'C:/music/a.mp3', {})).resolves.toEqual({
+      success: false,
+      error: 'plain tag error'
+    });
+  });
+});

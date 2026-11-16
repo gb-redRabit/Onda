@@ -468,3 +468,25 @@ describe('frame stepping', () => {
     expect(state.getVideoFps).not.toHaveBeenCalled();
   });
 });
+
+describe('frame stepping without finite duration', () => {
+  it('uses an unbounded duration when metadata is missing', async () => {
+    const element = video({ currentTime: 10, duration: Number.NaN });
+    setPlayerShortcutCtx({
+      player: state.player,
+      settings: state.settings,
+      getVideoRef: () => element,
+      skip: vi.fn(),
+      setSpeed: vi.fn(),
+      toggleFullscreen: vi.fn(),
+      notify: vi.fn(),
+      t: state.t
+    });
+
+    handlePlayerShortcutKeydown(event('.'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(element.currentTime).toBeGreaterThan(10);
+  });
+});
