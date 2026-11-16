@@ -89,3 +89,93 @@ describe('library derivations follow metadata edits, not just the track count', 
     expect(names).toContain('Greatest Hits — Bob');
   });
 });
+
+describe('library derivations edge data', () => {
+  function media(path: string, type: 'audio' | 'video' | 'image'): MediaFile {
+    return {
+      id: path,
+      name: path.split('/').pop() ?? path,
+      path,
+      extension: `.${type}`,
+      mimeType: `${type}/x`,
+      size: 1,
+      type,
+      metadata: {}
+    } as MediaFile;
+  }
+
+  it('returns empty derivations for an empty library', () => {
+    const d = useLibraryDerivations(ref<MediaFile[]>([]));
+
+    expect(d.trackStats.value).toMatchObject({ audio: 0, video: 0, image: 0 });
+    expect(d.recentTracks.value).toEqual([]);
+    expect(d.mostPlayed.value).toEqual([]);
+    expect(d.artists.value).toEqual([]);
+    expect(d.albums.value).toEqual([]);
+  });
+
+  it('splits tracks by media type', () => {
+    const d = useLibraryDerivations(
+      ref<MediaFile[]>([
+        media('/a.mp3', 'audio'),
+        media('/v.mp4', 'video'),
+        media('/i.png', 'image')
+      ])
+    );
+
+    expect(d.audioCount.value).toBe(1);
+    expect(d.videoCount.value).toBe(1);
+    expect(d.imageCount.value).toBe(1);
+    expect(d.videoTracks.value.map((t) => t.id)).toEqual(['/v.mp4']);
+    expect(d.imageTracks.value.map((t) => t.id)).toEqual(['/i.png']);
+  });
+
+  it('omits tracks without playback statistics and follows revisions', () => {
+    const tracks = ref<MediaFile[]>([
+      {
+        ...media('/a.mp3', 'audio'),
+        lastPlayed: undefined,
+        playCount: undefined
+      } as unknown as MediaFile,
+      { ...media('/b.mp3', 'audio'), lastPlayed: 100, playCount: 2 } as MediaFile
+    ]);
+    const revision = ref(0);
+    const d = useLibraryDerivations(tracks, revision);
+
+    expect(d.recentTracks.value.map((t) => t.id)).toEqual(['/b.mp3']);
+    expect(d.mostPlayed.value.map((t) => t.id)).toEqual(['/b.mp3']);
+
+    tracks.value[1].lastPlayed = 200;
+    revision.value++;
+    expect(d.recentTracks.value[0].lastPlayed).toBe(200);
+  });
+});
+
+describe('library derivations mixed grouping', () => {
+  it('sorts multiple artists and ignores unrelated media types', () => {
+    const tracks = ref<MediaFile[]>([
+      {
+        ...track('/a.mp3', 'Beta', 'One')
+      },
+      {
+        ...track('/b.mp3', 'Alpha', 'Two')
+      },
+      {
+        id: '/notes.txt',
+        name: 'notes.txt',
+        path: '/notes.txt',
+        extension: '.txt',
+        mimeType: 'text/plain',
+        size: 1,
+        type: 'other',
+        metadata: {}
+      } as unknown as MediaFile
+    ]);
+    const d = useLibraryDerivations(tracks);
+
+    expect(d.artists.value.map(([name]) => name)).toEqual(['Alpha', 'Beta']);
+    expect(d.audioCount.value).toBe(2);
+    expect(d.videoCount.value).toBe(0);
+    expect(d.imageCount.value).toBe(0);
+  });
+});

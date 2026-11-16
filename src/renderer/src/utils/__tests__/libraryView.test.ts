@@ -126,3 +126,36 @@ describe('sortLibraryTracks', () => {
     expect(tracks).toEqual(original);
   });
 });
+
+describe('libraryView missing fields', () => {
+  const bare = [
+    track('x', {
+      name: 'X',
+      metadata: {},
+      duration: undefined,
+      addedAt: undefined,
+      playCount: undefined
+    }),
+    track('y', {
+      name: 'Y',
+      metadata: {},
+      duration: undefined,
+      addedAt: undefined,
+      playCount: undefined
+    })
+  ];
+
+  it('sorts by every key when metadata and stats are missing', () => {
+    for (const key of ['title', 'artist', 'album', 'duration', 'added', 'plays'] as const) {
+      expect(sortLibraryTracks(bare, key, 'asc')).toHaveLength(2);
+      expect(sortLibraryTracks(bare, key, 'desc')).toHaveLength(2);
+    }
+  });
+
+  it('keeps the order for an unknown sort key', () => {
+    expect(sortLibraryTracks(bare, 'ghost' as never, 'asc').map((item) => item.id)).toEqual([
+      'x',
+      'y'
+    ]);
+  });
+});

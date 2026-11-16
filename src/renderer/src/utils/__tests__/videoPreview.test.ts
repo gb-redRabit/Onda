@@ -291,3 +291,65 @@ describe('mouse handling', () => {
     expect(core.hiddenVideoRef.value).not.toBeNull();
   });
 });
+
+describe('video preview edge branches', () => {
+  it('reuses the canvas across frames', () => {
+    const { core } = setup();
+    core.drawFrame();
+    core.drawFrame();
+
+    expect(core.previewDataUrl.value).toBe('data:image/jpeg;base64,frame');
+  });
+
+  it('falls back to the video src and raw time when metadata is missing', () => {
+    const { core, hidden, videoRef } = setup();
+    videoRef.value = fakeVideo({
+      currentSrc: '',
+      src: 'https://cdn/fallback.mp4',
+      duration: 100
+    }) as unknown as HTMLVideoElement;
+    hidden.duration = 0;
+
+    core.handleMouseMove({ clientX: 150 } as MouseEvent);
+    vi.advanceTimersByTime(40);
+
+    expect(hidden.src).toBe('https://cdn/fallback.mp4');
+    expect(hidden.currentTime).toBe(25);
+  });
+
+  it('uses a zero percentage for a bar without width', () => {
+    const { core, progressRef } = setup();
+    progressRef.value = fakeBar(0);
+
+    core.handleMouseMove({ clientX: 120 } as MouseEvent);
+
+    expect(core.previewLeft.value).toBe(0);
+    expect(core.previewTime.value).toBe(0);
+  });
+
+  it('hides the preview without a pending seek', () => {
+    const { core } = setup();
+
+    core.handleMouseLeave();
+
+    expect(core.previewVisible.value).toBe(false);
+  });
+});
+
+describe('video preview seek failures', () => {
+  it('clears the frame when seeking throws', () => {
+    const { core, hidden } = setup();
+    Object.defineProperty(hidden, 'currentTime', {
+      configurable: true,
+      get: () => 0,
+      set: () => {
+        throw new Error('seek failed');
+      }
+    });
+
+    core.handleMouseMove({ clientX: 150 } as MouseEvent);
+    vi.advanceTimersByTime(40);
+
+    expect(core.previewDataUrl.value).toBeNull();
+  });
+});

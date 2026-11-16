@@ -103,3 +103,114 @@ describe('useDialogFocus', () => {
     b.unmount();
   });
 });
+
+describe('useDialogFocus edge cases', () => {
+  async function mountCustom(
+    render: (panel: Ref<HTMLElement | null>) => VNode[],
+    options: DialogFocusOptions = {}
+  ) {
+    const panel = ref<HTMLElement | null>(null);
+    let api!: ReturnType<typeof useDialogFocus>;
+    const app = createApp(
+      defineComponent({
+        setup() {
+          api = useDialogFocus(panel, options);
+          return () => h('div', render(panel));
+        }
+      })
+    );
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    app.mount(host);
+    await nextTick();
+    return { api, panel, unmount: () => app.unmount() };
+  }
+
+  it('ignores key handling without a panel', async () => {
+    const { api, unmount } = await mountCustom(() => [h('div')]);
+
+    expect(api.focusableElements()).toEqual([]);
+    expect(() =>
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+    ).not.toThrow();
+    expect(() =>
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    ).not.toThrow();
+
+    unmount();
+  });
+
+  it('skips hidden, aria-hidden and display-none controls', async () => {
+    const { api, unmount } = await mountCustom((p) => [
+      h('div', { ref: p }, [
+        h('button', { id: 'hidden', hidden: true }, 'hidden'),
+        h('button', { id: 'aria', 'aria-hidden': 'true' }, 'aria'),
+        h('button', { id: 'display', style: 'display: none' }, 'display'),
+        h('button', { id: 'visible' }, 'visible')
+      ])
+    ]);
+
+    const ids = api.focusableElements().map((el) => el.id);
+    expect(ids).toEqual(['visible']);
+
+    await api.moveFocusIn();
+    expect(document.activeElement).toBe(document.getElementById('visible'));
+
+    unmount();
+  });
+
+  it('ignores duplicate starts and stops without an opener', async () => {
+    const { api, unmount } = await mountCustom((p) => [
+      h('div', { ref: p }, [h('button', 'inside')])
+    ]);
+
+    api.panel.value = document.createElement('div');
+    await nextTick();
+    api.panel.value = document.createElement('div');
+    await nextTick();
+    api.panel.value = null;
+    await nextTick();
+
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it('treats a non-HTMLElement active element as no opener', async () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    document.body.appendChild(svg);
+    const descriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'activeElement');
+    Object.defineProperty(document, 'activeElement', { configurable: true, get: () => svg });
+
+    try {
+      const { api, unmount } = await mountCustom((p) => [
+        h('div', { ref: p }, [h('button', 'inside')])
+      ]);
+      api.panel.value = document.createElement('div');
+      await nextTick();
+      expect(() => {
+        api.panel.value = null;
+      }).not.toThrow();
+      unmount();
+    } finally {
+      delete (document as { activeElement?: unknown }).activeElement;
+      if (descriptor) Object.defineProperty(Document.prototype, 'activeElement', descriptor);
+      svg.remove();
+    }
+  });
+});
+
+describe('useDialogFocus outside focus', () => {
+  it('ignores Tab when focus is outside the panel', async () => {
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    const { unmount } = await mountDialog((p) => [
+      h('div', { ref: p }, [h('button', { id: 'inside' }, 'inside')])
+    ]);
+
+    outside.focus();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+
+    expect(document.activeElement).toBe(outside);
+    unmount();
+    outside.remove();
+  });
+});

@@ -948,3 +948,21 @@ describe('parseStreamGetOutput', () => {
     });
   });
 });
+
+describe('shared youtube edge urls', () => {
+  it('rejects empty or unknown youtube paths', () => {
+    expect(detectYtKind('https://www.youtube.com/')).toBeNull();
+    expect(detectYtKind('https://example.com/watch?v=dQw4w9WgXcQ')).toBeNull();
+  });
+
+  it('requires a valid id on short links', () => {
+    expect(extractYtVideoId('https://youtu.be/')).toBeNull();
+    expect(extractYtVideoId('https://youtu.be/abc')).toBeNull();
+    expect(extractYtVideoId('https://example.com/watch?v=dQw4w9WgXcQ')).toBeNull();
+  });
+
+  it('requires a valid id on shorts and embed paths', () => {
+    expect(extractYtVideoId('https://www.youtube.com/shorts/')).toBeNull();
+    expect(extractYtVideoId('https://www.youtube.com/embed/abc')).toBeNull();
+  });
+});

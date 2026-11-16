@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   getThumb: vi.fn(),
   fileCount: vi.fn((count: number) => `files:${count}`),
   t: vi.fn((key: string) => key),
+  virtualOptions: null as any,
   resizeCallback: null as (() => void) | null,
   disconnect: vi.fn(),
   observe: vi.fn()
@@ -28,12 +29,14 @@ vi.mock('@renderer/composables/useCountLabel', () => ({
   useCountLabel: () => ({ fileCount: state.fileCount })
 }));
 vi.mock('@renderer/composables/useVirtualList', () => ({
-  useVirtualList: () =>
-    ref({
+  useVirtualList: (options: unknown) => {
+    state.virtualOptions = options;
+    return ref({
       getVirtualItems: () => state.items,
       getTotalSize: () => state.total,
       measure: state.measure
-    })
+    });
+  }
 }));
 
 let wrapper: VueWrapper | null = null;
@@ -213,5 +216,17 @@ describe('column observation', () => {
     wrapper!.unmount();
     wrapper = null;
     expect(state.disconnect).toHaveBeenCalled();
+  });
+});
+
+describe('LibraryImagesTab virtualizer and fallbacks', () => {
+  it('computes row count and estimated size from the current grid', () => {
+    const images = [image('a'), image('b'), image('c')];
+    mountTab(images);
+
+    const options = state.virtualOptions;
+    expect(options.count()).toBe(2);
+    expect(options.estimateSize()).toBe(172);
+    expect(options.scrollEl()).toBeTruthy();
   });
 });

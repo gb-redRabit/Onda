@@ -210,3 +210,38 @@ describe('parentOf', () => {
     expect(parentOf('/file.mp3')).toBeNull();
   });
 });
+
+describe('path policy edges', () => {
+  it('ignores invalid filesystem root inputs', () => {
+    expect(isFilesystemRoot(null as never)).toBe(false);
+    expect(isFilesystemRoot('' as never)).toBe(false);
+    expect(isFilesystemRoot(42 as never)).toBe(false);
+  });
+
+  it('handles short unc segments as a profile root miss', () => {
+    expect(isUserProfileRoot('\\\\server', 'win32')).toBe(false);
+    expect(isUserProfileRoot('//server/share/deep', 'win32')).toBe(false);
+  });
+
+  it('ignores invalid profile root inputs', () => {
+    expect(isUserProfileRoot(null, 'win32')).toBe(false);
+    expect(isUserProfileRoot('', 'linux')).toBe(false);
+    expect(isUserProfileRoot('/home/\0user', 'linux')).toBe(false);
+  });
+
+  it('protects system paths and ignores invalid destructive targets', () => {
+    expect(isProtectedDestructivePath('/etc/passwd', 'linux')).toBe(true);
+    expect(isProtectedDestructivePath('/home/user', 'linux')).toBe(true);
+    expect(isProtectedDestructivePath(null, 'linux')).toBe(true);
+    expect(isProtectedDestructivePath(42 as never, 'linux')).toBe(true);
+  });
+
+  it('matches only valid extra roots', () => {
+    expect(
+      isProtectedDestructivePath('C:/custom/app', 'win32', ['', 5 as never, 'C:/custom/app/'])
+    ).toBe(true);
+    expect(
+      isProtectedDestructivePath('C:/custom/other', 'win32', ['', 5 as never, 'C:/custom/app'])
+    ).toBe(false);
+  });
+});
