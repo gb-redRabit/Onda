@@ -410,3 +410,111 @@ describe('keyboard and clearing', () => {
     expect(document.activeElement).toBe(input().element);
   });
 });
+
+describe('search edge cases', () => {
+  it('debounces rapid query changes', async () => {
+    mountSearch();
+    await type('o');
+    await type('ot');
+    await tick(160);
+
+    expect(labels()).toContain('Other');
+  });
+
+  it('navigates to every view action', async () => {
+    mountSearch();
+    const items = results().props('flatItems') as Array<{
+      label: string;
+      action?: () => void;
+    }>;
+
+    for (const label of [
+      'nav.home',
+      'nav.online',
+      'nav.downloads',
+      'sources.title',
+      'nav.explorer',
+      'nav.settings'
+    ]) {
+      items.find((item) => item.label === label)!.action!();
+    }
+
+    expect(state.router.push.mock.calls.map((call: unknown[]) => call[0])).toEqual([
+      '/',
+      '/online',
+      '/downloads',
+      '/sources',
+      '/explorer',
+      '/settings'
+    ]);
+  });
+
+  it('plays a single-track playlist without queueing', async () => {
+    state.library.playlists = [{ name: 'Solo', tracks: [track()] }];
+    mountSearch();
+    const item = (results().props('flatItems') as Array<{ label: string }>).find(
+      (value) => value.label === 'Solo'
+    )!;
+
+    results().vm.$emit('run', item);
+    await wrapper!.vm.$nextTick();
+
+    expect(state.player.addToQueueMultiple).not.toHaveBeenCalled();
+    expect(state.player.setTrack).toHaveBeenCalled();
+  });
+
+  it('searches tracks without metadata', async () => {
+    state.library.tracks = [
+      track({ id: 'raw', name: 'Raw file.flac', extension: 'flac', metadata: undefined }),
+      track({ id: 'noartist', name: 'No artist.mp3', metadata: { title: 'No artist' } })
+    ];
+    mountSearch();
+
+    expect(labels()).toContain('Raw file.flac');
+    const items = results().props('flatItems') as Array<{ type: string; sub: unknown }>;
+    expect(items.find((item) => item.type === 'track')?.sub).toBe('flac');
+  });
+
+  it('ignores arrows and Enter outside the global palette', async () => {
+    state.ui.searchMode = 'view';
+    mountSearch();
+
+    const down = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    document.dispatchEvent(down);
+    document.dispatchEvent(enter);
+    await wrapper!.vm.$nextTick();
+
+    expect(down.defaultPrevented).toBe(false);
+    expect(state.router.push).not.toHaveBeenCalled();
+  });
+
+  it('ignores Enter when no item is active', async () => {
+    state.library.tracks = [];
+    state.library.playlists = [];
+    state.plugins.commands = [];
+    mountSearch();
+    await type('zzzz');
+    await tick(160);
+
+    expect(labels()).toEqual([]);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await wrapper!.vm.$nextTick();
+    expect(state.ui.closeSearch).not.toHaveBeenCalled();
+  });
+});
+
+describe('search remaining keys', () => {
+  it('ignores other keys and ArrowUp in view mode', async () => {
+    state.ui.searchMode = 'view';
+    mountSearch();
+
+    const up = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true });
+    document.dispatchEvent(up);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    await wrapper!.vm.$nextTick();
+
+    expect(up.defaultPrevented).toBe(false);
+    expect(state.ui.closeSearch).not.toHaveBeenCalled();
+  });
+});

@@ -267,3 +267,91 @@ describe('toggles and ListenBrainz', () => {
     expect(wrapper!.text()).toContain('invalid token');
   });
 });
+
+describe('scrobbling fallbacks', () => {
+  it('reports Last.fm test results without usernames or errors', async () => {
+    state.testResult = { ok: true };
+    mountScrobbling();
+    await flush();
+    await wrapper!.get('[data-testid="scrobbling-lastfm-test"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+    expect(wrapper!.text()).toContain('Last.fm: OK');
+
+    state.invoke.mockImplementation(async (channel: string) => {
+      if (channel === 'scrobbling:status') return state.status;
+      if (channel === 'scrobbling:test') return { ok: false };
+      return undefined;
+    });
+    await wrapper!.get('[data-testid="scrobbling-lastfm-test"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+    expect(wrapper!.text()).toContain('Last.fm test failed');
+  });
+
+  it('falls back when authorization start fails without an error', async () => {
+    state.authStart = { ok: false };
+    mountScrobbling();
+    await flush();
+    await wrapper!.get('[data-testid="scrobbling-lastfm-connect"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+    expect(wrapper!.text()).toContain('Last.fm authorization failed');
+  });
+
+  it('stores a session without a username', async () => {
+    state.authComplete = { ok: true, sessionKey: 'session-2' };
+    mountScrobbling();
+    await flush();
+    await wrapper!.get('[data-testid="scrobbling-lastfm-connect"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+
+    const session = state.settings.apiKeys.keys.find(
+      (k: any) => k.id === 'scrobble:lastfm-session'
+    );
+    expect(session).toMatchObject({ key: 'session-2', isActive: true });
+    expect(wrapper!.text()).toContain('settings.lastfmConnectedAs');
+  });
+
+  it('falls back after authorization polls without an error', async () => {
+    state.authComplete = { ok: false };
+    mountScrobbling();
+    await flush();
+    await wrapper!.get('[data-testid="scrobbling-lastfm-connect"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await vi.advanceTimersByTimeAsync(5000 * 36);
+    await flush();
+    expect(wrapper!.text()).toContain('settings.lastfmConnectFailed');
+  });
+
+  it('reports ListenBrainz results without usernames or errors', async () => {
+    state.testResult = { ok: true };
+    mountScrobbling();
+    await flush();
+    inputs()[2].vm.$emit('update:modelValue', 'token-x');
+    await wrapper!.get('[data-testid="scrobbling-listenbrainz-test"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+
+    const token = state.settings.apiKeys.keys.find(
+      (k: any) => k.id === 'scrobble:listenbrainz-token'
+    );
+    expect(token).toMatchObject({ key: 'token-x', isActive: true });
+    expect(token.values).toEqual({});
+    expect(wrapper!.text()).toContain('ListenBrainz: OK');
+
+    state.invoke.mockImplementation(async (channel: string) => {
+      if (channel === 'scrobbling:status') return state.status;
+      if (channel === 'scrobbling:test') return { ok: false };
+      return undefined;
+    });
+    inputs()[2].vm.$emit('update:modelValue', 'token-y');
+    await wrapper!.get('[data-testid="scrobbling-listenbrainz-test"]').trigger('click');
+    await vi.advanceTimersByTimeAsync(120);
+    await flush();
+    expect(wrapper!.text()).toContain('ListenBrainz test failed');
+  });
+});

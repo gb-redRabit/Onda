@@ -358,3 +358,129 @@ describe('table rows and reset', () => {
     expect(store.loading.value).toBe(false);
   });
 });
+
+describe('stale failures', () => {
+  it('ignores a stale fetch rejection', async () => {
+    const { store } = setup();
+    let rejectFirst!: (error: unknown) => void;
+    state.invoke
+      .mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          rejectFirst = reject;
+        })
+      )
+      .mockResolvedValueOnce({ items: [item('fresh')] });
+
+    const first = store.fetchItems();
+    await store.fetchItems();
+    rejectFirst(new Error('late error'));
+    await first;
+
+    expect(store.items.value).toEqual([item('fresh')]);
+    expect(store.lastError.value).toBe('');
+  });
+
+  it('ignores a stale page fetch from fetchMore', async () => {
+    const { store } = setup({ mode: 'page' });
+    store.currentPage.value = 1;
+    let resolveFirst!: (value: unknown) => void;
+    state.invoke.mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)));
+
+    const first = store.fetchMore();
+    await store.fetchItems();
+    const pages = store.currentPage.value;
+    resolveFirst({ items: [item('stale')] });
+    await first;
+
+    expect(store.currentPage.value).toBe(pages);
+    expect(store.items.value).toEqual([]);
+  });
+
+  it('ignores a stale setPage response', async () => {
+    const { store } = setup();
+    let resolveFirst!: (value: unknown) => void;
+    state.invoke.mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)));
+
+    const first = store.setPage(2);
+    await store.fetchItems();
+    resolveFirst({ items: [item('stale')] });
+    await first;
+
+    expect(store.items.value).toEqual([]);
+  });
+
+  it('ignores a stale setPage rejection and string errors', async () => {
+    const { store } = setup();
+    let rejectFirst!: (error: unknown) => void;
+    state.invoke
+      .mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          rejectFirst = reject;
+        })
+      )
+      .mockResolvedValueOnce({ items: [] });
+
+    const first = store.setPage(2);
+    await store.fetchItems();
+    rejectFirst(new Error('late page'));
+    await first;
+    expect(store.lastError.value).toBe('');
+
+    state.invoke.mockRejectedValueOnce('plain page');
+    await store.setPage(3);
+    expect(store.lastError.value).toBe('plain page');
+  });
+
+  it('falls back to empty table rows when the bridge returns nothing', async () => {
+    const pageEndpoint = endpoint({ type: 'page', table: { mode: 'endpoint', path: '/rows' } });
+    const { store } = setup({ endpoint: pageEndpoint });
+    state.invoke.mockResolvedValueOnce(undefined);
+
+    await store.fetchTableRows();
+    expect(store.tableRows.value).toEqual([]);
+    expect(store.tableLoading.value).toBe(false);
+  });
+
+  it('ignores a stale table rejection', async () => {
+    const pageEndpoint = endpoint({ type: 'page', table: { mode: 'endpoint', path: '/rows' } });
+    const { store } = setup({ endpoint: pageEndpoint });
+    let rejectFirst!: (error: unknown) => void;
+    state.invoke.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectFirst = reject;
+      })
+    );
+
+    const first = store.fetchTableRows();
+    store.resetItems();
+    rejectFirst(new Error('late rows'));
+    await first;
+
+    expect(store.tableRows.value).toEqual([]);
+    expect(store.tableLoading.value).toBe(false);
+  });
+});
+
+describe('missing payloads', () => {
+  it('handles undefined fetch results in every path', async () => {
+    const page = setup({ mode: 'page' });
+    page.store.currentPage.value = 1;
+    state.invoke.mockResolvedValueOnce(undefined);
+    await page.store.fetchMore();
+    expect(page.store.items.value).toEqual([]);
+    expect(page.store.hasMore.value).toBe(false);
+
+    const cursor = setup({ mode: 'cursor' });
+    cursor.store.nextFrom.value = 'token';
+    state.invoke.mockResolvedValueOnce(undefined);
+    await cursor.store.fetchMore();
+    expect(cursor.store.items.value).toEqual([]);
+    expect(cursor.store.nextFrom.value).toBeNull();
+
+    const paged = setup();
+    state.invoke.mockResolvedValueOnce(undefined);
+    await paged.store.setPage(2);
+    expect(paged.store.items.value).toEqual([]);
+    expect(paged.store.hasMore.value).toBe(false);
+  });
+});

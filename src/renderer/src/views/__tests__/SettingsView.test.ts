@@ -527,3 +527,56 @@ describe('header actions', () => {
     expect(state.prompt.promptCancel).toHaveBeenCalled();
   });
 });
+
+describe('settings view remaining branches', () => {
+  it('clears search hits from the close button', async () => {
+    mountView();
+    await typeSearch('language');
+    expect(wrapper!.findAll('[data-testid="settings-search-hit"]').length).toBeGreaterThan(0);
+
+    await wrapper!.get('button[aria-label="common.close"]').trigger('click');
+    expect(state.nav.search.value).toBe('');
+    expect(wrapper!.findAll('[data-testid="settings-search-hit"]')).toHaveLength(0);
+  });
+
+  it('renders without a known active tab', () => {
+    state.nav.activeTab.value = 'bogus';
+    mountView();
+    expect(wrapper!.findAll('[data-testid="tab-body"]')).toHaveLength(0);
+
+    state.nav.activeTab.value = null;
+    expect(wrapper!.findAll('[data-testid="tab-body"]')).toHaveLength(0);
+  });
+});
+
+describe('settings tab hits', () => {
+  it('opens a tab hit without waiting for a field', async () => {
+    mountView();
+    await typeSearch('settings.general');
+
+    const hits = wrapper!.findAll('[data-testid="settings-search-hit"]');
+    expect(hits.length).toBeGreaterThan(0);
+    const tabHit = hits.find((hit) => !hit.text().includes('settings.searchField'))!;
+    state.waitForSettingElement.mockClear();
+    await tabHit.get('button').trigger('click');
+    await flush();
+
+    expect(state.nav.search.value).toBe('');
+    expect(state.waitForSettingElement).not.toHaveBeenCalled();
+  });
+});
+
+describe('settings unknown section', () => {
+  it('ignores unknown sections from the rail and on mount', async () => {
+    state.nav.activeSection.value = 'bogus';
+    state.nav.activeTab.value = null;
+    mountView();
+
+    expect(wrapper!.findAll('[data-testid="tab-body"]')).toHaveLength(0);
+
+    state.nav.activeTab.value = 'playback';
+    await nextTick();
+    wrapper!.findComponent(RailStub).vm.$emit('select-section', 'bogus');
+    expect(state.nav.activeTab.value).toBe('playback');
+  });
+});

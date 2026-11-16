@@ -18,7 +18,13 @@ const h = vi.hoisted(() => {
     destroyed = false;
     focus = vi.fn();
     show = vi.fn();
-    loadURL = vi.fn(async () => {});
+    loadURL = vi.fn(async () => {
+      if (h.loadError) {
+        const error = h.loadError;
+        h.loadError = null;
+        throw error;
+      }
+    });
     webContents = {
       setWindowOpenHandler: vi.fn(),
       setUserAgent: vi.fn(),
@@ -54,7 +60,7 @@ const h = vi.hoisted(() => {
     defaultSession: { getUserAgent: () => 'Mozilla/5.0 Electron/30.0.0 Chrome/126 Safari/537.36' },
     fromPartition: () => ({ cookies: { get: async () => state.cookies } })
   };
-  return { windows, FakeBrowserWindow, state, session };
+  return { windows, FakeBrowserWindow, state, session, loadError: null as unknown };
 });
 
 vi.mock('electron', () => ({
@@ -77,6 +83,7 @@ const fakeWindow = (): (typeof h.windows)[number] | undefined => h.windows.at(-1
 beforeEach(() => {
   h.windows.length = 0;
   h.state.cookies = [];
+  h.loadError = null;
   vi.mocked(setProviderCookie).mockClear();
   vi.mocked(setProviderCookie).mockResolvedValue(true);
   vi.mocked(setProviderToken).mockClear();
@@ -190,5 +197,87 @@ describe('startProviderLogin — PikPak (token z localStorage)', () => {
     expect(setProviderToken).toHaveBeenCalledWith('pikpak', 'TOK');
     expect(setProviderRefresh).toHaveBeenCalledWith('pikpak', 'REF');
     expect(win?.isDestroyed()).toBe(true);
+  });
+});
+
+describe('startProviderLogin - extra branches', () => {
+  it('ignores cookies without a value', async () => {
+    const promise = startProviderLogin('gdrive');
+    h.state.cookies = [
+      { domain: '.google.com', name: 'SID', value: '' },
+      { domain: '.google.com', name: 'SID', value: 'ok' }
+    ];
+    fakeWindow()?.emit('closed');
+
+    await expect(promise).resolves.toEqual({ success: true });
+    expect(setProviderCookie).toHaveBeenCalledWith('gdrive', 'SID=ok');
+  });
+
+  it('skips showing a window that was destroyed before ready', async () => {
+    const promise = startProviderLogin('gdrive');
+    const win = fakeWindow()!;
+    win.destroyed = true;
+    win.emit('ready-to-show');
+    expect(win.show).not.toHaveBeenCalled();
+
+    win.emit('closed');
+    await expect(promise).resolves.toEqual({ success: false, canceled: true });
+  });
+
+  it('handles non-Error load failures', async () => {
+    h.loadError = 'plain load failure';
+    const promise = startProviderLogin('gdrive');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    fakeWindow()?.emit('closed');
+    await expect(promise).resolves.toMatchObject({ success: false });
+  });
+
+  it('builds a macOS browser user agent', async () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'darwin' });
+    try {
+      const promise = startProviderLogin('gdrive');
+      const win = fakeWindow()!;
+      expect(win.webContents.setUserAgent).toHaveBeenCalledWith(
+        expect.stringContaining('Macintosh')
+      );
+      win.emit('closed');
+      await promise;
+    } finally {
+      Object.defineProperty(process, 'platform', { configurable: true, value: original });
+    }
+  });
+
+  it('builds a Linux browser user agent', async () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'linux' });
+    try {
+      const promise = startProviderLogin('gdrive');
+      const win = fakeWindow()!;
+      expect(win.webContents.setUserAgent).toHaveBeenCalledWith(
+        expect.stringContaining('X11; Linux')
+      );
+      win.emit('closed');
+      await promise;
+    } finally {
+      Object.defineProperty(process, 'platform', { configurable: true, value: original });
+    }
+  });
+
+  it('accepts a PikPak token without a refresh token', async () => {
+    vi.useFakeTimers();
+    vi.mocked(setProviderRefresh).mockClear();
+    const promise = startProviderLogin('pikpak');
+    const win = fakeWindow()!;
+    win.webContents.executeJavaScript.mockResolvedValue(JSON.stringify({ access_token: 'TOK' }));
+
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await expect(promise).resolves.toEqual({ success: true });
+    expect(setProviderToken).toHaveBeenCalledWith('pikpak', 'TOK');
+    expect(setProviderRefresh).not.toHaveBeenCalled();
   });
 });

@@ -697,3 +697,132 @@ describe('peek integration and lifecycle guards', () => {
     expect(win.setBounds).toHaveBeenCalledWith({ x: 1, y: 2, width: 3, height: 4 });
   });
 });
+
+describe('audio pip edge branches', () => {
+  it('repositions on display changes without display data or for hidden windows', () => {
+    manager.init();
+    manager.prewarm();
+    win.visible = true;
+    const listener = state.screenListeners.get('display-metrics-changed')!;
+    const before = state.computePipPosition.mock.calls.length;
+
+    listener({}, undefined);
+    expect(state.computePipPosition.mock.calls.length).toBe(before + 1);
+
+    win.visible = false;
+    const afterVisible = state.computePipPosition.mock.calls.length;
+    listener({}, state.display);
+    expect(state.computePipPosition.mock.calls.length).toBe(afterVisible);
+  });
+
+  it('shows a preview without layout options', () => {
+    manager.prewarm();
+    expect(manager.showPreview(undefined as never)).toBe(true);
+    expect(win.showInactive).toHaveBeenCalled();
+  });
+
+  it('skips hiding or updating previews without a live window', () => {
+    manager.prewarm();
+    manager.showPreview({});
+    win.destroyed = true;
+
+    expect(() => manager.hidePreview()).not.toThrow();
+    expect(() => manager.updatePreview({ dock: 'left' })).not.toThrow();
+
+    win.destroyed = false;
+    win.visible = false;
+    const positions = state.computePipPosition.mock.calls.length;
+    manager.updatePreview({ dock: 'right' });
+    expect(state.computePipPosition.mock.calls.length).toBe(positions);
+  });
+
+  it('adds platform window materials', () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'win32' });
+    try {
+      manager.prewarm();
+      expect(createWindowOptions()).toMatchObject({ backgroundMaterial: 'acrylic' });
+    } finally {
+      Object.defineProperty(process, 'platform', { configurable: true, value: original });
+    }
+  });
+
+  it('adds macOS vibrancy to the window', () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'darwin' });
+    try {
+      manager.prewarm();
+      expect(createWindowOptions()).toMatchObject({
+        vibrancy: 'sidebar',
+        visualEffectState: 'active'
+      });
+    } finally {
+      Object.defineProperty(process, 'platform', { configurable: true, value: original });
+    }
+  });
+
+  it('falls back to the primary display for empty main window bounds', () => {
+    mainWindow.getBounds = () => ({ x: 0, y: 0, width: 0, height: 0 });
+    manager.setMainWindow(mainWindow as never);
+    manager.prewarm();
+
+    manager.show({
+      trackName: 'Song',
+      artist: '',
+      coverData: null,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      volume: 1
+    });
+
+    expect(state.computePipPosition).toHaveBeenCalled();
+  });
+
+  it('skips viz data when the window is hidden', () => {
+    manager.init();
+    manager.prewarm();
+    win.webContents.emit('did-finish-load');
+    const callbacks = state.registerIpc.mock.calls.at(-1)?.[0] as Record<string, any>;
+    manager.setDock('bottom');
+    win.visible = false;
+
+    callbacks.onVizData([1]);
+    expect(win.webContents.send).not.toHaveBeenCalledWith('audio-pip:vizData', [1]);
+  });
+
+  it('reports visibility for destroyed and released windows', () => {
+    manager.prewarm();
+    win.destroyed = true;
+    expect(manager.isShowing()).toBe(false);
+
+    win.destroyed = false;
+    win.visible = false;
+    expect(manager.isShowing()).toBe(false);
+
+    manager.releaseWindow();
+    expect(manager.isShowing()).toBe(false);
+  });
+
+  it('destroys a window that is already destroyed', () => {
+    manager.prewarm();
+    win.destroyed = true;
+    expect(() => manager.destroy()).not.toThrow();
+    expect(win.destroy).not.toHaveBeenCalled();
+  });
+});
+
+describe('audio pip released window guards', () => {
+  it('hides without a window', () => {
+    manager.prewarm();
+    (manager as unknown as { window: unknown }).window = null;
+    expect(() => manager.hide()).not.toThrow();
+  });
+
+  it('updates a preview without a window', () => {
+    manager.prewarm();
+    manager.showPreview({});
+    (manager as unknown as { window: unknown }).window = null;
+    expect(() => manager.updatePreview({ dock: 'left' })).not.toThrow();
+  });
+});
