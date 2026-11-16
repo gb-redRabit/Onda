@@ -9,7 +9,8 @@ import {
   buildSectionArgs,
   siblingCoverPath,
   clipFormatSelector,
-  clipCopiedCodecAcceptable
+  clipCopiedCodecAcceptable,
+  clipCopiedCodecWebmAcceptable
 } from '../cover-spec';
 
 describe('sanitizeDirSegment', () => {
@@ -185,5 +186,21 @@ describe('clipCopiedCodecAcceptable', () => {
     expect(clipCopiedCodecAcceptable('vp9')).toBe(false);
     expect(clipCopiedCodecAcceptable('av1')).toBe(false);
     expect(clipCopiedCodecAcceptable('')).toBe(false);
+  });
+});
+
+describe('cover spec edge branches', () => {
+  it('clears dot-only directory names', () => {
+    expect(sanitizeDirSegment('.')).toBe('');
+    expect(sanitizeDirSegment('..')).toBe('');
+    expect(sanitizeDirSegment('...')).toBe('');
+  });
+
+  it('handles empty and uppercase webm codecs', () => {
+    expect(clipCopiedCodecWebmAcceptable('')).toBe(false);
+    expect(clipCopiedCodecWebmAcceptable('VP9')).toBe(true);
+    expect(clipCopiedCodecWebmAcceptable('vp8')).toBe(true);
+    expect(clipCopiedCodecWebmAcceptable('av01')).toBe(true);
+    expect(clipCopiedCodecWebmAcceptable('h264')).toBe(false);
   });
 });

@@ -643,3 +643,47 @@ describe('playback errors', () => {
     expect(wrapper!.findAll('[data-testid="compact-playback-error"]')).toHaveLength(1);
   });
 });
+
+describe('compact edge branches', () => {
+  it('cycles tabs to the left with ArrowLeft', async () => {
+    mountApp();
+    await flush();
+    await wrapper!.get('[data-testid="compact-tab-queue"]').trigger('click');
+
+    wrapper!
+      .get('[data-testid="compact-tab-queue"]')
+      .element.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })
+      );
+    await flush();
+
+    expect(wrapper!.find('[data-testid="compact-tracks"]').exists()).toBe(true);
+  });
+
+  it('ignores pointer up without an active seek', async () => {
+    mountApp();
+    await flush();
+    stubSeek();
+
+    progressEl().dispatchEvent(new MouseEvent('pointerup', { clientX: 100, bubbles: true }));
+    expect(state.audio.seek).not.toHaveBeenCalled();
+  });
+});
+
+describe('compact tab key fallback', () => {
+  it('ignores unrelated tab keys', async () => {
+    mountApp();
+    await flush();
+    const tab = wrapper!.get('[data-testid="compact-tab-tracks"]').element;
+    const event = new KeyboardEvent('keydown', {
+      key: 'x',
+      bubbles: true,
+      cancelable: true
+    });
+    tab.dispatchEvent(event);
+    await flush();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(wrapper!.find('[data-testid="compact-tracks"]').exists()).toBe(true);
+  });
+});

@@ -420,3 +420,42 @@ describe('open file', () => {
     expect(text('log')).toContain('błąd otwierania pliku: dialog broke');
   });
 });
+
+describe('test shell edge branches', () => {
+  it('logs non-Error library and file errors', async () => {
+    await loadModule();
+    state.invoke.mockImplementation(async (channel: string) => {
+      if (channel === 'library:loadScannedChunk') throw 'lib boom';
+      if (channel === 'dialog:openFile') throw 'open boom';
+      return undefined;
+    });
+
+    click('load-library');
+    await flush();
+    expect(text('log')).toContain('lib boom');
+
+    click('open-file');
+    await flush();
+    expect(text('log')).toContain('open boom');
+  });
+
+  it('seeks and changes volume before any state arrives', async () => {
+    await loadModule();
+    state.send.mockClear();
+
+    click('fwd10');
+    expect(state.send).toHaveBeenLastCalledWith('core:command', { type: 'seek', time: 10 });
+    click('back10');
+    expect(state.send).toHaveBeenLastCalledWith('core:command', { type: 'seek', time: 0 });
+    click('volUp');
+    expect(state.send.mock.calls.at(-1)![1].value).toBeCloseTo(0.9, 5);
+    click('volDown');
+    expect(state.send.mock.calls.at(-1)![1].value).toBeCloseTo(0.7, 5);
+  });
+
+  it('logs a non-Error getState rejection', async () => {
+    state.invoke.mockRejectedValueOnce('state boom');
+    await loadModule();
+    expect(text('log')).toContain('state boom');
+  });
+});
