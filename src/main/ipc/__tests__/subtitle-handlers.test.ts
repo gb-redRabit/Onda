@@ -533,3 +533,77 @@ describe('spawn concurrency limit', () => {
 function wrapperReset() {
   state.handlers = {};
 }
+
+describe('subtitle handler fallbacks', () => {
+  it('handles stream lists that are missing', async () => {
+    state.runCommand.mockResolvedValueOnce('{}');
+    const h = await load();
+    expect(await h['subtitles:listEmbedded']({}, 'C:/a.mkv')).toEqual([]);
+  });
+
+  it('uses the bare ffmpeg binary for extraction', async () => {
+    state.resolveBin.mockResolvedValue(null);
+    state.runCommand.mockResolvedValueOnce('subrip').mockResolvedValueOnce('');
+    const h = await load();
+
+    expect(await h['subtitles:extractEmbedded']({}, 'C:/a.mkv', 0)).toEqual({
+      content: 'content',
+      format: 'srt'
+    });
+    expect(state.runCommand.mock.calls.at(-1)?.[0]).toBe('ffmpeg');
+  });
+
+  it('handles attachment lists without streams and extra dumped files', async () => {
+    state.resolveBin.mockImplementation(async (name: string) =>
+      name === 'mkvextract' ? '/bin/mkvextract' : `/bin/${name}`
+    );
+    state.runCommand.mockResolvedValueOnce('{}');
+    const empty = await load();
+    expect(await empty['subtitles:extractAttachments']({}, 'C:/a.mkv')).toEqual([]);
+
+    state.runCommand.mockReset();
+    state.runCommand.mockImplementation(async (bin: string) => {
+      if (bin === '/bin/ffprobe') {
+        return JSON.stringify({
+          streams: [{ index: 3, codec_type: 'attachment', tags: { filename: 'Font.TTF' } }]
+        });
+      }
+      if (bin === '/bin/mkvextract') return '';
+      return '';
+    });
+    state.readdir.mockResolvedValue(['att_0.ttf', 'att_9.bin']);
+    state.readFile.mockResolvedValue(Buffer.from([1]));
+    const h = await load();
+
+    expect(await h['subtitles:extractAttachments']({}, 'C:/a.mkv')).toEqual([
+      { name: 'Font', ext: 'ttf', data: [1] },
+      { name: 'att_9', ext: 'ttf', data: [1] }
+    ]);
+  });
+
+  it('logs ffmpeg dump failures and still reads available files', async () => {
+    state.resolveBin.mockImplementation(async (name: string) =>
+      name === 'mkvextract' ? '/bin/mkvextract' : `/bin/${name}`
+    );
+    state.runCommand.mockImplementation(async (bin: string, args: string[]) => {
+      if (args?.includes('stream=index,codec_type:stream_tags=filename')) {
+        return JSON.stringify({
+          streams: [{ index: 3, codec_type: 'attachment', tags: { filename: 'Font.TTF' } }]
+        });
+      }
+      if (bin === '/bin/mkvextract') throw new Error('extract failed');
+      if (bin === '/bin/ffmpeg') throw new Error('dump failed');
+      return '';
+    });
+    state.readdir.mockResolvedValue(['att_0.ttf']);
+    state.readFile.mockResolvedValue(Buffer.from([2]));
+    const h = await load();
+
+    expect(await h['subtitles:extractAttachments']({}, 'C:/a.mkv')).toHaveLength(1);
+    expect(state.warn).toHaveBeenCalledWith(
+      'subtitles',
+      'ffmpeg attachment dump failed for C:/a.mkv',
+      expect.any(Error)
+    );
+  });
+});

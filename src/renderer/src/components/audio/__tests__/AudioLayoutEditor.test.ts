@@ -336,3 +336,78 @@ describe('dragging', () => {
     expect(state.settings.updateAudioLayoutElements).not.toHaveBeenCalled();
   });
 });
+
+describe('drag and keyboard guards', () => {
+  it('ignores stray mouse moves and missing previews', async () => {
+    mountEditor();
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 10, clientY: 10 }));
+
+    stubRect();
+    const start = (index = 0) =>
+      dragHandles()[index].element.dispatchEvent(
+        new MouseEvent('mousedown', { clientX: 100, clientY: 100, bubbles: true, cancelable: true })
+      );
+    start();
+    preview().remove();
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 200, clientY: 200 }));
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    expect(state.settings.updateAudioLayoutElements).not.toHaveBeenCalled();
+  });
+
+  it('ignores drags whose element disappeared', async () => {
+    mountEditor();
+    stubRect();
+    dragHandles()[0].element.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 100, clientY: 100, bubbles: true, cancelable: true })
+    );
+    state.settings.updateAudioLayoutElements([]);
+    await wrapper!.vm.$nextTick();
+
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 200, clientY: 200 }));
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    expect(state.settings.updateAudioLayoutElements).toHaveBeenCalled();
+  });
+
+  it('moves the selection with all arrow keys', async () => {
+    mountEditor();
+    keydown({ key: 'ArrowRight' });
+    keydown({ key: 'ArrowLeft' });
+    keydown({ key: 'ArrowUp', shiftKey: true });
+    keydown({ key: 'ArrowDown' });
+
+    const calls = state.settings.updateAudioLayoutElements.mock.calls;
+    expect(calls.length).toBe(4);
+  });
+
+  it('ignores arrows without a selected element', async () => {
+    mountEditor();
+    state.settings.updateAudioLayoutElements([]);
+    await wrapper!.vm.$nextTick();
+    const event = keydown({ key: 'ArrowLeft' });
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('caps the undo history at fifty entries', async () => {
+    mountEditor();
+    for (let i = 0; i < 55; i += 1) {
+      panel().vm.$emit('update', 'cover', { x: 20 + i });
+      await wrapper!.vm.$nextTick();
+    }
+
+    const undo = wrapper!.findAll('button').find((b) => b.text() === 'common.undo')!;
+    await undo.trigger('click');
+    expect(state.settings.updateAudioLayoutElements).toHaveBeenCalled();
+  });
+});
+
+describe('missing layout settings', () => {
+  it('falls back to an empty element list', async () => {
+    mountEditor();
+    state.settings.appearance.audioLayout = undefined;
+    await wrapper!.vm.$nextTick();
+
+    expect((panel().props('elements') as unknown[]).length).toBe(0);
+    expect(panel().props('selected')).toBeUndefined();
+  });
+});

@@ -355,3 +355,45 @@ describe('processCover: clip', () => {
     expect(state.rm).toHaveBeenCalledWith(workDir, { recursive: true, force: true });
   });
 });
+
+describe('processCover fallbacks', () => {
+  it('accepts custom covers when realpath fails', async () => {
+    state.realpath.mockRejectedValueOnce(new Error('no link'));
+    await expect(
+      processCover(ctx({ type: 'custom', customPath: '/pictures/cover.png' }))
+    ).resolves.toEqual({ status: 'embedded' });
+    expect(state.writeCover).toHaveBeenCalled();
+  });
+
+  it('treats a missing custom path as unsupported', async () => {
+    await expect(processCover(ctx({ type: 'custom' }))).resolves.toEqual({
+      status: 'error',
+      error: 'unsupported image type ?'
+    });
+  });
+
+  it('keeps the saved clip when the thumbnail embed fails', async () => {
+    state.writeCover.mockResolvedValueOnce({ success: false, error: 'no tags' });
+    await expect(processCover(ctx({ type: 'clip', clipFormat: 'webm' }))).resolves.toEqual({
+      status: 'saved'
+    });
+    expect(state.loggerWarn).toHaveBeenCalledWith(
+      'downloads',
+      expect.stringContaining('clip thumbnail embed failed')
+    );
+  });
+
+  it('ignores cleanup failures', async () => {
+    state.rm.mockRejectedValue(new Error('busy'));
+    await expect(processCover(ctx({ type: 'frame' }))).resolves.toEqual({ status: 'embedded' });
+  });
+
+  it('falls back to bare binaries for frame covers', async () => {
+    state.resolveBin.mockResolvedValue(null as never);
+    state.runCommand.mockResolvedValue('');
+    await expect(processCover(ctx({ type: 'frame' }))).resolves.toEqual({ status: 'embedded' });
+    const calls = state.runCommand.mock.calls.map((call) => call[0]);
+    expect(calls).toContain('ffmpeg');
+    expect(calls).toContain('yt-dlp');
+  });
+});
