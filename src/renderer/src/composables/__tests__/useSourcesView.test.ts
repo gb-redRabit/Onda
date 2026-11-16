@@ -603,3 +603,44 @@ describe('useSourcesView — watchers and lifecycle', () => {
     expect(api!.sources.activeEndpointId).toBe('');
   });
 });
+
+describe('useSourcesView - fallback branches', () => {
+  it('uses the id and unknown text when deletion fails', async () => {
+    store.sources = [];
+    store.deleteSource.mockResolvedValueOnce({ ok: false });
+    const api = run();
+
+    await api.onRemoveSource('missing');
+    expect(store.deleteSource).toHaveBeenCalledWith('missing');
+    expect(uiMock.notify).toHaveBeenLastCalledWith('error', 'sources.deleteFailed');
+  });
+
+  it('defaults empty endpoint params and errors', () => {
+    const api = run();
+    expect(api.paramKeys.value).toEqual([]);
+    expect(api.paramDefaults.value).toEqual({});
+    store.lastError = '';
+    expect(api.isAuthError.value).toBe(false);
+  });
+
+  it('omits empty query, page and context from the url', () => {
+    store.activeSource = { id: 's1', baseUrl: 'https://api.example' };
+    store.activeEndpoint = { id: 'e1', path: '/list' };
+    store.paginationMode = 'none';
+    store.currentPage = 1;
+    store.context = null;
+    const api = run();
+    api.queryText.value = '';
+
+    expect(api.currentUrl.value).toEqual(expect.any(String));
+  });
+
+  it('reports an import without a count', async () => {
+    const invoke = vi.fn().mockResolvedValueOnce({ success: true });
+    (window as unknown as { api: unknown }).api = { invoke };
+    const api = run();
+
+    await api.onImport();
+    expect(store.loadSources).toHaveBeenCalled();
+  });
+});

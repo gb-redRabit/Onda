@@ -464,3 +464,46 @@ describe('cancelInstall', () => {
     unmount();
   });
 });
+
+describe('dependency install edge outcomes', () => {
+  it('ignores failing probe checks after install', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const dep = deps.deps.value.find((row) => row.tool === 'ffmpeg')!;
+    api.checkFfmpeg.mockRejectedValueOnce(new Error('probe'));
+    api.checkFfprobe.mockRejectedValueOnce(new Error('probe2'));
+
+    await deps.runInstall(dep, false);
+
+    expect(dep.installing).toBe(false);
+    expect(dep.percent).toBe(0);
+    unmount();
+  });
+
+  it('ignores a failing ffprobe refresh after removal', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const dep = deps.deps.value.find((row) => row.tool === 'ffmpeg')!;
+    api.checkFfprobe.mockRejectedValueOnce(new Error('probe'));
+
+    await deps.uninstallDependency(dep);
+
+    expect(dep.installing).toBe(false);
+    unmount();
+  });
+
+  it('falls back to the default error and keeps cancellation silent', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const dep = deps.deps.value.find((row) => row.tool === 'mkvextract')!;
+
+    api.installMkvextract.mockResolvedValueOnce({ success: false });
+    await deps.runInstall(dep, false);
+    expect(dep.error).toBe('settings.depInstallFailed');
+
+    api.removeMkvextract.mockResolvedValueOnce({ cancelled: true } as never);
+    await deps.uninstallDependency(dep);
+    expect(dep.error).toBeNull();
+    unmount();
+  });
+});

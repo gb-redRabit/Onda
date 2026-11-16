@@ -288,3 +288,29 @@ describe('profiles', () => {
     expect(form.subsEnabled.value).toBe(false);
   });
 });
+
+describe('partial profile fields', () => {
+  it('keeps cover details when the profile only sets a type', () => {
+    state.profiles.value = [{ id: 'p3', config: {} }];
+    state.downloadProfileToForm.mockReturnValue({ coverType: 'frame' });
+    const form = setup();
+
+    form.applyProfile('p3');
+
+    expect(form.coverType.value).toBe('frame');
+    expect(form.frameTime.value).toBe(30);
+    expect(form.customPath.value).toBe('');
+  });
+
+  it('keeps subtitle details when the profile only enables them', () => {
+    state.profiles.value = [{ id: 'p4', config: {} }];
+    state.downloadProfileToForm.mockReturnValue({ subsEnabled: true });
+    const form = setup();
+
+    form.applyProfile('p4');
+
+    expect(form.subsEnabled.value).toBe(true);
+    expect(form.subsMode.value).toBe('best');
+    expect(form.subsFolder.value).toBe(false);
+  });
+});
