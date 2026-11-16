@@ -1138,3 +1138,65 @@ describe('image studio save fallbacks', () => {
     expect(wrapper!.text()).toContain('plain save');
   });
 });
+
+describe('image studio metadata and selection edges', () => {
+  it('loads images without byte or format metadata', async () => {
+    state.context.value = { params: { path: 'C:\\pics\\raw.png' } };
+    state.imageRead.mockResolvedValueOnce({
+      success: true,
+      dataUrl: 'data:image/png;base64,AAAA',
+      width: 320,
+      height: 200
+    });
+    mountView();
+    await flush();
+
+    expect(wrapper!.text()).toContain('320');
+    expect(wrapper!.text()).toContain('200');
+    expect(wrapper!.text()).not.toContain('KB');
+    expect(canvasEl()).toBeTruthy();
+  });
+
+  it('applies negative temperature with a cool overlay', async () => {
+    await mountLoaded();
+    slider('tools.imageStudioTemperature').vm.$emit('update:modelValue', -60);
+    await flush();
+    await vi.advanceTimersByTimeAsync(600);
+    await flush();
+
+    expect(state.ctx.fillStyle).toContain('rgba(80, 160, 255');
+  });
+
+  it('restores a zero output width when dragging a new crop', async () => {
+    await mountLoaded();
+    stubRect();
+    wrapper!.findComponent(NumberFieldStub).vm.$emit('update:modelValue', 0);
+    await flush();
+
+    await wrapper!.get('[data-testid="image-studio-tool-crop"]').trigger('click');
+    await pointer('pointerdown', 100, 100);
+    await pointer('pointermove', 300, 250);
+    await pointer('pointerup', 300, 250);
+
+    expect(outputAttr().startsWith('0,')).toBe(false);
+  });
+
+  it('clears the selection when undoing a selected annotation', async () => {
+    await mountLoaded();
+    stubRect();
+    await wrapper!.get('[data-testid="image-studio-tool-rect"]').trigger('click');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 400, 300);
+    await pointer('pointerup', 400, 300);
+    expect(canvasEl().getAttribute('data-selected-width')).toBe('8');
+
+    const undo = wrapper!
+      .findAll('button')
+      .find((button) => button.text().includes('tools.imageStudioUndo'))!;
+    await undo.trigger('click');
+    await flush();
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('0');
+    expect(canvasEl().getAttribute('data-selected-width')).toBe('');
+  });
+});

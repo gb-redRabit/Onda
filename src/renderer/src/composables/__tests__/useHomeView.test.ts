@@ -483,3 +483,55 @@ describe('continue card', () => {
     expect(state.player.ensureFavorites).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('home continue edge branches', () => {
+  it('falls back to the live position when the stored one fails', async () => {
+    state.positionRejects = true;
+    state.player.currentTrack = track('a.mp3');
+    state.player.currentTime = 42;
+    state.player.isPlaying = true;
+    state.library = makeLibrary([track('a.mp3')]);
+    const home = createHome();
+    await nextTick();
+    await Promise.resolve();
+
+    home.playContinue();
+    expect(state.player.seek).toHaveBeenCalledWith(42);
+  });
+
+  it('resumes video tracks and navigates to the player', async () => {
+    const video = track('v.mp4', { type: 'video' });
+    state.library = makeLibrary([video]);
+    state.positionResult = 10;
+    const home = createHome();
+    await nextTick();
+    await Promise.resolve();
+
+    home.playContinue();
+    expect(state.player.setTrack).toHaveBeenCalledWith(video);
+    expect(state.player.seek).toHaveBeenCalledWith(10);
+    expect(state.router.push).toHaveBeenCalledWith('/player');
+  });
+
+  it('restarts video tracks from the beginning', async () => {
+    const video = track('v.mp4', { type: 'video' });
+    state.library = makeLibrary([video]);
+    const home = createHome();
+    await nextTick();
+    await Promise.resolve();
+
+    home.playContinueFromStart();
+    expect(state.clearPosition).toHaveBeenCalledWith('/music/v.mp4');
+    expect(state.router.push).toHaveBeenCalledWith('/player');
+  });
+
+  it('does nothing without a continue track', () => {
+    state.library = makeLibrary([]);
+    state.player.currentTrack = null;
+    const home = createHome();
+
+    home.playContinue();
+    home.playContinueFromStart();
+    expect(state.player.play).not.toHaveBeenCalled();
+  });
+});
