@@ -966,3 +966,198 @@ describe('edge interactions', () => {
     expect(wrapper!.find('[data-testid="empty"]').exists()).toBe(true);
   });
 });
+
+function press(element: Element): void {
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+function buttonWithText(text: string) {
+  return wrapper!.findAll('button').find((button) => button.text().includes(text))!;
+}
+
+describe('clipper guards and alternate controls', () => {
+  async function mountWithPendingExport() {
+    let resolveClip!: (value: unknown) => void;
+    state.clipVideo.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveClip = resolve;
+      })
+    );
+    await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-add"]').trigger('click');
+    press(wrapper!.get('[data-testid="clip-export"]').element);
+    await flush();
+    return resolveClip;
+  }
+
+  it('ignores edits while an export is running', async () => {
+    const resolveClip = await mountWithPendingExport();
+    const calls = state.clipVideo.mock.calls.length;
+
+    press(buttonWithText('tools.clipReplace').element);
+    await flush();
+    expect(wrapper!.findAll('video')).toHaveLength(1);
+
+    state.context.value = { params: { path: 'C:\\videos\\other.mp4' } };
+    await flush();
+    expect(wrapper!.get('video').attributes('src')).toBe('media://C:\\videos\\a.mp4');
+
+    press(wrapper!.get('[data-testid="clip-add"]').element);
+    press(wrapper!.get('[aria-label="tools.remove"]').element);
+    press(buttonWithText('tools.clipClearList').element);
+    await flush();
+    expect(wrapper!.findAll('[data-testid="clip-list"]')).toHaveLength(1);
+
+    press(wrapper!.get('[data-testid="clip-export-list"]').element);
+    expect(state.clipVideo.mock.calls.length).toBe(calls);
+
+    press(wrapper!.get('[data-testid="clip-follow"]').element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.get('[data-testid="clip-follow"]').attributes('aria-pressed')).toBe('false');
+
+    resolveClip({ success: true, outputPath: 'C:/out/a.mp4' });
+    await flush();
+  });
+
+  it('keeps the playhead still when follow is disabled', async () => {
+    const video = await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-follow"]').trigger('click');
+    expect(wrapper!.get('[data-testid="clip-follow"]').attributes('aria-pressed')).toBe('false');
+
+    await wrapper!.get('[data-testid="clip-play"]').trigger('click');
+    await flush();
+    await timeTo(video, 100);
+    expect(video.currentTime).toBe(100);
+  });
+
+  it('seeks by seconds, arrows and alternate zoom keys', async () => {
+    const video = await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-snap"]').trigger('click');
+    await timeTo(video, 60);
+
+    const secondButtons = wrapper!.findAll('button').filter((button) => /1 s/.test(button.text()));
+    await secondButtons[0].trigger('click');
+    expect(video.currentTime).toBeCloseTo(59, 4);
+    await secondButtons[1].trigger('click');
+    expect(video.currentTime).toBeCloseTo(60, 4);
+
+    const key = (init: KeyboardEventInit) =>
+      document.dispatchEvent(new KeyboardEvent('keydown', { cancelable: true, ...init }));
+    key({ key: 'ArrowLeft' });
+    await flush();
+    expect(video.currentTime).toBeCloseTo(59, 4);
+
+    key({ key: 'ArrowLeft', altKey: true });
+    await flush();
+    expect(video.currentTime).toBeCloseTo(59 - 1 / 30, 4);
+
+    key({ key: '=' });
+    await flush();
+    expect(wrapper!.get('[data-testid="clip-zoom-label"]').text()).toMatch(/^1\.5/);
+    key({ key: '_' });
+    await flush();
+    expect(wrapper!.get('[data-testid="clip-zoom-label"]').text()).toMatch(/^1(?!\.5)/);
+  });
+
+  it('ignores rejected play promises', async () => {
+    const video = await mountLoaded(120);
+    (video.play as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('blocked'));
+    await wrapper!.get('[data-testid="clip-play"]').trigger('click');
+    await flush();
+
+    (video.play as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('blocked'));
+    await wrapper!.get('[data-testid="clip-preview"]').trigger('click');
+    await flush();
+    expect(wrapper!.get('[data-testid="clip-preview"]').text()).toBe('tools.clipPreview');
+  });
+
+  it('reports list progress and falls back for errors without a message', async () => {
+    let resolveClip!: (value: unknown) => void;
+    state.clipVideo.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveClip = resolve;
+      })
+    );
+    await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-add"]').trigger('click');
+    press(wrapper!.get('[data-testid="clip-export-list"]').element);
+    await flush();
+    const jobId = state.clipVideo.mock.calls[0][0].jobId as string;
+
+    state.handlers['tools:progress']({ jobId: 'other', percent: 10, speed: '9x' });
+    state.handlers['tools:progress']({ jobId, percent: 25, speed: '4x' });
+    await flush();
+    expect(wrapper!.text()).toContain('4x');
+
+    state.handlers['tools:progress']({ jobId, percent: -1, speed: '' });
+    resolveClip({ success: false });
+    await flush();
+    expect(wrapper!.text()).toContain('tools.clipFailed');
+    expect(wrapper!.get('[data-testid="clip-job"]').attributes('data-status')).toBe('error');
+  });
+
+  it('opens a finished list output', async () => {
+    await mountLoaded(120);
+    await wrapper!.get('[data-testid="clip-add"]').trigger('click');
+    press(wrapper!.get('[data-testid="clip-export-list"]').element);
+    await flush();
+
+    state.invoke.mockClear();
+    press(wrapper!.get('[aria-label="tools.openOutput"]').element);
+    expect(state.invoke).toHaveBeenCalledWith('shell:showItemInFolder', 'C:/out/a.mp4');
+  });
+
+  it('guards export clicks before metadata and sets the clip mode', async () => {
+    state.context.value = { params: { path: 'C:\\videos\\a.mp4' } };
+    mountView();
+    await flush();
+
+    press(wrapper!.get('[data-testid="clip-export"]').element);
+    await flush();
+    expect(state.clipVideo).not.toHaveBeenCalled();
+
+    select('clip-mode').vm.$emit('update:modelValue', 'copy');
+    await flush();
+    expect(select('clip-mode').props('modelValue')).toBe('copy');
+  });
+});
+
+describe('clipper deferred work', () => {
+  it('resets the range before metadata arrives', async () => {
+    state.context.value = { params: { path: 'C:\\videos\\a.mp4' } };
+    mountView();
+    await flush();
+    stubTimeline();
+
+    press(wrapper!.get('[aria-label="tools.clipReset"]').element);
+    await flush();
+    expect(wrapper!.get('[data-testid="clip-start-label"]').text()).toBe(formatTimecode(0, 30));
+  });
+
+  it('skips deferred timeline work after unmount', async () => {
+    await mountLoaded(120);
+    press(wrapper!.get('[data-testid="clip-fit"]').element);
+    press(wrapper!.get('[data-testid="clip-fit-selection"]').element);
+    press(wrapper!.get('[data-testid="clip-fit-second"]').element);
+    wrapper!.unmount();
+    wrapper = null;
+
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
+    await nextTick();
+    expect(document.body.querySelector('video')).toBeNull();
+  });
+});
+
+describe('clipper metadata fallback', () => {
+  it('uses zero duration for unusable metadata', async () => {
+    state.context.value = { params: { path: 'C:\\videos\\a.mp4' } };
+    mountView();
+    await flush();
+    const video = wrapper!.get('video').element as HTMLVideoElement;
+    video.dispatchEvent(new Event('loadedmetadata'));
+    await flush();
+
+    expect(wrapper!.get('[data-testid="clip-export"]').attributes('disabled')).toBeDefined();
+    expect(wrapper!.get('[data-testid="clip-add"]').attributes('disabled')).toBeDefined();
+  });
+});

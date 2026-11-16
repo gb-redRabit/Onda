@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   showConfirm: vi.fn(async () => true),
   prompt: null as any,
   loggerWarn: vi.fn(),
+  boot: { domContentLoadedMs: null as number | null, rendererReadyMs: null as number | null },
   t: vi.fn((key: string) => key)
 }));
 
@@ -17,7 +18,7 @@ vi.mock('@shared/logger', () => ({
   logger: { warn: state.loggerWarn, info: vi.fn(), error: vi.fn() }
 }));
 vi.mock('@renderer/utils/bootMetrics', () => ({
-  getRendererBootMetrics: () => ({ totalMs: 120 })
+  getRendererBootMetrics: () => ({ totalMs: 120, ...state.boot })
 }));
 vi.mock('@renderer/stores/ui', () => ({
   useUIStore: () => ({ notify: state.notify })
@@ -102,6 +103,8 @@ function buttons() {
 }
 
 beforeEach(() => {
+  state.boot.domContentLoadedMs = null;
+  state.boot.rendererReadyMs = null;
   state.api = {
     getAppInfo: vi.fn(async () => appInfo),
     readLogs: vi.fn(async () => 'log line'),
@@ -276,5 +279,84 @@ describe('factory reset', () => {
     await buttons()[1].trigger('click');
     await flush();
     expect(state.notify).toHaveBeenCalledWith('error', 'settings.resetFactoryError', 'Error: boom');
+  });
+});
+
+function press(element: Element): void {
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+describe('diagnostics edge data', () => {
+  it('keeps defaults when every probe returns nothing', async () => {
+    for (const key of [
+      'getAppInfo',
+      'readLogs',
+      'getDependencyPaths',
+      'getRecentWarnings',
+      'getPerfSnapshot'
+    ]) {
+      state.api[key].mockResolvedValue(undefined);
+    }
+    mountDiagnostics();
+    await flush();
+
+    expect(wrapper!.text()).toContain('settings.perfEmpty');
+    expect(wrapper!.text()).toContain('settings.logEmpty');
+  });
+
+  it('labels every dependency source and broken state', async () => {
+    state.api.getDependencyPaths.mockResolvedValue([
+      { tool: 'a', path: '/a', source: 'bundled', broken: false, error: null, version: '1' },
+      { tool: 'b', path: '/b', source: 'system', broken: false, error: null, version: null },
+      { tool: 'c', path: null, source: null, broken: true, error: 'missing lib' },
+      { tool: 'd', path: null, source: null, broken: true, error: null }
+    ]);
+    mountDiagnostics();
+    await flush();
+
+    const text = wrapper!.text();
+    expect(text).toContain('settings.depBundled');
+    expect(text).toContain('settings.depSystem');
+    expect(text).toContain('missing lib');
+    expect(text).toContain('settings.depBroken');
+  });
+
+  it('ignores cache clicks while clearing', async () => {
+    let resolveCache!: (value: unknown) => void;
+    state.api.clearCache.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveCache = resolve;
+      })
+    );
+    mountDiagnostics();
+    await flush();
+
+    press(buttons()[0].element);
+    await flush();
+    press(buttons()[0].element);
+    await flush();
+    expect(state.api.clearCache).toHaveBeenCalledTimes(1);
+
+    resolveCache({ success: true, filesRemoved: 0, bytesFreed: 0 });
+    await flush();
+  });
+
+  it('propagates prompt value updates', async () => {
+    mountDiagnostics();
+    await flush();
+    wrapper!.findComponent(PromptStub).vm.$emit('update:value', 'typed');
+    expect(state.prompt.promptValue.value).toBe('typed');
+  });
+});
+
+describe('diagnostics boot timings', () => {
+  it('shows measured renderer timings', async () => {
+    state.boot.domContentLoadedMs = 12;
+    state.boot.rendererReadyMs = 80;
+    mountDiagnostics();
+    await flush();
+
+    expect(wrapper!.text()).toContain('12 ms');
+    expect(wrapper!.text()).toContain('80 ms');
   });
 });

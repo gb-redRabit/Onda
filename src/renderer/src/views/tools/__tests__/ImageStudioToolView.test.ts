@@ -1128,3 +1128,13 @@ describe('image studio annotation races', () => {
     expect(canvasEl().getAttribute('data-annotation-count')).toBe('0');
   });
 });
+
+describe('image studio save fallbacks', () => {
+  it('reports non-Error save failures', async () => {
+    await mountLoaded();
+    state.imageSave.mockRejectedValueOnce('plain save');
+    await wrapper!.get('[data-testid="image-studio-save"]').trigger('click');
+    await flush();
+    expect(wrapper!.text()).toContain('plain save');
+  });
+});

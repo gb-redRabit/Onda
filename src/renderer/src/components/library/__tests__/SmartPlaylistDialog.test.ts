@@ -376,3 +376,107 @@ describe('closing', () => {
     expect(wrapper!.emitted('cancel')).toHaveLength(2);
   });
 });
+
+function press(element: Element): void {
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+describe('smart playlist edge inputs', () => {
+  it('ignores save clicks when the form is invalid', async () => {
+    mountDialog();
+    await flush();
+
+    press(saveButton().element);
+    expect(wrapper!.emitted('save')).toBeUndefined();
+
+    await typeValue(wrapper!.get('[data-testid="smart-playlist-name"]'), 'Named');
+    await wrapper!.get('[aria-label="library.smartPlaylists.removeRule"]').trigger('click');
+    press(saveButton().element);
+    expect(wrapper!.emitted('save')).toBeUndefined();
+  });
+
+  it('edits number and day values', async () => {
+    mountDialog();
+    await flush();
+
+    await selectValue(ruleRow().find('select'), 'addedAt');
+    await typeValue(ruleRow().find('input[type=number]'), '30');
+    await wrapper!.vm.$nextTick();
+    expect((ruleRow().find('input[type=number]').element as HTMLInputElement).value).toBe('30');
+
+    await selectValue(ruleRow().find('select'), 'year');
+    await selectValue(ruleRow().findAll('select')[1], 'between');
+    const bounds = ruleRow().findAll('input[type=number]');
+    await typeValue(bounds[1], '60');
+    await wrapper!.vm.$nextTick();
+    expect((bounds[1].element as HTMLInputElement).value).toBe('60');
+  });
+
+  it('renders scalar bounds as zero for a between rule', async () => {
+    mountDialog({
+      playlist: playlist({ rules: [{ field: 'year', operator: 'between', value: 1990 }] })
+    });
+    await flush();
+
+    const bounds = ruleRow().findAll('input[type=number]');
+    expect(bounds).toHaveLength(2);
+    expect((bounds[0].element as HTMLInputElement).value).toBe('0');
+    expect((bounds[1].element as HTMLInputElement).value).toBe('0');
+  });
+});
+
+describe('smart playlist odd rule data', () => {
+  it('handles unknown fields and null values', async () => {
+    mountDialog({
+      playlist: playlist({
+        rules: [
+          { field: 'bogus', operator: 'contains', value: null },
+          { field: 'title', operator: 'contains', value: null }
+        ]
+      })
+    });
+    await flush();
+
+    const rows = ruleRows();
+    expect(rows).toHaveLength(2);
+    expect(rows[0].findAll('select')[1].findAll('option')).toHaveLength(0);
+    expect((rows[1].find('input[type=text]').element as HTMLInputElement).value).toBe('');
+  });
+
+  it('keeps numeric values when switching between numeric operators', async () => {
+    mountDialog({
+      playlist: playlist({ rules: [{ field: 'year', operator: 'gte', value: 1990 }] })
+    });
+    await flush();
+
+    await selectValue(ruleRow().findAll('select')[1], 'lte');
+    expect((ruleRow().find('input').element as HTMLInputElement).value).toBe('1990');
+  });
+});
+
+describe('smart playlist invalid input events', () => {
+  it('ignores unknown field selections', async () => {
+    mountDialog();
+    await flush();
+
+    const fieldSelect = ruleRow().find('select');
+    (fieldSelect.element as HTMLSelectElement).value = 'bogus';
+    await fieldSelect.trigger('change');
+    expect(ruleRow().find('input[type=text]').exists()).toBe(true);
+  });
+
+  it('ignores non-numeric values from number inputs', async () => {
+    mountDialog({
+      playlist: playlist({ rules: [{ field: 'year', operator: 'gte', value: 1990 }] })
+    });
+    await flush();
+
+    const input = ruleRow().find('input[type=number]');
+    Object.defineProperty(input.element, 'value', { configurable: true, value: 'abc' });
+    await input.trigger('input');
+    await saveButton().trigger('click');
+    expect(wrapper!.emitted('save')?.[0]?.[0]).toMatchObject({
+      rules: [{ field: 'year', operator: 'gte', value: 1990 }]
+    });
+  });
+});

@@ -453,3 +453,20 @@ describe('teardown and errors', () => {
     await graph.closeContext();
   });
 });
+
+describe('incomplete video nodes', () => {
+  it('skips connecting when the source cannot be created', () => {
+    graph.ensureContext();
+    h.ctx.createMediaElementSource.mockReturnValueOnce(null);
+    const video = videoElement();
+
+    graph.connectVideoElement(video, 0.4);
+
+    expect(graph.videoSourceNode).toBeNull();
+    expect(graph.videoGainNode!.gain.value).toBe(0.4);
+  });
+
+  it('disconnects cleanly without video nodes', () => {
+    expect(() => graph.disconnectVideoElement()).not.toThrow();
+  });
+});
