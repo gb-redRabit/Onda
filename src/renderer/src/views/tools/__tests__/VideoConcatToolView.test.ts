@@ -295,3 +295,130 @@ describe('export', () => {
     expect(state.invoke).toHaveBeenCalledWith('shell:showItemInFolder', '/out/joined.mp4');
   });
 });
+
+function press(element: Element): void {
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+describe('concat guards and fallbacks', () => {
+  it('skips extensionless drops and repeated contexts', async () => {
+    mountConcat();
+    await flush();
+
+    state.dropped.mockReturnValue(['C:\\noext']);
+    await wrapper!.get('[data-testid="concat-view"]').trigger('drop');
+    await flush();
+    expect(wrapper!.text()).toContain('tools.concatEmpty');
+
+    state.context.value = { paths: ['C:\\a.mp4', 'C:\\b.mp4'] };
+    await flush();
+    state.context.value = { paths: ['C:\\a.mp4', 'C:\\b.mp4'] };
+    await flush();
+    expect(wrapper!.text().split('a.mp4').length - 1).toBe(1);
+  });
+
+  it('ignores out-of-range moves and an empty folder pick', async () => {
+    state.context.value = { paths: ['C:\\a.mp4', 'C:\\b.mp4'] };
+    mountConcat();
+    await flush();
+
+    press(wrapper!.findAllComponents(IconButtonStub)[0].element);
+    press(wrapper!.findAllComponents(IconButtonStub)[4].element);
+    await wrapper!.vm.$nextTick();
+    const items = wrapper!.findAll('[data-testid="concat-item"]');
+    expect(items[0].text()).toContain('a.mp4');
+    expect(items[1].text()).toContain('b.mp4');
+
+    state.invoke.mockResolvedValueOnce([]);
+    wrapper!.findComponent(PathInputStub).vm.$emit('browse');
+    await flush();
+    expect(wrapper!.findComponent(PathInputStub).props('modelValue')).toBe('');
+  });
+
+  it('does not start without two inputs', async () => {
+    state.context.value = { paths: ['C:\\a.mp4'] };
+    mountConcat();
+    await flush();
+
+    press(wrapper!.get('[data-testid="concat-export"]').element);
+    await flush();
+    expect(state.concatVideos).not.toHaveBeenCalled();
+  });
+
+  it('blocks edits and context changes while exporting', async () => {
+    state.context.value = { paths: ['C:\\a.mp4', 'C:\\b.mp4'] };
+    mountConcat();
+    await flush();
+    const pending = deferred<{ success: boolean }>();
+    state.concatVideos.mockReturnValueOnce(pending.promise);
+    press(wrapper!.get('[data-testid="concat-export"]').element);
+    await flush();
+
+    state.invoke.mockClear();
+    press(wrapper!.get('[data-testid="concat-add"]').element);
+    await flush();
+    expect(state.invoke).not.toHaveBeenCalled();
+
+    state.dropped.mockReturnValue(['C:\\c.mp4']);
+    await wrapper!.get('[data-testid="concat-view"]').trigger('drop');
+    await flush();
+    expect(wrapper!.text()).not.toContain('c.mp4');
+
+    press(wrapper!.findAllComponents(IconButtonStub)[0].element);
+    press(wrapper!.findAllComponents(IconButtonStub)[1].element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.findAll('[data-testid="concat-item"]')[0].text()).toContain('a.mp4');
+
+    press(wrapper!.findAllComponents(IconButtonStub)[2].element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp4');
+
+    press(
+      wrapper!
+        .findAllComponents(ButtonStub)
+        .find((button) => button.text().includes('tools.clear'))!.element
+    );
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp4');
+
+    state.context.value = { paths: ['C:\\other.mp4'] };
+    await flush();
+    expect(wrapper!.text()).toContain('a.mp4');
+    expect(wrapper!.text()).not.toContain('other.mp4');
+
+    press(wrapper!.get('[data-testid="concat-export"]').element);
+    expect(state.concatVideos).toHaveBeenCalledTimes(1);
+
+    press(wrapper!.get('[data-testid="concat-cancel"]').element);
+    pending.resolve({ success: true });
+    await flush();
+  });
+
+  it('ignores empty progress fields and falls back for errors', async () => {
+    state.context.value = { paths: ['C:\\a.mp4', 'C:\\b.mp4'] };
+    mountConcat();
+    await flush();
+    let listener: ((payload: unknown) => void) | null = null;
+    state.on.mockImplementation((_channel: string, cb: (payload: unknown) => void) => {
+      listener = cb;
+      return state.off;
+    });
+    const pending = deferred<{ success: boolean }>();
+    state.concatVideos.mockReturnValueOnce(pending.promise);
+    press(wrapper!.get('[data-testid="concat-export"]').element);
+    await flush();
+    const jobId = state.concatVideos.mock.calls[0][0].jobId as string;
+
+    listener!({ jobId, percent: -1 });
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).not.toContain('%');
+    pending.resolve({ success: false });
+    await flush();
+    expect(wrapper!.text()).toContain('tools.concatFailed');
+
+    state.concatVideos.mockRejectedValueOnce('plain crash');
+    press(wrapper!.get('[data-testid="concat-export"]').element);
+    await flush();
+    expect(wrapper!.text()).toContain('plain crash');
+  });
+});

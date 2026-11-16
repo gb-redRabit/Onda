@@ -344,3 +344,175 @@ describe('covers', () => {
     expect(state.writeCover).not.toHaveBeenCalled();
   });
 });
+
+function dispatchClick(element: Element): void {
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+function clearButton() {
+  return wrapper!
+    .findAllComponents(ButtonStub)
+    .find((button) => button.text().includes('tools.clear'))!;
+}
+
+describe('tag editor guards and fallbacks', () => {
+  it('skips invalid, duplicate and over-limit drops', async () => {
+    mountEditor();
+    await flush();
+
+    state.dropped.mockReturnValue(['C:\\noext']);
+    await wrapper!.get('[data-testid="tools-tag-drop"]').trigger('drop');
+    await flush();
+    expect(state.tagEditorRead).not.toHaveBeenCalled();
+
+    state.dropped.mockReturnValue(['C:\\a.mp3']);
+    await wrapper!.get('[data-testid="tools-tag-drop"]').trigger('drop');
+    await flush();
+    expect(state.tagEditorRead).toHaveBeenLastCalledWith(['C:\\a.mp3']);
+
+    state.dropped.mockReturnValue(['C:\\a.mp3', 'C:\\b.mp3']);
+    await wrapper!.get('[data-testid="tools-tag-drop"]').trigger('drop');
+    await flush();
+    expect(state.tagEditorRead).toHaveBeenLastCalledWith(['C:\\b.mp3']);
+
+    state.dropped.mockReturnValue(Array.from({ length: 600 }, (_, index) => `C:\\cap${index}.mp3`));
+    await wrapper!.get('[data-testid="tools-tag-drop"]').trigger('drop');
+    await flush();
+    expect(state.tagEditorRead.mock.calls.at(-1)![0]).toHaveLength(498);
+  });
+
+  it('reports non-Error load and save failures', async () => {
+    state.context.value = { paths: ['C:\\a.mp3'] };
+    state.tagEditorRead.mockRejectedValueOnce('plain read');
+    mountEditor();
+    await flush();
+    expect(wrapper!.text()).toContain('plain read');
+    wrapper!.unmount();
+
+    state.tagEditorRead.mockResolvedValue([row('C:\\a.mp3')]);
+    mountEditor();
+    await flush();
+    await textInputs()[0].setValue('changed');
+    state.tagEditorWrite.mockRejectedValueOnce('plain write');
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-save"]').element);
+    await flush();
+    expect(wrapper!.text()).toContain('plain write');
+  });
+
+  it('falls back to default save and cover failure messages', async () => {
+    state.context.value = { paths: ['C:\\a.mp3'] };
+    mountEditor();
+    await flush();
+    await textInputs()[0].setValue('changed');
+    state.tagEditorWrite.mockResolvedValueOnce([{ path: 'C:\\a.mp3', success: false }]);
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-save"]').element);
+    await flush();
+    expect(wrapper!.text()).toContain('tools.tagEditorSaveFailed');
+
+    wrapper!.findAllComponents(InputStub)[1].vm.$emit('update:modelValue', 'C:\\cover.png');
+    state.writeCover.mockResolvedValueOnce({ success: false });
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-cover-apply"]').element);
+    await flush();
+    expect(wrapper!.text()).toContain('tools.tagEditorCoverFailed');
+  });
+
+  it('ignores canceled cover picks and unsupported cover rows', async () => {
+    state.context.value = { paths: ['C:\\video.mp4'] };
+    state.tagEditorRead.mockResolvedValue([row('C:\\video.mp4')]);
+    mountEditor();
+    await flush();
+
+    state.invoke.mockResolvedValueOnce({ canceled: true, filePaths: ['C:\\cover.png'] });
+    dispatchClick(wrapper!.findAllComponents(ButtonStub)[3].element);
+    await flush();
+    expect(wrapper!.findAllComponents(InputStub)[1].props('modelValue')).toBe('');
+
+    state.invoke.mockResolvedValueOnce({ canceled: false, filePaths: [] });
+    dispatchClick(wrapper!.findAllComponents(ButtonStub)[3].element);
+    await flush();
+    expect(wrapper!.findAllComponents(InputStub)[1].props('modelValue')).toBe('');
+
+    wrapper!.findAllComponents(InputStub)[1].vm.$emit('update:modelValue', 'C:\\cover.png');
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-cover-apply"]').element);
+    await flush();
+    expect(state.writeCover).not.toHaveBeenCalled();
+  });
+
+  it('reports non-Error cover failures', async () => {
+    state.context.value = { paths: ['C:\\a.mp3'] };
+    state.tagEditorRead.mockResolvedValue([row('C:\\a.mp3')]);
+    mountEditor();
+    await flush();
+
+    wrapper!.findAllComponents(InputStub)[1].vm.$emit('update:modelValue', 'C:\\cover.png');
+    state.writeCover.mockRejectedValueOnce('plain cover');
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-cover-apply"]').element);
+    await flush();
+    expect(wrapper!.text()).toContain('plain cover');
+  });
+
+  it('blocks edits and pickers while saving', async () => {
+    state.context.value = { paths: ['C:\\a.mp3', 'C:\\b.flac'] };
+    mountEditor();
+    await flush();
+    await textInputs()[0].setValue('changed');
+
+    state.tagEditorWrite.mockReturnValueOnce(new Promise(() => undefined));
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-save"]').element);
+    await flush();
+
+    state.invoke.mockClear();
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-add"]').element);
+    await flush();
+    expect(state.invoke).not.toHaveBeenCalled();
+
+    state.tagEditorRead.mockClear();
+    state.dropped.mockReturnValue(['C:\\c.mp3']);
+    await wrapper!.get('[data-testid="tools-tag-drop"]').trigger('drop');
+    await flush();
+    expect(state.tagEditorRead).not.toHaveBeenCalled();
+
+    dispatchClick(wrapper!.findAllComponents(IconButtonStub)[0].element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp3');
+
+    dispatchClick(clearButton().element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.mp3');
+  });
+
+  it('does nothing for an empty batch selection or a clean save', async () => {
+    state.context.value = { paths: ['C:\\a.mp3'] };
+    mountEditor();
+    await flush();
+
+    const checkbox = wrapper!.findAll('tbody input[type="checkbox"]')[0];
+    await checkbox.setValue(false);
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-apply"]').element);
+    await wrapper!.vm.$nextTick();
+
+    dispatchClick(wrapper!.get('[data-testid="tools-tag-save"]').element);
+    await flush();
+    expect(state.tagEditorWrite).not.toHaveBeenCalled();
+  });
+
+  it('shows read-only badges and row errors', async () => {
+    state.context.value = { paths: ['C:\\ro.mp3', 'C:\\bad.mp3'] };
+    state.tagEditorRead.mockResolvedValueOnce([
+      row('C:\\ro.mp3', {}, { writable: false }),
+      row('C:\\bad.mp3', {}, { error: 'broken tag' })
+    ]);
+    mountEditor();
+    await flush();
+
+    expect(wrapper!.text()).toContain('tools.tagEditorReadOnly');
+    expect(wrapper!.text()).toContain('broken tag');
+  });
+
+  it('propagates prompt value updates', async () => {
+    mountEditor();
+    await flush();
+    wrapper!.findComponent(PromptStub).vm.$emit('update:value', 'typed');
+    expect(state.prompt.promptValue.value).toBe('typed');
+  });
+});

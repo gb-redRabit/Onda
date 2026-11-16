@@ -355,3 +355,53 @@ describe('dropping files', () => {
     expect(selected()[0].text()).toContain('song.mp3');
   });
 });
+
+function press(element: Element): void {
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+describe('launch panel edge states', () => {
+  it('ignores up at the drives root and start without a selection', async () => {
+    mountPanel();
+    await flush();
+    await wrapper!.get('[data-testid="tool-launch-drives"]').trigger('click');
+
+    press(wrapper!.get('[data-testid="tool-launch-up"]').element);
+    expect(state.load).toHaveBeenLastCalledWith('');
+
+    press(wrapper!.get('[data-testid="tool-launch-start"]').element);
+    expect(wrapper!.emitted('launch')).toBeUndefined();
+  });
+
+  it('falls back to an empty path when neither location exists', async () => {
+    state.explorer.currentPath = '';
+    state.library.folders = [];
+    mountPanel();
+    await flush();
+    expect(state.load).toHaveBeenCalledWith('');
+  });
+
+  it('builds breadcrumbs for absolute posix paths', async () => {
+    state.explorer.currentPath = '/home/music';
+    mountPanel();
+    await flush();
+    const labels = wrapper!.findAll('button').map((button) => button.text());
+    expect(labels).toContain('home');
+    expect(labels).toContain('music');
+  });
+
+  it('shows image icons and tolerates items without an extension', async () => {
+    mountPanel({ toolId: 'batch-images' });
+    await flush();
+    state.files.value = [
+      fileItem('hero.png', 'D:\\Art\\hero.png', { extension: undefined }),
+      fileItem('doc.txt', 'D:\\Art\\doc.txt')
+    ];
+    await wrapper!.vm.$nextTick();
+
+    await item('hero.png').trigger('click');
+    expect(selected()).toHaveLength(1);
+    expect(selected()[0].text()).toContain('tools.images');
+    expect(selected()[0].text()).toContain('hero.png');
+  });
+});

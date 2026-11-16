@@ -783,3 +783,173 @@ describe('mouse and window events', () => {
     expect(state.ui.hideContextMenu).not.toHaveBeenCalled();
   });
 });
+
+describe('boot and layout edge states', () => {
+  it('skips core sync reuse when the shell is not core', async () => {
+    state.coreShell = true;
+    mountApp();
+    await flush();
+    expect(state.markReady).toHaveBeenCalled();
+  });
+
+  it('keeps the splash migration going when storage is blocked', async () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementationOnce(() => {
+      throw new Error('denied');
+    });
+    mountApp();
+    await flush();
+    expect(state.settings.updatePlayback).not.toHaveBeenCalled();
+    getItem.mockRestore();
+  });
+
+  it('falls back to a timeout when idle callbacks are missing', async () => {
+    vi.useFakeTimers();
+    Reflect.deleteProperty(window, 'requestIdleCallback');
+    mountApp();
+    await flush();
+    await vi.runAllTimersAsync();
+    expect(state.audioEngine.warmUp).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('keeps an active module instead of switching to home', async () => {
+    state.moduleManager.getActive.mockReturnValue({ name: 'library' });
+    mountApp();
+    await flush();
+    expect(state.moduleManager.switchTo).not.toHaveBeenCalled();
+  });
+
+  it('boots without a preload bridge', async () => {
+    delete (window as { api?: unknown }).api;
+    mountApp();
+    await flush();
+    expect(state.markReady).toHaveBeenCalled();
+    expect(state.invoke).not.toHaveBeenCalled();
+  });
+
+  it('ignores non-file drags without a data transfer', async () => {
+    mountApp();
+    await flush();
+
+    window.dispatchEvent(new Event('dragenter'));
+    const over = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+    window.dispatchEvent(over);
+    const drop = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
+    window.dispatchEvent(drop);
+
+    expect(over.defaultPrevented).toBe(false);
+    expect(state.openMediaFiles).not.toHaveBeenCalled();
+  });
+
+  it('treats a missing route name as a regular window', async () => {
+    state.route.name = null;
+    mountApp();
+    await flush();
+    expect(wrapper!.findAll('[data-testid="app-menu"]')).toHaveLength(1);
+    expect(wrapper!.get('#main-content').attributes('data-route')).toBeUndefined();
+  });
+
+  it('renders the routed component inside the error boundary', async () => {
+    const RoutedStub = { template: '<span data-testid="routed" />' };
+    const RouterViewWithSlot = {
+      name: 'RouterView',
+      template: '<div data-testid="router-view"><slot :Component="child" /></div>',
+      data: () => ({ child: RoutedStub })
+    };
+    wrapper = mount(AppShell, {
+      attachTo: document.body,
+      global: {
+        mocks: { $t: (key: string) => key },
+        stubs: {
+          AppMenu: MenuStub,
+          DependencyBanner: DependencyStub,
+          UpdateBanner: UpdateStub,
+          Sidebar: SidebarStub,
+          PlayerBar: PlayerBarStub,
+          StatusBar: StatusBarStub,
+          ErrorBoundary: BoundaryStub,
+          RouterView: RouterViewWithSlot
+        }
+      }
+    });
+    await flush();
+    expect(wrapper.findAll('[data-testid="routed"]')).toHaveLength(1);
+  });
+});
+
+describe('shortcut edge states', () => {
+  beforeEach(async () => {
+    mountApp();
+    await flush();
+  });
+
+  it('ignores view search inside a plain focused input', async () => {
+    state.activeShortcut = 'view-search';
+    state.route.name = 'library';
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+
+    key({ key: 'f', ctrlKey: true });
+    expect(state.ui.toggleViewSearch).not.toHaveBeenCalled();
+    expect(state.ui.openSearch).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate while typing in an input', async () => {
+    state.activeShortcut = 'nav-library';
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+
+    key({ key: 'l', ctrlKey: true });
+    expect(state.router.push).not.toHaveBeenCalled();
+  });
+
+  it('skips plugin shortcuts while typing', async () => {
+    state.pluginShortcut = 'global.actions';
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+
+    key({ key: 'p' });
+    expect(state.plugins.dispatchShortcut).not.toHaveBeenCalled();
+    expect(state.handlePlayerShortcut).toHaveBeenCalled();
+  });
+});
+
+describe('boot and drag fallbacks', () => {
+  it('uses the default glass alpha when unset', async () => {
+    state.settings.appearance.glassAlpha = undefined;
+    mountApp();
+    await flush();
+    expect(wrapper!.get('[data-testid="app-root"]').classes()).not.toContain('app-root-glass');
+  });
+
+  it('leaves a non-circle visualization untouched', async () => {
+    localStorage.removeItem('onda.viz.splash-default-v1');
+    state.settings.playback.visualization.mode = 'splash';
+    mountApp();
+    await flush();
+    expect(state.settings.updatePlayback).not.toHaveBeenCalled();
+  });
+
+  it('keeps an already prevented drag and a copy cursor', async () => {
+    mountApp();
+    await flush();
+
+    const prevented = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(prevented, 'dataTransfer', {
+      value: { types: ['Files'], dropEffect: 'copy' }
+    });
+    prevented.preventDefault();
+    window.dispatchEvent(prevented);
+    expect(prevented.defaultPrevented).toBe(true);
+
+    const copy = new Event('dragover', { bubbles: true, cancelable: true }) as DragEvent;
+    const transfer = { types: ['Files'], dropEffect: 'copy' };
+    Object.defineProperty(copy, 'dataTransfer', { value: transfer });
+    window.dispatchEvent(copy);
+    expect(transfer.dropEffect).toBe('copy');
+    expect(copy.defaultPrevented).toBe(true);
+  });
+});

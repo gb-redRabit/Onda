@@ -335,3 +335,166 @@ describe('conversion', () => {
     expect(state.invoke).toHaveBeenCalledWith('shell:showItemInFolder', '/out/a.webp');
   });
 });
+
+function click(el: Element): void {
+  el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+}
+
+async function prepareWithPush(paths = ['C:\\a.jpg', 'C:\\b.png']) {
+  state.context.value = { paths };
+  mountBatch();
+  await flush();
+}
+
+describe('batch images guards and edge progress', () => {
+  it('keeps the list empty when the dialog is canceled or the folder pick is empty', async () => {
+    mountBatch();
+    await flush();
+
+    state.invoke.mockResolvedValueOnce({ canceled: true, filePaths: ['C:\\a.jpg'] });
+    click(wrapper!.get('[data-testid="batch-images-add"]').element);
+    await flush();
+    expect(wrapper!.text()).toContain('tools.batchImagesEmpty');
+
+    state.invoke.mockResolvedValueOnce([]);
+    click(wrapper!.findAllComponents(IconButtonStub)[0].element);
+    await flush();
+    expect(wrapper!.findAllComponents({ name: 'Input' })[0].props('modelValue')).toBe('');
+  });
+
+  it('skips extensionless drops and repeated contexts', async () => {
+    mountBatch();
+    await flush();
+
+    state.dropped.mockReturnValue(['C:\\noext']);
+    await wrapper!.get('[data-testid="batch-images-view"]').trigger('drop');
+    await flush();
+    expect(wrapper!.text()).toContain('tools.batchImagesEmpty');
+
+    state.context.value = { paths: ['C:\\a.jpg'] };
+    await flush();
+    state.context.value = { paths: ['C:\\a.jpg'] };
+    await flush();
+    expect(wrapper!.text().split('a.jpg').length - 1).toBe(1);
+  });
+
+  it('blocks edits and context changes while converting', async () => {
+    await prepareWithPush();
+    state.batchConvertImages.mockReturnValueOnce(new Promise(() => undefined));
+    click(wrapper!.get('[data-testid="batch-images-start"]').element);
+    await flush();
+
+    state.invoke.mockClear();
+    click(wrapper!.get('[data-testid="batch-images-add"]').element);
+    await flush();
+    expect(state.invoke).not.toHaveBeenCalled();
+
+    state.dropped.mockReturnValue(['C:\\c.png']);
+    await wrapper!.get('[data-testid="batch-images-view"]').trigger('drop');
+    await flush();
+    expect(wrapper!.text()).not.toContain('c.png');
+
+    click(wrapper!.findAllComponents(IconButtonStub)[0].element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.jpg');
+
+    const clear = wrapper!
+      .findAllComponents(ButtonStub)
+      .find((button) => button.text().includes('tools.clear'))!;
+    click(clear.element);
+    await wrapper!.vm.$nextTick();
+    expect(wrapper!.text()).toContain('a.jpg');
+
+    state.context.value = { paths: ['C:\\other.png'] };
+    await flush();
+    expect(wrapper!.text()).toContain('a.jpg');
+    expect(wrapper!.text()).not.toContain('other.png');
+
+    click(wrapper!.get('[data-testid="batch-images-start"]').element);
+    expect(state.batchConvertImages).toHaveBeenCalledTimes(1);
+
+    click(wrapper!.get('[data-testid="batch-images-cancel"]').element);
+  });
+
+  it('caps the list at the maximum file count', async () => {
+    mountBatch();
+    await flush();
+    state.dropped.mockReturnValue(Array.from({ length: 501 }, (_, index) => `C:\\img${index}.jpg`));
+
+    await wrapper!.get('[data-testid="batch-images-view"]').trigger('drop');
+    await flush();
+
+    expect(document.body.querySelectorAll('[data-testid="batch-images-row-pending"]')).toHaveLength(
+      500
+    );
+  });
+
+  it('handles processing and unknown-path progress without byte labels', async () => {
+    await prepareWithPush();
+    let listener: ((payload: unknown) => void) | null = null;
+    state.on.mockImplementation((_channel: string, callback: (payload: unknown) => void) => {
+      listener = callback;
+      return state.off;
+    });
+    state.batchConvertImages.mockReturnValueOnce(new Promise(() => undefined));
+    click(wrapper!.get('[data-testid="batch-images-start"]').element);
+    await flush();
+    const jobId = state.batchConvertImages.mock.calls[0][0].jobId as string;
+
+    listener!({ jobId, path: 'C:\\missing.jpg', status: 'done', index: 0 });
+    listener!({ jobId, path: 'C:\\a.jpg', status: 'processing', bytes: -1, index: 0 });
+    await wrapper!.vm.$nextTick();
+
+    expect(wrapper!.text()).toContain('tools.batchImagesProcessing');
+    expect(
+      document.body.querySelector('[data-testid="batch-images-row-processing"]')
+    ).not.toBeNull();
+  });
+
+  it('keeps finished rows when the job is canceled', async () => {
+    await prepareWithPush();
+    let listener: ((payload: unknown) => void) | null = null;
+    state.on.mockImplementation((_channel: string, callback: (payload: unknown) => void) => {
+      listener = callback;
+      return state.off;
+    });
+    let resolveJob!: (value: { success: boolean; canceled: boolean }) => void;
+    state.batchConvertImages.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveJob = resolve;
+      })
+    );
+    click(wrapper!.get('[data-testid="batch-images-start"]').element);
+    await flush();
+    const jobId = state.batchConvertImages.mock.calls[0][0].jobId as string;
+
+    listener!({
+      jobId,
+      path: 'C:\\a.jpg',
+      status: 'done',
+      outputPath: '/out/a.webp',
+      bytes: 10,
+      index: 0
+    });
+    await wrapper!.vm.$nextTick();
+    resolveJob({ success: false, canceled: true });
+    await flush();
+
+    expect(document.body.querySelectorAll('[data-testid="batch-images-row-done"]')).toHaveLength(1);
+    expect(
+      document.body.querySelectorAll('[data-testid="batch-images-row-canceled"]')
+    ).toHaveLength(1);
+  });
+
+  it('reports non-Error throws', async () => {
+    await prepareWithPush(['C:\\a.jpg']);
+    state.batchConvertImages.mockRejectedValueOnce('plain crash');
+    click(wrapper!.get('[data-testid="batch-images-start"]').element);
+    await flush();
+
+    expect(wrapper!.findComponent(ToolWindowShellStub).props('status')).toEqual({
+      tone: 'error',
+      text: 'plain crash'
+    });
+  });
+});
