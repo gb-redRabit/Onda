@@ -90,3 +90,43 @@ describe('proxy password handling', () => {
     expect(value.proxy?.password).toBe('plain');
   });
 });
+
+describe('proxy password edge branches', () => {
+  it('does nothing without a network object', () => {
+    expect(() => maskProxyPasswords(undefined)).not.toThrow();
+    expect(() => restoreProxyPasswords(undefined, network())).not.toThrow();
+    expect(() => stripProxyPasswords(undefined)).not.toThrow();
+    expect(() => encryptProxyPasswords(undefined)).not.toThrow();
+    expect(mocks.encryptSecret).not.toHaveBeenCalled();
+  });
+
+  it('skips missing, empty and non-string passwords', () => {
+    const value = {
+      proxy: {},
+      proxyYoutube: { password: '' },
+      proxySoundcloud: { password: 5 }
+    } as unknown as NetworkSettings;
+    maskProxyPasswords(value);
+    expect(value.proxyYoutube?.password).toBe('');
+    encryptProxyPasswords(value);
+    expect(mocks.encryptSecret).not.toHaveBeenCalled();
+  });
+
+  it('restores masks against missing stored values', () => {
+    const incoming = {
+      proxy: { password: PROXY_PASSWORD_MASK },
+      proxyYoutube: { password: PROXY_PASSWORD_MASK }
+    } as unknown as NetworkSettings;
+    restoreProxyPasswords(incoming, { proxy: {} } as NetworkSettings);
+    expect(incoming.proxy?.password).toBeUndefined();
+    expect(incoming.proxyYoutube?.password).toBeUndefined();
+  });
+
+  it('rethrows unexpected encryption failures', () => {
+    mocks.encryptSecret.mockImplementationOnce(() => {
+      throw new Error('boom');
+    });
+    const value = network({ proxy: { password: 'plain' } });
+    expect(() => encryptProxyPasswords(value)).toThrow('boom');
+  });
+});

@@ -344,3 +344,48 @@ describe('buildTaskInput', () => {
     });
   });
 });
+
+describe('job defaults without configured values', () => {
+  it('falls back to audio kind and best video format', () => {
+    h.settings.download.defaultKind = undefined;
+    const audio = buildJob(video());
+    expect(audio.kind).toBe('audio');
+
+    h.settings.download.defaultKind = 'audio';
+    const videoJob = buildJob(video(), undefined, { kind: 'video' });
+    expect(videoJob.format).toBe('best');
+  });
+
+  it('falls back to empty paths and default templates', () => {
+    h.settings.download.defaultPath = undefined;
+    h.settings.download.filenameTemplate = undefined;
+    h.settings.download.defaultVideoContainer = undefined;
+    h.settings.download.defaultCover = 'none';
+
+    const job = buildJob(video());
+    expect(job.outputDir).toBe('');
+    expect(job.filenameTemplate).toBe('{title} - {artist}');
+    expect(job.videoContainer).toBe('mp4');
+  });
+
+  it('applies the same fallbacks for task inputs', () => {
+    h.settings.download.defaultPath = undefined;
+    h.settings.download.filenameTemplate = undefined;
+    h.settings.download.defaultVideoContainer = undefined;
+
+    const input = buildTaskInput({
+      url: 'https://yt/x',
+      title: 'T',
+      kind: 'video',
+      format: '',
+      quality: '',
+      outputDir: ''
+    } as never);
+
+    expect(input.outputDir).toBe('');
+    expect(input.filenameTemplate).toBe('{title} - {artist}');
+    expect(input.format).toBe('mp3');
+    expect(input.quality).toBe('1080p');
+    expect(input.videoContainer).toBeUndefined();
+  });
+});

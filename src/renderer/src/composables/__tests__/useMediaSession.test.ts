@@ -456,3 +456,41 @@ describe('media session edge branches', () => {
     expect(state.session.setPositionState).not.toHaveBeenCalled();
   });
 });
+
+describe('media session icon fallbacks without a bridge', () => {
+  it('skips the system icon when the bridge disappears', async () => {
+    let resolveCover!: (value: unknown) => void;
+    state.getCover.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveCover = resolve;
+      })
+    );
+    const controls = useMediaSession();
+    await flush();
+
+    delete (window as { api?: unknown }).api;
+    resolveCover(null);
+    await flush();
+
+    expect(state.session.metadata).not.toBeNull();
+    controls.dispose();
+  });
+
+  it('skips the system icon after a cover failure without a bridge', async () => {
+    let rejectCover!: (error: unknown) => void;
+    state.getCover.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectCover = reject;
+      })
+    );
+    const controls = useMediaSession();
+    await flush();
+
+    delete (window as { api?: unknown }).api;
+    rejectCover(new Error('missing'));
+    await flush();
+
+    expect(state.session.metadata).not.toBeNull();
+    controls.dispose();
+  });
+});
