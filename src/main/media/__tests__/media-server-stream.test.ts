@@ -466,3 +466,262 @@ describe('handleProviderStreamProxy', () => {
     expect(res.destroy).toHaveBeenCalled();
   });
 });
+
+describe('handleStreamProxy edge branches', () => {
+  it('pins the signed IP family and flips it on retry', async () => {
+    state.upstreams = [
+      upstream({ error: new Error('v4 down') }),
+      upstream({ statusCode: 200, headers: {}, body: 'x' })
+    ];
+    const res = makeResponse();
+
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a?ip=1.2.3.4');
+
+    const first = state.get.mock.calls[0][1];
+    const second = state.get.mock.calls[1][1];
+    expect(first.family).toBe(4);
+    expect(second.family).toBe(6);
+
+    state.upstreams = [
+      upstream({ error: new Error('v6 down') }),
+      upstream({ statusCode: 200, headers: {} })
+    ];
+    const res6 = makeResponse();
+    await handleStreamProxy(makeRequest(), res6, 'https://cdn.example/a?ip=2001:db8::1');
+    expect(state.get.mock.calls[2][1].family).toBe(6);
+    expect(state.get.mock.calls[3][1].family).toBe(4);
+  });
+
+  it('defaults the method and tolerates non-Error transport failures', async () => {
+    state.upstreams = [
+      upstream({ error: 'plain' as never }),
+      upstream({ error: 'plain' as never }),
+      upstream({ error: 'plain' as never })
+    ];
+    const res = makeResponse();
+
+    await handleStreamProxy({ headers: {} } as never, res, 'https://cdn.example/a');
+
+    expect(state.get.mock.calls[0][1].method).toBe('GET');
+    expect(res.status).toBe(502);
+  });
+
+  it('rejects a non-generic URL that fails validation after resolution', async () => {
+    state.validate.mockReturnValue(null);
+    const res = makeResponse();
+
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    expect(res.status).toBe(403);
+    expect(res.end).toHaveBeenCalledWith('forbidden');
+  });
+
+  it('handles a 416 without range headers and truncates long bodies', async () => {
+    state.upstreams = [upstream({ statusCode: 416, headers: {} })];
+    const res = makeResponse();
+    await handleStreamProxy(makeRequest('GET', 'bytes=1-'), res, 'https://cdn.example/a');
+    expect(res.status).toBe(416);
+    expect(res.headers).toEqual({});
+
+    state.upstreams = [
+      upstream({ statusCode: 500, body: 'x'.repeat(500) }),
+      upstream({ statusCode: 500, body: 'y'.repeat(500) }),
+      upstream({ statusCode: 500, body: 'z'.repeat(500) })
+    ];
+    const res2 = makeResponse();
+    await handleStreamProxy(makeRequest(), res2, 'https://cdn.example/b');
+    expect(res2.status).toBe(502);
+    expect(state.logger.warn).toHaveBeenCalledWith(
+      'media-server',
+      expect.stringContaining('x'.repeat(400))
+    );
+  });
+
+  it('destroys the upstream when the client closes after headers', async () => {
+    const up = upstream({ statusCode: 200, headers: {} });
+    up.pipe = vi.fn();
+    state.upstreams = [up];
+    const res = makeResponse();
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    res.emit('close');
+    expect(up.destroy).toHaveBeenCalled();
+  });
+
+  it('uses status zero for a missing upstream status', async () => {
+    state.upstreams = [
+      upstream({ statusCode: 0, body: 'missing' }),
+      upstream({ statusCode: 0, body: 'missing' }),
+      upstream({ statusCode: 0, body: 'missing' })
+    ];
+    const res = makeResponse();
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+    expect(res.status).toBe(502);
+  });
+});
+
+describe('handleProviderStreamProxy edge branches', () => {
+  function providerStream() {
+    const stream = new EventEmitter() as EventEmitter & Record<string, any>;
+    stream.destroy = vi.fn();
+    stream.pipe = vi.fn();
+    return stream;
+  }
+
+  it('ignores malformed range headers', async () => {
+    const stream = providerStream();
+    state.getFactory.mockReturnValue(async () => ({ stream }));
+    const res = makeResponse();
+
+    await handleProviderStreamProxy(makeRequest('GET', 'garbage'), res, 'token');
+
+    expect(res.status).toBe(200);
+    expect(stream.pipe).toHaveBeenCalledWith(res);
+  });
+
+  it('reports non-Error provider failures', async () => {
+    state.getFactory.mockReturnValue(async () => {
+      throw 'plain failure';
+    });
+    const res = makeResponse();
+
+    await handleProviderStreamProxy(makeRequest(), res, 'token');
+
+    expect(res.status).toBe(502);
+  });
+
+  it('omits Retry-After when the limit has no delay', async () => {
+    state.getFactory.mockReturnValue(async () => {
+      throw new Error('quota');
+    });
+    state.detectLimit.mockReturnValue({ limited: true });
+    const res = makeResponse();
+
+    await handleProviderStreamProxy(makeRequest(), res, 'token');
+    await vi.waitFor(() => expect(state.broadcast).toHaveBeenCalled());
+
+    expect(res.status).toBe(429);
+    expect(res.headers['Retry-After']).toBeUndefined();
+  });
+
+  it('swallows destroy errors on client close and string stream errors', async () => {
+    const stream = providerStream();
+    stream.destroy.mockImplementation(() => {
+      throw new Error('already closed');
+    });
+    state.getFactory.mockReturnValue(async () => ({ stream }));
+    const res = makeResponse();
+
+    await handleProviderStreamProxy(makeRequest(), res, 'token');
+    expect(() => res.emit('close')).not.toThrow();
+
+    stream.emit('error', 'plain stream error');
+    expect(state.logger.warn).toHaveBeenCalledWith(
+      'media-server',
+      'provider stream body error',
+      'plain stream error'
+    );
+  });
+});
+
+describe('handleStreamProxy remaining guards', () => {
+  it('re-validates redirects for non-generic URLs', async () => {
+    state.validate.mockReturnValueOnce(new URL('https://cdn.example/a')).mockReturnValueOnce(null);
+    state.upstreams = [upstream({ statusCode: 302, headers: { location: '/next' } })];
+    const res = makeResponse();
+
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    expect(res.status).toBe(403);
+    expect(res.end).toHaveBeenCalledWith('forbidden');
+  });
+
+  it('stops retrying when the client closes during the retry delay', async () => {
+    state.upstreams = [
+      upstream({ error: new Error('first') }),
+      upstream({ statusCode: 200, headers: {} }),
+      upstream({ statusCode: 200, headers: {} })
+    ];
+    const res = makeResponse();
+    state.sleep.mockImplementationOnce(async () => {
+      res.emit('close');
+    });
+
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    expect(state.get).toHaveBeenCalledTimes(1);
+    expect(res.status).toBeUndefined();
+  });
+
+  it('keeps the upstream alive when the response already ended', async () => {
+    const up = upstream({ statusCode: 200, headers: {} });
+    up.pipe = vi.fn();
+    state.upstreams = [up];
+    const res = makeResponse();
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    res.writableEnded = true;
+    res.emit('close');
+    expect(up.destroy).not.toHaveBeenCalled();
+  });
+});
+
+describe('stream proxy body and timeout branches', () => {
+  it('caps the logged error body after the first large chunk', async () => {
+    state.get.mockImplementation((_url: unknown, _opts: unknown, callback: (up: any) => void) => {
+      const req = new EventEmitter() as EventEmitter & Record<string, any>;
+      req.destroy = vi.fn();
+      req.setTimeout = vi.fn();
+      process.nextTick(() => {
+        const up = upstream({ statusCode: 500 });
+        callback(up);
+        queueMicrotask(() => {
+          up.emit('data', Buffer.from('a'.repeat(500)));
+          up.emit('data', Buffer.from('b'));
+          up.emit('end');
+        });
+      });
+      return req;
+    });
+    const res = makeResponse();
+
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    expect(res.status).toBe(502);
+    expect(state.logger.warn).toHaveBeenCalledWith(
+      'media-server',
+      expect.stringContaining('a'.repeat(400))
+    );
+  });
+
+  it('destroys the upstream when its timeout fires', async () => {
+    let timeoutCallback: (() => void) | undefined;
+    state.get.mockImplementation((_url: unknown, _opts: unknown, callback: (up: any) => void) => {
+      const req = new EventEmitter() as EventEmitter & Record<string, any>;
+      req.destroy = vi.fn();
+      req.setTimeout = vi.fn((_ms: number, cb: () => void) => {
+        timeoutCallback = cb;
+      });
+      process.nextTick(() => callback(upstream({ statusCode: 200, headers: {} })));
+      return req;
+    });
+    const res = makeResponse();
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+
+    timeoutCallback?.();
+    expect(state.get.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it('uses the full size when a provider range has no end', async () => {
+    const stream = new EventEmitter() as EventEmitter & Record<string, any>;
+    stream.destroy = vi.fn();
+    stream.pipe = vi.fn();
+    state.getFactory.mockReturnValue(async () => ({ stream, size: 100 }));
+    const res = makeResponse();
+
+    await handleProviderStreamProxy(makeRequest('GET', 'bytes=10-'), res, 'token');
+
+    expect(res.headers['Content-Range']).toBe('bytes 10-99/100');
+    expect(res.headers['Content-Length']).toBe('90');
+  });
+});
