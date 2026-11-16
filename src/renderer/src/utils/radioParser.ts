@@ -98,7 +98,7 @@ export function parseXspf(text: string): ParsedRadioStation[] {
   const out: ParsedRadioStation[] = [];
   const trackRe = /<track\b[^>]*>([\s\S]*?)<\/track>/gi;
   for (const m of text.matchAll(trackRe)) {
-    const body = m[1] ?? '';
+    const body = m[1];
     const loc = body.match(/<location\b[^>]*>([\s\S]*?)<\/location>/i)?.[1] ?? '';
     const title = body.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '';
     const url = cleanUrl(decodeXmlEntities(loc.trim()));

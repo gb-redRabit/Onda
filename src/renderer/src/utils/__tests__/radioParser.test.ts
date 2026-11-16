@@ -125,3 +125,48 @@ http://radio.example/live
     });
   });
 });
+
+describe('radioParser edge cases', () => {
+  it('skips malformed pls lines and entries without usable urls', () => {
+    const mixed = `[playlist]
+garbage line
+File1=http://numbered.example/live
+File=http://unnumbered.example/live
+Title1=Numbered`;
+    expect(parsePls(mixed)).toEqual([{ name: 'Numbered', url: 'http://numbered.example/live' }]);
+
+    expect(parsePls('File1=\nTitle1=NoFile')).toEqual([]);
+    expect(parsePls('Title=Only title')).toEqual([]);
+    expect(parsePls('File=ftp://radio.example/live')).toEqual([]);
+    expect(parsePls('File=http://radio.example/live')).toEqual([
+      { name: 'http://radio.example/live', url: 'http://radio.example/live' }
+    ]);
+  });
+
+  it('handles EXTINF without a comma and non-http m3u lines', () => {
+    expect(parseM3u('#EXTINF:-1\nhttp://radio.example/live')).toEqual([
+      { name: 'http://radio.example/live', url: 'http://radio.example/live' }
+    ]);
+    expect(parseM3u('garbage\nftp://radio.example/live')).toEqual([]);
+  });
+
+  it('skips xspf tracks without locations and falls back to the url', () => {
+    const xspf = `<playlist>
+      <track><title>No location</title></track>
+      <track><location>http://ok.example/live</location></track>
+      <track><title>Ftp</title><location>ftp://bad.example/live</location></track>
+    </playlist>`;
+    expect(parseXspf(xspf)).toEqual([
+      { name: 'http://ok.example/live', url: 'http://ok.example/live' }
+    ]);
+  });
+
+  it('uses the xspf extension and unknown-content fallbacks', () => {
+    const xspf =
+      '<playlist><track><title>T</title><location>http://r.example/live</location></track></playlist>';
+    expect(parseRadioFile('stations.xspf', xspf)[0]?.name).toBe('T');
+
+    expect(parseRadioFile('stations.txt', 'http://r.example/live')).toHaveLength(1);
+    expect(parseRadioFile('stations.txt', 'not a station')).toEqual([]);
+  });
+});

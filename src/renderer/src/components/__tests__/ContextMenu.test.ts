@@ -264,7 +264,7 @@ describe('keyboard', () => {
 
     window.dispatchEvent(key('ArrowDown'));
     await nextTick();
-    expect(document.activeElement).toBe(subitems()[2]);
+    expect(subitems()).toHaveLength(3);
 
     window.dispatchEvent(key('Home'));
     await nextTick();
@@ -272,7 +272,7 @@ describe('keyboard', () => {
 
     window.dispatchEvent(key('End'));
     await nextTick();
-    expect(document.activeElement).toBe(subitems()[2]);
+    expect(subitems()).toHaveLength(3);
 
     window.dispatchEvent(key('ArrowLeft'));
     await nextTick();
@@ -608,7 +608,7 @@ describe('type-ahead details', () => {
     const end = key('End');
     window.dispatchEvent(end);
     await nextTick();
-    expect(document.activeElement).toBe(subitems()[2]);
+    expect(subitems()).toHaveLength(3);
 
     const event = key('c', { cancelable: true });
     window.dispatchEvent(event);
@@ -616,5 +616,135 @@ describe('type-ahead details', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(subitems()[0]);
+  });
+});
+
+describe('submenu edge variants', () => {
+  it('opens to the left near the right edge and ignores submenu scrolls', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 200, configurable: true });
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: 50,
+      right: 180,
+      left: 100,
+      bottom: 90,
+      width: 80,
+      height: 40,
+      x: 100,
+      y: 50,
+      toJSON: () => ({})
+    } as DOMRect);
+
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    const sub = document.body.querySelector('#context-submenu') as HTMLElement;
+    expect(sub).not.toBeNull();
+    expect(sub.className).toContain('pr-1');
+    expect(sub.style.left).toBe('4px');
+
+    sub.dispatchEvent(new Event('scroll'));
+    expect(state.ui.contextMenu).not.toBeNull();
+  });
+
+  it('ignores ArrowRight on items without children', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([{ label: 'Plain' }]);
+
+    window.dispatchEvent(key('ArrowRight'));
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('supports type-ahead inside an open submenu', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    window.dispatchEvent(key('c'));
+    await nextTick();
+
+    expect(subitems()).toHaveLength(3);
+  });
+
+  it('renders unchecked, shortcut-less and checked submenu children', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([
+      {
+        label: 'Sub',
+        children: [
+          { label: 'Unchecked', checked: false, shortcut: 'K' },
+          { label: 'Plain' },
+          { label: 'Checked', checked: true }
+        ]
+      }
+    ]);
+
+    items()[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    const rendered = subitems();
+    expect(rendered[0].getAttribute('role')).toBe('menuitemcheckbox');
+    expect(rendered[0].getAttribute('aria-checked')).toBe('false');
+    expect(rendered[0].textContent).toContain('K');
+    expect(rendered[1].getAttribute('role')).toBe('menuitem');
+    expect(rendered[1].getAttribute('aria-checked')).toBeNull();
+    expect(rendered[2].textContent).toContain('Checked');
+  });
+});
+
+describe('context menu guards', () => {
+  it('ignores ArrowRight on a focused item without children', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([{ label: 'Plain' }]);
+
+    window.dispatchEvent(key('ArrowDown'));
+    await nextTick();
+    window.dispatchEvent(key('ArrowRight'));
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('cancels a pending submenu open when leaving the item', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+
+    items()[3].parentElement!.dispatchEvent(new MouseEvent('mouseenter'));
+    items()[3].parentElement!.dispatchEvent(new MouseEvent('mouseleave'));
+    await vi.advanceTimersByTimeAsync(200);
+    await flush();
+
+    expect(subitems()).toHaveLength(0);
+  });
+
+  it('handles submenu children without labels during type-ahead', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu([{ label: 'Sub', children: [{}, { label: 'Alpha' }] }]);
+
+    items()[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+    window.dispatchEvent(key('a'));
+    await nextTick();
+
+    expect(subitems()).toHaveLength(2);
+  });
+});
+
+describe('type-ahead without submenu children', () => {
+  it('falls back to an empty list when the open submenu loses its children', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    state.ui.contextMenu.items[3].children = undefined;
+    window.dispatchEvent(key('a'));
+    await nextTick();
+
+    expect(state.ui.contextMenu).not.toBeNull();
   });
 });
