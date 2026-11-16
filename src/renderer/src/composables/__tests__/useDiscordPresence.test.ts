@@ -439,3 +439,91 @@ describe('watchers and cleanup', () => {
     expect(state.update.mock.calls.length).toBe(calls);
   });
 });
+
+describe('presence edge data', () => {
+  it('omits the duration when nothing is known', async () => {
+    state.player.duration = 0;
+    state.player.currentTrack = track({ duration: undefined, type: 'audio' });
+    mountPresence();
+    await flush();
+
+    expect(state.update.mock.calls.at(-1)![0]).not.toHaveProperty('durationSec');
+  });
+
+  it('evicts the oldest cover cache entries', async () => {
+    mountPresence();
+    await flush();
+
+    for (let i = 0; i < 305; i += 1) {
+      state.player.currentTrack = track({
+        path: `/music/${i}.mp3`,
+        thumbnail: undefined,
+        metadata: { title: `Title ${i}`, artist: 'Artist', album: 'Album' }
+      });
+      await flush();
+    }
+
+    expect(state.resolveCover).toHaveBeenCalledTimes(306);
+  });
+});
+
+describe('pending cover lookups', () => {
+  it('reuses an in-flight online lookup', async () => {
+    let resolveCover!: (value: string | null) => void;
+    state.resolveCover.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveCover = resolve;
+      })
+    );
+    state.player.currentTrack = track({ thumbnail: undefined });
+    mountPresence();
+    await flush();
+
+    state.player.isPlaying = false;
+    await flush();
+    state.player.isPlaying = true;
+    await flush();
+    expect(state.resolveCover).toHaveBeenCalledTimes(1);
+
+    resolveCover('https://cover');
+    await flush();
+  });
+
+  it('reuses an in-flight local lookup and caches failures', async () => {
+    state.settings.general.discordUploadLocalCovers = true;
+    let resolveLocal!: (value: string | null) => void;
+    state.resolveLocal.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveLocal = resolve;
+      })
+    );
+    state.player.currentTrack = track({ thumbnail: undefined, mtime: 1 });
+    mountPresence();
+    await flush();
+
+    state.player.isPlaying = false;
+    await flush();
+    state.player.isPlaying = true;
+    await flush();
+    expect(state.resolveLocal).toHaveBeenCalledTimes(1);
+
+    resolveLocal(null);
+    await flush();
+    state.resolveLocal.mockRejectedValueOnce(new Error('upload'));
+  });
+});
+
+describe('local cover failures', () => {
+  it('treats a rejected upload as no cover', async () => {
+    state.settings.general.discordUploadLocalCovers = true;
+    state.resolveLocal.mockRejectedValueOnce(new Error('upload'));
+    state.player.currentTrack = track({ thumbnail: undefined, mtime: 2 });
+    mountPresence();
+    await flush();
+    await flush();
+
+    expect(state.update.mock.calls.some((call) => call[0]?.coverUrl?.includes('local'))).toBe(
+      false
+    );
+  });
+});

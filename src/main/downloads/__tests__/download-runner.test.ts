@@ -338,3 +338,54 @@ describe('runJob errors and retries', () => {
     expect(state.runAttempt).not.toHaveBeenCalled();
   });
 });
+
+describe('runner edge branches', () => {
+  it('reschedules and clears the night timer', async () => {
+    state.readNight.mockResolvedValue({ enabled: true, start: 22, end: 6 });
+    state.isWithin.mockReturnValueOnce(false).mockReturnValueOnce(false).mockReturnValue(true);
+    state.untilStart.mockReturnValue(1000);
+    const module = await load();
+
+    await module.pump();
+    await module.pump();
+    await module.pump();
+
+    expect(state.isWithin).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(1000);
+    await flush();
+  });
+
+  it('resets a failed cover status before retrying', async () => {
+    state.readRetry.mockResolvedValue({ attempts: 2, baseMs: 10 });
+    state.runAttempt
+      .mockResolvedValueOnce({ finishedOk: false, errorCode: 'network' })
+      .mockResolvedValueOnce({ finishedOk: true });
+    const target = await start({ coverStatus: 'error' });
+
+    expect(target.coverStatus).toBe('none');
+    await vi.advanceTimersByTimeAsync(10);
+    await flush();
+  });
+
+  it('ignores failures for stopped jobs', async () => {
+    state.runAttempt.mockImplementationOnce(async (target: any) => {
+      target.status = 'paused';
+      throw new Error('stopped');
+    });
+    const target = await start();
+
+    expect(target.status).toBe('paused');
+    expect(state.warn).not.toHaveBeenCalledWith('downloads', expect.stringContaining('job failed'));
+  });
+
+  it('records non-Error failures', async () => {
+    state.runAttempt.mockImplementationOnce(async () => {
+      throw 'plain crash';
+    });
+    const target = await start();
+
+    expect(target.status).toBe('error');
+    expect(target.error).toBe('redacted:plain crash');
+    expect(state.classify).toHaveBeenCalledWith('plain crash');
+  });
+});

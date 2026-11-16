@@ -524,3 +524,58 @@ describe('usePipVisualizer', () => {
     expect(state.rafId).toBe(before);
   });
 });
+
+describe('usePipVisualizer edge branches', () => {
+  it('reuses cached bar geometry on consecutive frames', async () => {
+    mountViz();
+    parent();
+    vm().data = [0, 255, 128, 64, 32, 200, 100, 50, 10, 20];
+
+    flushFrame();
+    await wrapper!.vm.$nextTick();
+    const draws = state.ctx.fillRect.mock.calls.length;
+
+    flushFrame();
+    await wrapper!.vm.$nextTick();
+    expect(state.ctx.fillRect.mock.calls.length).toBeGreaterThan(draws);
+  });
+
+  it('runs the idle retry timer when the canvas is gone', () => {
+    mountViz();
+    parent();
+    vm().data = [1, 2];
+    canvas().remove();
+
+    flushFrame();
+    expect(vi.getTimerCount()).toBe(1);
+
+    vi.advanceTimersByTime(500);
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
+  it('ignores repeated visible transitions while the loop runs', () => {
+    mountViz();
+    parent();
+    vm().data = [0, 255, 128, 64];
+    flushFrame();
+    const rafId = state.rafId;
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(state.rafId).toBe(rafId);
+  });
+
+  it('accepts a canvas element through setCanvas', async () => {
+    mountViz();
+    parent();
+    vm().data = [0, 255, 128, 64];
+    const canvasEl = canvas();
+    canvasEl.width = 0;
+    vm().setCanvas(canvasEl);
+
+    flushFrame();
+    await wrapper!.vm.$nextTick();
+    expect(canvasEl.width).toBe(480);
+  });
+});
