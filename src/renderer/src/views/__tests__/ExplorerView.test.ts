@@ -562,3 +562,71 @@ describe('window listeners', () => {
     expect(removeSpy).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 });
+
+describe('ExplorerView edge branches', () => {
+  it('returns no detail item when the selected file vanished', async () => {
+    state.explorer.selectedCount = 1;
+    state.explorer.selectedFiles = new Set(['C:/missing.bin']);
+    mountView();
+    const vm = wrapper!.vm as unknown as { detailItem: unknown };
+
+    expect(vm.detailItem).toBeNull();
+  });
+
+  it('filters files without an extension', async () => {
+    state.explorer.sortedFiles = [{ name: 'readme', path: 'C:/readme' }];
+    mountView();
+    const vm = wrapper!.vm as unknown as { searchQuery: string; filteredFiles: unknown[] };
+
+    vm.searchQuery = 'readme';
+    await wrapper!.vm.$nextTick();
+
+    expect(vm.filteredFiles).toHaveLength(1);
+
+    vm.searchQuery = 'zzz';
+    await wrapper!.vm.$nextTick();
+
+    expect(vm.filteredFiles).toHaveLength(0);
+  });
+
+  it('reports a failed tool window launch', async () => {
+    state.invoke.mockResolvedValue(null);
+    mountView();
+    const vm = wrapper!.vm as unknown as {
+      openToolWithFiles: (toolId: string, paths: string[]) => Promise<void>;
+    };
+
+    await vm.openToolWithFiles('converter', ['C:/a.mp3']);
+
+    expect(state.ui.notify).toHaveBeenCalledWith('error', 'app.error', 'tools.openFailed');
+  });
+
+  it('renders active pin and hidden-file toggles', async () => {
+    state.pinned.value = true;
+    state.settings.explorer.showHidden = true;
+    mountView();
+
+    expect(wrapper!.find('[data-testid="explorer-always-on-top"]').exists()).toBe(true);
+    expect(wrapper!.find('[data-testid="explorer-show-hidden"]').exists()).toBe(true);
+  });
+
+  it('positions the details pane over a narrow window', async () => {
+    localStorage.setItem('onda-explorer-details', '1');
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 800 });
+    mountView();
+
+    expect(wrapper!.findComponent(DetailsStub).exists()).toBe(true);
+  });
+});
+
+describe('ExplorerView wide details pane', () => {
+  it('docks the details pane without overlay classes on a wide window', async () => {
+    localStorage.setItem('onda-explorer-details', '1');
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1400 });
+    mountView();
+
+    const details = wrapper!.findComponent(DetailsStub);
+    expect(details.exists()).toBe(true);
+    expect(details.classes()).not.toContain('absolute');
+  });
+});
