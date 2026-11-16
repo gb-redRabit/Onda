@@ -224,3 +224,65 @@ describe('metadata, subtitles and misc', () => {
     expect(prefs.addToLibrary).toBeUndefined();
   });
 });
+
+describe('subscribe prefs extra branches', () => {
+  it('omits output dirs for custom folders without a path', () => {
+    const sc = buildSubscribePrefs(
+      input({ isSc: true, folderMode: 'custom', outputDir: '' }),
+      defaults
+    );
+    expect(sc.outputDir).toBeUndefined();
+
+    const yt = buildSubscribePrefs(input({ folderMode: 'custom', outputDir: '' }), defaults);
+    expect(yt.outputDir).toBeUndefined();
+  });
+
+  it('skips empty audio language and year', () => {
+    const prefs = buildSubscribePrefs(
+      input({ audioLanguage: '  ', year: '  ', artist: '', album: '' }),
+      defaults
+    );
+    expect(prefs.audioLanguage).toBeUndefined();
+    expect(prefs.metaOverride).toBeUndefined();
+  });
+
+  it('emits explicit thumbnail and none covers', () => {
+    const thumb = buildSubscribePrefs(input({ coverType: 'thumbnail' }), {
+      ...defaults,
+      cover: 'none'
+    });
+    expect(thumb.cover).toEqual({ type: 'thumbnail' });
+
+    const none = buildSubscribePrefs(input({ coverType: 'none' }), {
+      ...defaults,
+      cover: 'none'
+    });
+    expect(none.cover).toBeUndefined();
+
+    const videoNone = buildSubscribePrefs(input({ kind: 'video', coverType: 'none' }), defaults);
+    expect(videoNone.cover).toEqual({ type: 'none' });
+  });
+});
+
+describe('subscribe prefs filled values', () => {
+  it('keeps custom folders, language and year when provided', () => {
+    const sc = buildSubscribePrefs(
+      input({ isSc: true, folderMode: 'custom', outputDir: ' D:/sc ' }),
+      defaults
+    );
+    expect(sc.outputDir).toBe(' D:/sc ');
+
+    const yt = buildSubscribePrefs(
+      input({
+        folderMode: 'custom',
+        outputDir: 'D:/yt',
+        audioLanguage: ' de ',
+        year: ' 2001 '
+      }),
+      defaults
+    );
+    expect(yt.outputDir).toBe('D:/yt');
+    expect(yt.audioLanguage).toBe('de');
+    expect(yt.metaOverride).toEqual({ year: '2001' });
+  });
+});

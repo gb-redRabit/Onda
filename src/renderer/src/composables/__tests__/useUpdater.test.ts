@@ -80,3 +80,49 @@ describe('useUpdater', () => {
     expect(u.error.value).toBe('boom');
   });
 });
+
+describe('updater edge events', () => {
+  it('defaults missing event fields', () => {
+    const u = useUpdater();
+    handler!({ event: 'update-available' });
+    expect(u.version.value).toBe('');
+
+    handler!({ event: 'download-progress' });
+    expect(u.progress.value).toBe(0);
+
+    handler!({ event: 'update-downloaded', version: '2.0.0' });
+    handler!({ event: 'update-downloaded' });
+    expect(u.version.value).toBe('2.0.0');
+
+    handler!({ event: 'error' });
+    expect(u.error.value).toBe('');
+  });
+
+  it('subscribes and hydrates only once', async () => {
+    useUpdater();
+    await Promise.resolve();
+    useUpdater();
+    await Promise.resolve();
+
+    expect(getUpdaterState).toHaveBeenCalledTimes(1);
+  });
+
+  it('works without a preload bridge', () => {
+    delete (window as { api?: unknown }).api;
+    const u = useUpdater();
+    expect(u.show.value).toBe(false);
+  });
+
+  it('ignores empty or failing updater state', async () => {
+    getUpdaterState.mockResolvedValueOnce(null as never);
+    const u = useUpdater();
+    await Promise.resolve();
+    expect(u.status.value).toBe('idle');
+
+    __resetUpdater();
+    getUpdaterState.mockRejectedValueOnce(new Error('down'));
+    const u2 = useUpdater();
+    await Promise.resolve();
+    expect(u2.status.value).toBe('idle');
+  });
+});

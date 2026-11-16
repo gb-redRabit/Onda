@@ -343,3 +343,45 @@ describe('QueuePanel — extended interaction', () => {
     expect(h.promptCancel).toHaveBeenCalled();
   });
 });
+
+describe('queue duration edge cases', () => {
+  const api = { getDuration: vi.fn(), getFilePath: vi.fn() };
+
+  beforeEach(() => {
+    api.getDuration.mockReset();
+    api.getFilePath.mockReset();
+    api.getFilePath.mockImplementation((file: File) => `C:/music/${file.name}`);
+    (window as unknown as { api?: unknown }).api = api;
+  });
+
+  it('deduplicates pending duration lookups', async () => {
+    setQueue([makeTrack('a')]);
+    let resolveDuration!: (value: number) => void;
+    api.getDuration.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDuration = resolve;
+      })
+    );
+    const w = mountPanel();
+
+    const files = [new File(['a'], 'same.mp3', { type: '' }), new File(['b'], 'same.mp3')];
+    await w.get('[data-testid="queue-panel"]').trigger('drop', { dataTransfer: { files } });
+    await flush();
+
+    expect(api.getDuration).toHaveBeenCalledTimes(1);
+    resolveDuration(30);
+    await flush();
+  });
+  it('renders tracks without durations or metadata', async () => {
+    setQueue([{ id: 'raw', path: 'C:/music/raw.mp3', name: 'raw.mp3', type: 'audio' }], {
+      id: 'raw',
+      path: 'C:/music/raw.mp3',
+      name: 'raw.mp3',
+      type: 'audio'
+    });
+    const w = mountPanel();
+
+    expect(w.text()).toContain('raw.mp3');
+    expect(w.text()).toContain('0:00');
+  });
+});
