@@ -559,3 +559,37 @@ describe('cover extraction without ffmpeg binary', () => {
     expect(h.runCommand).toHaveBeenCalledWith('ffmpeg', expect.any(Array), expect.any(Object));
   });
 });
+
+describe('extractAndCacheCover stat and payload edges', () => {
+  it('continues after a non-ENOENT stat failure', async () => {
+    h.stat.mockRejectedValueOnce(Object.assign(new Error('denied'), { code: 'EACCES' }));
+    const covers = await load();
+
+    await expect(covers.extractAndCacheCover('D:/music/a.mp3')).resolves.toMatchObject({
+      type: 'image'
+    });
+    expect(h.parseFile).toHaveBeenCalled();
+  });
+
+  it('skips persistent saves for empty image payloads', async () => {
+    h.parseFile.mockResolvedValueOnce(picture());
+    h.sharp.mockImplementationOnce(() => sharpChain(Buffer.from('')));
+    const covers = await load();
+
+    const result = await covers.extractAndCacheCover('D:/music/a.mp3');
+    await flush();
+
+    expect(result).toEqual({ type: 'image', data: 'data:image/jpeg;base64,' });
+  });
+
+  it('skips still saves for empty frame payloads', async () => {
+    h.sibling = 'D:/music/a.mp4';
+    h.readFile.mockResolvedValue(Buffer.from(''));
+    const covers = await load();
+
+    const result = await covers.extractAndCacheStill('D:/music/a.mp3');
+
+    expect(result).toEqual({ type: 'image', data: 'data:image/jpeg;base64,' });
+    expect(h.writeFile).not.toHaveBeenCalled();
+  });
+});

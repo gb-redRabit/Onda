@@ -251,3 +251,67 @@ describe('pulse animation', () => {
     expect(state.cancel).toHaveBeenCalledWith(1);
   });
 });
+
+describe('AudioCover edge branches', () => {
+  it('passes the track to every visual variant', () => {
+    state.player.currentTrack = { path: 'D:/media/a.mp3' };
+
+    mountCover({ variant: 'rounded' });
+    expect(cover().props('path')).toBe('D:/media/a.mp3');
+
+    wrapper!.unmount();
+    mountCover({ variant: 'glass' });
+    expect(cover().props('path')).toBe('D:/media/a.mp3');
+
+    wrapper!.unmount();
+    mountCover();
+    expect(cover().props('path')).toBe('D:/media/a.mp3');
+  });
+
+  it('reallocates the analyser buffer and restarts polling', async () => {
+    state.audio.isPlaying.value = true;
+    const analyser = {
+      frequencyBinCount: 32,
+      getByteFrequencyData: vi.fn((buffer: Uint8Array) => buffer.fill(128))
+    };
+    state.audio.getAnalyserNode.mockReturnValue(analyser);
+    mountCover();
+
+    state.raf.shift()!(0);
+    analyser.frequencyBinCount = 8;
+    state.raf.shift()!(0);
+    await nextTick();
+
+    expect(analyser.getByteFrequencyData).toHaveBeenCalledTimes(2);
+    expect(state.raf).toHaveLength(1);
+  });
+
+  it('keeps the running frame when playback flaps in one tick', async () => {
+    state.audio.isPlaying.value = true;
+    mountCover();
+    state.audio.isPlaying.value = false;
+    state.audio.isPlaying.value = true;
+    await nextTick();
+
+    expect(state.cancel).not.toHaveBeenCalled();
+    expect(state.raf).toHaveLength(1);
+  });
+});
+
+describe('AudioCover stable analyser buffer', () => {
+  it('reuses the analyser buffer for repeated frames', async () => {
+    state.audio.isPlaying.value = true;
+    const analyser = {
+      frequencyBinCount: 32,
+      getByteFrequencyData: vi.fn((buffer: Uint8Array) => buffer.fill(64))
+    };
+    state.audio.getAnalyserNode.mockReturnValue(analyser);
+    mountCover();
+
+    state.raf.shift()!(0);
+    state.raf.shift()!(0);
+    await nextTick();
+
+    expect(analyser.getByteFrequencyData).toHaveBeenCalledTimes(2);
+  });
+});

@@ -234,3 +234,49 @@ describe('CompactQueue defensive rows', () => {
     expect(h.player.removeFromQueue).toHaveBeenCalledWith(0);
   });
 });
+
+describe('CompactQueue empty and defensive handlers', () => {
+  it('shows the empty queue hint and hides the idle footer with a track', () => {
+    h.player.displayQueue = [];
+    h.player.currentTrack = null;
+    const empty = mountQueue();
+    expect(empty.text()).toContain(en.compact.emptyQueue);
+    expect(empty.find('.pb-6').exists()).toBe(true);
+
+    h.player.currentTrack = audioA;
+    const withTrack = mountQueue();
+    expect(withTrack.find('.pb-6').exists()).toBe(false);
+  });
+
+  it('ignores non-element measurements and out-of-range drags', () => {
+    const w = mountQueue();
+    const vm = w.vm as unknown as {
+      measureItem: (node: unknown) => void;
+      onDragStart: (index: number) => void;
+      onDragOver: (event: DragEvent) => void;
+    };
+
+    expect(() => vm.measureItem(null)).not.toThrow();
+
+    vm.onDragStart(99);
+    const event = new Event('dragover', { cancelable: true }) as DragEvent;
+    Object.defineProperty(event, 'clientY', { value: 10 });
+    expect(() => vm.onDragOver(event)).not.toThrow();
+
+    h.player.displayQueue = [];
+    const empty = mountQueue();
+    expect(() => (empty.vm as unknown as typeof vm).onDragOver(event)).not.toThrow();
+  });
+});
+
+describe('CompactQueue missing row removal', () => {
+  it('removes a virtual row without an entry using -1', async () => {
+    h.virtualExtra = true;
+    const w = mountQueue();
+    const extra = w.find('[data-testid="compact-queue-item-2"]');
+
+    await extra.get(`[aria-label="${en.compact.remove}"]`).trigger('click');
+
+    expect(h.player.removeFromQueue).toHaveBeenCalledWith(-1);
+  });
+});

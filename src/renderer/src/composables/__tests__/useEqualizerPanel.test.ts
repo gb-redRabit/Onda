@@ -25,6 +25,7 @@ const state = vi.hoisted(() => ({
   bandY: vi.fn((gain: number) => gain + 50),
   dbToY: vi.fn((db: number) => 100 - db),
   spectrumPath: null as any,
+  spectrumOptions: null as any,
   sanitizeBands: vi.fn(),
   sanitizePreamp: vi.fn(),
   t: vi.fn((key: string) => key),
@@ -72,7 +73,10 @@ vi.mock('@renderer/utils/eqGeometry', () => ({
   dbToY: state.dbToY
 }));
 vi.mock('../useEqSpectrum', () => ({
-  useEqSpectrum: () => ({ spectrumPath: state.spectrumPath })
+  useEqSpectrum: (options: unknown) => {
+    state.spectrumOptions = options;
+    return { spectrumPath: state.spectrumPath };
+  }
 }));
 vi.mock('../usePromptDialog', () => ({
   usePromptDialog: () => state.prompt
@@ -560,5 +564,44 @@ describe('export and import', () => {
     (navigator.clipboard.readText as any).mockRejectedValueOnce(new Error('denied'));
     await exposed.importEq();
     expect(state.ui.notify).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('equalizer panel edge branches', () => {
+  it('exposes live spectrum callbacks', () => {
+    state.audio.getAudioContext.mockReturnValue({ sampleRate: 44100 });
+    state.audio.getAnalyserNode.mockReturnValue('analyser');
+    setup();
+
+    expect(state.spectrumOptions.isPlaying()).toBe(true);
+    expect(state.spectrumOptions.getAnalyser()).toBe('analyser');
+    expect(state.spectrumOptions.getSampleRate()).toBe(44100);
+  });
+
+  it('defaults the spectrum sample rate and presets', () => {
+    state.audio.getAudioContext.mockReturnValue(undefined);
+    state.fx.equalizerUserPresets = undefined;
+    setup();
+
+    expect(state.spectrumOptions.getSampleRate()).toBe(48000);
+    expect(exposed.userPresets.value).toEqual({});
+    expect(exposed.activePreset.value).toBe('custom');
+  });
+
+  it('falls back to zero gain for an out-of-range menu band', () => {
+    setup();
+    exposed.menuBand.value = 99;
+
+    expect(exposed.menuBelow.value).toBe(true);
+  });
+
+  it('ignores curve moves without a curve element', () => {
+    setup(null);
+    exposed.draggingBand.value = 0;
+    state.applyEqBands.mockClear();
+
+    exposed.onCurveMove(pointerEvent(10, 10) as unknown as PointerEvent);
+
+    expect(state.applyEqBands).not.toHaveBeenCalled();
   });
 });

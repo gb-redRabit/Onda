@@ -463,3 +463,75 @@ describe('resume prompt callbacks', () => {
     expect(controls.isFullscreen.value).toBe(false);
   });
 });
+
+describe('controls rescheduling and click resets', () => {
+  it('clears the pending hide timer when the deadline moves', () => {
+    let now = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const { controls, ctx } = createControls();
+    ctx.player.isPlaying = true;
+
+    controls.onMouseMove();
+    now = 300;
+    controls.onMouseMove();
+    vi.advanceTimersByTime(3000);
+
+    expect(controls.showControls.value).toBe(false);
+  });
+
+  it('restarts the single-click timer on repeated clicks', () => {
+    const { controls, ctx } = createControls();
+
+    controls.handleClick();
+    controls.handleClick();
+    vi.advanceTimersByTime(200);
+
+    expect(ctx.player.togglePlay).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the document element when no container is bound', () => {
+    const ctx = createContext({ playerContainerRef: { value: null } });
+    const { controls } = createControls(ctx);
+
+    controls.toggleFullscreen();
+
+    expect(document.documentElement.requestFullscreen).toHaveBeenCalled();
+  });
+});
+
+describe('player control toasts and cleanup', () => {
+  it('announces playback when a click starts playing', () => {
+    const { controls, ctx } = createControls();
+
+    controls.handleClick();
+    vi.advanceTimersByTime(200);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith('info', 'player.playing', undefined, 1000);
+  });
+
+  it('announces pause when a click stops playback', () => {
+    const { controls, ctx } = createControls();
+    ctx.player.isPlaying = true;
+
+    controls.handleClick();
+    vi.advanceTimersByTime(200);
+
+    expect(ctx.ui.notify).toHaveBeenCalledWith('info', 'player.paused', undefined, 1000);
+  });
+
+  it('toggles fullscreen on a double click without a pending click', () => {
+    const { controls } = createControls();
+
+    controls.handleDoubleClick();
+
+    expect(
+      (container as unknown as { requestFullscreen: ReturnType<typeof vi.fn> }).requestFullscreen
+    ).toHaveBeenCalled();
+  });
+
+  it('cleans up without pending timers', () => {
+    const { controls } = createControls();
+
+    expect(() => controls.cleanup()).not.toThrow();
+  });
+});

@@ -425,3 +425,49 @@ describe('expanded children', () => {
     );
   });
 });
+
+describe('dir node edge branches', () => {
+  it('queues the remaining matching tracks when playing a folder', async () => {
+    state.library.tracks = [
+      track('a1', 'audio', 'C:/root/Alpha/one.mp3'),
+      track('a2', 'audio', 'C:/root/Alpha/two.mp3')
+    ];
+    mountNode();
+    await flush();
+
+    await wrapper!.get('button[title="library.folderPlay"]').trigger('click');
+
+    expect(state.player.addToQueueMultiple).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'a2' })
+    ]);
+  });
+
+  it('forwards events from nested folder nodes', async () => {
+    state.getChildDirs.mockImplementation((dir: string) => (dir === 'C:/root' ? ['Alpha'] : []));
+    mountNode({ expandedPaths: new Set(['C:/root/Alpha']) });
+    await flush();
+
+    const nested = wrapper!.findAllComponents(DirNode)[0];
+    nested.vm.$emit('toggle', 'C:/root/Alpha');
+    nested.vm.$emit('playFolder', 'C:/root/Alpha');
+    nested.vm.$emit('edit', track('x', 'audio'));
+    await flush();
+
+    expect(wrapper!.emitted('toggle')).toContainEqual(['C:/root/Alpha']);
+    expect(wrapper!.emitted('playFolder')).toContainEqual(['C:/root/Alpha']);
+    expect(wrapper!.emitted('edit')?.length).toBeGreaterThan(0);
+  });
+
+  it('skips the empty hint when direct files exist without subfolders', async () => {
+    state.getChildDirs.mockImplementation((dir: string) => (dir === 'C:/root' ? ['Alpha'] : []));
+    state.buildChildMeta.mockReturnValue({
+      Alpha: { audio: [], audioCount: 0, duration: 0, subtree: 0, directAll: [] }
+    });
+    state.direct = [track('d1', 'audio')];
+    mountNode({ expandedPaths: new Set(['C:/root/Alpha']) });
+    await flush();
+
+    expect(wrapper!.text()).not.toContain('library.emptyFolder');
+    expect(wrapper!.findAll('[data-testid="child-files"]')).toHaveLength(1);
+  });
+});

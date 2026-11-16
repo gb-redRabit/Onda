@@ -9,6 +9,19 @@ vi.mock('@shared/logger', () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() }
 }));
 
+const coverMock = vi.hoisted(() => ({ throwMime: null as string | null }));
+
+vi.mock('@renderer/utils/musicbrainzCover', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@renderer/utils/musicbrainzCover')>();
+  return {
+    ...actual,
+    coverBytesToDataUrl: (bytes: number[], mime?: string) => {
+      if (coverMock.throwMime && mime === coverMock.throwMime) throw new Error('bad cover');
+      return actual.coverBytesToDataUrl(bytes, mime);
+    }
+  };
+});
+
 const { useMusicBrainzLookup } = await import('../useMusicBrainzLookup');
 
 function release(id: string, title = 'Album', score = 100): MusicbrainzRelease {
@@ -57,6 +70,7 @@ beforeEach(() => {
   api = apiMock();
   api.musicbrainzGetCoverData.mockResolvedValue({ success: false });
   (window as { api?: unknown }).api = api;
+  coverMock.throwMime = null;
   scopes = [];
 });
 
@@ -336,5 +350,106 @@ describe('scope disposal', () => {
     await Promise.resolve();
 
     expect(lookup.coverThumbs.value).toEqual({});
+  });
+});
+
+describe('musicbrainz concurrency and cover edges', () => {
+  it('drops a retried search that was superseded', async () => {
+    const { api: lookup } = createLookup();
+    lookup.queryArtist.value = 'The "Band"';
+    const retry = deferred<unknown>();
+    api.musicbrainzSearchRelease
+      .mockResolvedValueOnce({ success: false, error: 'Timeout while searching' })
+      .mockReturnValueOnce(retry.promise);
+
+    const firstRun = lookup.search();
+    await vi.waitFor(() => expect(api.musicbrainzSearchRelease).toHaveBeenCalledTimes(2));
+
+    lookup.queryArtist.value = 'New';
+    api.musicbrainzSearchRelease.mockResolvedValueOnce({
+      success: true,
+      releases: [release('newer')]
+    });
+    await lookup.search();
+
+    retry.resolve({ success: true, releases: [release('older')] });
+    await firstRun;
+
+    expect(lookup.releases.value.map((r) => r.id)).toEqual(['newer']);
+  });
+
+  it('drops a lookup superseded while fetching the cover', async () => {
+    const { api: lookup } = createLookup();
+    const cover = deferred<unknown>();
+    api.musicbrainzLookupRelease.mockResolvedValue({ success: true, release: release('new') });
+    api.musicbrainzGetCoverData.mockReturnValueOnce(cover.promise);
+
+    const firstRun = lookup.selectRelease(release('old'));
+    await vi.waitFor(() => expect(api.musicbrainzGetCoverData).toHaveBeenCalledTimes(1));
+    await lookup.selectRelease(release('new'));
+
+    cover.resolve({ success: false });
+    await firstRun;
+
+    expect(lookup.lookupResult.value?.id).toBe('new');
+  });
+
+  it('skips cover thumbnails that cannot be converted', async () => {
+    const { api: lookup } = createLookup();
+    lookup.queryArtist.value = 'Artist';
+    coverMock.throwMime = 'image/boom';
+    api.musicbrainzSearchRelease.mockResolvedValue({
+      success: true,
+      releases: [release('a')]
+    });
+    api.musicbrainzGetCoverData.mockResolvedValue({
+      success: true,
+      data: [1, 2],
+      mime: 'image/boom'
+    });
+
+    await lookup.search();
+    await vi.waitFor(() => expect(api.musicbrainzGetCoverData).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(lookup.coverThumbs.value).toEqual({});
+  });
+
+  it('falls back to the localized fetch error', async () => {
+    const { api: lookup } = createLookup();
+    api.musicbrainzLookupRelease.mockResolvedValue({ success: false });
+
+    await lookup.selectRelease(release('bad'));
+
+    expect(lookup.error.value).toBe('musicbrainz.fetchError');
+  });
+
+  it('applies the genre when it is enabled', () => {
+    const { api: lookup, onApply } = createLookup();
+    lookup.lookupResult.value = release('r');
+    lookup.includeFields.value = { ...lookup.includeFields.value, genre: true };
+
+    lookup.applyTags();
+
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ genre: 'Electronic' }));
+    expect(lookup.applyResult.value).toMatchObject({ genre: true });
+  });
+
+  it('omits every disabled field', () => {
+    const { api: lookup, onApply } = createLookup();
+    lookup.lookupResult.value = release('r');
+    lookup.includeFields.value = {
+      title: false,
+      artist: false,
+      album: false,
+      year: false,
+      genre: false,
+      track: false,
+      cover: false
+    };
+
+    lookup.applyTags();
+
+    expect(onApply).toHaveBeenCalledWith({});
   });
 });

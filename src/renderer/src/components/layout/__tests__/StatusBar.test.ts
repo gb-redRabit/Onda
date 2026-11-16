@@ -380,3 +380,82 @@ describe('context menu and keyboard', () => {
     expect(state.open).not.toHaveBeenCalled();
   });
 });
+
+describe('status bar edge branches', () => {
+  it('updates the clock every 30 seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 0, 1, 10, 0, 40));
+      mountStatusBar();
+      await flush();
+      expect(wrapper!.text()).toContain('10:00');
+
+      vi.setSystemTime(new Date(2026, 0, 1, 10, 1, 10));
+      await vi.advanceTimersByTimeAsync(30_000);
+      await flush();
+      expect(wrapper!.text()).toContain('10:01');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('formats the clock with the automatic locale', async () => {
+    state.locale.value = 'auto';
+    mountStatusBar();
+    await flush();
+    expect(wrapper!.find('[data-app-statusbar]').exists()).toBe(true);
+  });
+
+  it('falls back to the runtime locale when formatting throws', async () => {
+    const spy = vi
+      .spyOn(Date.prototype, 'toLocaleTimeString')
+      .mockImplementationOnce(() => {
+        throw new RangeError('bad locale');
+      })
+      .mockReturnValue('FALLBACK');
+    try {
+      mountStatusBar();
+      await flush();
+      expect(wrapper!.text()).toContain('FALLBACK');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('renders without app info and custom layout', async () => {
+    state.getAppInfo.mockResolvedValueOnce(undefined);
+    state.settings.appearance.audioLayout = {};
+    mountStatusBar();
+    await flush();
+
+    expect(wrapper!.text()).toContain('custom');
+  });
+
+  it('hides context for an empty selection and idle downloads', async () => {
+    state.route.name = 'explorer';
+    state.explorer.selectedCount = 0;
+    mountStatusBar();
+    await flush();
+    expect(wrapper!.text()).not.toContain('status.selected');
+  });
+
+  it('shows online routes without active downloads', async () => {
+    state.route.name = 'online';
+    state.youtube.downloads = [];
+    mountStatusBar();
+    await flush();
+    expect(wrapper!.text()).toContain('0 status.subscriptions');
+    expect(wrapper!.text()).not.toContain('status.activeDownloads');
+  });
+
+  it('omits the download speed when the job has none', async () => {
+    state.route.name = 'downloads';
+    state.youtube.downloads = [
+      { id: 'd1', status: 'downloading', title: 'Video 1', progress: 10, speed: '' }
+    ];
+    mountStatusBar();
+    await flush();
+    expect(wrapper!.text()).toContain('1 status.activeDownloads');
+    expect(wrapper!.text()).not.toContain('MB/s');
+  });
+});

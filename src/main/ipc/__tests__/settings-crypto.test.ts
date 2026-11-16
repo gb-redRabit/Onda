@@ -7,6 +7,8 @@ import {
   decryptApiKeys,
   encryptionStatus,
   SecretStorageUnavailableError,
+  maskApiKeys,
+  mergeApiKeys,
   __resetEncryptionStatusCache
 } from '../settings/settings-crypto';
 
@@ -223,5 +225,86 @@ describe('api key collections', () => {
     setPlatform({ available: false });
     const legacy = { keys: [{ ...keys.keys[0], key: PLAIN_PREFIX + 'sk-1' }] };
     expect(decryptApiKeys(legacy)?.keys[0].key).toBe('sk-1');
+  });
+});
+
+describe('maskApiKeys', () => {
+  it('passes an absent collection through', () => {
+    expect(maskApiKeys(undefined)).toBeUndefined();
+  });
+
+  it('hides secrets and exposes only a short preview', () => {
+    const result = maskApiKeys({ keys: [] } as never);
+    expect(result).toEqual({ keys: [] });
+
+    expect(
+      maskApiKeys({
+        keys: [{ id: 'a', name: 'A', service: 'svc', key: 'onda-plain:v1:abcdef' }]
+      } as never)
+    ).toEqual({
+      keys: [
+        {
+          id: 'a',
+          name: 'A',
+          service: 'svc',
+          key: '',
+          preview: 'abcd\u2026'
+        }
+      ]
+    });
+  });
+
+  it('omits the preview for an empty stored secret', () => {
+    const result = maskApiKeys({
+      keys: [{ id: 'a', name: 'A', service: 'svc', key: 'onda-plain:v1:' }]
+    } as never);
+
+    expect(result?.keys[0]).toMatchObject({ key: '', preview: '' });
+  });
+});
+
+describe('mergeApiKeys', () => {
+  it('passes an absent incoming collection through', () => {
+    expect(mergeApiKeys(undefined, undefined)).toBeUndefined();
+  });
+
+  it('keeps stored secrets for entries with an empty key', () => {
+    const result = mergeApiKeys(
+      {
+        keys: [
+          { id: 'a', name: 'A', service: 'svc', key: '', preview: 'abcd\u2026' },
+          { id: 'b', name: 'B', service: 'svc', key: 'new-secret' }
+        ]
+      } as never,
+      { keys: [{ id: 'a', name: 'A', service: 'svc', key: 'stored-secret' }] } as never
+    );
+
+    expect(result).toEqual({
+      keys: [
+        { id: 'a', name: 'A', service: 'svc', key: 'stored-secret' },
+        { id: 'b', name: 'B', service: 'svc', key: 'new-secret' }
+      ]
+    });
+  });
+
+  it('uses empty keys when nothing is stored', () => {
+    const result = mergeApiKeys(
+      { keys: [{ id: 'a', name: 'A', service: 'svc', key: '' }] } as never,
+      undefined
+    );
+
+    expect(result?.keys[0].key).toBe('');
+  });
+
+  it('defaults missing key lists to empty', () => {
+    expect(mergeApiKeys({} as never, { keys: undefined } as never)).toEqual({ keys: [] });
+  });
+});
+
+describe('api key collections without key lists', () => {
+  it('defaults missing key arrays to empty', () => {
+    expect(encryptApiKeys({} as never)).toEqual({ keys: [] });
+    expect(decryptApiKeys({} as never)).toEqual({ keys: [] });
+    expect(maskApiKeys({} as never)).toEqual({ keys: [] });
   });
 });

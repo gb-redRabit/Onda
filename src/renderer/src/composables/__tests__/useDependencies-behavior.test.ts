@@ -507,3 +507,92 @@ describe('dependency install edge outcomes', () => {
     unmount();
   });
 });
+
+describe('dependency edge branches', () => {
+  it('skips the update check when yt-dlp is not listed', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const index = deps.deps.value.findIndex((row) => row.tool === 'yt-dlp');
+    deps.deps.value.splice(index, 1);
+    api.checkUpdateYtdlp.mockClear();
+
+    await deps.runInstall(deps.deps.value[0], false);
+
+    expect(api.checkUpdateYtdlp).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('falls back to an empty status when the tool has no check method', async () => {
+    (window as unknown as { api: unknown }).api = { ...api, checkMkvextract: undefined };
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const mkv = deps.deps.value.find((row) => row.tool === 'mkvextract')!;
+
+    await deps.runInstall(mkv, false);
+
+    expect(mkv.installing).toBe(false);
+    unmount();
+  });
+
+  it('ignores an invalid post-install status', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const yt = deps.deps.value.find((row) => row.tool === 'yt-dlp')!;
+    yt.version = 'before';
+    api.checkYtdlp.mockResolvedValueOnce({} as never);
+
+    await deps.runInstall(yt, false);
+
+    expect(yt.version).toBe('before');
+    unmount();
+  });
+
+  it('ignores an invalid ffprobe status after install', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const before = deps.deps.value[1].version;
+    api.checkFfprobe.mockResolvedValueOnce({} as never);
+
+    await deps.runInstall(deps.deps.value[0], false);
+
+    expect(deps.deps.value[1].version).toBe(before);
+    unmount();
+  });
+
+  it('removes the last tool without probing ffprobe', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const mkv = deps.deps.value.find((row) => row.tool === 'mkvextract')!;
+    const before = api.checkFfprobe.mock.calls.length;
+
+    await deps.uninstallDependency(mkv);
+
+    expect(mkv.installed).toBe(false);
+    expect(api.checkFfprobe.mock.calls.length).toBe(before);
+    unmount();
+  });
+
+  it('ignores an invalid ffprobe status after removal', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const before = deps.deps.value[1].version;
+    api.checkFfprobe.mockResolvedValueOnce({} as never);
+
+    await deps.uninstallDependency(deps.deps.value[0]);
+
+    expect(deps.deps.value[1].version).toBe(before);
+    unmount();
+  });
+
+  it('uses the default removal error when none is reported', async () => {
+    const { api: deps, unmount } = mountDependencies();
+    await flush();
+    const mkv = deps.deps.value.find((row) => row.tool === 'mkvextract')!;
+    api.removeMkvextract.mockResolvedValueOnce({ success: false });
+
+    await deps.uninstallDependency(mkv);
+
+    expect(mkv.error).toBe('settings.depInstallFailed');
+    unmount();
+  });
+});

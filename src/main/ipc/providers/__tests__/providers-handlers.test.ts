@@ -750,3 +750,167 @@ describe('openHttpStream', () => {
     expect(state.info).toHaveBeenCalledWith('providers', expect.stringContaining('host=?'));
   });
 });
+
+describe('stream preflight edges', () => {
+  it('settles the probe once when data and end both arrive', async () => {
+    const h = (await load()).handlers;
+    state.resolveProviderFileUrl.mockResolvedValue({ url: 'https://cdn.example/video.mp4' });
+    const res = queueResponse({ headers: { 'content-type': 'video/mp4' } });
+
+    const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+    await flush();
+    res.emit('data', Buffer.from('a'));
+    res.emit('end');
+
+    await expect(pending).resolves.toEqual({ success: true, streamToken: 'stream-token' });
+  });
+
+  it('reports non-Error preflight failures as text', async () => {
+    const h = (await load()).handlers;
+    state.resolveProviderFileUrl.mockResolvedValue({ url: 'https://cdn.example/video.mp4' });
+    state.resolveNetworkTarget.mockRejectedValueOnce('plain preflight failure');
+    state.detectProviderLimit.mockReturnValue({ limited: false });
+    state.classifyYtDlpError.mockReturnValue('network');
+
+    const result = await h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+
+    expect(result).toMatchObject({ success: false, error: 'plain preflight failure' });
+    expect(state.warn).toHaveBeenCalledWith(
+      'providers',
+      'stream preflight failed',
+      'plain preflight failure'
+    );
+  });
+
+  it('treats a silent stream as playable after the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const h = (await load()).handlers;
+      state.resolveProviderFileUrl.mockResolvedValue({ url: 'https://cdn.example/video.mp4' });
+      queueResponse({ headers: { 'content-type': 'video/mp4' } });
+
+      const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+      await flush();
+      await vi.advanceTimersByTimeAsync(15_000);
+
+      await expect(pending).resolves.toEqual({ success: true, streamToken: 'stream-token' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rejects the probe on a non-Error stream error', async () => {
+    const h = (await load()).handlers;
+    state.resolveProviderFileUrl.mockResolvedValue({ url: 'https://cdn.example/video.mp4' });
+    state.detectProviderLimit.mockReturnValue({ limited: false });
+    state.classifyYtDlpError.mockReturnValue('provider');
+    const res = queueResponse({ headers: { 'content-type': 'video/mp4' } });
+
+    const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+    await flush();
+    res.emit('error', 'stream exploded');
+
+    await expect(pending).resolves.toMatchObject({
+      success: false,
+      error: 'stream exploded',
+      code: 'provider'
+    });
+  });
+
+  it('uses http targets and the octet-stream fallback', async () => {
+    const h = (await load()).handlers;
+    state.resolveProviderFileUrl.mockResolvedValue({ url: 'http://cdn.example/video' });
+    state.resolveNetworkTarget.mockResolvedValue({
+      url: new URL('http://cdn.example/video'),
+      addresses: []
+    });
+    state.detectProviderLimit.mockReturnValue({ limited: false });
+
+    const res = queueResponse({ headers: {} });
+    const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+    await flush();
+    res.emit('data', Buffer.from('a'));
+    await pending;
+
+    const factory = state.registerProviderStream.mock.calls[0][0];
+    const fresh = queueResponse({ headers: {} });
+    const result = await factory({ start: 0, end: 10 });
+
+    expect(result).toMatchObject({ stream: fresh, mime: 'application/octet-stream' });
+  });
+
+  it('defaults a missing upstream status to zero', async () => {
+    const h = (await load()).handlers;
+    state.resolveProviderFileUrl.mockResolvedValue({ url: 'https://cdn.example/video.mp4' });
+    const res = queueResponse({ statusCode: undefined, headers: {} });
+    state.detectProviderLimit.mockReturnValue({ limited: false });
+    state.classifyYtDlpError.mockReturnValue('network');
+
+    const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+    await flush();
+    res.emit('data', Buffer.from('a'));
+
+    await expect(pending).resolves.toMatchObject({ success: false, error: 'HTTP 0' });
+  });
+
+  it('passes an empty url to e2e detection', async () => {
+    const h = (await load()).handlers;
+    state.e2e = true;
+    state.e2eDetect.mockReturnValue({ provider: null });
+
+    await h['providers:detect']({}, 42);
+
+    expect(state.e2eDetect).toHaveBeenCalledWith('');
+  });
+});
+
+describe('stream probe error and mime hints', () => {
+  it('rejects the probe with an Error instance', async () => {
+    const h = (await load()).handlers;
+    state.resolveProviderFileUrl.mockResolvedValue({ url: 'https://cdn.example/video.mp4' });
+    state.detectProviderLimit.mockReturnValue({ limited: false });
+    state.classifyYtDlpError.mockReturnValue('network');
+    const res = queueResponse({ headers: { 'content-type': 'video/mp4' } });
+
+    const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+    await flush();
+    res.emit('error', new Error('network down'));
+
+    await expect(pending).resolves.toMatchObject({ success: false, error: 'network down' });
+  });
+
+  it('keeps the mime hint for provider streams', async () => {
+    const h = (await load()).handlers;
+    const fresh = stream();
+    state.resolveProviderFileUrl.mockResolvedValue({ stream: fresh, size: 10 });
+
+    const pending = h['providers:streamUrl'](
+      {},
+      { ref: providerRef(), itemId: 'item', mime: 'video/mp4' }
+    );
+    await flush();
+    fresh.emit('data', Buffer.from('a'));
+    await pending;
+
+    const factory = state.registerProviderStream.mock.calls[0][0];
+    await expect(factory({ start: 0, end: 5 })).resolves.toMatchObject({ mime: 'video/mp4' });
+  });
+});
+
+describe('provider stream mime fallback', () => {
+  it('falls back to octet-stream without a mime hint', async () => {
+    const h = (await load()).handlers;
+    const fresh = stream();
+    state.resolveProviderFileUrl.mockResolvedValue({ stream: fresh, size: 10 });
+
+    const pending = h['providers:streamUrl']({}, { ref: providerRef(), itemId: 'item' });
+    await flush();
+    fresh.emit('data', Buffer.from('a'));
+    await pending;
+
+    const factory = state.registerProviderStream.mock.calls[0][0];
+    await expect(factory({ start: 0, end: 5 })).resolves.toMatchObject({
+      mime: 'application/octet-stream'
+    });
+  });
+});

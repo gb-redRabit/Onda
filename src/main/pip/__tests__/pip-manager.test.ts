@@ -483,3 +483,31 @@ describe('pip manager edge branches', () => {
     expect(win.destroy).not.toHaveBeenCalled();
   });
 });
+
+describe('show edge sources', () => {
+  beforeEach(() => {
+    win.webContents.send.mockClear();
+  });
+
+  it('resumes the same source from zero without a start time', () => {
+    manager.preload('/video.mp4', null);
+    finishLoad();
+    win.webContents.send.mockClear();
+
+    manager.show({ src: '/video.mp4' });
+
+    expect(win.webContents.send).toHaveBeenCalledWith('pip:play', 0);
+    expect(win.webContents.send).not.toHaveBeenCalledWith('pip:videoSrc', expect.anything());
+  });
+
+  it('treats empty loaded and requested sources as a fresh load', () => {
+    manager.preload('', null);
+    finishLoad();
+    win.webContents.send.mockClear();
+
+    manager.show({ src: '' });
+
+    expect(win.webContents.send).toHaveBeenCalledWith('pip:videoSrc', { src: '', start: 0 });
+    expect(win.webContents.send).toHaveBeenCalledWith('pip:play', 0);
+  });
+});

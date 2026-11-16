@@ -413,3 +413,67 @@ describe('cancellation', () => {
     expect(state.cancelJob.mock.calls).toEqual([['a'], ['b']]);
   });
 });
+
+describe('video clip edge inputs', () => {
+  it('rejects directories and unreadable inputs', async () => {
+    const { clipVideo } = await load();
+    state.stat.mockResolvedValueOnce({ isFile: () => false });
+    expect(await clipVideo(sender(), clip())).toEqual({
+      success: false,
+      error: 'Input file does not exist'
+    });
+
+    state.stat.mockRejectedValueOnce(new Error('missing'));
+    expect(await clipVideo(sender(), clip())).toEqual({
+      success: false,
+      error: 'Input file does not exist'
+    });
+  });
+
+  it('ignores non-finite target sizes', async () => {
+    const { clipVideo } = await load();
+    state.runJob.mockResolvedValue({ success: true });
+
+    await clipVideo(sender(), clip({ targetSizeMb: Number.NaN, rotation: 90 }));
+
+    expect(state.buildClipArgs.mock.calls[0][4]).toMatchObject({ targetSizeMb: 0 });
+  });
+
+  it('rejects concatenation without a job id', async () => {
+    const { concatVideos } = await load();
+
+    expect(await concatVideos(sender(), concat({ jobId: '' }))).toEqual({
+      success: false,
+      error: 'Invalid job id'
+    });
+    expect(await concatVideos(sender(), concat({ jobId: undefined }))).toEqual({
+      success: false,
+      error: 'Invalid job id'
+    });
+  });
+
+  it('ignores cleanup failures after a finished concat', async () => {
+    const { concatVideos } = await load();
+    state.runJob.mockResolvedValue({ success: true });
+    state.rm.mockRejectedValueOnce(new Error('locked'));
+
+    await concatVideos(sender(), concat());
+    const onFinish = state.runJob.mock.calls[0][0].onFinish;
+    expect(() => onFinish()).not.toThrow();
+    await Promise.resolve();
+  });
+
+  it('cleans the temp dir when concatenation fails', async () => {
+    const { concatVideos } = await load();
+    state.runJob.mockRejectedValueOnce(new Error('ffmpeg'));
+    state.rm.mockRejectedValueOnce(new Error('locked'));
+
+    const result = await concatVideos(sender(), concat());
+
+    expect(result).toMatchObject({
+      success: false,
+      error: expect.stringContaining('Concat failed')
+    });
+    expect(state.loggerWarn).toHaveBeenCalled();
+  });
+});

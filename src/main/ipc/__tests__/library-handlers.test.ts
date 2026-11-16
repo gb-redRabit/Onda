@@ -579,3 +579,80 @@ describe('scanned payloads', () => {
     expect(state.logger.error).toHaveBeenCalled();
   });
 });
+
+describe('library handler edge branches', () => {
+  it('maps existing scanned files and tolerates a missing store payload', async () => {
+    state.loadScanned.mockResolvedValueOnce(null);
+    await handler('library:addFiles')({}, ['/a']);
+
+    state.loadScanned.mockResolvedValueOnce({
+      files: [{ path: '/old', name: 'old.mp3' }],
+      folderTypes: { '/old-dir': 'audio' }
+    });
+    state.stat.mockResolvedValue({ isFile: () => true });
+    state.scanFilePaths.mockResolvedValueOnce([]);
+
+    await expect(handler('library:addFiles')({}, ['/a'])).resolves.toMatchObject({
+      added: 0,
+      skipped: 1
+    });
+  });
+
+  it('reports non-Error add failures as strings', async () => {
+    state.loadScanned.mockRejectedValueOnce('plain store failure');
+
+    await expect(handler('library:addFiles')({}, ['/a'])).resolves.toMatchObject({
+      error: 'plain store failure'
+    });
+  });
+
+  it('ignores update stats with no valid entries', async () => {
+    await handler('library:updateStats')({}, [{ path: 5, playCount: 'x' }]);
+
+    expect(state.updateStats).not.toHaveBeenCalled();
+  });
+
+  it('normalizes invalid chunk offsets and limits', async () => {
+    state.loadScanned.mockResolvedValueOnce({
+      files: [{ path: '/a' }, { path: '/b' }],
+      folderTypes: {}
+    });
+
+    await expect(handler('library:loadScannedChunk')({}, 'nope', 0)).resolves.toMatchObject({
+      total: 2
+    });
+  });
+
+  it('logs non-Error loudness failures', async () => {
+    state.loadScanned.mockResolvedValueOnce({ files: [{ path: '/a' }] });
+    state.analyze.mockRejectedValueOnce('plain loudness failure');
+
+    await expect(handler('library:analyzeLoudness')({ sender: sender() })).resolves.toMatchObject({
+      error: 'plain loudness failure'
+    });
+  });
+
+  it('skips watcher scans without configured folders', async () => {
+    state.store.get.mockReturnValueOnce([]);
+    await handler('library:loadFolders')({});
+    state.runLibraryScan.mockClear();
+
+    await watcherScanCallback();
+
+    expect(state.runLibraryScan).not.toHaveBeenCalled();
+  });
+
+  it('logs watcher rescan failures', async () => {
+    state.store.get.mockReturnValueOnce(['/lib']);
+    await handler('library:loadFolders')({});
+    state.runLibraryScan.mockRejectedValueOnce(new Error('scan down'));
+
+    await watcherScanCallback();
+
+    expect(state.logger.error).toHaveBeenCalledWith(
+      'library',
+      'watcher re-scan failed',
+      expect.any(Error)
+    );
+  });
+});
