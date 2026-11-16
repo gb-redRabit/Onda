@@ -1023,3 +1023,108 @@ describe('estimates and cleanup', () => {
     expect(state.imageEstimate).not.toHaveBeenCalled();
   });
 });
+
+describe('image studio edge branches', () => {
+  beforeEach(async () => {
+    await mountLoaded();
+    stubRect();
+  });
+
+  it('clamps a crop drawn past both canvas edges', async () => {
+    await wrapper!.get('[data-testid="image-studio-aspect-1:1"]').trigger('click');
+
+    await pointer('pointerdown', 690, 500);
+    await pointer('pointermove', 800, 620);
+    await pointer('pointerup', 800, 620);
+    expect(cropAttr()).toMatch(/^\d+,\d+,\d+,\d+$/);
+
+    await pointer('pointerdown', 20, 20);
+    await pointer('pointermove', -200, -200);
+    await pointer('pointerup', -200, -200);
+    expect(cropAttr()).toMatch(/^\d+,\d+,\d+,\d+$/);
+  });
+
+  it('keeps the cursor stable while dragging', async () => {
+    await pointer('pointerdown', 360, 270);
+    await pointer('pointermove', 380, 280);
+    await pointer('pointermove', 390, 290);
+    await pointer('pointerup', 390, 290);
+
+    expect(canvasEl().style.cursor).toBeTruthy();
+  });
+
+  it('moves an annotation by dragging it', async () => {
+    await wrapper!.get('[data-testid="image-studio-tool-rect"]').trigger('click');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 400, 300);
+    await pointer('pointerup', 400, 300);
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('1');
+
+    await pointer('pointerdown', 300, 220);
+    await pointer('pointermove', 340, 260);
+    await pointer('pointerup', 340, 260);
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('1');
+  });
+
+  it('estimates without byte counts', async () => {
+    state.imageEstimate.mockResolvedValueOnce({ success: true });
+    await wrapper!.get('[data-testid="image-studio-estimate"]').trigger('click');
+    await flush();
+    expect(state.imageEstimate).toHaveBeenCalled();
+  });
+});
+
+describe('image studio load failures', () => {
+  it('reports non-Error read failures and missing error text', async () => {
+    mountView();
+
+    state.imageRead.mockRejectedValueOnce('plain read failure');
+    state.invoke.mockResolvedValueOnce({ canceled: false, filePaths: ['C:\\pics\\b.png'] });
+    await wrapper!.get('[data-testid="image-studio-open"]').trigger('click');
+    await flush();
+    expect(wrapper!.find('[data-testid="image-studio-canvas"]').exists()).toBe(false);
+
+    state.imageRead.mockResolvedValueOnce({ success: false });
+    state.invoke.mockResolvedValueOnce({ canceled: false, filePaths: ['C:\\pics\\c.png'] });
+    await wrapper!.get('[data-testid="image-studio-open"]').trigger('click');
+    await flush();
+    expect(wrapper!.find('[data-testid="image-studio-canvas"]').exists()).toBe(false);
+  });
+});
+
+describe('image studio annotation races', () => {
+  beforeEach(async () => {
+    await mountLoaded();
+    stubRect();
+  });
+
+  it('ignores pointer moves for an annotation removed mid-drag', async () => {
+    await wrapper!.get('[data-testid="image-studio-tool-rect"]').trigger('click');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 300, 220);
+
+    await wrapper!
+      .findAll('button')
+      .find((button) => button.text().includes('tools.imageStudioClear'))!
+      .trigger('click');
+    await pointer('pointermove', 340, 250);
+    await pointer('pointerup', 340, 250);
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('0');
+  });
+
+  it('undoes repeatedly without a selected annotation', async () => {
+    const undo = () =>
+      wrapper!.findAll('button').find((button) => button.text().includes('tools.imageStudioUndo'))!;
+
+    await undo().trigger('click');
+    await wrapper!.get('[data-testid="image-studio-tool-rect"]').trigger('click');
+    await pointer('pointerdown', 200, 150);
+    await pointer('pointermove', 400, 300);
+    await pointer('pointerup', 400, 300);
+    await undo().trigger('click');
+    await undo().trigger('click');
+
+    expect(canvasEl().getAttribute('data-annotation-count')).toBe('0');
+  });
+});
