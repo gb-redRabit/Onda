@@ -388,3 +388,37 @@ describe('frame strip', () => {
     expect(state.clipThumbnails).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('thumbnail scheduling guards', () => {
+  it('rechecks the video before generating thumbnails', async () => {
+    const thumbs = setup();
+    thumbs.scheduleThumbnailRefresh();
+    thumbs.videoPath.value = '';
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(state.clipThumbnails).not.toHaveBeenCalled();
+  });
+
+  it('skips frame strips scheduled before the duration is known', async () => {
+    const thumbs = setup();
+    frameStripActive = true;
+    thumbs.scheduleFrameStrip();
+    thumbs.duration.value = 0;
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(state.clipThumbnails).not.toHaveBeenCalled();
+  });
+
+  it('debounces frame strip scheduling', async () => {
+    const thumbs = setup();
+    frameStripActive = true;
+    state.computeWindow.mockReturnValue({ count: 2, start: 0, end: 5, stepSec: 1 });
+    state.clipThumbnails.mockResolvedValue({ success: true, frames: ['f'] });
+
+    thumbs.scheduleFrameStrip();
+    thumbs.scheduleFrameStrip();
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(state.clipThumbnails).toHaveBeenCalledTimes(1);
+  });
+});

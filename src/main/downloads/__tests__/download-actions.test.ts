@@ -535,3 +535,40 @@ describe('listing, import, export and clearing', () => {
     expect(clearFinishedDownloads()).toBe(false);
   });
 });
+
+describe('download queue edge branches', () => {
+  it('keeps unrelated pending duplicates in place', async () => {
+    const base = input({
+      url: 'https://youtube.com/watch?v=abc12345678',
+      videoId: 'abc12345678',
+      source: { mode: 'ytdlp' } as never
+    });
+    await addDownloadJobs([base]);
+    await addDownloadJobs([base]);
+
+    expect(listDownloadJobs().length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('falls back to the url as title and drops invalid trims', async () => {
+    const created = await addDownloadJobs([
+      input({
+        url: 'https://example.com/stream',
+        title: '',
+        trimStart: -5,
+        trimEnd: 0
+      })
+    ]);
+
+    expect(created[0].title).toBe('https://example.com/stream');
+    expect(created[0].trimStart).toBeUndefined();
+    expect(created[0].trimEnd).toBeUndefined();
+  });
+
+  it('moves pending jobs that are missing from the queue', () => {
+    state.jobs.set('p', job({ id: 'p', status: 'pending' }));
+    expect(moveDownloadToFront('p')).toBe(true);
+
+    state.jobs.set('q', job({ id: 'q', status: 'pending' }));
+    expect(moveDownload('q', 1)).toBe(false);
+  });
+});

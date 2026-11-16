@@ -260,3 +260,54 @@ describe('clearSubtitles', () => {
     expect(activeSubtitleId.value).toBeNull();
   });
 });
+
+describe('player subtitles without api and fallbacks', () => {
+  it('returns empty results without a preload bridge', async () => {
+    const api = (window as { api?: unknown }).api;
+    delete (window as { api?: unknown }).api;
+    try {
+      const { subtitleTracks, loadSubtitles, loadEmbeddedSubtitle, loadCustomSubtitles } =
+        usePlayerSubtitles();
+
+      await loadSubtitles('/video.mkv');
+      expect(subtitleTracks.value).toEqual([]);
+      await expect(loadEmbeddedSubtitle('emb-1', '/video.mkv')).resolves.toBeNull();
+      await expect(loadCustomSubtitles(['/subs/a.srt'])).resolves.toBe(0);
+    } finally {
+      (window as { api?: unknown }).api = api;
+    }
+  });
+
+  it('drops a missing previous selection when no embedded track remains', async () => {
+    listEmbedded.mockResolvedValue([{ index: 1, title: 'One' }] as never);
+    const { activeSubtitleId, loadSubtitles, setActiveSubtitle } = usePlayerSubtitles();
+    await loadSubtitles('/video.mkv');
+    setActiveSubtitle('emb-1');
+
+    listEmbedded.mockResolvedValue([] as never);
+    findExternal.mockResolvedValue([
+      { path: '/subs/a.srt', name: 'a.srt', format: 'srt' }
+    ] as never);
+    readFile.mockResolvedValue('content');
+    await loadSubtitles('/video2.mkv');
+
+    expect(activeSubtitleId.value).toBeNull();
+  });
+
+  it('falls back to srt for unknown custom extensions', async () => {
+    readFile.mockResolvedValue('content');
+    const { subtitleTracks, loadCustomSubtitles } = usePlayerSubtitles();
+
+    await expect(loadCustomSubtitles(['/subs/movie.unknown'])).resolves.toBe(1);
+    expect(subtitleTracks.value[0]).toMatchObject({ format: 'srt', label: 'movie.unknown' });
+  });
+
+  it('ignores custom files without content', async () => {
+    readFile.mockResolvedValue(null);
+    const { subtitleTracks, activeSubtitleId, loadCustomSubtitles } = usePlayerSubtitles();
+
+    await expect(loadCustomSubtitles(['/subs/a.srt'])).resolves.toBe(0);
+    expect(subtitleTracks.value).toEqual([]);
+    expect(activeSubtitleId.value).toBeNull();
+  });
+});

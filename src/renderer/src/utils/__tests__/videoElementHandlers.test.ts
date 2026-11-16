@@ -463,3 +463,76 @@ describe('attachVideoTranscodeFallback', () => {
     expect(controller.signal.aborted).toBe(false);
   });
 });
+
+describe('video element edge branches', () => {
+  it('skips audio ref sync outside the core shell', async () => {
+    const { connectVideoEvents } = await load();
+    state.core = false;
+    const el = video();
+    const p = player();
+    connectVideoEvents(el, p);
+
+    el.currentTime = 7;
+    el.dispatchEvent(event('timeupdate'));
+    el.dispatchEvent(event('play'));
+    el.dispatchEvent(event('pause'));
+
+    expect(p.currentTime).toBe(7);
+    expect(state.audioCurrentTime.value).toBe(0);
+    expect(state.audioIsPlaying.value).toBe(false);
+  });
+
+  it('handles empty buffers and zero durations', async () => {
+    const { connectVideoEvents } = await load();
+    const el = video();
+    Object.defineProperty(el, 'buffered', {
+      configurable: true,
+      value: { length: 0, end: () => 0 }
+    });
+    Object.defineProperty(el, 'duration', { configurable: true, value: 0 });
+    const p = player();
+    connectVideoEvents(el, p);
+
+    el.dispatchEvent(event('timeupdate'));
+    expect(state.audioBuffered.value).toBe(0);
+  });
+
+  it('does not advance the queue while the PiP window is active', async () => {
+    const { connectVideoEvents } = await load();
+    const el = video();
+    const p = player({ pipActive: true });
+    connectVideoEvents(el, p);
+
+    el.dispatchEvent(event('ended'));
+    expect(p.nextTrack).not.toHaveBeenCalled();
+  });
+
+  it('logs a rejected replay in repeat-one mode', async () => {
+    const { connectVideoEvents } = await load();
+    const el = video();
+    el.play.mockRejectedValueOnce(new Error('blocked'));
+    const p = player({ repeat: 'one' });
+    connectVideoEvents(el, p);
+
+    el.dispatchEvent(event('ended'));
+    await Promise.resolve();
+    expect(state.warn).toHaveBeenCalledWith('video', 'repeat play rejected', expect.any(Error));
+  });
+
+  it('attempts transcoding only once per path', async () => {
+    const { attachVideoTranscodeFallback } = await load();
+    const el = video() as HTMLVideoElement & { error: unknown };
+    Object.defineProperty(el, 'error', { configurable: true, value: { code: 4 } });
+    const target = track('a');
+    const state = { attempted: target.path };
+
+    attachVideoTranscodeFallback(el, target, player(), vi.fn(), state);
+    el.dispatchEvent(event('error'));
+
+    expect(stateTranscode()).not.toHaveBeenCalled();
+  });
+});
+
+function stateTranscode() {
+  return state.transcodeVideo;
+}
