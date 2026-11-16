@@ -579,3 +579,49 @@ describe('usePipVisualizer edge branches', () => {
     expect(canvasEl.width).toBe(480);
   });
 });
+
+describe('usePipAudioState edge branches', () => {
+  it('handles ArrowLeft and unknown progress keys', () => {
+    mountAudio();
+    emit('audio-pip:update', { state: { currentTime: 10, duration: 100 } });
+    const press = (key: string) => {
+      const event = new KeyboardEvent('keydown', { key, cancelable: true });
+      vm().onProgressKeydown(event);
+      return event;
+    };
+
+    press('ArrowLeft');
+    expect(state.send).toHaveBeenLastCalledWith('audio-pip:progressClick', 0.05);
+
+    const other = press('PageUp');
+    expect(other.defaultPrevented).toBe(false);
+  });
+
+  it('ignores theme events without variables', () => {
+    mountAudio();
+    emit('audio-pip:theme');
+    expect(state.updateAccent).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back for non-numeric playback values', async () => {
+    mountAudio();
+    emit('audio-pip:update', {
+      state: { currentTime: 'x', duration: 'y', volume: 'z' }
+    });
+    await wrapper!.vm.$nextTick();
+
+    expect(vm().currentTime).toBe(0);
+    expect(vm().duration).toBe(0);
+    expect(vm().volume).toBe(1);
+  });
+
+  it('clears a pending hover reveal on mouseout', () => {
+    mountAudio();
+    window.dispatchEvent(new Event('mouseover'));
+    expect(vi.getTimerCount()).toBe(1);
+
+    window.dispatchEvent(new MouseEvent('mouseout'));
+    expect(vi.getTimerCount()).toBe(0);
+    expect(state.send).toHaveBeenCalledWith('audio-pip:peekDelay');
+  });
+});

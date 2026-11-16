@@ -952,3 +952,70 @@ describe('mode switching edges', () => {
     expect(state.relaunch).toHaveBeenCalledWith(300);
   });
 });
+
+describe('main process platform branches', () => {
+  it('keeps the app alive on macOS when windows close', async () => {
+    const original = process.platform;
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'darwin' });
+    try {
+      await boot();
+      state.app.quit.mockClear();
+      state.created[0].handlers['closed']();
+      expect(state.app.quit).not.toHaveBeenCalled();
+
+      state.appHandlers['window-all-closed']();
+      expect(state.app.quit).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process, 'platform', { configurable: true, value: original });
+    }
+  });
+
+  it('returns zero for an unknown sender window', async () => {
+    await boot();
+    state.fromWebContents.mockReturnValueOnce(null as never);
+    expect(state.ipcHandlers['window:id']({ sender: {} })).toBe(0);
+  });
+
+  it('ignores switching to the current window mode', async () => {
+    await boot();
+    state.saveCompact.mockClear();
+    await state.ipcHandlers['app:setWindowMode']({}, 'main');
+    expect(state.saveCompact).not.toHaveBeenCalled();
+  });
+});
+
+describe('main process stale window branches', () => {
+  it('ignores duplicate closed events for the main window', async () => {
+    await boot();
+    const main = state.created[0];
+    main.handlers['closed']();
+    main.handlers['closed']();
+
+    expect(state.pip.destroy).toHaveBeenCalled();
+  });
+
+  it('ignores duplicate closed events for the compact window', async () => {
+    state.compactState = { mode: 'compact', alwaysOnTop: false, restoreSessionOnce: false };
+    await boot();
+    const compact = state.compactCreated[0];
+    compact.handlers['closed']();
+    compact.handlers['closed']();
+
+    expect(state.audioPip.destroy).toHaveBeenCalled();
+  });
+
+  it('passes a null shell once the main window is gone', async () => {
+    await boot();
+    const getShell = state.initAutoUpdater.mock.calls.at(-1)![0] as () => unknown;
+    state.created[0].handlers['closed']();
+
+    expect(getShell()).toBeNull();
+  });
+
+  it('keeps the existing windows on activate', async () => {
+    await boot();
+    const created = state.created.length;
+    state.appHandlers['activate']();
+    expect(state.created.length).toBe(created);
+  });
+});

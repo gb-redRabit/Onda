@@ -577,3 +577,68 @@ describe('unsaved guard and closing', () => {
     expect(wrapper!.emitted('close')).toHaveLength(4);
   });
 });
+
+describe('editor fallback branches', () => {
+  it('saves a manually toggled download folder', async () => {
+    mountDialog({ source: source() });
+    await flush();
+    basics().vm.$emit('update:downloadFolder', false);
+    await flush();
+
+    await saveButton().trigger('click');
+    await flush();
+    expect(state.sources.saveSource.mock.calls[0][0].download).toMatchObject({ folder: false });
+  });
+
+  it('applies endpoint pane edits through v-model', async () => {
+    mountDialog({ source: source() });
+    await flush();
+    rail().vm.$emit('select', 1);
+    await flush();
+
+    endpointPane().vm.$emit('update:modelValue', {
+      ...endpointPane().props('modelValue'),
+      path: '/changed'
+    });
+    await flush();
+    await saveButton().trigger('click');
+    await flush();
+
+    const saved = state.sources.saveSource.mock.calls[0][0];
+    expect(saved.endpoints[0].path).toBe('/changed');
+  });
+
+  it('labels unnamed and pathless levels by id', async () => {
+    mountDialog({
+      source: source({
+        endpoints: [endpoint({ id: 'ep1' }), endpoint({ id: 'ep2', name: '', path: '' })]
+      })
+    });
+    await flush();
+    rail().vm.$emit('select', 1);
+    await flush();
+
+    expect(endpointPane().props('levelOptions')).toEqual([{ id: 'ep2', label: 'ep2' }]);
+    expect(endpointPane().props('fieldOptions')).toEqual([]);
+    expect(endpointPane().props('rowOptions')).toEqual([]);
+  });
+
+  it('keeps the dialog clean for an empty source', async () => {
+    mountDialog({ source: source({ name: '', baseUrl: '' }) });
+    await flush();
+    expect(state.guard.isDirty()).toBe(false);
+  });
+
+  it('handles removing the first level from a later phase', async () => {
+    mountDialog();
+    await flush();
+    rail().vm.$emit('add');
+    await flush();
+    rail().vm.$emit('select', 1);
+    await flush();
+    rail().vm.$emit('remove', 0);
+    await flush();
+
+    expect(rail().props('active')).toBeLessThanOrEqual(2);
+  });
+});
