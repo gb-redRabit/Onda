@@ -562,3 +562,83 @@ describe('store edges', () => {
     expect(res.found).toBe(0);
   });
 });
+
+describe('provider store edge branches', () => {
+  it('handles a successful list without items', async () => {
+    detectResult = DETECT;
+    listResult = { success: true } as never;
+    const store = useProvidersStore();
+
+    expect(await store.detect('https://mypikpak.com/s/S1')).toBe(true);
+    expect(store.items).toEqual([]);
+  });
+
+  it('builds audio download jobs', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [{ id: 'a1', name: 'song.mp3', kind: 'file' }] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    await store.download({ id: 'a1', name: 'song.mp3', kind: 'file' });
+
+    const call = invoke.mock.calls.find((c) => c[0] === 'yt:download:add');
+    const input = (call![1] as Array<{ kind: string; format: string }>)[0];
+    expect(input).toMatchObject({ kind: 'audio', format: 'mp3' });
+  });
+
+  it('marks a completed task only once', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [FILE] };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    const cb = onHandlers.get('yt:downloadProgress')!;
+    const payload = {
+      status: 'completed',
+      source: {
+        mode: 'provider',
+        providerRef: { provider: 'pikpak', shareId: 'S1' },
+        providerItemId: 'f1'
+      }
+    };
+    cb(payload);
+    const first = store.downloaded;
+    cb(payload);
+
+    expect(store.isDownloaded('f1')).toBe(true);
+    expect(store.downloaded).toBe(first);
+  });
+
+  it('plays files without an extension as generic streams', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [{ id: 'b1', name: 'blob', kind: 'file' }] };
+    streamResult = { success: true, streamToken: 'TOK' };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    const ok = await store.play({ id: 'b1', name: 'blob', kind: 'file' });
+    expect(store.error).toBe('');
+    expect(ok).toBe(true);
+    const track = usePlayerStore().currentTrack!;
+    expect(track.extension).toBe('blob');
+    expect(track.type).toBe('stream');
+    expect(track.mimeType).toBe('audio/mpeg');
+  });
+});
+
+describe('provider play variants', () => {
+  it('classifies unknown extensions', async () => {
+    detectResult = DETECT;
+    listResult = { success: true, items: [{ id: 'x1', name: 'file.xyz', kind: 'file' }] };
+    streamResult = { success: true, streamToken: 'TOK' };
+    const store = useProvidersStore();
+    await store.detect('https://mypikpak.com/s/S1');
+
+    expect(await store.play({ id: 'x1', name: 'file.xyz', kind: 'file' })).toBe(true);
+    expect(usePlayerStore().currentTrack).toMatchObject({
+      extension: 'xyz',
+      mimeType: 'audio/mpeg',
+      type: 'stream'
+    });
+  });
+});
