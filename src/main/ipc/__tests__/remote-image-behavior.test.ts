@@ -411,3 +411,25 @@ describe('registerRemoteImageHandler', () => {
     await expect(state.handler({}, 'http://localhost/x')).resolves.toBeNull();
   });
 });
+
+describe('remote image edge fallbacks', () => {
+  it('treats a missing status code as zero', async () => {
+    const res = response(200);
+    (res as { statusCode?: number }).statusCode = undefined;
+    state.nextResponse = res;
+
+    await expect(followImageRedirects(URL_A, new AbortController().signal)).resolves.toMatchObject({
+      status: 0
+    });
+  });
+
+  it('rejects non-https fetches', async () => {
+    await expect(fetchRemoteImageBytes('http://cdn.example.com/a.png')).resolves.toBeNull();
+  });
+
+  it('rejects responses without an image content type', async () => {
+    const { request } = requestTo(() => response(200, {}));
+
+    await expect(getRemoteImage(URL_A, request)).resolves.toBeNull();
+  });
+});

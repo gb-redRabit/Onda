@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm } from 'fs/promises';
+import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -88,5 +88,49 @@ describe('remote-subs-store', () => {
     });
     expect(updated).toMatchObject({ url: 'https://mypikpak.com/s/NEW', status: 'ok' });
     expect(updated!.ref).toEqual({ provider: 'pikpak', shareId: 'NEW' });
+  });
+});
+
+describe('remote-subs-store edge patches', () => {
+  it('filters invalid stored entries and non-array payloads', async () => {
+    await writeFile(
+      file,
+      JSON.stringify([null, 5, { id: 'bad' }, { id: 'ok', providerId: 'pikpak', url: 'u' }])
+    );
+    const subs = await loadRemoteSubscriptions(file);
+    expect(subs).toHaveLength(1);
+
+    await writeFile(file, JSON.stringify({ id: 'not-an-array' }));
+    await expect(loadRemoteSubscriptions(file)).resolves.toEqual([]);
+  });
+
+  it('rejects malformed provider refs', async () => {
+    await expect(
+      addRemoteSubscription(file, { url: 'u' }, 'pikpak', { provider: 5 } as never)
+    ).resolves.toBeNull();
+    await expect(
+      addRemoteSubscription(file, { url: 'u' }, 'pikpak', { provider: 'p', shareId: 5 } as never)
+    ).resolves.toBeNull();
+  });
+
+  it('patches titles, ids and counts while ignoring bad refs', async () => {
+    await writeFile(
+      file,
+      JSON.stringify([{ id: 'legacy', providerId: 'pikpak', url: 'u', status: 'ok' }])
+    );
+
+    const updated = await updateRemoteSubscription(file, 'legacy', {
+      title: 'T'.repeat(400),
+      newCount: -5,
+      downloadedItemIds: ['a', 5 as never],
+      seenItemIds: ['s', 5 as never],
+      ref: { provider: 5 } as never
+    });
+
+    expect(updated!.title).toHaveLength(300);
+    expect(updated!.newCount).toBe(0);
+    expect(updated!.downloadedItemIds).toEqual(['a']);
+    expect(updated!.seenItemIds).toEqual(['s']);
+    expect(updated!.ref).toBeUndefined();
   });
 });

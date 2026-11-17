@@ -572,3 +572,29 @@ describe('download queue edge branches', () => {
     expect(moveDownload('q', 1)).toBe(false);
   });
 });
+
+describe('download retry replacement', () => {
+  it('replaces a failed job with the same dedup key', async () => {
+    const source = { mode: 'ytdlp' };
+    const base = input({
+      url: 'https://youtube.com/watch?v=abc12345678',
+      videoId: 'abc12345678',
+      source
+    });
+    state.jobs.set(
+      'old',
+      job({
+        id: 'old',
+        status: 'error',
+        videoId: 'abc12345678',
+        source
+      })
+    );
+
+    const created = await addDownloadJobs([base]);
+
+    expect(created).toHaveLength(1);
+    expect(state.jobs.has('old')).toBe(false);
+    expect(state.forgetJob).toHaveBeenCalledWith('old');
+  });
+});

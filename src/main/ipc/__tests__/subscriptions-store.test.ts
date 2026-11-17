@@ -299,3 +299,77 @@ describe('downloaded file reconciliation', () => {
     expect(res.removedIds).toEqual([]);
   });
 });
+
+describe('subscriptions-store edge data', () => {
+  it('ignores non-array payloads', async () => {
+    await writeFile(file, JSON.stringify({ id: 'not-a-list' }));
+
+    await expect(loadSubscriptions(file)).resolves.toEqual([]);
+  });
+
+  it('appends ids to a legacy subscription without downloaded lists', async () => {
+    await writeFile(file, JSON.stringify([{ id: 'UC1', channelId: 'UC1', channelTitle: 'One' }]));
+
+    const updated = await appendDownloadedVideos(file, 'UC1', ['', 'a'], {
+      b: '',
+      c: 'D:/files/c.mp4',
+      '': 'D:/files/skip.mp4'
+    });
+
+    expect(updated!.downloadedVideoIds).toEqual(['a']);
+    expect(updated!.downloadedFiles).toEqual({ c: 'D:/files/c.mp4' });
+  });
+
+  it('keeps every entry when all recorded files still exist', async () => {
+    const existing = join(dir, 'present.mp4');
+    await writeFile(existing, 'x');
+    await writeFile(
+      file,
+      JSON.stringify([
+        {
+          id: 'UC1',
+          channelId: 'UC1',
+          channelTitle: 'One',
+          downloadedVideoIds: ['vid'],
+          downloadedFiles: { vid: existing }
+        }
+      ])
+    );
+
+    const result = await reconcileDownloadedFiles(file, 'UC1');
+
+    expect(result.removedIds).toEqual([]);
+    expect(result.updated!.downloadedVideoIds).toEqual(['vid']);
+  });
+});
+
+describe('subscriptions-store legacy fallbacks', () => {
+  it('falls back to the channel id when the title is empty', async () => {
+    const sub = await addSubscription(file, {
+      channelId: 'UC-empty-title',
+      channelTitle: '',
+      channelThumbnail: ''
+    });
+
+    expect(sub!.channelTitle).toBe('UC-empty-title');
+  });
+
+  it('reconciles legacy entries without a downloaded id list', async () => {
+    await writeFile(
+      file,
+      JSON.stringify([
+        {
+          id: 'UC1',
+          channelId: 'UC1',
+          channelTitle: 'One',
+          downloadedFiles: { vid: join(dir, 'gone.mp4') }
+        }
+      ])
+    );
+
+    const result = await reconcileDownloadedFiles(file, 'UC1');
+
+    expect(result.removedIds).toEqual(['vid']);
+    expect(result.updated!.downloadedVideoIds).toEqual([]);
+  });
+});

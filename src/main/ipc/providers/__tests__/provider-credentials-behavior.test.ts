@@ -211,3 +211,30 @@ describe('store failures', () => {
     expect(await hasProviderCookie('115')).toBe(false);
   });
 });
+
+describe('provider credential fallbacks', () => {
+  it('treats missing credential maps as empty', async () => {
+    state.creds = undefined as never;
+
+    expect(await getProviderCookie('115')).toBe('');
+    expect(await setProviderCookie('115', 'c')).toBe(true);
+    expect(await clearProviderCookie('115')).toBe(true);
+  });
+
+  it('returns an empty value for an empty stored cookie', async () => {
+    state.creds = { '115': { cookie: '' } };
+
+    expect(await getProviderCookie('115')).toBe('');
+  });
+
+  it('ignores session cookies without a domain in the Google fallback', async () => {
+    state.getSessionCookies.mockResolvedValue([
+      { name: 'SID', value: 'x' },
+      { name: 'HSID', value: 'y', domain: '.drive.google.com' }
+    ]);
+
+    const cookie = await getProviderCookie('gdrive');
+
+    expect(cookie).toContain('HSID=y');
+  });
+});
