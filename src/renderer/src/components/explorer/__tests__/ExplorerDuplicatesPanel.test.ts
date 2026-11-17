@@ -15,7 +15,7 @@ vi.mock('@renderer/stores/explorer', () => ({
 
 import ExplorerDuplicatesPanel from '../ExplorerDuplicatesPanel.vue';
 
-function mountPanel(open = false) {
+function mountPanel(open = false, options: { confirm?: boolean } = {}) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -29,7 +29,7 @@ function mountPanel(open = false) {
       plugins: [i18n],
       directives: { activate: {} },
       stubs: { Loader: true },
-      provide: { showConfirm: h.confirm }
+      provide: options.confirm === false ? {} : { showConfirm: h.confirm }
     }
   });
 }
@@ -206,6 +206,21 @@ describe('ExplorerDuplicatesPanel results', () => {
     expect(h.invoke).toHaveBeenCalledWith('fs:delete', '/music/a/dup2.mp3');
     expect(h.invoke).toHaveBeenCalledWith('fs:findDuplicates', '/music/a');
     expect(h.explorer.loadFiles).toHaveBeenCalledWith('/music/a');
+  });
+
+  it('deletes with the built-in confirmation when no provider is installed', async () => {
+    h.invoke.mockResolvedValue(groups);
+    const wrapper = mountPanel(false, { confirm: false });
+    await wrapper.setProps({ open: true });
+    await flushPromises();
+    await wrapper.get('[data-testid="explorer-duplicates-select-all"]').trigger('click');
+
+    h.invoke.mockResolvedValue([]);
+    await wrapper.get('[data-testid="explorer-duplicates-delete"]').trigger('click');
+    await flushPromises();
+
+    expect(h.invoke).toHaveBeenCalledWith('fs:delete', '/music/a/dup1.mp3');
+    expect(h.invoke).toHaveBeenCalledWith('fs:findDuplicates', '/music/a');
   });
 
   it('keeps files when the confirmation is cancelled', async () => {

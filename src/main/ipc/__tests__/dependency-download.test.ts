@@ -24,6 +24,21 @@ const state = vi.hoisted(() => ({
 // Channel can be flipped to exercise both release repositories.
 const channel = vi.hoisted(() => ({ value: 'nightly' }));
 
+const fsState = vi.hoisted(() => ({ failShaUnlink: false }));
+
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    unlink: async (...args: Parameters<typeof actual.unlink>) => {
+      if (fsState.failShaUnlink && String(args[0]).endsWith('.sha256')) {
+        throw new Error('EBUSY');
+      }
+      return actual.unlink(...args);
+    }
+  };
+});
+
 vi.mock('https', () => ({
   default: {
     get: (url: string, options: unknown, callback: (res: unknown) => void) =>
@@ -407,6 +422,26 @@ describe('checksum verification', () => {
       )
     ).rejects.toThrow('Checksum mismatch');
     expect(readdirSync(state.binDir)).toEqual(['asset2']);
+  });
+
+  it('ignores a manifest file that cannot be removed', async () => {
+    const content = 'downloaded-binary';
+    const file = join(state.binDir, 'asset-locked');
+    writeFileSync(file, content);
+    mockTransport([{ body: `${sha256(content)}  asset-locked\n` }]);
+    fsState.failShaUnlink = true;
+    try {
+      await expect(
+        verifyDownloadedFile(
+          file,
+          'https://example.com/SHA2-256SUMS',
+          'asset-locked',
+          new AbortController().signal
+        )
+      ).resolves.toBeUndefined();
+    } finally {
+      fsState.failShaUnlink = false;
+    }
   });
 });
 

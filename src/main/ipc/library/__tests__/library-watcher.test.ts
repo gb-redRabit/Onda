@@ -105,6 +105,20 @@ describe('starting', () => {
     expect(state.watch).toHaveBeenCalledTimes(2);
   });
 
+  it('continues a concurrent start after the first one fails', async () => {
+    vi.doMock('chokidar', () => {
+      throw new Error('missing');
+    });
+    const api = await load();
+    try {
+      await Promise.all([api.startLibraryWatcher(['C:/a']), api.startLibraryWatcher(['C:/b'])]);
+    } finally {
+      vi.doMock('chokidar', () => ({ watch: state.watch }));
+    }
+
+    expect(state.loggerWarn).toHaveBeenCalled();
+  });
+
   it('logs import failures', async () => {
     vi.doMock('chokidar', () => {
       throw new Error('missing');

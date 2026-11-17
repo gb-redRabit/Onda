@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   source: null as any,
   subtitles: null as any,
   pipCtrl: null as any,
+  videoGetter: null as any,
   warn: vi.fn()
 }));
 
@@ -34,7 +35,10 @@ vi.mock('../useVideoSubtitles', () => ({
   useVideoSubtitles: () => state.subtitles
 }));
 vi.mock('../useVideoPiP', () => ({
-  useVideoPiP: () => state.pipCtrl
+  useVideoPiP: (_player: unknown, _settings: unknown, _pip: unknown, getVideo: () => unknown) => {
+    state.videoGetter = getVideo;
+    return state.pipCtrl;
+  }
 }));
 
 let wrapper: VueWrapper | null = null;
@@ -133,6 +137,12 @@ describe('setup and returned API', () => {
     expect(exposed.onVideoRef).toBe(state.source.onVideoRef);
     expect(exposed.togglePiP).toBe(state.pipCtrl.togglePiP);
     expect(exposed.syncSubtitlesWithPiP).toBe(state.subtitles.syncSubtitlesWithPiP);
+  });
+
+  it('hands PiP a live getter for the mounted video element', () => {
+    setup();
+
+    expect(state.videoGetter()).toBe(state.source.videoRef.value);
   });
 
   it('initialises audio only for video tracks', () => {

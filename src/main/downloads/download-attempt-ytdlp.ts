@@ -81,7 +81,7 @@ export async function runYtDlpAttempt(
   // Awaria spawnowania (ENOENT itd.) może wyemitować 'error', a potem 'close' z
   // kodem != 0. Bez tej flagi 'close' nadpisałby precyzyjny błąd generykiem.
   let spawnErrored = false;
-  let settleAttempt: () => void = () => {};
+  let settleAttempt: (() => void) | null = null;
   // Awaria spawnowania (np. ENOENT) emituje tylko 'error'. Bez rozstrzygnięcia
   // oczekującej obietnicy `running` w runnerze nigdy by nie zmalało, a `pump()`
   // stanąłby na stałe — kolejka nie ruszyłaby do restartu.
@@ -91,7 +91,7 @@ export async function runYtDlpAttempt(
     job.error = redactSecrets(err.message);
     job.errorCode = classifyYtDlpError(err.message);
     persist(job);
-    settleAttempt();
+    settleAttempt?.();
   });
 
   await new Promise<void>((resolve) => {

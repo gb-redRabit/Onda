@@ -265,6 +265,33 @@ describe('handleStreamProxy upstream', () => {
     expect(res.status).toBe(502);
   });
 
+  it('finishes reading an erroring bad-status body and retries', async () => {
+    const up = upstream({ statusCode: 500 });
+    state.upstreams = [up, up, up];
+    const res = makeResponse();
+
+    const pending = handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+    for (let i = 0; i < 3; i += 1) {
+      await new Promise((resolve) => setImmediate(resolve));
+      up.emit('error', new Error('body failed'));
+    }
+    await pending;
+
+    expect(state.get).toHaveBeenCalledTimes(3);
+    expect(res.status).toBe(502);
+  });
+
+  it('destroys the downstream response when the upstream errors mid-stream', async () => {
+    const up = upstream({ statusCode: 200, headers: { 'content-type': 'audio/mpeg' } });
+    state.upstreams = [up];
+    const res = makeResponse();
+
+    await handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
+    up.emit('error', new Error('late failure'));
+
+    expect(res.destroy).toHaveBeenCalled();
+  });
+
   it('follows redirects and preserves the validated protocol for generic URLs', async () => {
     state.isGeneric.mockReturnValue(true);
     state.upstreams = [

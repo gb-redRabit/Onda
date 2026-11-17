@@ -222,7 +222,6 @@ describe('boot', () => {
     const channels = state.bootSends.map((call) => call[0]);
     expect(channels).toContain('core:state');
     expect(channels).toContain('core:ready');
-
     expect(state.bootEvidence.ensure).toBeGreaterThan(0);
     expect(state.bootEvidence.settings).toBeGreaterThan(0);
     expect(state.bootEvidence.volume).toContainEqual([0.7]);
@@ -255,6 +254,17 @@ describe('boot', () => {
   it('registers the command handler and the 250 ms tick', () => {
     expect(state.handlers['core:command']).toBeTypeOf('function');
     expect(state.intervals.some((entry) => entry.ms === 250)).toBe(true);
+  });
+
+  it('reports a failed boot through the core error channel', async () => {
+    vi.resetModules();
+    state.settings.load.mockRejectedValueOnce(new Error('settings broken'));
+    state.api.send.mockClear();
+
+    await import('../main');
+    await flush();
+
+    expect(state.api.send).toHaveBeenCalledWith('core:error', 'settings broken');
   });
 
   it('reports window errors and unhandled rejections', () => {

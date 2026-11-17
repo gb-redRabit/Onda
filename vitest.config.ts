@@ -30,17 +30,17 @@ export default defineConfig({
         'src/renderer/src/locales/**'
       ],
       // Progi są ratchetem: trzymają pokrycie blisko aktualnego poziomu, żeby
-      // kolejne zmiany nie mogły go po cichu obniżyć. Margines 0.21-0.26 pp
+      // kolejne zmiany nie mogły go po cichu obniżyć. Margines 0.19-0.23 pp
       // pokrywa różnice platformowe (Windows pomija testy sieciowe,
       // macOS/Linux mają inne ścieżki systemowe) i odpowiada nadal dużemu
-      // zapasowi: ~81 linii, ~93 instrukcje, ~26 funkcji, ~73 gałęzie.
-      // Pomiar (2026-11-17, Windows): linie 99.87%, instrukcje 99.53%,
-      // funkcje 99.76%, gałęzie 97.94%.
+      // zapasowi: ~73 linie, ~96 instrukcji, ~23 funkcje, ~61 gałęzi.
+      // Pomiar (2026-11-17, Windows): linie 99.89%, instrukcje 99.57%,
+      // funkcje 99.98%, gałęzie 97.95%.
       thresholds: {
-        lines: 99.65,
-        statements: 99.3,
-        functions: 99.5,
-        branches: 97.7
+        lines: 99.7,
+        statements: 99.35,
+        functions: 99.75,
+        branches: 97.75
       }
     },
     projects: [

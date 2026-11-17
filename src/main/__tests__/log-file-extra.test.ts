@@ -5,6 +5,21 @@ import { join } from 'path';
 
 const userDataDir = mkdtempSync(join(tmpdir(), 'onda-logfile-extra-'));
 
+const fsState = vi.hoisted(() => ({ failRotatedRm: false }));
+
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    rm: async (...args: Parameters<typeof actual.rm>) => {
+      if (fsState.failRotatedRm && String(args[0]).endsWith('.log.1')) {
+        throw new Error('EBUSY');
+      }
+      return actual.rm(...args);
+    }
+  };
+});
+
 const h = vi.hoisted(() => ({
   recordWarning: vi.fn(),
   clearWarnings: vi.fn(),
@@ -157,6 +172,21 @@ describe('clearing and copying', () => {
     resetLogs();
 
     await expect(clearLogFile()).resolves.toBe(false);
+  });
+
+  it('keeps the current log cleared when the rotated file cannot be removed', async () => {
+    console.info('[test] before clear');
+    await flush();
+    writeFileSync(`${getLogPath()}.1`, 'previous');
+    fsState.failRotatedRm = true;
+    try {
+      await expect(clearLogFile()).resolves.toBe(true);
+    } finally {
+      fsState.failRotatedRm = false;
+    }
+
+    expect(readLog()).toBe('');
+    expect(h.clearWarnings).toHaveBeenCalled();
   });
 
   it('copies the current log to a destination', async () => {

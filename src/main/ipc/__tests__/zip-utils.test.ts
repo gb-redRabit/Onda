@@ -1,7 +1,21 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+
+const fsState = vi.hoisted(() => ({ failStat: false }));
+
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    stat: async (...args: Parameters<typeof actual.stat>) => {
+      if (fsState.failStat) throw new Error('EACCES');
+      return actual.stat(...args);
+    }
+  };
+});
+
 import { findFile } from '../zip-utils';
 
 const root = mkdtempSync(join(tmpdir(), 'onda-zip-utils-'));
@@ -49,5 +63,16 @@ describe('findFile', () => {
     const dir = join(root, 'empty');
     mkdirSync(dir, { recursive: true });
     expect(await findFile(dir, 'ffmpeg')).toBeNull();
+  });
+
+  it('skips a matching entry whose metadata cannot be read', async () => {
+    const dir = join(root, 'unreadable');
+    touch(join(dir, 'locked.txt'));
+    fsState.failStat = true;
+    try {
+      await expect(findFile(dir, 'locked.txt')).resolves.toBeNull();
+    } finally {
+      fsState.failStat = false;
+    }
   });
 });

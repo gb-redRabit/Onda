@@ -317,6 +317,7 @@ describe('folder actions', () => {
 
 describe('folder context menu', () => {
   it('prevents the browser menu and opens the folder menu', () => {
+    state.library.tracks = [track('a')];
     mountTab();
     const header = wrapper!.findAll('[draggable="true"]')[0];
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
@@ -324,6 +325,8 @@ describe('folder context menu', () => {
     header.element.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
-    expect(state.showFolderMenu).toHaveBeenCalled();
+    expect(state.showFolderMenu).toHaveBeenCalledWith(expect.anything(), 'C:/Music', [
+      expect.objectContaining({ path: 'C:/Music/a.mp3' })
+    ]);
   });
 });

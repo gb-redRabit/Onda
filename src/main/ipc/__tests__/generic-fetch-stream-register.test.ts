@@ -40,4 +40,15 @@ describe('registerPlayableMediaUrls', () => {
     registerPlayableMediaUrls(many);
     expect(reg).toHaveBeenCalledTimes(100);
   });
+
+  it('ignores urls rejected by the stream registry', async () => {
+    reg.mockRejectedValueOnce(new Error('private address'));
+
+    expect(() =>
+      registerPlayableMediaUrls([item({ id: 'a', mediaUrl: 'https://c/a.mp4' })])
+    ).not.toThrow();
+    await Promise.resolve();
+
+    expect(reg).toHaveBeenCalledWith('https://c/a.mp4');
+  });
 });

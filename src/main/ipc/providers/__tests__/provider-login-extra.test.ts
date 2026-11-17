@@ -293,6 +293,27 @@ describe('Google seeding', () => {
     await expect(pending).resolves.toEqual({ success: true });
   });
 
+  it('ignores a failed provider navigation after the Google page', async () => {
+    h.cookies.current = [providerCookie('.google.com', 'SID', 'g')];
+    const login = await load();
+    const pending = login.startProviderLogin('gdrive');
+    const window = win();
+    await flush();
+    expect(window.loadURL).toHaveBeenCalledWith('https://accounts.google.com/');
+
+    h.loadError = new Error('net');
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(window.loadURL).toHaveBeenCalledWith('https://drive.google.com/');
+
+    h.cookies.current = [
+      providerCookie('.google.com', 'SID', 'g'),
+      providerCookie('.drive.google.com', 'DRIVE', 'd')
+    ];
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect(pending).resolves.toEqual({ success: true });
+  });
+
   it('ignores a failed seed lookup', async () => {
     h.googleError = new Error('no auth');
     const login = await load();

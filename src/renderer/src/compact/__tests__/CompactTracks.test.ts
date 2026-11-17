@@ -166,6 +166,16 @@ describe('track list', () => {
     expect(list[1].text()).toContain('Artist B');
   });
 
+  it('sorts search results by title', async () => {
+    setup();
+    wrapper!.getComponent(InputStub).vm.$emit('update:modelValue', 'mp3');
+    await wrapper!.vm.$nextTick();
+
+    expect(rows()).toHaveLength(2);
+    expect(rows()[0].text()).toContain('Alpha');
+    expect(rows()[1].text()).toContain('Beta');
+  });
+
   it('formats durations and marks the current track', () => {
     state.player.currentTrack = { path: 'D:/music/a.mp3' };
     setup();

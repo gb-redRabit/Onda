@@ -278,6 +278,16 @@ describe('logout', () => {
     expect(state.logger.warn).toHaveBeenCalled();
     expect(state.setAuthSettings).toHaveBeenCalled();
   });
+
+  it('continues when the cookie file cannot be removed', async () => {
+    state.unlink.mockRejectedValueOnce(new Error('EBUSY'));
+    await expect(logout()).resolves.toBeUndefined();
+    expect(state.setAuthSettings).toHaveBeenCalledWith({
+      method: 'none',
+      cookiesPath: '',
+      lastLogin: null
+    });
+  });
 });
 
 describe('cookie file import/export', () => {

@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   image: null as any,
   transition: null as any,
   slideshow: null as any,
+  slideshowDeps: null as any,
   loggerError: vi.fn()
 }));
 
@@ -35,7 +36,10 @@ vi.mock('../useImageViewerTransition', () => ({
   useImageViewerTransition: () => state.transition
 }));
 vi.mock('../useImageViewerSlideshow', () => ({
-  useImageViewerSlideshow: () => state.slideshow
+  useImageViewerSlideshow: (deps: unknown) => {
+    state.slideshowDeps = deps;
+    return state.slideshow;
+  }
 }));
 vi.mock('../useImageViewerKeyboard', () => ({
   createImageKeyHandler: (options: unknown) => {
@@ -142,6 +146,14 @@ describe('initial view', () => {
     expect(exposed.hasNext.value).toBe(true);
     expect(exposed.displaySrc.value).toBe('a.png');
     expect(exposed.thumbCache.value).toBeInstanceOf(Map);
+  });
+
+  it('advances the slideshow through the transition helper', () => {
+    mountViewer(0);
+
+    state.slideshowDeps.next();
+
+    expect(state.transition.next).toHaveBeenCalledWith(exposed.hasNext);
   });
 
   it('computes prev/next with loop enabled', () => {

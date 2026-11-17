@@ -1,7 +1,26 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+
+const fsState = vi.hoisted(() => ({ failTmpUnlink: false, failRename: false }));
+
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    rename: async (...args: Parameters<typeof actual.rename>) => {
+      if (fsState.failRename) throw new Error('EPERM');
+      return actual.rename(...args);
+    },
+    unlink: async (...args: Parameters<typeof actual.unlink>) => {
+      if (fsState.failTmpUnlink && String(args[0]).endsWith('.tmp')) {
+        throw new Error('EBUSY');
+      }
+      return actual.unlink(...args);
+    }
+  };
+});
 import {
   validatePluginId,
   isWithin,
@@ -645,8 +664,29 @@ describe('state and storage file edge cases', () => {
     const { mkdir } = await import('fs/promises');
     const target = join(dir, 'storage-dir');
     await mkdir(target);
+    fsState.failTmpUnlink = true;
 
-    await expect(writeStorageFile(target, { a: 1 })).rejects.toBeTruthy();
+    try {
+      await expect(writeStorageFile(target, { a: 1 })).rejects.toBeTruthy();
+    } finally {
+      fsState.failTmpUnlink = false;
+    }
+  });
+
+  it('keeps the fallback write when the temporary file cannot be removed', async () => {
+    const target = join(dir, 'storage.json');
+    await writeFile(target, '{}');
+    fsState.failRename = true;
+    fsState.failTmpUnlink = true;
+
+    try {
+      await expect(writeStorageFile(target, { a: 1 })).rejects.toBeTruthy();
+    } finally {
+      fsState.failRename = false;
+      fsState.failTmpUnlink = false;
+    }
+
+    await expect(readStorageFile(target)).resolves.toEqual({ a: 1 });
   });
 });
 

@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
   resumeKen: vi.fn(),
   startAdvance: vi.fn(),
   stopAdvance: vi.fn(),
+  advanceDelay: 0,
   shuffled: vi.fn((items: number[]) => items)
 }));
 
@@ -25,8 +26,9 @@ vi.mock('../useTimers', () => ({
     state.rafCb = callback;
     return { pause: state.pauseKen, resume: state.resumeKen };
   },
-  useTimeoutFn: (callback: () => void) => {
+  useTimeoutFn: (callback: () => void, delay?: () => number) => {
     state.advanceCb = callback;
+    state.advanceDelay = delay?.() ?? 0;
     return { start: state.startAdvance, stop: state.stopAdvance };
   }
 }));
@@ -181,6 +183,7 @@ describe('start and stop', () => {
   it('restarts when the interval changes during a slideshow', () => {
     const deps = makeDeps();
     const slideshow = useImageViewerSlideshow(deps);
+    expect(state.advanceDelay).toBeGreaterThan(0);
     slideshow.startSlideshow();
     state.startAdvance.mockClear();
 

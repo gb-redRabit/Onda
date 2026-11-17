@@ -572,6 +572,18 @@ describe('ipc handlers', () => {
 });
 
 describe('main window wiring', () => {
+  it('passes an empty shell getter to compact-window renderer recovery', async () => {
+    process.env.ONDA_COMPACT = '1';
+    let shellGetter: (() => unknown) | undefined;
+    state.recovery.mockImplementationOnce((_win: unknown, getShell: () => unknown) => {
+      shellGetter = getShell;
+    });
+    await boot();
+
+    expect(shellGetter).toBeTypeOf('function');
+    expect(shellGetter!()).toBeUndefined();
+  });
+
   it('hides on close when the tray is available and quits after destruction', async () => {
     await boot();
     const win = state.created[0];

@@ -60,4 +60,12 @@ describe('iconSourcePath', () => {
       'C:\\Users\\u\\Desktop\\Bad.lnk'
     );
   });
+
+  it('falls back to the Electron shell when no shortcut reader is injected', () => {
+    const d: IconSourceDeps = { platform: 'win32', exists: () => false };
+
+    expect(iconSourcePath('C:\\Users\\u\\Desktop\\App.lnk', d)).toBe(
+      'C:\\Users\\u\\Desktop\\App.lnk'
+    );
+  });
 });

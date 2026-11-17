@@ -448,6 +448,14 @@ describe('provider links', () => {
     expect(state.subscriptions.activeSection.value).toBe('links');
     expect(state.providerStore.detect).toHaveBeenCalledWith('https://mega.nz/x');
   });
+
+  it('writes the active section back to the subscriptions store', async () => {
+    mountView();
+    wrapper!.findComponent(TabsStub).vm.$emit('update:modelValue', 'links');
+    await wrapper!.vm.$nextTick();
+
+    expect(state.subscriptions.activeSection.value).toBe('links');
+  });
 });
 
 describe('subscriptions tab', () => {

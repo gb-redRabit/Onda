@@ -8,6 +8,19 @@ import { tmpdir } from 'node:os';
 // po zapisie trafienie; zmiana pliku źródłowego unieważnia wpis; budżet dyskowy
 // usuwa najstarsze wideo (LRU).
 
+const fsState = vi.hoisted(() => ({ failRm: false }));
+
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    rm: async (...args: Parameters<typeof actual.rm>) => {
+      if (fsState.failRm) throw new Error('EBUSY');
+      return actual.rm(...args);
+    }
+  };
+});
+
 let userData: string | null = '';
 
 vi.mock('electron', () => ({
@@ -129,6 +142,25 @@ describe('font cache', () => {
     await expect(mod.fontCacheStats()).resolves.toEqual({ files: 1, bytes: 100, videos: 1 });
     await expect(mod.readCachedFonts(v1)).resolves.toBeNull();
     await expect(mod.readCachedFonts(v2)).resolves.not.toBeNull();
+  });
+
+  it('evicts index entries even when the font file cannot be removed', async () => {
+    userData = tempDir('onda-fontcache-');
+    const v1 = makeVideo(userData, 'old.mkv');
+    const v2 = makeVideo(userData, 'new.mkv');
+    const mod = await load();
+
+    await mod.writeCachedFonts(v1, [{ name: 'A', ext: 'ttf', data: Array(100).fill(1) }]);
+    await new Promise((r) => setTimeout(r, 5));
+    fsState.failRm = true;
+    try {
+      await mod.writeCachedFonts(v2, [{ name: 'B', ext: 'ttf', data: Array(100).fill(2) }], 150);
+    } finally {
+      fsState.failRm = false;
+    }
+
+    await expect(mod.fontCacheStats()).resolves.toEqual({ files: 1, bytes: 100, videos: 1 });
+    await expect(mod.readCachedFonts(v1)).resolves.toBeNull();
   });
 
   it('falls back to a tmp directory when Electron is not ready', async () => {
