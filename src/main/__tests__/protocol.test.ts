@@ -27,6 +27,17 @@ vi.mock('electron', () => ({
     }
   }
 }));
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    // The handler canonicalises the request path before the allowlist check.
+    // Keep that decision out of the test: on Windows CI temp paths use 8.3
+    // names and macOS maps /var to /private/var, so sync and async realpath
+    // can disagree on the exact spelling even for the same file.
+    realpath: async (path: string) => path
+  };
+});
 vi.mock('../media/media-server', () => ({ isPathWithinAllowedRoots: () => state.roots }));
 vi.mock('../utils/origin-guard', () => ({ allowedAppOrigin: () => state.origin }));
 vi.mock('../path-policy', () => ({
