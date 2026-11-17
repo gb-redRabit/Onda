@@ -61,7 +61,17 @@ jobs:
         run: npm run version:check
 
       - name: Test (with coverage gate)
+        if: runner.os != 'macOS'
         run: npm run test:coverage
+
+      # macOS runners have 3 cores / 7 GB. Coverage instrumentation plus jsdom
+      # vmThreads runs the worker out of memory before Vitest can report a
+      # result (the job ends with exit code 1 and no test annotations). Run the
+      # same suite without coverage and with a lower worker ceiling there; the
+      # coverage ratchet already runs on Linux and Windows.
+      - name: Test (macOS)
+        if: runner.os == 'macOS'
+        run: npm test -- --maxWorkers=2
 
       - name: Audit production dependencies
         # Tylko zależności produkcyjne (dev-only advisories z toolchainu nie
