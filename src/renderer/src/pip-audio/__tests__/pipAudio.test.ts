@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file -- in-file test harnesses for the composables */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { defineComponent, ref } from 'vue';

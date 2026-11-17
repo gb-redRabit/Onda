@@ -72,7 +72,12 @@ export default defineConfig(
   {
     files: ['**/*.test.ts'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off'
+      '@typescript-eslint/no-explicit-any': 'off',
+      // Test files intentionally declare several inline stub components and
+      // mirror third-party components with the array props form; both rules
+      // guard SFC authoring, not fixtures.
+      'vue/one-component-per-file': 'off',
+      'vue/require-prop-types': 'off'
     }
   },
   {

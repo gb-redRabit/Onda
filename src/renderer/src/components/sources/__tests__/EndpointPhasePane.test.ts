@@ -60,6 +60,7 @@ function draft(overrides: Record<string, unknown> = {}) {
 function mountPane(props: Record<string, unknown> = {}) {
   const Host = defineComponent({
     components: { EndpointPhasePane },
+    props: ['attrs'],
     setup() {
       const value = ref<Record<string, any>>(
         draft(props.draft as Record<string, unknown> | undefined)
@@ -67,8 +68,7 @@ function mountPane(props: Record<string, unknown> = {}) {
       model = value.value;
       return { value };
     },
-    template: '<EndpointPhasePane v-model="value" v-bind="attrs" />',
-    props: ['attrs']
+    template: '<EndpointPhasePane v-model="value" v-bind="attrs" />'
   });
   wrapper = mount(Host, {
     props: {

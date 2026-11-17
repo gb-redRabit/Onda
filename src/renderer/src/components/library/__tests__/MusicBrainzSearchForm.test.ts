@@ -22,6 +22,7 @@ let models: Record<string, any>;
 function mountForm(loading = false) {
   const Host = defineComponent({
     components: { MusicBrainzSearchForm },
+    props: ['loading'],
     setup() {
       const artist = ref('');
       const title = ref('');
@@ -38,8 +39,7 @@ function mountForm(loading = false) {
         v-model:year="year"
         :loading="loading"
       />
-    `,
-    props: ['loading']
+    `
   });
   wrapper = mount(Host, {
     props: { loading },
