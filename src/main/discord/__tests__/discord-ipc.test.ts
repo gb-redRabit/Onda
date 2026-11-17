@@ -105,3 +105,11 @@ describe('discord ipc connection', () => {
     connection.close();
   });
 });
+
+describe('frame null payload', () => {
+  it('encodes a null payload as an empty object', () => {
+    const frame = encodeFrame(1, null);
+
+    expect(decodeFrames(frame).frames[0]).toEqual({ op: 1, data: {} });
+  });
+});

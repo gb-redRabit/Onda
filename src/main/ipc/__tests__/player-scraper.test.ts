@@ -44,3 +44,12 @@ describe('extractMediaUrls', () => {
     expect(extractMediaUrls(html).hls).toHaveLength(0);
   });
 });
+
+describe('extractMediaUrls filtering', () => {
+  it('drops direct matches that still point at an HLS playlist', () => {
+    const result = extractMediaUrls('src="https://cdn.example.com/v.mp4.m3u8"');
+
+    expect(result.direct).toEqual([]);
+    expect(result.hls).toContain('https://cdn.example.com/v.mp4.m3u8');
+  });
+});
