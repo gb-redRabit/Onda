@@ -69,11 +69,13 @@ describe('scanDir budget stops the walk instead of the result', () => {
   }
 
   it('stops reading once the budget is spent', async () => {
-    await makeTracks(200);
-    const budget = createScanBudget(20);
+    // 60 plików wystarcza, by przekroczyć budżet; 200 tylko wydłużało test na
+    // Windows CI, gdzie zapis/odczyt setek plików potrafi przekroczyć 5 s.
+    await makeTracks(60);
+    const budget = createScanBudget(10);
     const result = await scanDir(dir, 8, 0, undefined, undefined, budget);
 
-    expect(result.files.length).toBeLessThanOrEqual(20);
+    expect(result.files.length).toBeLessThanOrEqual(10);
     expect(budget.truncated).toBe(true);
   });
 

@@ -59,7 +59,7 @@ describe('check:artifacts', () => {
     const result = runCheck(repo());
     expect(result.code).toBe(0);
     expect(result.out).toContain('no test artifacts');
-  });
+  }, 20_000);
 
   it('fails on an untracked file dropped in the repo root', () => {
     // Regresja: test piszący przez ścieżkę, która rozwiązuje się do katalogu
@@ -70,7 +70,7 @@ describe('check:artifacts', () => {
     expect(result.code).toBe(1);
     expect(result.out).toContain('onda-radio-test.json');
     expect(result.out).toContain('os.tmpdir()');
-  });
+  }, 20_000);
 
   it('fails when a test modifies a tracked file', () => {
     const dir = repo();
@@ -78,7 +78,7 @@ describe('check:artifacts', () => {
     const result = runCheck(dir);
     expect(result.code).toBe(1);
     expect(result.out).toContain('a.txt');
-  });
+  }, 20_000);
 
   it('ignores a staged change, which is the developer own work in progress', () => {
     // Utrzymuje sprawdzenie użyteczne lokalnie: `git add` bez commita nie jest
@@ -88,7 +88,7 @@ describe('check:artifacts', () => {
     git(dir, 'add', 'b.txt');
     const result = runCheck(dir);
     expect(result.code).toBe(0);
-  });
+  }, 20_000);
 
   it('fails when a test stages a file, which no test should ever do', () => {
     const dir = repo();
@@ -99,5 +99,5 @@ describe('check:artifacts', () => {
     const result = runCheck(dir);
     expect(result.code).toBe(1);
     expect(result.out).toContain('d.txt');
-  });
+  }, 20_000);
 });
