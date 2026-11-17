@@ -288,6 +288,25 @@ async function boot(): Promise<void> {
   await flush();
 }
 
+/**
+ * Runs `fn` with a forced `process.platform`. The lifecycle handlers read the
+ * platform at call time, so tests that assert the quit path must not depend on
+ * the host OS: macOS intentionally keeps the process alive after the last
+ * window closes.
+ */
+async function withPlatform(
+  platform: NodeJS.Platform,
+  fn: () => void | Promise<void>
+): Promise<void> {
+  const original = process.platform;
+  Object.defineProperty(process, 'platform', { configurable: true, value: platform });
+  try {
+    await fn();
+  } finally {
+    Object.defineProperty(process, 'platform', { configurable: true, value: original });
+  }
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   state.calls = [];
@@ -564,7 +583,9 @@ describe('main window wiring', () => {
     expect(win.hide).toHaveBeenCalled();
 
     win.destroyed = true;
-    win.handlers['closed']();
+    await withPlatform('linux', () => {
+      win.handlers['closed']();
+    });
     expect(state.pip.destroy).toHaveBeenCalled();
     expect(state.audioPip.destroy).toHaveBeenCalled();
     expect(state.app.quit).toHaveBeenCalled();
@@ -625,7 +646,9 @@ describe('main window wiring', () => {
 
   it('cleans up and quits on window-all-closed', async () => {
     await boot();
-    state.appHandlers['window-all-closed']();
+    await withPlatform('linux', () => {
+      state.appHandlers['window-all-closed']();
+    });
     expect(state.unregisterAll).toHaveBeenCalled();
     expect(state.destroyTray).toHaveBeenCalled();
     expect(state.pip.destroy).toHaveBeenCalled();
@@ -855,7 +878,9 @@ describe('console and shell activity', () => {
     const compact = state.compactCreated[0];
 
     compact.destroyed = true;
-    compact.handlers['closed']();
+    await withPlatform('linux', () => {
+      compact.handlers['closed']();
+    });
 
     expect(state.pip.destroy).toHaveBeenCalled();
     expect(state.app.quit).toHaveBeenCalled();
@@ -955,9 +980,7 @@ describe('mode switching edges', () => {
 
 describe('main process platform branches', () => {
   it('keeps the app alive on macOS when windows close', async () => {
-    const original = process.platform;
-    Object.defineProperty(process, 'platform', { configurable: true, value: 'darwin' });
-    try {
+    await withPlatform('darwin', async () => {
       await boot();
       state.app.quit.mockClear();
       state.created[0].handlers['closed']();
@@ -965,9 +988,7 @@ describe('main process platform branches', () => {
 
       state.appHandlers['window-all-closed']();
       expect(state.app.quit).not.toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(process, 'platform', { configurable: true, value: original });
-    }
+    });
   });
 
   it('returns zero for an unknown sender window', async () => {
