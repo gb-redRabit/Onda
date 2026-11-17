@@ -191,3 +191,49 @@ describe('ModuleManager', () => {
     }
   });
 });
+
+describe('ModuleManager lookups', () => {
+  it('returns a registered module and null for a stale active id', () => {
+    const manager = new ModuleManager();
+    const module = makeModule('a');
+    manager.register(module);
+
+    expect(manager.get('a')).toBe(module);
+    (manager as unknown as { activeModuleId: string | null }).activeModuleId = 'ghost';
+    expect(manager.getActive()).toBeNull();
+  });
+});
+
+describe('ModuleManager stale deactivate failures', () => {
+  it('swallows a rejection from a stale deactivate', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const manager = new ModuleManager();
+      let releaseA!: () => void;
+      const gateA = new Promise<void>((resolve) => {
+        releaseA = resolve;
+      });
+      const a = makeModule('a', {
+        activate: vi.fn(async () => {
+          await gateA;
+        }),
+        deactivate: vi.fn(async () => {
+          throw new Error('deactivate failed');
+        }),
+        isActive: () => true
+      });
+      const b = makeModule('b');
+      manager.register(a);
+      manager.register(b);
+
+      const switchA = manager.switchTo('a');
+      await manager.switchTo('b');
+      releaseA();
+      await expect(switchA).resolves.toBeUndefined();
+
+      expect(manager.getActiveId()).toBe('b');
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+});
