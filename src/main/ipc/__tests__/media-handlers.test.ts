@@ -50,6 +50,16 @@ vi.mock('electron', () => ({
     }
   }
 }));
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    // The handlers canonicalise paths before checking media roots. Keep the
+    // test independent of OS spelling: Windows CI uses 8.3 names and macOS
+    // maps /var to /private/var, where sync and async realpath can disagree.
+    realpath: async (path: string) => path
+  };
+});
 vi.mock('node-id3', () => ({
   default: { Promise: { update: mocks.id3Update, read: mocks.id3Read } }
 }));
@@ -192,6 +202,7 @@ describe('media:getThumbnail', () => {
     const file = tempFile('thumb.jpg');
     // Handler sprawdza `realpath`; na macOS `/var` → `/private/var`, a na
     // Windows runnerze ścieżka 8.3 (`RUNNER~1`) → nazwa długa.
+    mocks.withinRoots.add(file);
     mocks.withinRoots.add(realpathSync(file));
     expect(await handler('media:getThumbnail')({}, file, 128)).toBe('thumb');
     expect(mocks.getThumbnail).toHaveBeenCalledWith(file, 128);
@@ -207,6 +218,7 @@ describe('media:batchThumbnails', () => {
   it('filters files outside allowed roots before batching', async () => {
     const allowed = tempFile('a.jpg');
     const blocked = tempFile('b.jpg');
+    mocks.withinRoots.add(allowed);
     mocks.withinRoots.add(realpathSync(allowed));
 
     await handler('media:batchThumbnails')({}, [allowed, blocked], 64);
