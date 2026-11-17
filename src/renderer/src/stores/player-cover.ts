@@ -188,17 +188,9 @@ export function usePlayerCover() {
   async function doLoadCover(filePath: string): Promise<void> {
     const cached = coverCache.value[filePath];
     if (cached && cached.data) return;
-    // Zdalne URL-e (strumienie/radio) nie mają lokalnego pliku do sondowania — nigdy nie
-    // wykonuj dla nich rundy przez IPC, tylko zapieczętuj pustą okładkę.
-    if (isRemoteUrl(filePath)) {
-      coverCache.value[filePath] = { type: null, data: null };
-      coverSealedAt.set(filePath, Date.now());
-      triggerRef(coverCache);
-      return;
-    }
-    // Świeży wynik "brak okładki" — pomiń rundę, aż TTL wygaśnie.
-    const sealedAt = coverSealedAt.get(filePath);
-    if (sealedAt && Date.now() - sealedAt < NULL_COVER_TTL_MS) return;
+    // `loadCover` kolejkuje wyłącznie lokalne ścieżki i tylko wtedy, gdy wpis
+    // nie jest świeżo zapieczętowany — zdalne URL-e i TTL są filtrowane przed
+    // wejściem do kolejki, więc worker nie powtarza tu tych decyzji.
     if (cached) {
       delete coverCache.value[filePath];
       coverSealedAt.delete(filePath);

@@ -57,18 +57,14 @@ export function setPlayerShortcutCtx(next: PlayerShortcutCtx | null): void {
 }
 
 function matches(action: string, e: KeyboardEvent): boolean {
-  const c = ctx;
-  if (!c) return false;
-  const shortcut = c.settings.shortcuts[action];
+  const shortcut = ctx!.settings.shortcuts[action];
   return !!shortcut && matchesShortcut(shortcut, e);
 }
 
 // Pomijanie akceptuje Shift jako dodatkowy modyfikator "±30s", więc surowy klawisz musi
 // pasować nawet przy wciśniętym Shift (sam skrót nie zawiera Shift).
 function matchesSkip(action: string, e: KeyboardEvent): boolean {
-  const c = ctx;
-  if (!c) return false;
-  const shortcut = c.settings.shortcuts[action];
+  const shortcut = ctx!.settings.shortcuts[action];
   if (!shortcut) return false;
   if (matchesShortcut(shortcut, e)) return true;
   return (
@@ -84,15 +80,11 @@ function matchesSkip(action: string, e: KeyboardEvent): boolean {
 }
 
 function skipBy(e: KeyboardEvent, seconds: number, shiftSeconds: number): void {
-  const c = ctx;
-  if (!c) return;
-  c.skip(e.shiftKey ? shiftSeconds : seconds);
+  ctx!.skip(e.shiftKey ? shiftSeconds : seconds);
 }
 
 function setTransportVolume(volume: number): void {
-  const c = ctx;
-  if (!c) return;
-  applyVolumeTarget(c.getVideoRef(), c.player.isMuted, volume);
+  applyVolumeTarget(ctx!.getVideoRef(), ctx!.player.isMuted, volume);
 }
 
 function abCurrentTime(): number {

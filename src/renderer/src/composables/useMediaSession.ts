@@ -60,7 +60,6 @@ export function useMediaSession(): MediaSessionControls {
   }
 
   function updateMetadata(): void {
-    if (!active) return;
     const track = player.currentTrack;
     if (!track) {
       session.metadata = null;
@@ -88,7 +87,6 @@ export function useMediaSession(): MediaSessionControls {
   }
 
   function updatePosition(force = false): void {
-    if (!active) return;
     const total = duration.value;
     if (!Number.isFinite(total) || total <= 0) return;
     const second = Math.floor(currentTime.value);

@@ -88,8 +88,9 @@ export class AudioGraph {
    * zwykłym przełączeniu utworu — dlatego `connectSource` tylko podłącza głowę łańcucha.
    */
   private rebuildEqFilters(): void {
-    const ctx = this.audioCtx;
-    if (!ctx) return;
+    // Wywoływane tylko po `ensureContext()` (ensureEqChain) albo gdy łańcuch
+    // już istnieje (setEqBands), więc kontekst jest zawsze dostępny.
+    const ctx = this.audioCtx!;
     for (const f of this.eqFilters) {
       try {
         f.disconnect();
@@ -135,13 +136,9 @@ export class AudioGraph {
   /** Podłącza [źródło/wideo] do AKTUALNEJ głowy łańcucha (bez przebudowy filtrów). */
   private connectChainHead(): void {
     const first = this.eqFilters[0];
-    if (first) {
-      if (this.sourceNode) this.sourceNode.connect(first);
-      if (this.videoGainNode) this.videoGainNode.connect(first);
-    } else {
-      if (this.sourceNode && this.preampNode) this.sourceNode.connect(this.preampNode);
-      if (this.videoGainNode && this.preampNode) this.videoGainNode.connect(this.preampNode);
-    }
+    if (!first) return;
+    if (this.sourceNode) this.sourceNode.connect(first);
+    if (this.videoGainNode) this.videoGainNode.connect(first);
   }
 
   /** Sygnatura bieżących pasm/trybu/próbkowania — pozwala pominąć zbędną przebudowę. */
@@ -271,9 +268,10 @@ export class AudioGraph {
       this.disconnectVideoElement();
     }
 
-    if (!this.audioCtx) return;
-    this.videoSourceNode = this.audioCtx.createMediaElementSource(videoEl);
-    this.videoGainNode = this.audioCtx.createGain();
+    // ensureContext() na wejściu gwarantuje kontekst.
+    const ctx = this.audioCtx!;
+    this.videoSourceNode = ctx.createMediaElementSource(videoEl);
+    this.videoGainNode = ctx.createGain();
     this.videoSourceEl = videoEl;
 
     this.ensureEqChain();

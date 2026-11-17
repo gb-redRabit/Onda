@@ -190,7 +190,7 @@ function focusSubFirst(): void {
 function openSubKeyboard(idx: number) {
   const el = itemRefs.value[idx];
   const item = ui.contextMenu?.items[idx];
-  if (!el || !item?.children?.length) return;
+  if (!el || !item) return;
   const first = navigableIndexes(item.children)[0];
   if (first === undefined) return;
   subActiveIndex.value = first;
@@ -199,7 +199,6 @@ function openSubKeyboard(idx: number) {
 }
 
 function onSubKeydown(e: KeyboardEvent) {
-  if (openSubIndex.value < 0) return;
   const parent = ui.contextMenu?.items[openSubIndex.value];
   const children = parent?.children ?? [];
   if (e.key === 'ArrowDown') {

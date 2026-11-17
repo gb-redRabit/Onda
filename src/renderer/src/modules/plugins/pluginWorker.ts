@@ -81,8 +81,9 @@ export function createPluginWorker(opts: PluginWorkerOptions): PluginWorkerHandl
     terminateWorker();
   };
 
+  // `ready` i `terminateWorker` czyszczą ten timer, więc callback nie może
+  // zastać stanu gotowości ani zakończenia.
   readyTimer = setTimeout(() => {
-    if (ready || terminated) return;
     opts.onError('worker-ready-timeout');
     terminateWorker();
   }, PLUGIN_READY_TIMEOUT_MS);
@@ -96,17 +97,12 @@ export function createPluginWorker(opts: PluginWorkerOptions): PluginWorkerHandl
         readyTimer = null;
         o.onReady();
         heartbeatInterval = setInterval(() => {
-          if (terminated) return;
-          if (heartbeatTimer) {
-            o.onError('worker-heartbeat-timeout');
-            terminateWorker();
-            return;
-          }
+          // Timeout (10 s) zawsze wygasa przed kolejnym tickiem (15 s), a `pong`
+          // i terminate czyszczą timer — więc nie ma tu zaległego `heartbeatTimer`.
           try {
             worker.postMessage(wrapIntoWorker({ type: 'ping' }));
             heartbeatTimer = setTimeout(() => {
               heartbeatTimer = null;
-              if (terminated) return;
               o.onError('worker-heartbeat-timeout');
               terminateWorker();
             }, PLUGIN_HEARTBEAT_TIMEOUT_MS);
