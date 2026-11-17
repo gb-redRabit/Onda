@@ -103,6 +103,27 @@ describe('PipBarLayout', () => {
     expect(wrapper.text()).toContain('Next artist');
   });
 
+  it('stops double clicks from bubbling out of the layout', () => {
+    const onDbl = vi.fn();
+    document.addEventListener('dblclick', onDbl);
+    try {
+      const wrapper = mount(PipBarLayout, {
+        props: { state: state(ALL) },
+        global: { stubs },
+        attachTo: document.body
+      });
+
+      wrapper
+        .get('[role="slider"]')
+        .element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+
+      expect(onDbl).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      document.removeEventListener('dblclick', onDbl);
+    }
+  });
+
   it('orders the progress bar for bottom and top docks', () => {
     const bottom = mount(PipBarLayout, { props: { state: state(ALL) }, global: { stubs } });
     const bottomProgress = bottom.get('[role="slider"]');
@@ -180,6 +201,27 @@ describe('PipBarLayout', () => {
 });
 
 describe('PipStackLayout', () => {
+  it('stops double clicks from bubbling out of the stack', () => {
+    const onDbl = vi.fn();
+    document.addEventListener('dblclick', onDbl);
+    try {
+      const wrapper = mount(PipStackLayout, {
+        props: { state: state(ALL) },
+        global: { stubs },
+        attachTo: document.body
+      });
+
+      wrapper
+        .get('[role="slider"]')
+        .element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+
+      expect(onDbl).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      document.removeEventListener('dblclick', onDbl);
+    }
+  });
+
   it('renders the vertical progress rail and reorders by dock', () => {
     const left = mount(PipStackLayout, {
       props: { state: state(ALL, { dock: 'left' }) },

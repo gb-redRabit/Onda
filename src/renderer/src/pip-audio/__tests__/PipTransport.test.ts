@@ -36,6 +36,26 @@ function glyphOrder(html: string): string[] {
 }
 
 describe('PipTransport', () => {
+  it('stops double clicks from bubbling out of the transport', () => {
+    const onDbl = vi.fn();
+    document.addEventListener('dblclick', onDbl);
+    try {
+      const wrapper = mount(PipTransport, {
+        props: { send, isPlaying: false, shuffle: false, repeat: 'none' },
+        attachTo: document.body
+      });
+
+      wrapper.element.dispatchEvent(
+        new MouseEvent('dblclick', { bubbles: true, cancelable: true })
+      );
+
+      expect(onDbl).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      document.removeEventListener('dblclick', onDbl);
+    }
+  });
+
   it('renders all five transport buttons', async () => {
     const html = await render({ send, isPlaying: false, shuffle: false, repeat: 'none' });
     expect(html.match(/<button/g)).toHaveLength(5);

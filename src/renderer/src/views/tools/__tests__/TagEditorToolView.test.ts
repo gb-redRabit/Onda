@@ -516,3 +516,16 @@ describe('tag editor guards and fallbacks', () => {
     expect(state.prompt.promptValue.value).toBe('typed');
   });
 });
+
+describe('drag targets', () => {
+  it('prevents the browser default on both drop zones', () => {
+    mountEditor();
+    const header = wrapper!.findAll('div').find((node) => node.classes().includes('flex-wrap'))!;
+
+    for (const zone of [header, wrapper!.get('[data-testid="tools-tag-drop"]')]) {
+      const event = new Event('dragover', { bubbles: true, cancelable: true });
+      zone.element.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+  });
+});

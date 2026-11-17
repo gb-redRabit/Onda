@@ -242,3 +242,17 @@ describe('lifecycle', () => {
     expect(state.destroy).toHaveBeenCalled();
   });
 });
+
+describe('virtual list wiring', () => {
+  it('exposes scroll targets and sizing for both layouts', () => {
+    mountTab();
+    expect(state.listOptions.scrollEl()).toBeInstanceOf(HTMLElement);
+    expect(state.listOptions.count()).toBe(2);
+
+    wrapper!.unmount();
+    mountTab({ viewMode: 'grid' });
+    expect(state.rowOptions.scrollEl()).toBeInstanceOf(HTMLElement);
+    expect(state.rowOptions.count()).toBe(1);
+    expect(state.rowOptions.estimateSize()).toBe(180);
+  });
+});

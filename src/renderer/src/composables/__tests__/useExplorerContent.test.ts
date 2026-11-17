@@ -308,3 +308,13 @@ describe('shared helpers and lifecycle', () => {
     expect(state.observe).not.toHaveBeenCalled();
   });
 });
+
+describe('virtual list wiring', () => {
+  it('exposes the scroll element and row sizing to the virtualizer', () => {
+    setup();
+
+    expect(state.virtual.scrollEl()).toBeInstanceOf(HTMLElement);
+    expect(state.virtual.count()).toBeGreaterThan(0);
+    expect(state.virtual.estimateSize()).toBeGreaterThan(0);
+  });
+});

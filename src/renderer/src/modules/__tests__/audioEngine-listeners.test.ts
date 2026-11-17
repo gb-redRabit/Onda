@@ -263,6 +263,19 @@ describe('media element listeners', () => {
     expect(el.play).not.toHaveBeenCalled();
   });
 
+  it('ignores a rejected replay when the stream becomes ready', async () => {
+    audioEngine.loadRemote('https://cdn.example/video');
+    const el = element();
+    audioEngine.play();
+    el.paused = true;
+    el.play.mockRejectedValueOnce(new Error('blocked'));
+
+    el.fire('canplay');
+    await Promise.resolve();
+
+    expect(el.play).toHaveBeenCalled();
+  });
+
   it('does not replay a local (non-stream) element', () => {
     audioEngine.loadTrack(track as never);
     const el = element();

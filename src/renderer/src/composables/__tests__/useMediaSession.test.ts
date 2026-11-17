@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 
 // Media Session: navigator/session są podstawione, podobnie jak store i IPC.
 const state = vi.hoisted(() => ({
@@ -21,8 +21,12 @@ vi.mock('@renderer/modules/audioEngine', () => ({
 }));
 vi.mock('@renderer/utils/runtimeMode', () => ({ isCoreShell: () => state.isCoreShell() }));
 vi.mock('@renderer/composables/useAudioPlayer', () => ({
-  currentTime: state.currentTime,
-  duration: state.duration
+  get currentTime() {
+    return state.currentTime;
+  },
+  get duration() {
+    return state.duration;
+  }
 }));
 
 const { useMediaSession } = await import('../useMediaSession');
@@ -97,8 +101,8 @@ async function flush(): Promise<void> {
 
 beforeEach(async () => {
   vi.stubGlobal('MediaMetadata', FakeMediaMetadata);
-  state.currentTime.value = 0;
-  state.duration.value = 0;
+  state.currentTime = ref(0);
+  state.duration = ref(0);
   state.player = makePlayer(track());
   state.handlers = new Map();
   state.invoke.mockReset();
@@ -338,6 +342,24 @@ describe('position and lifecycle', () => {
     state.player.isPlaying = false;
     await flush();
     expect(state.session.setPositionState).not.toHaveBeenCalled();
+    controls.dispose();
+  });
+
+  it('publishes a new position when only the playback time changes', async () => {
+    state.duration.value = 100;
+    state.currentTime.value = 10;
+    const controls = useMediaSession();
+    await flush();
+    state.session.setPositionState.mockClear();
+
+    state.currentTime.value = 12.4;
+    await flush();
+
+    expect(state.session.setPositionState).toHaveBeenCalledWith({
+      duration: 100,
+      position: 12.4,
+      playbackRate: 1
+    });
     controls.dispose();
   });
 

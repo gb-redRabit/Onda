@@ -327,6 +327,18 @@ describe('fullscreen', () => {
     expect(() => (wrapper!.vm as any).toggleFullscreen()).not.toThrow();
   });
 
+  it('ignores a rejected exit before unmounting while fullscreen', async () => {
+    mountImmersive();
+    state.exitFullscreen.mockRejectedValueOnce(new Error('blocked'));
+    state.fullscreenElement = document.createElement('div');
+
+    wrapper!.unmount();
+    wrapper = null;
+    await Promise.resolve();
+
+    expect(state.exitFullscreen).toHaveBeenCalled();
+  });
+
   it('handles F11/Escape only while fullscreen', async () => {
     mountImmersive();
     const el = viewElement();

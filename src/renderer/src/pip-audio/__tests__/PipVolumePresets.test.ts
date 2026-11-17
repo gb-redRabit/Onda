@@ -22,6 +22,26 @@ import PipEqPresets from '../PipEqPresets.vue';
 import PipVolume from '../PipVolume.vue';
 
 describe('PipEqPresets', () => {
+  it('stops double clicks from bubbling out of the presets', () => {
+    const onDbl = vi.fn();
+    document.addEventListener('dblclick', onDbl);
+    try {
+      const wrapper = mount(PipEqPresets, {
+        props: { eqPreset: 'bass', selectEqPreset: vi.fn() },
+        attachTo: document.body
+      });
+
+      wrapper.element.dispatchEvent(
+        new MouseEvent('dblclick', { bubbles: true, cancelable: true })
+      );
+
+      expect(onDbl).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      document.removeEventListener('dblclick', onDbl);
+    }
+  });
+
   it('renders the first four presets', () => {
     const wrapper = mount(PipEqPresets, {
       props: { eqPreset: 'bass', selectEqPreset: vi.fn() }

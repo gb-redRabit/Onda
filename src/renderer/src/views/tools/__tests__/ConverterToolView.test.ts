@@ -503,3 +503,17 @@ describe('converter option updates', () => {
     expect(wrapper!.findComponent(PathInputStub).props('modelValue')).toBe('D:/out');
   });
 });
+
+describe('drag target', () => {
+  it('prevents the browser default over the file panel', () => {
+    mountConverter();
+    const section = wrapper!
+      .findAll('section')
+      .find((node) => node.classes().includes('min-h-64'))!;
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    section.element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

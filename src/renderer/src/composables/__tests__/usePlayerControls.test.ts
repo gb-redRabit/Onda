@@ -425,6 +425,16 @@ describe('resume prompt callbacks', () => {
     expect(state.setPlaybackPosition).toHaveBeenCalledWith('/v.mp4', 12);
   });
 
+  it('ignores a rejected video play when resuming', async () => {
+    createControls();
+    video.play.mockRejectedValueOnce(new Error('blocked'));
+
+    state.resumeOptions!.onContinue({ position: 7, path: '/v.mp4' });
+    await Promise.resolve();
+
+    expect(video.currentTime).toBe(7);
+  });
+
   it('resumes audio through the audio player', () => {
     const { ctx } = createControls();
     ctx.player.currentTrack = { type: 'audio' };

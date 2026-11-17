@@ -1272,3 +1272,14 @@ describe('VideoClipperToolView option callbacks', () => {
     expect(vm.endSec).toBe(0.05);
   });
 });
+
+describe('drag target', () => {
+  it('prevents the browser default on dragover', () => {
+    mountView();
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    wrapper!.get('[data-testid="clip-view"]').element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

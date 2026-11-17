@@ -169,6 +169,21 @@ describe('video events', () => {
     expect(el.play).toHaveBeenCalled();
   });
 
+  it('ignores rejected play promises', async () => {
+    mountPip();
+    const el = setupVideo(65);
+    (el.play as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('blocked'));
+
+    vm().onVideoMeta();
+    state.handlers['pip:videoSrc']({ src: 'https://video', start: 0 });
+    vm().onVideoMeta();
+    state.handlers['pip:play'](5);
+    await Promise.resolve();
+
+    expect(el.play).toHaveBeenCalledTimes(2);
+    expect(el.currentTime).toBe(5);
+  });
+
   it('applies a pending start and waits for an explicit play', () => {
     mountPip();
     const el = setupVideo(120);

@@ -490,3 +490,19 @@ describe('ToolLaunchPanel drop limit', () => {
     expect(v.selected.has('D:\\Drop\\new.mp3')).toBe(false);
   });
 });
+
+describe('drop target', () => {
+  it('prevents the browser default while dragging files over the panel', () => {
+    mountPanel();
+    const drop = wrapper!
+      .findAll('div')
+      .find(
+        (node) => node.classes().includes('overflow-auto') && node.classes().includes('min-h-0')
+      )!;
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    drop.element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

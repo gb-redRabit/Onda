@@ -314,3 +314,16 @@ describe('folder actions', () => {
     expect(call[2]).toEqual(state.library.tracks.filter((t: any) => t.path.startsWith('C:/Music')));
   });
 });
+
+describe('folder context menu', () => {
+  it('prevents the browser menu and opens the folder menu', () => {
+    mountTab();
+    const header = wrapper!.findAll('[draggable="true"]')[0];
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+
+    header.element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(state.showFolderMenu).toHaveBeenCalled();
+  });
+});

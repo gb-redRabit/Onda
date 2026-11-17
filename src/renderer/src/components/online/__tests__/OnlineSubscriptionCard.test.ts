@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   open: vi.fn(),
   openAt: vi.fn(),
   remoteSrc: null as any,
+  remoteSource: null as any,
   relativeTime: vi.fn(() => '5 min'),
   youtubeUrl: vi.fn((id: string) => `https://youtube.com/channel/${id}`),
   soundcloudUrl: vi.fn((id: string) => `https://soundcloud.com/${id}`),
@@ -21,7 +22,10 @@ vi.mock('@renderer/composables/useContextMenu', () => ({
   useContextMenu: () => ({ open: state.open, openAt: state.openAt })
 }));
 vi.mock('@renderer/composables/useRemoteImage', () => ({
-  useRemoteImage: () => state.remoteSrc
+  useRemoteImage: (source: unknown) => {
+    state.remoteSource = source;
+    return state.remoteSrc;
+  }
 }));
 vi.mock('@renderer/utils/relativeTime', () => ({ relativeTime: state.relativeTime }));
 vi.mock('@shared/provider', () => ({
@@ -157,6 +161,12 @@ describe('rendering', () => {
 
     await wrapper!.get('img').trigger('error');
     expect(wrapper!.find('img').exists()).toBe(false);
+  });
+
+  it('feeds the channel thumbnail into the remote image helper', () => {
+    setup();
+
+    expect(state.remoteSource.value).toBe('https://img/avatar.jpg');
   });
 
   it('resets the avatar failure when the channel changes', async () => {

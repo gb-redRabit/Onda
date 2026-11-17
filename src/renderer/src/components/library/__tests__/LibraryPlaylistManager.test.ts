@@ -530,3 +530,20 @@ describe('LibraryPlaylistManager missing targets', () => {
     expect(state.player.clearQueue).not.toHaveBeenCalled();
   });
 });
+
+describe('playlist drag target', () => {
+  it('prevents the browser default while dragging over the list', async () => {
+    mountManager();
+    await wrapper!
+      .findAll('button')
+      .find((node) => node.text().includes('Chill'))!
+      .trigger('click');
+    const handled = wrapper!.findAll('div').some((node) => {
+      const event = new Event('dragover', { bubbles: true, cancelable: true });
+      node.element.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+
+    expect(handled).toBe(true);
+  });
+});

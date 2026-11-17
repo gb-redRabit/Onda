@@ -498,3 +498,14 @@ describe('batch images guards and edge progress', () => {
     });
   });
 });
+
+describe('drag target', () => {
+  it('prevents the browser default on dragover', () => {
+    mountBatch();
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    wrapper!.get('[data-testid="batch-images-view"]').element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

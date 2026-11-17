@@ -187,3 +187,19 @@ describe('interactions', () => {
     expect(menu.props('mode')).toBe('add');
   });
 });
+
+describe('quick action overlay', () => {
+  it('stops clicks on the add-to-playlist control from opening the card', () => {
+    const onCardClick = vi.fn();
+    mountCard([track('/music/a.mp3')]);
+    const overlay = wrapper!.findAll('div').find((node) => node.classes().includes('top-1.5'))!;
+    document.addEventListener('click', onCardClick);
+
+    try {
+      overlay.element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      expect(onCardClick).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener('click', onCardClick);
+    }
+  });
+});

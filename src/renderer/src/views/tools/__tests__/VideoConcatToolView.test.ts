@@ -422,3 +422,14 @@ describe('concat guards and fallbacks', () => {
     expect(wrapper!.text()).toContain('plain crash');
   });
 });
+
+describe('drag target', () => {
+  it('prevents the browser default on dragover', () => {
+    mountConcat();
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    wrapper!.get('[data-testid="concat-view"]').element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

@@ -227,3 +227,13 @@ describe('measurement', () => {
     expect(state.disconnect).toHaveBeenCalled();
   });
 });
+
+describe('virtual list wiring', () => {
+  it('exposes the scroll target and row height to the virtualizer', () => {
+    setup();
+
+    expect(state.options.scrollEl()).toBeInstanceOf(HTMLElement);
+    expect(state.options.count()).toBe(3);
+    expect(state.options.estimateSize()).toBe(300);
+  });
+});

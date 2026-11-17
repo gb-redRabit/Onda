@@ -279,4 +279,13 @@ describe('CompactQueue missing row removal', () => {
 
     expect(h.player.removeFromQueue).toHaveBeenCalledWith(-1);
   });
+
+  it('prevents the browser default while dragging over a row', () => {
+    const w = mountQueue();
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    w.get('[data-testid="compact-queue-item-0"]').element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
 });

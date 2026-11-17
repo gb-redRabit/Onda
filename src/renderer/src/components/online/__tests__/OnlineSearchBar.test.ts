@@ -348,3 +348,14 @@ describe('batch and quick settings', () => {
     expect(wrapper!.text()).toContain('settings.audioQuality.high');
   });
 });
+
+describe('drag target', () => {
+  it('prevents the browser default while dragging text over the input', () => {
+    mountBar();
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+
+    wrapper!.get('[data-testid="online-search-input"]').element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+});

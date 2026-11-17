@@ -205,6 +205,7 @@ describe('grid mode', () => {
     expect(options.count()).toBe(1);
     expect(options.estimateSize()).toBe(220);
     expect(options.overscan).toBe(3);
+    expect(options.scrollEl()).toBeTruthy();
   });
 
   it('recomputes visible rows when columns change', async () => {
