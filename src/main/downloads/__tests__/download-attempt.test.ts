@@ -164,17 +164,7 @@ describe('runJobAttempt — http source', () => {
   });
 });
 
-describe('runJobAttempt — provider source', () => {
-  const providerJob = () =>
-    baseJob({
-      source: {
-        mode: 'provider',
-        providerId: 'pikpak',
-        providerRef: { provider: 'pikpak', shareId: 'S' },
-        providerItemId: 'item1'
-      }
-    });
-
+describe('runJobAttempt – provider source', () => {
   it('rejects an incomplete provider source', async () => {
     const job = baseJob({ source: { mode: 'provider', providerId: 'pikpak' } });
     const res = await runJobAttempt(job, 'yt-dlp', null, []);
@@ -185,7 +175,14 @@ describe('runJobAttempt — provider source', () => {
 
   it('streams a client-decrypted provider (MEGA) and settles the download', async () => {
     providerUrlMock.mockResolvedValue({ stream: Readable.from([Buffer.from('hello')]), size: 5 });
-    const job = providerJob();
+    const job = baseJob({
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S' },
+        providerItemId: 'item1'
+      }
+    });
 
     const res = await runJobAttempt(job, 'yt-dlp', null, []);
 
@@ -198,7 +195,14 @@ describe('runJobAttempt — provider source', () => {
 
   it('downloads a resolved provider URL through the http path', async () => {
     providerUrlMock.mockResolvedValue({ url: 'https://cdn/host', headers: { Referer: 'r' } });
-    const job = providerJob();
+    const job = baseJob({
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S' },
+        providerItemId: 'item1'
+      }
+    });
 
     const res = await runJobAttempt(job, 'yt-dlp', null, []);
 
@@ -210,7 +214,14 @@ describe('runJobAttempt — provider source', () => {
 
   it('errors when the provider cannot resolve a link', async () => {
     providerUrlMock.mockRejectedValue(new Error('Bandwidth limit reached'));
-    const job = providerJob();
+    const job = baseJob({
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S' },
+        providerItemId: 'item1'
+      }
+    });
 
     const res = await runJobAttempt(job, 'yt-dlp', null, []);
 
@@ -319,3 +330,57 @@ describe('runJobAttempt — yt-dlp process', () => {
 });
 
 void Writable;
+
+describe('runJobAttempt provider resolution edges', () => {
+  it('errors when the provider returns neither url nor stream', async () => {
+    providerUrlMock.mockResolvedValue({});
+    const job = baseJob({
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S' },
+        providerItemId: 'item1'
+      }
+    });
+
+    const res = await runJobAttempt(job, 'yt-dlp', null, []);
+
+    expect(res.finishedOk).toBe(false);
+    expect(job.status).toBe('error');
+    expect(job.message).toBeUndefined();
+  });
+
+  it('ignores provider settle failures after a download', async () => {
+    providerUrlMock.mockResolvedValue({ url: 'https://cdn/host' });
+    settleMock.mockRejectedValueOnce(new Error('cleanup failed'));
+    const job = baseJob({
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S' },
+        providerItemId: 'item1'
+      }
+    });
+
+    const res = await runJobAttempt(job, 'yt-dlp', null, []);
+
+    expect(res.finishedOk).toBe(true);
+  });
+
+  it('stringifies non-Error provider failures', async () => {
+    providerUrlMock.mockRejectedValue('plain provider failure');
+    const job = baseJob({
+      source: {
+        mode: 'provider',
+        providerId: 'pikpak',
+        providerRef: { provider: 'pikpak', shareId: 'S' },
+        providerItemId: 'item1'
+      }
+    });
+
+    const res = await runJobAttempt(job, 'yt-dlp', null, []);
+
+    expect(res.finishedOk).toBe(false);
+    expect(job.error).toContain('plain provider failure');
+  });
+});
