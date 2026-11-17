@@ -493,3 +493,19 @@ describe('outbound messages', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('plugin worker ready timeout after ready', () => {
+  it('does not fail the initialisation timer once the worker is ready', async () => {
+    vi.useFakeTimers();
+    const opts = options();
+    const handle = createPluginWorker(opts);
+    const worker = TestWorker.latest!;
+
+    worker.emit({ __onda: { type: 'ready' } });
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(opts.onError).not.toHaveBeenCalled();
+    expect(worker.terminated).toBe(false);
+    handle.terminate();
+  });
+});

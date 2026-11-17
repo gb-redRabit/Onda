@@ -292,3 +292,31 @@ describe('overview sections', () => {
     expect(wrapper!.text()).toContain('home.statPlaylists: 2');
   });
 });
+
+describe('LibraryOverviewTab section events', () => {
+  it('ignores empty play and shuffle requests', () => {
+    mountTab();
+    const vm = wrapper!.vm as unknown as {
+      playAll: (tracks: unknown[]) => void;
+      shuffleAll: (tracks: unknown[]) => void;
+    };
+
+    vm.playAll([]);
+    vm.shuffleAll([]);
+
+    expect(wrapper!.emitted('playTracks')).toBeUndefined();
+  });
+
+  it('forwards play and edit from section cards', () => {
+    const item = track('recent');
+    state.library.recentTracks = [item];
+    mountTab();
+
+    const card = wrapper!.findAll('section')[1].findComponent(CardStub);
+    card.vm.$emit('play', item);
+    card.vm.$emit('edit', item);
+
+    expect(wrapper!.emitted('play')?.[0]).toEqual([item]);
+    expect(wrapper!.emitted('edit')?.[0]).toEqual([item]);
+  });
+});

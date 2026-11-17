@@ -558,3 +558,26 @@ describe('unmount cleanup', () => {
     expect(state.player.clearTrack).not.toHaveBeenCalled();
   });
 });
+
+describe('PlayerView bridge callbacks', () => {
+  it('forwards video notifications through the controls toast', async () => {
+    mountView();
+    await flushPromises();
+
+    state.videoOptions.notify('hello', 900);
+
+    expect(state.ctl.showToast).toHaveBeenCalledWith('hello', 900);
+  });
+
+  it('exposes the current video element to shortcuts and forwards mouse moves', async () => {
+    state.vp.videoRef.value = { currentTime: 0 };
+    mountView();
+    await flushPromises();
+
+    const ctx = state.setShortcutCtx.mock.calls.at(-1)?.[0];
+    expect(ctx.getVideoRef()).toBe(state.vp.videoRef.value);
+
+    await wrapper!.get('[data-testid="player-view"]').trigger('mousemove');
+    expect(state.ctl.onMouseMove).toHaveBeenCalled();
+  });
+});
