@@ -120,3 +120,20 @@ describe('mapTableRows', () => {
     expect(mapTableRows({ data: [1] }, table({ mode: 'endpoint', title: 'EP {n}' }))).toEqual([]);
   });
 });
+
+describe('generic fetch table edge rows', () => {
+  it('returns undefined when a field table has no arrayField', () => {
+    expect(tableArrayFromData({}, table({ mode: 'field' }))).toBeUndefined();
+  });
+
+  it('skips non-object rows and stringifies unsupported row keys', () => {
+    const items = mapTableRows(
+      [null, 5, 'text', { n: { x: 1 }, bg: 'a' }, { n: 7, bg: 'b' }],
+      table({ mode: 'endpoint', rowKey: 'n', thumbnail: 'bg' })
+    );
+
+    expect(items).toHaveLength(2);
+    expect(items[0]).toMatchObject({ id: '', thumbnail: 'a' });
+    expect(items[1]).toMatchObject({ id: '7', thumbnail: 'b' });
+  });
+});

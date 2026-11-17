@@ -98,3 +98,13 @@ describe('smart folders', () => {
     expect(getSmartFolder('nope' as never)).toBeUndefined();
   });
 });
+
+describe('smartFolders missing counts and ids', () => {
+  it('treats missing play counts as zero and unknown ids as empty', () => {
+    const missing = track({ playCount: undefined });
+
+    expect(countSmartFolder('unplayed', [missing], ctx())).toBe(1);
+    expect(countSmartFolder('mostPlayed', [missing], ctx())).toBe(0);
+    expect(countSmartFolder('ghost' as never, [missing], ctx())).toBe(0);
+  });
+});
