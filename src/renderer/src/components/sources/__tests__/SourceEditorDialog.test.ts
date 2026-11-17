@@ -642,3 +642,73 @@ describe('editor fallback branches', () => {
     expect(rail().props('active')).toBeLessThanOrEqual(2);
   });
 });
+
+describe('SourceEditorDialog edge props', () => {
+  it('compares dirty state when endpoints are absent', async () => {
+    mountDialog({
+      source: source({
+        endpoints: undefined,
+        name: 'My source',
+        baseUrl: 'https://api.example.com'
+      })
+    });
+    await flush();
+
+    expect(typeof state.guard.isDirty()).toBe('boolean');
+  });
+
+  it('handles a missing api key collection', async () => {
+    state.settings.apiKeys = undefined;
+    mountDialog();
+    await flush();
+
+    expect(basics().props('apiKeyOptions')).toEqual([]);
+  });
+
+  it('skips invalid endpoints while saving', async () => {
+    mountDialog({
+      source: source({
+        endpoints: [endpoint({ id: 'ep1', path: '/one' }), endpoint({ id: 'ep2', path: '' })]
+      })
+    });
+    await flush();
+
+    await saveButton().trigger('click');
+    await flush();
+
+    expect(state.sources.saveSource).toHaveBeenCalled();
+    const saved = state.sources.saveSource.mock.calls[0][0];
+    expect(saved.endpoints).toHaveLength(1);
+  });
+
+  it('omits an empty custom download directory', async () => {
+    mountDialog();
+    await flush();
+    await setBasics({
+      name: 'Name',
+      baseUrl: 'https://host',
+      downloadOutputDir: '   ',
+      downloadFolder: false
+    });
+    rail().vm.$emit('add');
+    await flush();
+
+    await saveButton().trigger('click');
+    await flush();
+
+    expect(state.sources.saveSource.mock.calls[0][0].download).toEqual({
+      outputDir: undefined,
+      folder: false
+    });
+  });
+
+  it('renders an endpoint phase without an id', async () => {
+    mountDialog({ source: source({ endpoints: [endpoint({ id: '' })] }) });
+    await flush();
+    rail().vm.$emit('select', 1);
+    await flush();
+
+    expect(endpointPane().props('fieldOptions')).toEqual([]);
+    expect(endpointPane().props('rowOptions')).toEqual([]);
+  });
+});

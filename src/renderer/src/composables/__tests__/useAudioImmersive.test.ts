@@ -383,3 +383,59 @@ describe('cleanup', () => {
     expect(state.audio.pause).not.toHaveBeenCalled();
   });
 });
+
+describe('audio immersive edge transitions', () => {
+  it('handles playback changes without a view element', async () => {
+    mountImmersive();
+    state.audio.isPlaying.value = true;
+    await wrapper!.vm.$nextTick();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    state.audio.isPlaying.value = false;
+    await wrapper!.vm.$nextTick();
+
+    expect((wrapper!.vm as any).showUI).toBe(true);
+  });
+
+  it('skips left with shift and right without it', () => {
+    state.audio.currentTime.value = 40;
+    mountImmersive();
+
+    key({ key: 'ArrowLeft', shiftKey: true });
+    expect(state.audio.seek).toHaveBeenLastCalledWith(10);
+
+    state.audio.currentTime.value = 40;
+    key({ key: 'ArrowRight' });
+    expect(state.audio.seek).toHaveBeenLastCalledWith(50);
+  });
+
+  it('accepts an empty view element', () => {
+    mountImmersive();
+
+    expect(() => (wrapper!.vm as any).setViewEl(undefined)).not.toThrow();
+  });
+});
+
+describe('audio immersive timer and fullscreen guards', () => {
+  it('clears a pending hide timer when playback pauses early', async () => {
+    mountImmersive();
+    state.audio.isPlaying.value = true;
+    await wrapper!.vm.$nextTick();
+
+    state.audio.isPlaying.value = false;
+    await wrapper!.vm.$nextTick();
+
+    expect((wrapper!.vm as any).showUI).toBe(true);
+  });
+
+  it('ignores fullscreen changes when another element is fullscreen', async () => {
+    mountImmersive();
+    viewElement();
+    state.fullscreenElement = document.body;
+
+    document.dispatchEvent(new Event('fullscreenchange'));
+    await wrapper!.vm.$nextTick();
+
+    expect((wrapper!.vm as any).isFullscreen).toBe(false);
+  });
+});

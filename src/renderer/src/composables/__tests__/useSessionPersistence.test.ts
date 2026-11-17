@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { effectScope } from 'vue';
+import { effectScope, nextTick, reactive } from 'vue';
 import type { Router } from 'vue-router';
 
 // Sesja: localStorage jest prawdziwy (jsdom), store i nawigacja są podstawione.
@@ -397,3 +397,38 @@ describe('useSessionPersistence', () => {
 function vadvance(ms: number): void {
   vi.advanceTimersByTime(ms);
 }
+
+describe('useSessionPersistence watch and empty restore', () => {
+  function create() {
+    const scope = effectScope();
+    let api!: ReturnType<typeof useSessionPersistence>;
+    scope.run(() => {
+      api = useSessionPersistence();
+    });
+    return { api, scope };
+  }
+
+  it('saves when the player track changes', async () => {
+    const player = reactive({ ...state.player });
+    state.player = player as typeof state.player;
+    const { scope } = create();
+    player.currentTrack = { path: '/music/c.mp3' };
+    player.queueLength = 2;
+    await nextTick();
+    vadvance(1000);
+
+    expect(localStorage.getItem(SESSION_KEY)).toContain('/music/c.mp3');
+    scope.stop();
+  });
+
+  it('clears the session when restore finds no files', async () => {
+    storeSession({ currentPath: '/music/gone.mp3', queue: [] });
+    state.invoke.mockResolvedValue([]);
+    const { api, scope } = create();
+
+    await expect(api.restore({} as Router)).resolves.toBe(false);
+
+    expect(localStorage.getItem(SESSION_KEY)).toBeNull();
+    scope.stop();
+  });
+});
