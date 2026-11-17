@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   yt: null as any,
   radio: null as any,
   cols: null as any,
+  listOptions: null as any,
   rowItems: [] as any[],
   rowTotal: 0,
   observe: vi.fn(),
@@ -38,11 +39,13 @@ vi.mock('@renderer/composables/useVirtualGrid', () => ({
   })
 }));
 vi.mock('@renderer/composables/useVirtualList', () => ({
-  useVirtualList: () =>
-    ref({
+  useVirtualList: (options: unknown) => {
+    state.listOptions = options;
+    return ref({
       getVirtualItems: () => state.rowItems,
       getTotalSize: () => state.rowTotal
-    })
+    });
+  }
 }));
 
 const HeaderStub = defineComponent({
@@ -327,5 +330,24 @@ describe('radio tab', () => {
   it('keeps the add dialog mounted on the saved tab', () => {
     mountView();
     expect(wrapper!.find('[data-testid="add-dialog"]').exists()).toBe(true);
+  });
+});
+
+describe('saved track virtual list wiring', () => {
+  it('sizes rows from the live column count and saved tracks', () => {
+    mountView();
+    const options = state.listOptions as {
+      count: () => number;
+      scrollEl: () => HTMLElement | null;
+      estimateSize: () => number;
+    };
+
+    // 3 utwory w 4 kolumnach to jedna wierszowa porcja.
+    expect(options.count()).toBe(1);
+    expect(options.estimateSize()).toBe(220);
+    expect(options.scrollEl()).toBeInstanceOf(HTMLElement);
+
+    state.cols.value = 1;
+    expect(options.count()).toBe(3);
   });
 });

@@ -104,6 +104,15 @@ describe('local font resolution', () => {
     expect(map).toEqual({});
     expect(state.query).toHaveBeenCalledTimes(4);
   });
+
+  it('reuses variants when the same family appears with different casing', async () => {
+    state.query.mockResolvedValue(font());
+
+    const map = await buildFontMap(ass('Arial') + ass('arial'));
+
+    expect(map.arial).toMatch(/^blob:/);
+    expect(state.query).toHaveBeenCalledTimes(4);
+  });
 });
 
 describe('metric aliases', () => {

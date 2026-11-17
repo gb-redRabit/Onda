@@ -1053,6 +1053,37 @@ describe('image studio edge branches', () => {
     expect(canvasEl().style.cursor).toBeTruthy();
   });
 
+  it('ignores runs without an image for the preview scale', () => {
+    mountView();
+    const vm = wrapper!.vm as unknown as { previewScale: number };
+
+    expect(vm.previewScale).toBe(1);
+    wrapper!.get('[data-testid="image-studio-view"]').trigger('dragover');
+  });
+
+  it('clamps aspect-locked crops that overflow the canvas edges', async () => {
+    await wrapper!.get('[data-testid="image-studio-aspect-16:9"]').trigger('click');
+    const vm = wrapper!.vm as unknown as {
+      updateCropFromDrag: (sx: number, sy: number, ex: number, ey: number) => void;
+    };
+
+    // Cofanie w lewo z większą wysokością wypycha szerokość poza lewą krawędź.
+    vm.updateCropFromDrag(100, 300, 0, 100);
+    await wrapper!.vm.$nextTick();
+    expect(cropAttr()).toMatch(/^0,\d+,\d+,\d+$/);
+
+    // Analogicznie w pionie: wysokość rośnie szybciej niż start od góry.
+    vm.updateCropFromDrag(400, 10, 0, 0);
+    await wrapper!.vm.$nextTick();
+    expect(cropAttr()).toMatch(/^\d+,0,\d+,\d+$/);
+
+    // Szeroki, niski prostokąt zaczęty przy prawej krawędzi nie może jej przekroczyć.
+    vm.updateCropFromDrag(600, 0, 640, 200);
+    await wrapper!.vm.$nextTick();
+    const [x, , width] = cropAttr().split(',').map(Number);
+    expect(x + width).toBeLessThanOrEqual(640);
+  });
+
   it('moves an annotation by dragging it', async () => {
     await wrapper!.get('[data-testid="image-studio-tool-rect"]').trigger('click');
     await pointer('pointerdown', 200, 150);

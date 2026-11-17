@@ -1,5 +1,78 @@
 import { describe, expect, it } from 'vitest';
-import { mergeSettingDefaults } from '../plugins-derive';
+import type { PluginManifest } from '@shared/types/ipc';
+import { computeLayoutVariants, mergeSettingDefaults } from '../plugins-derive';
+
+function layoutManifest(
+  id: string,
+  elements: Array<{ element: string; variant: string; label?: string }>,
+  overrides: Record<string, unknown> = {}
+): PluginManifest {
+  return {
+    id,
+    name: `${id}-name`,
+    version: '1.0.0',
+    description: '',
+    permissions: { visual: true },
+    layoutElements: elements,
+    ...overrides
+  } as unknown as PluginManifest;
+}
+
+describe('plugin layout variants', () => {
+  it('collects supported variants from enabled visual plugins', () => {
+    const variants = computeLayoutVariants(
+      [
+        { id: 'a', enabled: true, name: 'Alpha' },
+        { id: 'b', enabled: false, name: 'Beta' },
+        { id: 'c', enabled: true, name: 'Gamma' }
+      ],
+      {
+        a: layoutManifest('a', [{ element: 'cover', variant: 'circle' }]),
+        b: layoutManifest('b', [{ element: 'cover', variant: 'triangle' }]),
+        c: layoutManifest('c', [{ element: 'cover', variant: 'hexagon', label: 'Hex' }])
+      }
+    );
+
+    expect(variants.cover).toEqual([
+      { value: 'plugin:cover:circle', label: 'circle', plugin: 'Alpha' },
+      { value: 'plugin:cover:hexagon', label: 'Hex', plugin: 'Gamma' }
+    ]);
+  });
+
+  it('skips plugins without the visual permission or layout elements', () => {
+    const plugins = [{ id: 'a', enabled: true, name: 'Alpha' }];
+
+    expect(
+      computeLayoutVariants(plugins, {
+        a: layoutManifest('a', [{ element: 'cover', variant: 'circle' }], {
+          permissions: { visual: false }
+        })
+      })
+    ).toEqual({});
+    expect(computeLayoutVariants(plugins, {})).toEqual({});
+  });
+
+  it('ignores unsupported elements and variants and deduplicates them', () => {
+    const manifest = layoutManifest('a', [
+      { element: 'cover', variant: 'circle' },
+      { element: 'cover', variant: 'circle' },
+      { element: 'cover', variant: 'peak' },
+      { element: 'waveform', variant: 'circle' }
+    ]);
+
+    const variants = computeLayoutVariants(
+      [
+        { id: 'a', enabled: true, name: 'Alpha' },
+        { id: 'b', enabled: true, name: 'Beta' }
+      ],
+      { a: manifest, b: manifest }
+    );
+
+    expect(variants).toEqual({
+      cover: [{ value: 'plugin:cover:circle', label: 'circle', plugin: 'Alpha' }]
+    });
+  });
+});
 
 describe('plugin settings schema normalization', () => {
   const fields = [

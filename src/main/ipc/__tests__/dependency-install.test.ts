@@ -6,6 +6,21 @@ import { tmpdir } from 'node:os';
 // Instalatory zależności: transport, menedżery pakietów i dialog są podstawione,
 // a operacje na plikach działają na prawdziwym katalogu tymczasowym, żeby
 // sprawdzić staging, atomowy rename i sprzątanie po błędzie.
+const fsState = vi.hoisted(() => ({ failRm: false }));
+
+// Sprzątanie jest best-effort: zablokowany plik tymczasowy nie może przewrócić
+// udanej instalacji ani zmienić wyniku weryfikacji sumy kontrolnej.
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    rm: async (...args: Parameters<typeof actual.rm>) => {
+      if (fsState.failRm) throw new Error('EBUSY: resource busy');
+      return actual.rm(...args);
+    }
+  };
+});
+
 const mocks = vi.hoisted(() => ({
   getBinDir: vi.fn(() => ''),
   resolveBinInfo: vi.fn(),
@@ -89,6 +104,7 @@ const root = mkdtempSync(join(tmpdir(), 'onda-dep-install-'));
 let binDir: string;
 
 beforeEach(() => {
+  fsState.failRm = false;
   binDir = mkdtempSync(join(root, 'bin-'));
   mocks.getBinDir.mockReturnValue(binDir);
   for (const fn of Object.values(mocks)) fn.mockClear();
@@ -327,6 +343,36 @@ describe('installFfmpegManaged', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain(`Nie znaleziono ffprobe${exe}`);
+    });
+
+    it('keeps a successful install when temporary artifacts cannot be removed', async () => {
+      withManagedFfmpeg();
+      mocks.ffmpegProbeUrl.mockReturnValue('https://example.com/ffprobe.zip');
+      mocks.ffmpegProbeSha256.mockReturnValue('b'.repeat(64));
+      fakeExtraction({ mainProbe: false, probeArchive: true });
+      mocks.downloadFile.mockImplementation(
+        async (url: string, dest: string, _signal: unknown, onProgress?: () => void) => {
+          if (url.includes('ffprobe')) onProgress?.();
+          writeFileSync(dest, 'binary');
+        }
+      );
+      fsState.failRm = true;
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(true);
+      expect(mocks.downloadFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports a damaged archive even when cleanup also fails', async () => {
+      withManagedFfmpeg();
+      mocks.verifyFileSha256.mockRejectedValueOnce(new Error('checksum mismatch'));
+      fsState.failRm = true;
+
+      const result = await installFfmpegManaged(sender);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('uszkodzony');
     });
   });
 });

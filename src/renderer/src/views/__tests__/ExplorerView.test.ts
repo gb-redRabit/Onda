@@ -630,3 +630,43 @@ describe('ExplorerView wide details pane', () => {
     expect(details.classes()).not.toContain('absolute');
   });
 });
+
+describe('ExplorerView drag and dialog wiring', () => {
+  it('forwards a tab drop from the window shell', async () => {
+    mountView();
+    const root = wrapper!.get('[data-testid="explorer-view"]');
+
+    await root.trigger('dragover');
+    const drop = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent;
+    Object.defineProperty(drop, 'dataTransfer', { value: { getData: () => 'tab-7' } });
+    root.element.dispatchEvent(drop);
+    await wrapper!.vm.$nextTick();
+
+    expect(drop.defaultPrevented).toBe(true);
+    expect(state.handleTabDrop).toHaveBeenCalledWith('tab-7');
+  });
+
+  it('accepts drag events over the content column without forwarding them', async () => {
+    mountView();
+    const column = wrapper!.findAll('div').find((node) => node.classes().includes('min-w-0'))!;
+
+    await column.trigger('dragover');
+    await column.trigger('drop');
+
+    // Wewnętrzna kolumna tylko blokuje domyślną akcję; zdarzenie nadal
+    // bąbelkuje do shella okna, który przekazuje pusty payload dalej.
+    expect(state.handleTabDrop).toHaveBeenCalledWith('');
+  });
+  it('binds the duplicates panel and the prompt dialog', async () => {
+    mountView();
+    const duplicates = wrapper!.findComponent(DuplicatesStub);
+    const prompt = wrapper!.findComponent(PromptStub);
+
+    duplicates.vm.$emit('update:open', true);
+    prompt.vm.$emit('update:value', 'typed');
+    await wrapper!.vm.$nextTick();
+
+    expect(duplicates.props('open')).toBe(true);
+    expect(prompt.props('value')).toBe('typed');
+  });
+});

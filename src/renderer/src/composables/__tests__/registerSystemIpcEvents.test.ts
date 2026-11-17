@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { openMediaFiles } from '@renderer/composables/useOpenMedia';
 
 // Globalny nasłuch `providers:limit`: pokazuje toast z komunikatem limitu serwisu.
 
@@ -13,6 +14,7 @@ let handlers: Map<string, (...args: unknown[]) => void>;
 
 beforeEach(() => {
   uiNotify.mockClear();
+  vi.mocked(openMediaFiles).mockClear();
   handlers = new Map();
   (window as unknown as { api: unknown }).api = {
     on: (channel: string, cb: (...args: unknown[]) => void) => {
@@ -43,5 +45,20 @@ describe('registerSystemIpcEvents — providers:limit', () => {
       'providers.limitTitle',
       'providers.limitMessage'
     );
+  });
+});
+
+describe('registerSystemIpcEvents — open-files', () => {
+  it('opens only string paths and ignores malformed payloads', () => {
+    registerSystemIpcEvents({} as never);
+    const open = handlers.get('open-files')!;
+
+    open(['/music/a.mp3', 42, null, '/music/b.mp3']);
+    expect(openMediaFiles).toHaveBeenCalledWith(['/music/a.mp3', '/music/b.mp3'], {});
+
+    vi.mocked(openMediaFiles).mockClear();
+    open('not-an-array');
+    open([]);
+    expect(openMediaFiles).not.toHaveBeenCalled();
   });
 });

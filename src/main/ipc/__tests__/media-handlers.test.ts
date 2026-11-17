@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   sensitive: new Set<string>(),
   temp: new Set<string>(),
   withinRoots: new Set<string>(),
+  realpathThrows: false,
   id3Update: vi.fn(async () => undefined),
   id3Read: vi.fn(async () => ({}) as unknown),
   parseFile: vi.fn(async () => ({ format: { duration: 0 } })),
@@ -57,7 +58,12 @@ vi.mock('fs/promises', async (importOriginal) => {
     // The handlers canonicalise paths before checking media roots. Keep the
     // test independent of OS spelling: Windows CI uses 8.3 names and macOS
     // maps /var to /private/var, where sync and async realpath can disagree.
-    realpath: async (path: string) => path
+    // `realpathThrows` exercises the deny path for paths that cannot be
+    // canonicalised at all (deleted or inaccessible files).
+    realpath: async (path: string) => {
+      if (mocks.realpathThrows) throw new Error(`ENOENT: ${path}`);
+      return path;
+    }
   };
 });
 vi.mock('node-id3', () => ({
@@ -140,6 +146,7 @@ beforeEach(() => {
   mocks.sensitive.clear();
   mocks.temp.clear();
   mocks.withinRoots.clear();
+  mocks.realpathThrows = false;
   mocks.id3Update.mockClear();
   mocks.id3Read.mockReset();
   mocks.id3Read.mockResolvedValue({});
@@ -206,6 +213,17 @@ describe('media:getThumbnail', () => {
     mocks.withinRoots.add(realpathSync(file));
     expect(await handler('media:getThumbnail')({}, file, 128)).toBe('thumb');
     expect(mocks.getThumbnail).toHaveBeenCalledWith(file, 128);
+  });
+
+  it('denies thumbnails for paths that cannot be canonicalised', async () => {
+    const file = tempFile('deleted.jpg');
+    mocks.withinRoots.add(file);
+    mocks.realpathThrows = true;
+
+    expect(await handler('media:getThumbnail')({}, file)).toBeNull();
+    await handler('media:batchThumbnails')({}, [file]);
+    expect(mocks.getThumbnail).not.toHaveBeenCalled();
+    expect(mocks.batchThumbnails).toHaveBeenCalledWith([], 320);
   });
 });
 

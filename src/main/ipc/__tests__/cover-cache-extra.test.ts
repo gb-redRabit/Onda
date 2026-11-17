@@ -239,6 +239,36 @@ describe('extractAndCacheCover', () => {
     });
   });
 
+  it('keeps the extracted frame when its temp file cannot be removed', async () => {
+    h.unlink.mockRejectedValue(new Error('EBUSY'));
+    const covers = await load();
+
+    await expect(covers.extractAndCacheCover('D:/video/a.mp4')).resolves.toEqual({
+      type: 'image',
+      data: `data:image/jpeg;base64,${Buffer.from('img').toString('base64')}`
+    });
+  });
+
+  it('keeps embedded art when its temp file cannot be removed', async () => {
+    h.parseFile.mockResolvedValueOnce(picture());
+    h.unlink.mockRejectedValue(new Error('EBUSY'));
+    const covers = await load();
+
+    const result = await covers.extractAndCacheCover('D:/music/a.mp3');
+
+    expect(result.type).toBe('image');
+  });
+
+  it('keeps the embedded frame when its temp file cannot be removed', async () => {
+    h.unlink.mockRejectedValue(new Error('EBUSY'));
+    const covers = await load();
+
+    await expect(covers.extractAndCacheCover('D:/music/b.mp3')).resolves.toEqual({
+      type: 'image',
+      data: `data:image/jpeg;base64,${Buffer.from('img').toString('base64')}`
+    });
+  });
+
   it('returns null when the video frame cannot be extracted', async () => {
     h.runCommand.mockRejectedValueOnce(new Error('ffmpeg'));
     const covers = await load();
@@ -492,6 +522,22 @@ describe('cache maintenance', () => {
 
     expect(h.readdir).not.toHaveBeenCalled();
     expect(h.writeCoverMap).not.toHaveBeenCalled();
+  });
+
+  it('finishes migration when an entry cannot be removed', async () => {
+    h.readdir.mockResolvedValue(['a.jpg']);
+    h.rm.mockRejectedValueOnce(new Error('EBUSY'));
+    const covers = await load();
+
+    await covers.initCoverCache();
+
+    expect(h.writeCoverMap).toHaveBeenCalledWith(
+      expect.objectContaining({ __v2_sibling_video__: expect.any(Object) })
+    );
+    expect(h.loggerInfo).toHaveBeenCalledWith(
+      'cover',
+      'persistent cover cache cleared for sibling video migration'
+    );
   });
 
   it('tolerates unreadable cache directories and write failures', async () => {

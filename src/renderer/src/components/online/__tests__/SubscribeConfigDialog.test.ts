@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   ui: null as any,
   settings: null as any,
   avatar: null as any,
+  avatarSource: null as any,
   invoke: vi.fn(),
   t: vi.fn((key: string) => key)
 }));
@@ -22,7 +23,10 @@ vi.mock('@renderer/composables/useSubscribePrefsForm', () => ({
   }
 }));
 vi.mock('@renderer/composables/useRemoteImage', () => ({
-  useRemoteImage: () => state.avatar
+  useRemoteImage: (source: unknown) => {
+    state.avatarSource = source;
+    return state.avatar;
+  }
 }));
 
 const ModalStub = defineComponent({
@@ -229,6 +233,14 @@ describe('mount and header', () => {
     expect(state.form.systemDownloads.value).toBe('');
   });
 
+  it('falls back to an empty path when the system lookup returns null', async () => {
+    state.invoke.mockResolvedValue(null);
+    mountDialog();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(state.form.systemDownloads.value).toBe('');
+  });
+
   it('renders create and edit titles', async () => {
     mountDialog();
     expect(wrapper!.text()).toContain('youtube.subscribeConfigTitle');
@@ -247,6 +259,14 @@ describe('mount and header', () => {
     expect(img.attributes('alt')).toBe('Channel');
     await img.trigger('error');
     expect(wrapper!.find('img').exists()).toBe(false);
+  });
+
+  it('feeds the channel thumbnail into the remote avatar helper', () => {
+    mountDialog({
+      channel: { channelId: 'UC9', channelTitle: 'Other', channelThumbnail: 'other.jpg' }
+    });
+
+    expect(state.avatarSource.value).toBe('other.jpg');
   });
 });
 
@@ -281,7 +301,6 @@ describe('form wiring', () => {
     wrapper!.findComponent(ScopeStub).vm.$emit('update:modelValue', true);
     await wrapper!.vm.$nextTick();
     expect(state.form.downloadAll.value).toBe(true);
-
     const format = wrapper!.findComponent(FormatStub);
     format.vm.$emit('update:kind', 'video');
     format.vm.$emit('update:format', 'mp4');
@@ -300,6 +319,20 @@ describe('form wiring', () => {
     expect(state.form.trimStart.value).toBe(5);
     expect(state.form.trimEnd.value).toBe(9);
     expect(state.form.sponsorBlock.value).toBe('remove');
+  });
+
+  it('binds the metadata fields', async () => {
+    mountDialog();
+    const metadata = wrapper!.findComponent(MetadataStub);
+
+    metadata.vm.$emit('update:artist', 'Artist');
+    metadata.vm.$emit('update:album', 'Album');
+    metadata.vm.$emit('update:year', '2020');
+    await wrapper!.vm.$nextTick();
+
+    expect(state.form.artist.value).toBe('Artist');
+    expect(state.form.album.value).toBe('Album');
+    expect(state.form.year.value).toBe('2020');
   });
 
   it('binds cover, subtitle and output fields', async () => {

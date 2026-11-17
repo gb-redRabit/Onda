@@ -760,3 +760,27 @@ describe('context menu leave guard', () => {
     expect(menuEl()).not.toBeNull();
   });
 });
+
+describe('pointer event guards', () => {
+  it('keeps the menu and submenu open for clicks and context menus inside them', async () => {
+    wrapper = mount(ContextMenu, { attachTo: document.body });
+    await openMenu();
+    items()[3].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+
+    const menu = menuEl()!;
+    const submenu = document.body.querySelector('#context-submenu') as HTMLElement;
+    const menuContext = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    const submenuContext = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+
+    menu.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    menu.dispatchEvent(menuContext);
+    submenu.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    submenu.dispatchEvent(submenuContext);
+    await flush();
+
+    expect(menuContext.defaultPrevented).toBe(true);
+    expect(submenuContext.defaultPrevented).toBe(true);
+    expect(state.ui.contextMenu).not.toBeNull();
+  });
+});

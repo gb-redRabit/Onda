@@ -335,6 +335,12 @@ describe('video frames', () => {
     );
     expect(state.rm).toHaveBeenCalled();
   });
+
+  it('keeps the extracted frame when temp cleanup fails', async () => {
+    state.rm.mockRejectedValueOnce(new Error('EBUSY'));
+
+    await expect(videoFrameThumbnail('D:/a.mp4', 100)).resolves.toEqual(Buffer.from('sharp'));
+  });
 });
 
 describe('batch thumbnails', () => {
@@ -350,6 +356,14 @@ describe('batch thumbnails', () => {
     expect(result['D:/b.png']).toMatch(/^data:image\/jpeg;base64,/);
     expect(state.mkdir).toHaveBeenCalled();
     expect(state.cpus).toHaveBeenCalled();
+  });
+
+  it('keeps building thumbnails when the cache directory cannot be created', async () => {
+    state.mkdir.mockRejectedValue(new Error('EACCES'));
+
+    const result = await batchThumbnails(['D:/a.png'], 64);
+
+    expect(result['D:/a.png']).toMatch(/^data:image\/jpeg;base64,/);
   });
 
   it('skips entries that fail and logs them', async () => {
