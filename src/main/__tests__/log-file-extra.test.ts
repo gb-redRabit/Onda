@@ -187,3 +187,35 @@ describe('environment info', () => {
     expect(info.os).toBeTruthy();
   });
 });
+
+describe('log file failure branches', () => {
+  it('logs a stackless Error by its message', async () => {
+    console.error(Object.assign(new Error('no stack here'), { stack: undefined }));
+    await flush();
+
+    expect(readLog()).toContain('no stack here');
+  });
+
+  it('falls back to an empty tail when the log files are missing', async () => {
+    resetLogs();
+    mkdirSync(getLogDir(), { recursive: true });
+
+    expect(await readLogTail()).toBe('');
+  });
+
+  it('tolerates missing node and v8 versions', () => {
+    const nodeDescriptor = Object.getOwnPropertyDescriptor(process.versions, 'node');
+    const v8Descriptor = Object.getOwnPropertyDescriptor(process.versions, 'v8');
+    Object.defineProperty(process.versions, 'node', { configurable: true, value: undefined });
+    Object.defineProperty(process.versions, 'v8', { configurable: true, value: undefined });
+
+    try {
+      const info = getEnvironmentInfo();
+      expect(info.node).toBe('');
+      expect(info.v8).toBe('');
+    } finally {
+      if (nodeDescriptor) Object.defineProperty(process.versions, 'node', nodeDescriptor);
+      if (v8Descriptor) Object.defineProperty(process.versions, 'v8', v8Descriptor);
+    }
+  });
+});

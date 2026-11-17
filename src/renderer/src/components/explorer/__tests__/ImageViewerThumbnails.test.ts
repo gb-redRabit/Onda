@@ -310,3 +310,39 @@ describe('thumbnail loading', () => {
     expect(state.invoke).not.toHaveBeenCalled();
   });
 });
+
+describe('ImageViewerThumbnails defensive branches', () => {
+  it('skips an empty pending batch', async () => {
+    mountThumbs();
+    await flush();
+    state.invoke.mockClear();
+
+    await (wrapper!.vm as unknown as { flushBatch: () => Promise<void> }).flushBatch();
+
+    expect(state.invoke).not.toHaveBeenCalled();
+  });
+
+  it('disconnects the observer when thumbnails are hidden', async () => {
+    mountThumbs();
+    await flush();
+    const observer = state.io;
+
+    await wrapper!.setProps({ showThumbs: false });
+    await flush();
+
+    expect(observer.disconnect).toHaveBeenCalled();
+  });
+
+  it('preloads only uncached nearby files', async () => {
+    const cache = reactive(new Map<string, string>());
+    for (const f of files(5)) cache.set(f.path, 'data:x');
+    mountThumbs({ thumbCache: cache });
+    await flush();
+    state.invoke.mockClear();
+
+    await wrapper!.setProps({ currentIndex: 2 });
+    await flush();
+
+    expect(state.invoke).not.toHaveBeenCalled();
+  });
+});

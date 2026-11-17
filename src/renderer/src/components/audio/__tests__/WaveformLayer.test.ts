@@ -353,3 +353,48 @@ describe('cleanup', () => {
     expect(state.cancelRaf).toHaveBeenCalled();
   });
 });
+
+describe('WaveformLayer edge inputs', () => {
+  it('falls back to an empty waveform without a preload bridge', async () => {
+    delete (window as { api?: unknown }).api;
+    state.hasCached.mockReturnValue(false);
+    mountLayer({ path: 'C:/a.mp3', duration: 10 });
+    await flush();
+
+    expect(state.setCached).toHaveBeenCalledWith('C:/a.mp3', null);
+    expect(() => flushFrame()).not.toThrow();
+  });
+
+  it('draws with a zero device pixel ratio', async () => {
+    Object.defineProperty(window, 'devicePixelRatio', { configurable: true, value: 0 });
+    state.hasCached.mockReturnValue(true);
+    mountLayer({ path: 'C:/a.mp3' });
+    await flush();
+    sizeCanvas();
+    flushFrame();
+
+    expect(state.ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 0, 0);
+  });
+
+  it('treats an undefined progress as zero', async () => {
+    state.hasCached.mockReturnValue(true);
+    mountLayer({ path: 'C:/a.mp3', progress: undefined });
+    await flush();
+    sizeCanvas();
+    flushFrame();
+
+    expect(state.ctx.clip).not.toHaveBeenCalled();
+    expect(state.playedColor).not.toHaveBeenCalled();
+  });
+
+  it('ignores drawing after the canvas is gone', async () => {
+    state.hasCached.mockReturnValue(true);
+    mountLayer({ path: 'C:/a.mp3' });
+    await flush();
+    const instance = wrapper!.vm as unknown as { draw: () => void };
+    wrapper!.unmount();
+    wrapper = null;
+
+    expect(() => instance.draw()).not.toThrow();
+  });
+});

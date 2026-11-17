@@ -442,3 +442,33 @@ describe('overlay closing', () => {
     expect(() => vi.advanceTimersByTime(3000)).not.toThrow();
   });
 });
+
+describe('MusicBrainzLookup watch without full metadata', () => {
+  it('parses a changed query without a track', async () => {
+    mountView();
+    state.lookup.parseInitial.mockClear();
+    state.lookup.search.mockClear();
+
+    await wrapper!.setProps({ initialQuery: 'only query' });
+    await wrapper!.vm.$nextTick();
+
+    expect(state.lookup.parseInitial).toHaveBeenCalledWith('only query');
+    expect(state.lookup.search).toHaveBeenCalled();
+  });
+
+  it('keeps existing fields when changed metadata is empty', async () => {
+    mountView({ track: track({ metadata: {} }) });
+    state.lookup.queryArtist.value = 'Keep';
+    state.lookup.queryAlbum.value = 'KeepAlbum';
+    state.lookup.queryTitle.value = 'KeepTitle';
+    state.lookup.queryYear.value = '';
+
+    await wrapper!.setProps({ initialQuery: 'fallback' });
+    await wrapper!.vm.$nextTick();
+
+    expect(state.lookup.queryArtist.value).toBe('Keep');
+    expect(state.lookup.queryAlbum.value).toBe('KeepAlbum');
+    expect(state.lookup.queryTitle.value).toBe('KeepTitle');
+    expect(state.lookup.queryYear.value).toBe('');
+  });
+});

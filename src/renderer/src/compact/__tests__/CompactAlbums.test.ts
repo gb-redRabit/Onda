@@ -253,3 +253,47 @@ describe('album detail', () => {
     expect(wrapper!.find('[data-testid="compact-album-detail"]').exists()).toBe(false);
   });
 });
+
+describe('CompactAlbums defensive edges', () => {
+  it('ignores non-element measurements and missing titles', () => {
+    setup();
+    const vm = wrapper!.vm as unknown as {
+      measureDetailRow: (node: unknown) => void;
+      trackTitle: (track: unknown) => string;
+      addFrom: (album: unknown, index: number) => void;
+    };
+
+    expect(() => vm.measureDetailRow(null)).not.toThrow();
+    expect(vm.trackTitle(undefined)).toBe('');
+
+    const album = ['Solo', [track('one')]];
+    vm.addFrom(album, 9);
+    expect(state.player.addToQueue).not.toHaveBeenCalled();
+  });
+
+  it('reports a zero detail count without a selection', () => {
+    setup();
+
+    expect(state.options[1].count()).toBe(0);
+  });
+
+  it('shows a dash when album metadata has no artist', async () => {
+    state.library.albums = [['NoMeta', [track('n', {})]]];
+    rows().push({ index: 0, key: '0', start: 0 });
+    setup();
+
+    await albumButton(0).trigger('click');
+
+    expect(wrapper!.text()).toContain('\u2014');
+  });
+});
+
+describe('CompactAlbums measurement callback', () => {
+  it('estimates the detail row height through the callback', () => {
+    setup();
+
+    expect(state.options[1].measureElement({ getBoundingClientRect: () => ({ height: 32 }) })).toBe(
+      32
+    );
+  });
+});

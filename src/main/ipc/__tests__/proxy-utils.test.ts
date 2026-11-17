@@ -10,11 +10,15 @@ interface ProxyConfig {
 }
 
 let network: Record<string, unknown> | undefined;
+let storeFails = false;
 
 vi.mock('../cover/cover-cache', () => ({
-  getStore: async () => ({
-    get: (key: string) => (key === 'network' ? network : undefined)
-  })
+  getStore: async () => {
+    if (storeFails) throw new Error('store down');
+    return {
+      get: (key: string) => (key === 'network' ? network : undefined)
+    };
+  }
 }));
 
 const { readProxyArgs, readUserAgentArgs, readNetworkArgs, readSpeedLimitArgs } =
@@ -30,6 +34,7 @@ const proxy = (over: ProxyConfig = {}): ProxyConfig => ({
 
 beforeEach(() => {
   network = undefined;
+  storeFails = false;
 });
 
 describe('proxy-utils', () => {
@@ -99,6 +104,34 @@ describe('proxy-utils', () => {
     expect(await readSpeedLimitArgs()).toEqual(['--limit-rate', '512K']);
 
     network = { downloadSpeedLimit: 0 };
+    expect(await readSpeedLimitArgs()).toEqual([]);
+  });
+});
+
+describe('proxy-utils edge credentials and scopes', () => {
+  it('omits the password and port when unset', async () => {
+    network = { proxy: proxy({ username: 'user', port: 0 }) };
+
+    expect(await readProxyArgs('youtube')).toEqual(['--proxy', 'http://user@10.0.0.1']);
+  });
+
+  it('uses an enabled soundcloud proxy and ignores per-platform for generic', async () => {
+    network = {
+      proxy: proxy({ host: 'global' }),
+      proxyPerPlatform: true,
+      proxyYoutube: proxy({ host: 'yt' }),
+      proxySoundcloud: proxy({ host: 'sc', port: 999 })
+    };
+
+    expect(await readProxyArgs('soundcloud')).toEqual(['--proxy', 'http://sc:999']);
+    expect(await readProxyArgs()).toEqual(['--proxy', 'http://global:8080']);
+  });
+
+  it('falls back when the settings store cannot be read', async () => {
+    storeFails = true;
+
+    expect(await readProxyArgs()).toEqual([]);
+    expect(await readUserAgentArgs()).toEqual([]);
     expect(await readSpeedLimitArgs()).toEqual([]);
   });
 });

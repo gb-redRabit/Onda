@@ -286,3 +286,40 @@ describe('state and closing', () => {
     expect(wrapper!.emitted('update:modelValue')?.at(-1)).toEqual([false]);
   });
 });
+
+describe('RadioAddDialog file and selection edges', () => {
+  it('ignores change events without a file', async () => {
+    mountDialog();
+    const input = wrapper!.get('input[type="file"]');
+    Object.defineProperty(input.element, 'files', { configurable: true, value: [] });
+
+    await input.trigger('change');
+
+    expect(state.parseRadioFile).not.toHaveBeenCalled();
+  });
+
+  it('reads an undefined file result as an empty string', async () => {
+    (state as unknown as { fileText?: string }).fileText = undefined;
+    mountDialog();
+    await chooseFile();
+
+    expect(state.parseRadioFile).toHaveBeenCalledWith('stations.m3u', '');
+  });
+
+  it('re-selects stations and ignores adding an empty selection', async () => {
+    mountDialog();
+    await chooseFile();
+    const boxes = wrapper!.findAll('input[type="checkbox"]');
+    await boxes[0].trigger('change');
+    await boxes[1].trigger('change');
+    expect(addSelectedButton().attributes('disabled')).toBeDefined();
+
+    await boxes[0].trigger('change');
+    expect(addSelectedButton().attributes('disabled')).toBeUndefined();
+
+    await boxes[0].trigger('change');
+    const vm = wrapper!.vm as unknown as { addFromFile: () => Promise<void> };
+    await vm.addFromFile();
+    expect(state.addStations).not.toHaveBeenCalled();
+  });
+});
