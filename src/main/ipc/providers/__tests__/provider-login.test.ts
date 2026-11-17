@@ -281,3 +281,19 @@ describe('startProviderLogin - extra branches', () => {
     expect(setProviderRefresh).not.toHaveBeenCalled();
   });
 });
+
+describe('startProviderLogin cookie edge filters', () => {
+  it('skips empty cookie values and cookies without a domain', async () => {
+    const promise = startProviderLogin('gdrive');
+    const win = fakeWindow();
+    h.state.cookies = [
+      { domain: '.google.com', name: 'EMPTY', value: '' },
+      { domain: undefined as unknown as string, name: 'NODOMAIN', value: 'x' },
+      { domain: '.google.com', name: 'SID', value: 'ok' }
+    ];
+    win?.emit('closed');
+
+    await expect(promise).resolves.toEqual({ success: true });
+    expect(setProviderCookie).toHaveBeenCalledWith('gdrive', 'SID=ok');
+  });
+});
