@@ -29,16 +29,17 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/renderer/src/locales/**'
       ],
-      // Progi są minimalnym progiem regresji. Po włączeniu `.vue` do pomiaru
-      // mianownik urósł o ~11.6k linii (w tym nieprzetestowane widoki narzędzi),
-      // więc progi są przeliczone na nowy mianownik, a nie obniżone względem
-      // pokrytego kodu.
-      // Pomiar (2026-10-28): linie 33.38%, instrukcje 32.63%, funkcje 26.52%, gałęzie 28.98%.
+      // Progi są ratchetem: trzymają pokrycie blisko aktualnego poziomu, żeby
+      // kolejne zmiany nie mogły go po cichu obniżyć. Margines (~0.3 pp linii,
+      // ~0.3 pp gałęzi) pokrywa różnice platformowe (Windows pomija testy
+      // sieciowe, macOS/Linux mają inne ścieżki systemowe).
+      // Pomiar (2026-11-17, Windows): linie 99.80%, instrukcje 99.40%,
+      // funkcje 98.95%, gałęzie 97.84%.
       thresholds: {
-        lines: 32,
-        statements: 31,
-        functions: 26,
-        branches: 28
+        lines: 99.5,
+        statements: 99,
+        functions: 98.5,
+        branches: 97.5
       }
     },
     projects: [

@@ -46,8 +46,13 @@ const outside = join(dir, 'outside');
 const { mkdirSync } = await import('node:fs');
 mkdirSync(allowed, { recursive: true });
 mkdirSync(outside, { recursive: true });
-const allowedFile = join(allowed, 'photo.jpg');
-const outsideFile = join(outside, 'secret.jpg');
+// Canonicalise the roots: Windows CI uses 8.3 names (RUNNER~1) and macOS
+// maps /var to /private/var, so raw mkdtemp paths do not match the handler's
+// realpath-based allowlist.
+const allowedRoot = realpathSync(allowed);
+const outsideRoot = realpathSync(outside);
+const allowedFile = join(allowedRoot, 'photo.jpg');
+const outsideFile = join(outsideRoot, 'secret.jpg');
 writeFileSync(allowedFile, 'x');
 writeFileSync(outsideFile, 'x');
 
