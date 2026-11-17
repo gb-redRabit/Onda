@@ -200,4 +200,27 @@ describe('PipCardLayout', () => {
     expect(wrapper.find('[data-testid="eq"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="volume"]').exists()).toBe(false);
   });
+
+  it('stops seek bar and volume column double clicks from bubbling out', async () => {
+    const onDbl = vi.fn();
+    document.addEventListener('dblclick', onDbl);
+    try {
+      const wrapper = mount(PipCardLayout, {
+        props: { state: state(ALL) },
+        global: { stubs },
+        attachTo: document.body
+      });
+      const fire = (el: Element): boolean =>
+        el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+
+      fire(wrapper.get('[data-testid="pip-progress"]').element);
+      const column = wrapper.findAll('div').find((node) => node.classes().includes('items-end'))!;
+      fire(column.element);
+
+      expect(onDbl).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      document.removeEventListener('dblclick', onDbl);
+    }
+  });
 });

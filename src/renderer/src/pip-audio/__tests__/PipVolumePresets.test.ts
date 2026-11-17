@@ -132,6 +132,24 @@ describe('PipVolume', () => {
 
     expect(wrapper.get('[data-testid="pip-mute"]').classes()).toContain('vol-label');
   });
+
+  it('stops volume clicks and double clicks from bubbling out', async () => {
+    const onEvent = vi.fn();
+    document.addEventListener('click', onEvent);
+    document.addEventListener('dblclick', onEvent);
+    try {
+      const wrapper = mount(PipVolume, { props: props(), attachTo: document.body });
+
+      await wrapper.get('[data-testid="pip-volume"]').trigger('click');
+      await wrapper.get('[data-testid="pip-volume"]').trigger('dblclick');
+
+      expect(onEvent).not.toHaveBeenCalled();
+      wrapper.unmount();
+    } finally {
+      document.removeEventListener('click', onEvent);
+      document.removeEventListener('dblclick', onEvent);
+    }
+  });
 });
 
 beforeEach(() => {

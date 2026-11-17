@@ -266,6 +266,18 @@ describe('list mode', () => {
     expect(state.listOptions.estimateSize()).toBe(56);
     expect(wrapper!.html()).toContain('height: 56px');
   });
+
+  it('exposes scroll targets for the list and grid virtualizers', () => {
+    mountTab();
+    expect(state.listOptions.scrollEl()).toBeInstanceOf(HTMLElement);
+    expect(state.listOptions.count()).toBe(2);
+
+    wrapper!.unmount();
+    mountTab({ viewMode: 'grid' });
+    expect(state.rowOptions.scrollEl()).toBeInstanceOf(HTMLElement);
+    expect(state.rowOptions.count()).toBe(1);
+    expect(state.rowOptions.estimateSize()).toBe(256);
+  });
 });
 
 describe('grid mode', () => {

@@ -203,6 +203,7 @@ describe('extractEmbedded', () => {
 
   it('copies a text subtitle without transcoding', async () => {
     state.runCommand.mockResolvedValueOnce('subrip\n').mockResolvedValueOnce('');
+    state.unlink.mockRejectedValue(new Error('EBUSY'));
     const h = await load();
     expect(await h['subtitles:extractEmbedded']({}, 'C:/a.mkv', 1)).toEqual({
       content: 'content',
@@ -247,6 +248,7 @@ describe('extractEmbedded', () => {
 
   it('transcodes to SRT when the direct copy fails', async () => {
     state.uniqueId.mockReturnValue('u1');
+    state.unlink.mockRejectedValue(new Error('EBUSY'));
     state.runCommand
       .mockResolvedValueOnce('subrip')
       .mockRejectedValueOnce(new Error('copy failed\nmore'))
@@ -267,6 +269,7 @@ describe('extractEmbedded', () => {
 
   it('transcodes binary subtitle codecs directly', async () => {
     state.runCommand.mockResolvedValueOnce('pgs_subtitle');
+    state.unlink.mockRejectedValue(new Error('EBUSY'));
     const h = await load();
     expect(await h['subtitles:extractEmbedded']({}, 'C:/a.mkv', 3)).toEqual({
       content: 'content',
@@ -369,6 +372,7 @@ describe('extractAttachments', () => {
     state.readFile
       .mockResolvedValueOnce(Buffer.from([1, 2, 3]))
       .mockResolvedValueOnce(Buffer.from([4, 5]));
+    state.rm.mockRejectedValueOnce(new Error('EBUSY'));
     const h = await load();
 
     expect(await h['subtitles:extractAttachments']({}, 'C:/a.mkv')).toEqual([

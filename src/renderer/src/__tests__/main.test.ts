@@ -31,6 +31,7 @@ const state = vi.hoisted(() => ({
   loggerWarn: vi.fn(),
   directive: vi.fn(),
   idleCallback: null as any,
+  prefetchFails: false,
   rejectionHandlers: [] as Array<(event: any) => void>
 }));
 
@@ -139,10 +140,12 @@ vi.mock('../modules/ToolsModule', () => ({
   }
 }));
 vi.mock('@renderer/views/LibraryView.vue', async () => {
+  if (state.prefetchFails) throw new Error('library chunk');
   const { defineComponent, h } = await import('vue');
   return { default: defineComponent({ setup: () => () => h('div') }) };
 });
 vi.mock('@renderer/views/OnlineView.vue', async () => {
+  if (state.prefetchFails) throw new Error('online chunk');
   const { defineComponent, h } = await import('vue');
   return { default: defineComponent({ setup: () => () => h('div') }) };
 });
@@ -187,6 +190,7 @@ beforeEach(() => {
   state.loggerWarn.mockReset();
   state.directive.mockReset();
   state.idleCallback = null;
+  state.prefetchFails = false;
   vi.stubGlobal(
     'requestIdleCallback',
     vi.fn((callback: () => void) => {
@@ -356,6 +360,28 @@ describe('unhandled rejections', () => {
 });
 
 describe('prefetching', () => {
+  it('logs failed route prefetches', async () => {
+    vi.useFakeTimers();
+    state.prefetchFails = true;
+    delete (window as any).requestIdleCallback;
+    await loadMain();
+
+    await vi.advanceTimersByTimeAsync(2500);
+    await vi.advanceTimersByTimeAsync(0);
+    await Promise.resolve();
+
+    expect(state.loggerWarn).toHaveBeenCalledWith(
+      'app',
+      'LibraryView prefetch failed',
+      expect.anything()
+    );
+    expect(state.loggerWarn).toHaveBeenCalledWith(
+      'app',
+      'OnlineView prefetch failed',
+      expect.anything()
+    );
+  });
+
   it('falls back to a timer when requestIdleCallback is unavailable', async () => {
     vi.useFakeTimers();
     delete (window as any).requestIdleCallback;

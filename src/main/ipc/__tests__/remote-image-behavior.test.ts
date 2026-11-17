@@ -433,3 +433,57 @@ describe('remote image edge fallbacks', () => {
     await expect(getRemoteImage(URL_A, request)).resolves.toBeNull();
   });
 });
+
+describe('remote image timeout', () => {
+  function hangingRequest() {
+    const signals: AbortSignal[] = [];
+    const request = vi.fn(
+      (_url: string, signal: AbortSignal) =>
+        new Promise<never>((_resolve, reject) => {
+          signals.push(signal);
+          signal.addEventListener('abort', () => reject(new Error('aborted')));
+        })
+    );
+    return { request, signals };
+  }
+
+  it('aborts byte fetches after the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const { request, signals } = hangingRequest();
+      const promise = fetchRemoteImageBytes(URL_A, request as never);
+
+      await vi.advanceTimersByTimeAsync(15_000);
+
+      await expect(promise).resolves.toBeNull();
+      expect(signals[0]?.aborted).toBe(true);
+      expect(state.loggerWarn).toHaveBeenCalledWith(
+        'media',
+        expect.stringContaining('remote image bytes failed'),
+        expect.any(Error)
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('aborts data URL fetches after the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      const { request, signals } = hangingRequest();
+      const promise = getRemoteImage(`${URL_A}?timeout=1`, request as never);
+
+      await vi.advanceTimersByTimeAsync(15_000);
+
+      await expect(promise).resolves.toBeNull();
+      expect(signals[0]?.aborted).toBe(true);
+      expect(state.loggerWarn).toHaveBeenCalledWith(
+        'media',
+        expect.stringContaining('remote image failed'),
+        expect.any(Error)
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -75,4 +75,44 @@ describe('MediaCover still → video hover', () => {
     expect(wrapper.find('video').exists()).toBe(false);
     expect(wrapper.find('img[src^="data:image"]').exists()).toBe(true);
   });
+
+  it('returns an empty source when no cover data is available', async () => {
+    covers.getCover.mockReturnValue({ type: null, data: null });
+    const wrapper = mount(MediaCover, { props: { path: 'D:/media/a.mp3' } });
+    await nextTick();
+
+    expect((wrapper.vm as unknown as { src: string }).src).toBe('');
+    expect(wrapper.find('video').exists()).toBe(false);
+  });
+
+  it('ignores a rejected autoplay promise', async () => {
+    const play = HTMLMediaElement.prototype.play as unknown as ReturnType<typeof vi.fn>;
+    play.mockRejectedValueOnce(new Error('blocked'));
+    const wrapper = mount(MediaCover, {
+      props: { path: 'D:/media/a.mp4', autoplay: true }
+    });
+    await nextTick();
+
+    await wrapper.setProps({ autoplay: false });
+    await wrapper.setProps({ autoplay: true });
+    await nextTick();
+
+    expect(play).toHaveBeenCalled();
+    expect(wrapper.find('video').exists()).toBe(true);
+  });
+
+  it('applies autoplay when the cover becomes a video', async () => {
+    covers.getCover.mockImplementation((path: string) => ({
+      type: path.endsWith('.mp4') ? 'video' : null,
+      data: path.endsWith('.mp4') ? path : null
+    }));
+    const wrapper = mount(MediaCover, { props: { path: 'D:/media/a.mp3', autoplay: true } });
+    await nextTick();
+
+    await wrapper.setProps({ path: 'D:/media/a.mp4' });
+    await nextTick();
+    await nextTick();
+
+    expect(wrapper.find('video').exists()).toBe(true);
+  });
 });

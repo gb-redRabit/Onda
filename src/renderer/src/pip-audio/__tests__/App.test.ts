@@ -155,4 +155,23 @@ describe('audio PiP App', () => {
 
     expect(h.state.showMain).not.toHaveBeenCalled();
   });
+
+  it('tolerates accent updates during state setup', () => {
+    h.usePipAudioState.mockImplementationOnce((handlers: { updateAccent: () => void }) => {
+      handlers.updateAccent();
+      return h.state;
+    });
+
+    expect(() => mountApp()).not.toThrow();
+  });
+
+  it('keeps the peek bar double click from opening the main window', async () => {
+    h.state = makeState({ peeked: ref(true), edge: ref('left') });
+    h.usePipAudioState.mockReturnValue(h.state);
+    const wrapper = mountApp();
+
+    await wrapper.get('[role="slider"]').trigger('dblclick');
+
+    expect(h.state.showMain).not.toHaveBeenCalled();
+  });
 });

@@ -379,6 +379,21 @@ describe('context menu and keyboard', () => {
     await wrapper!.get('[data-app-statusbar]').trigger('keydown', { key: 'a' });
     expect(state.open).not.toHaveBeenCalled();
   });
+
+  it('passes no-op event methods for keyboard-opened menus', async () => {
+    state.open.mockImplementationOnce((event: MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    mountStatusBar();
+    await flush();
+
+    const bar = wrapper!.get('[data-app-statusbar]');
+    expect(() =>
+      bar.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }))
+    ).not.toThrow();
+    expect(state.open).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('status bar edge branches', () => {
