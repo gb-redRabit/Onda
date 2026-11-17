@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   gridDestroy: vi.fn(),
   rowItems: [] as any[],
   rowTotal: 0,
+  rowOptions: null as any,
   promptVisible: null as any,
   promptIsConfirm: null as any,
   promptMessage: null as any,
@@ -52,11 +53,13 @@ vi.mock('@renderer/composables/useVirtualGrid', () => ({
   })
 }));
 vi.mock('@renderer/composables/useVirtualList', () => ({
-  useVirtualList: () =>
-    ref({
+  useVirtualList: (options: unknown) => {
+    state.rowOptions = options;
+    return ref({
       getVirtualItems: () => state.rowItems,
       getTotalSize: () => state.rowTotal
-    })
+    });
+  }
 }));
 
 const CardStub = defineComponent({
@@ -386,5 +389,32 @@ describe('prompt dialog and cleanup', () => {
     wrapper!.unmount();
     wrapper = null;
     expect(state.gridDestroy).toHaveBeenCalled();
+  });
+});
+
+describe('WebcastSavedPlaylists virtualizer and play guards', () => {
+  it('computes empty rows without an expanded playlist', () => {
+    mountView();
+
+    expect(state.rowOptions.count()).toBe(0);
+    expect(state.rowOptions.estimateSize()).toBe(230);
+    expect(state.rowOptions.scrollEl()).toBeNull();
+  });
+
+  it('ignores a second click while the playlist is already playing', async () => {
+    let resolvePlay: () => void = () => {};
+    state.yt.playSavedPlaylist.mockImplementation(
+      () => new Promise<void>((resolve) => (resolvePlay = resolve))
+    );
+    mountView();
+    const play = wrapper!.get('button[title="youtube.playAll"]');
+
+    play.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+    play.element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(state.yt.playSavedPlaylist).toHaveBeenCalledTimes(1);
+    resolvePlay();
+    await flushPromises();
   });
 });

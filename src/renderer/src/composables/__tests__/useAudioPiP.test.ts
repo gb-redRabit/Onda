@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
     stopTimeTracking: vi.fn(),
     stopVizTracking: vi.fn()
   },
+  runtimeOptions: null as any,
   dispatchAction: vi.fn(),
   isCoreShell: vi.fn(() => false),
   audioEvents: new Map<string, (value?: unknown) => void>(),
@@ -56,7 +57,10 @@ vi.mock('../audioPipState', () => ({
   resolveAudioPipLayoutOpts: () => state.layout
 }));
 vi.mock('../audioPipRuntime', () => ({
-  createAudioPipRuntime: () => state.runtime
+  createAudioPipRuntime: (options: unknown) => {
+    state.runtimeOptions = options;
+    return state.runtime;
+  }
 }));
 vi.mock('../audioPipActions', () => ({
   dispatchAudioPipAction: state.dispatchAction
@@ -444,5 +448,20 @@ describe('idle window release', () => {
     vi.advanceTimersByTime(5 * 60 * 1000);
 
     expect(state.apiRelease).not.toHaveBeenCalled();
+  });
+});
+
+describe('Audio PiP runtime options and dock', () => {
+  it('exposes runtime callbacks and updates the dock', async () => {
+    const { api } = mountPiP();
+    await nextTick();
+
+    expect(state.runtimeOptions.isActive()).toBe(false);
+    expect(state.runtimeOptions.getState()).toBe(state.pipState);
+
+    api.setDock('top-left');
+
+    expect(api.dock.value).toBe('top-left');
+    expect(state.runtimeOptions.isActive()).toBe(false);
   });
 });
