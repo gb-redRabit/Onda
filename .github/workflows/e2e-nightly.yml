@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
+  # Samokontrola: zmiana tego pliku uruchamia pełny E2E od razu, więc literówka
+  # w workflow nie czeka do najbliższego crona, żeby się ujawnić.
+  push:
+    paths:
+      - '.github/workflows/e2e-nightly.yml'
 
 concurrency:
   group: e2e-nightly
