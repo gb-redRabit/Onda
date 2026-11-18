@@ -155,7 +155,6 @@ mac:
   #   2. provide CSC_LINK + CSC_KEY_PASSWORD and CSC_IDENTITY_AUTO_DISCOVERY=true,
   #   3. provide APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD + APPLE_TEAM_ID and set
   #      `notarize: true` (CI does both via --config when MAC_IDENTITY + CSC_LINK exist).
-  # See RELEASE.md §6.
   identity: '-'
   # Hardened runtime stays on. Ad-hoc signing cannot satisfy library validation
   # for Electron's own framework, hence disable-library-validation in

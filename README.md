@@ -192,7 +192,7 @@ npm run build:mac    # DMG (macOS)
 npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-> **Signing:** macOS builds are ad-hoc signed (an unsigned bundle is rejected as "damaged" on Apple Silicon), Windows builds are unsigned, so SmartScreen and Gatekeeper still warn. A real Authenticode certificate and an Apple Developer ID remove the warnings - see `RELEASE.md` §6. Until then, keep `verifyUpdateCodeSignature: false` so `electron-updater` accepts its own unsigned updates.
+> **Signing:** macOS builds are ad-hoc signed (an unsigned bundle is rejected as "damaged" on Apple Silicon), Windows builds are unsigned, so SmartScreen and Gatekeeper still warn. A real Authenticode certificate and an Apple Developer ID remove the warnings. Until then, keep `verifyUpdateCodeSignature: false` so `electron-updater` accepts its own unsigned updates.
 >
 > **macOS says "Onda is damaged" or "unidentified developer":** right-click the app and choose **Open**, or clear the quarantine flag with `xattr -dr com.apple.quarantine /Applications/Onda.app`. Builds are not notarized yet.
 
@@ -229,7 +229,7 @@ Onda treats the renderer as untrusted and enforces its boundaries in the main pr
 
 ### Contributing
 
-Issues and pull requests are welcome. Before committing, run `npm run build` and `npm test`. We follow **Conventional Commits**; releases are managed by **release-please** (`feat` → minor, `fix` → patch). Never run `npm version` on `main` — `npm run version:check` enforces this. See [`RELEASE.md`](./RELEASE.md).
+Issues and pull requests are welcome. Before committing, run `npm run build` and `npm test`. We follow **Conventional Commits**; releases are managed by **release-please** (`feat` → minor, `fix` → patch). Never run `npm version` on `main` — `npm run version:check` enforces this.
 
 By contributing, you agree that your contribution is licensed under the PolyForm Noncommercial License 1.0.0.
 
@@ -416,7 +416,7 @@ npm run build:mac    # DMG (macOS)
 npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-> **Podpisywanie:** buildy na macOS są podpisane ad-hoc (niepodpisany bundle jest odrzucany jako „uszkodzony” na Apple Silicon), a buildy na Windows są niepodpisane — SmartScreen i Gatekeeper nadal ostrzegają. Prawdziwy certyfikat Authenticode i Apple Developer ID usuwają ostrzeżenia — patrz `RELEASE.md` §6. Do tego czasu trzymaj `verifyUpdateCodeSignature: false`, aby `electron-updater` przyjmował własne niepodpisane aktualizacje.
+> **Podpisywanie:** buildy na macOS są podpisane ad-hoc (niepodpisany bundle jest odrzucany jako „uszkodzony” na Apple Silicon), a buildy na Windows są niepodpisane — SmartScreen i Gatekeeper nadal ostrzegają. Prawdziwy certyfikat Authenticode i Apple Developer ID usuwają ostrzeżenia. Do tego czasu trzymaj `verifyUpdateCodeSignature: false`, aby `electron-updater` przyjmował własne niepodpisane aktualizacje.
 >
 > **macOS pokazuje „Onda jest uszkodzona” albo „niezidentyfikowany deweloper”:** kliknij aplikację prawym przyciskiem i wybierz **Otwórz**, albo zdejmij flagę kwarantanny: `xattr -dr com.apple.quarantine /Applications/Onda.app`. Buildy nie są jeszcze notaryzowane.
 
@@ -453,7 +453,7 @@ Onda traktuje renderer jako niezaufany i egzekwuje granice w procesie głównym:
 
 ### Współpraca
 
-Zgłoszenia i pull requesty mile widziane. Przed commitem uruchom `npm run build` i `npm test`. Stosujemy **Conventional Commits**, a wydaniami zarządza **release-please** (`feat` → minor, `fix` → patch). Nie uruchamiaj `npm version` na `main` — pilnuje tego `npm run version:check`. Szczegóły: [`RELEASE.md`](./RELEASE.md).
+Zgłoszenia i pull requesty mile widziane. Przed commitem uruchom `npm run build` i `npm test`. Stosujemy **Conventional Commits**, a wydaniami zarządza **release-please** (`feat` → minor, `fix` → patch). Nie uruchamiaj `npm version` na `main` — pilnuje tego `npm run version:check`.
 
 Wysyłając zmianę, zgadzasz się na licencjonowanie swojego wkładu na warunkach PolyForm Noncommercial License 1.0.0.
 

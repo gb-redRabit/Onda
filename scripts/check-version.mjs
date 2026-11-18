@@ -75,7 +75,7 @@ if (version && latestTagVersion) {
         `package.json says ${version} but the newest tag is ${latestTag} and the last ` +
           `commit touching the version was ${subject ? `"${subject}"` : 'unknown'}. ` +
           'Only release-please may move the version — revert any hand edit and let the ' +
-          'release PR set it (see RELEASE.md §2).'
+          'release PR set it.'
       );
     }
   }

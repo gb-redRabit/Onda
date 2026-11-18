@@ -56,7 +56,7 @@ jobs:
 
       # release-please owns the version. This fails if someone hand-edited
       # package.json, which is what makes the repo and the published release
-      # disagree. See RELEASE.md §2.
+      # disagree: release-please is the only version owner.
       - name: Check version ownership
         run: npm run version:check
 

@@ -2,7 +2,7 @@ version: 2
 
 # Release automation owns the version; Dependabot is deliberately limited to
 # non-major upgrades so an Electron 44 or Vue 4 cannot land unattended on a
-# project whose release flow is tuned to the current major. See RELEASE.md.
+# project whose release flow is tuned to the current major.
 updates:
   # Application dependencies
   - package-ecosystem: npm
