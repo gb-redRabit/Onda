@@ -98,6 +98,89 @@ const SearchBarStub = defineComponent({
   emits: ['update:modelValue', 'submit', 'toggle-batch'],
   template: '<div data-testid="search-bar" />'
 });
+vi.mock('@renderer/components/online/OnlineSubscriptionsPanel.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'subs-panel',
+    props: ['subscriptions', 'loaded', 'checkingChannelId', 'isQueuing'],
+    emits: [
+      'open-channel',
+      'download-all',
+      'check-now',
+      'toggle-auto-download',
+      'open-prefs',
+      'unfollow',
+      'discover'
+    ],
+    template: '<div data-testid="subs-panel" />'
+  }
+}));
+vi.mock('@renderer/components/online/providers/ProviderSubscriptionsPanel.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'provider-subs',
+    emits: ['open'],
+    template: '<div data-testid="provider-subs" />'
+  }
+}));
+vi.mock('@renderer/components/online/providers/ProviderPanel.vue', () => ({
+  __esModule: true,
+  default: { name: 'provider-panel', template: '<div data-testid="provider-panel" />' }
+}));
+vi.mock('@renderer/components/online/OnlineResolvedPanel.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'resolved-panel',
+    props: [
+      'expandedId',
+      'rangeStart',
+      'rangeEnd',
+      'resolvedLoading',
+      'resolvedCapped',
+      'selectedCount',
+      'saved',
+      'saving'
+    ],
+    emits: [
+      'update:expandedId',
+      'update:rangeStart',
+      'update:rangeEnd',
+      'toggle-select',
+      'quick-queue',
+      'options',
+      'open-window',
+      'open-channel',
+      'download-all',
+      'play-all',
+      'save',
+      'clear',
+      'select-all',
+      'select-range',
+      'add-selected',
+      'load-more'
+    ],
+    template: '<div data-testid="resolved-panel" />'
+  }
+}));
+vi.mock('@renderer/components/online/OnlineSearchResultsPanel.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'results-panel',
+    props: ['expandedId'],
+    emits: ['update:expandedId', 'quick-queue', 'options', 'open-window', 'open-channel'],
+    template: '<div data-testid="results-panel" />'
+  }
+}));
+vi.mock('@renderer/components/online/OnlineConfirmDialog.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'confirm-dialog',
+    props: ['title', 'message', 'confirmText', 'cancelText', 'variant'],
+    emits: ['confirm', 'cancel'],
+    template: '<div data-testid="confirm-dialog" />'
+  }
+}));
+
 const BatchStub = defineComponent({
   props: [
     'text',
@@ -123,76 +206,22 @@ const ButtonStub = defineComponent({
   emits: ['click'],
   template: '<button data-testid="online-button" @click="$emit(\'click\')"><slot /></button>'
 });
-const SubsPanelStub = defineComponent({
-  props: ['subscriptions', 'loaded', 'checkingChannelId', 'isQueuing'],
-  emits: [
-    'open-channel',
-    'download-all',
-    'check-now',
-    'toggle-auto-download',
-    'open-prefs',
-    'unfollow',
-    'discover'
-  ],
-  template: '<div data-testid="subs-panel" />'
-});
-const ProviderSubsStub = defineComponent({
-  emits: ['open'],
-  template: '<div data-testid="provider-subs" />'
-});
-const ProviderPanelStub = { template: '<div data-testid="provider-panel" />' };
 const ChannelErrorStub = defineComponent({
   props: ['message'],
   emits: ['retry'],
   template: '<div data-testid="channel-error" />'
-});
-const ResolvedStub = defineComponent({
-  props: [
-    'expandedId',
-    'rangeStart',
-    'rangeEnd',
-    'resolvedLoading',
-    'resolvedCapped',
-    'selectedCount',
-    'saved',
-    'saving'
-  ],
-  emits: [
-    'update:expandedId',
-    'update:rangeStart',
-    'update:rangeEnd',
-    'toggle-select',
-    'quick-queue',
-    'options',
-    'open-window',
-    'open-channel',
-    'download-all',
-    'play-all',
-    'save',
-    'clear',
-    'select-all',
-    'select-range',
-    'add-selected',
-    'load-more'
-  ],
-  template: '<div data-testid="resolved-panel" />'
-});
-const ResultsStub = defineComponent({
-  props: ['expandedId'],
-  emits: ['update:expandedId', 'quick-queue', 'options', 'open-window', 'open-channel'],
-  template: '<div data-testid="results-panel" />'
-});
-const ConfirmStub = defineComponent({
-  props: ['title', 'message', 'confirmText', 'cancelText', 'variant'],
-  emits: ['confirm', 'cancel'],
-  template: '<div data-testid="confirm-dialog" />'
 });
 const AuthStub = { template: '<div data-testid="auth" />' };
 const LoaderStub = { template: '<div data-testid="loader" />' };
 
 let wrapper: VueWrapper | null = null;
 
-function mountView() {
+async function flushAsync(): Promise<void> {
+  await vi.dynamicImportSettled();
+  await flushPromises();
+}
+
+async function mountView() {
   wrapper = mount(OnlineView, {
     global: {
       mocks: { $t: (key: string) => key },
@@ -202,18 +231,13 @@ function mountView() {
         OnlineBatchPanel: BatchStub,
         OnlineViewTabs: TabsStub,
         OnlineButton: ButtonStub,
-        OnlineSubscriptionsPanel: SubsPanelStub,
-        ProviderSubscriptionsPanel: ProviderSubsStub,
-        ProviderPanel: ProviderPanelStub,
         OnlineChannelError: ChannelErrorStub,
-        OnlineResolvedPanel: ResolvedStub,
-        OnlineSearchResultsPanel: ResultsStub,
-        OnlineConfirmDialog: ConfirmStub,
         YTAuthButton: AuthStub,
         Loader: LoaderStub
       }
     }
   });
+  await flushAsync();
   return wrapper;
 }
 
@@ -327,8 +351,8 @@ afterEach(() => {
 });
 
 describe('setup', () => {
-  it('loads saved items and wires dependent composables', () => {
-    mountView();
+  it('loads saved items and wires dependent composables', async () => {
+    await mountView();
     expect(state.saved.ensureLoaded).toHaveBeenCalled();
     expect(state.onlineSearchArgs).toHaveLength(4);
     expect(state.onlineSearchArgs[3]).toBeTypeOf('function');
@@ -341,7 +365,7 @@ describe('setup', () => {
     state.yt.isSearching = true;
     state.yt.subscriptions = [{ id: 's1' }];
     state.batch.batchOpen.value = true;
-    mountView();
+    await mountView();
     await flushPromises();
 
     const header = wrapper!.findComponent(HeaderStub);
@@ -366,7 +390,7 @@ describe('setup', () => {
   });
 
   it('toggles header elevation on scroll and ignores non-scroll targets', async () => {
-    mountView();
+    await mountView();
     const header = wrapper!.findComponent(HeaderStub);
     const root = wrapper!.get('[data-testid="online-view"]');
     Object.defineProperty(root.element, 'scrollTop', { value: 20, configurable: true });
@@ -385,7 +409,7 @@ describe('setup', () => {
   });
 
   it('binds the search input and submit event', async () => {
-    mountView();
+    await mountView();
     const search = wrapper!.findComponent(SearchBarStub);
     search.vm.$emit('update:modelValue', 'query');
     await wrapper!.vm.$nextTick();
@@ -396,7 +420,7 @@ describe('setup', () => {
   });
 
   it('toggles the batch panel and forwards batch bindings', async () => {
-    mountView();
+    await mountView();
     const search = wrapper!.findComponent(SearchBarStub);
     search.vm.$emit('toggle-batch');
     await wrapper!.vm.$nextTick();
@@ -418,7 +442,7 @@ describe('setup', () => {
 
 describe('provider links', () => {
   it('switches to links and clears state when detection succeeds', async () => {
-    mountView();
+    await mountView();
     const handleProviderLink = state.onlineSearchArgs[3] as (url: string) => Promise<boolean>;
     const ok = await handleProviderLink('https://mega.nz/share');
 
@@ -433,7 +457,7 @@ describe('provider links', () => {
 
   it('leaves the view untouched when detection fails', async () => {
     state.providerStore.detect.mockResolvedValue(false);
-    mountView();
+    await mountView();
     const handleProviderLink = state.onlineSearchArgs[3] as (url: string) => Promise<boolean>;
     expect(await handleProviderLink('https://example.com')).toBe(false);
     expect(state.subscriptions.activeSection.value).toBe('discover');
@@ -442,15 +466,15 @@ describe('provider links', () => {
 
   it('opens provider subscriptions through the links tab', async () => {
     state.subscriptions.activeSection.value = 'subscriptions';
-    mountView();
-    wrapper!.findComponent(ProviderSubsStub).vm.$emit('open', 'https://mega.nz/x');
+    await mountView();
+    wrapper!.findComponent({ name: 'provider-subs' }).vm.$emit('open', 'https://mega.nz/x');
     expect(state.search.cancelPending).toHaveBeenCalled();
     expect(state.subscriptions.activeSection.value).toBe('links');
     expect(state.providerStore.detect).toHaveBeenCalledWith('https://mega.nz/x');
   });
 
   it('writes the active section back to the subscriptions store', async () => {
-    mountView();
+    await mountView();
     wrapper!.findComponent(TabsStub).vm.$emit('update:modelValue', 'links');
     await wrapper!.vm.$nextTick();
 
@@ -459,18 +483,18 @@ describe('provider links', () => {
 });
 
 describe('subscriptions tab', () => {
-  function showSubscriptions() {
+  async function showSubscriptions() {
     state.subscriptions.activeSection.value = 'subscriptions';
-    mountView();
+    await mountView();
     return wrapper!;
   }
 
   it('renders subscription actions and forwards panel events', async () => {
-    const view = showSubscriptions();
+    const view = await showSubscriptions();
     await flushPromises();
     await vi.dynamicImportSettled();
 
-    expect(view.findComponent(SubsPanelStub).props()).toMatchObject({
+    expect(view.findComponent({ name: 'subs-panel' }).props()).toMatchObject({
       loaded: false,
       checkingChannelId: null,
       isQueuing: false
@@ -482,7 +506,7 @@ describe('subscriptions tab', () => {
     await buttons[1].trigger('click');
     expect(state.yt.checkSubscriptionsNow).toHaveBeenCalled();
 
-    const panel = view.findComponent(SubsPanelStub);
+    const panel = view.findComponent({ name: 'subs-panel' });
     panel.vm.$emit('open-channel', 'UC1');
     expect(state.subscriptions.openChannelFromSubscription).toHaveBeenCalledWith('UC1');
     panel.vm.$emit('download-all', 'UC2');
@@ -504,7 +528,7 @@ describe('subscriptions tab', () => {
 
   it('shows the downloading label while channels are queued', async () => {
     state.yt.queueingChannelIds = new Set(['UC1']);
-    const view = showSubscriptions();
+    const view = await showSubscriptions();
     const buttons = view.findAllComponents(ButtonStub);
     expect(buttons[0].props('disabled')).toBe(true);
     expect(view.text()).toContain('youtube.downloading');
@@ -522,7 +546,7 @@ describe('subscriptions tab', () => {
       platform: 'soundcloud',
       downloadPrefs: { quality: 'best' }
     };
-    const view = showSubscriptions();
+    const view = await showSubscriptions();
     await flushPromises();
     await vi.dynamicImportSettled();
     const dialog = view.findComponent(SubscribeConfigDialogMock as never) as any;
@@ -539,7 +563,7 @@ describe('subscriptions tab', () => {
 
   it('defaults preferences to an empty object and closes on cancel', async () => {
     state.subscriptions.prefsOpen.value = { channelId: 'UC1', platform: 'youtube' };
-    const view = showSubscriptions();
+    const view = await showSubscriptions();
     await flushPromises();
     await vi.dynamicImportSettled();
     const dialog = view.findComponent(SubscribeConfigDialogMock as never) as any;
@@ -557,10 +581,10 @@ describe('subscriptions tab', () => {
 
   it('renders the unfollow confirmation and forwards actions', async () => {
     state.subscriptions.unfollowTarget.value = { channelId: 'UC1' };
-    const view = showSubscriptions();
+    const view = await showSubscriptions();
     await flushPromises();
     await vi.dynamicImportSettled();
-    const dialog = view.findComponent(ConfirmStub);
+    const dialog = view.findComponent({ name: 'confirm-dialog' });
     expect(dialog.props()).toMatchObject({
       title: 'youtube.unsubscribeChannel',
       message: 'youtube.unsubscribeChannelConfirm',
@@ -578,7 +602,7 @@ describe('links tab', () => {
   it('renders the provider panel and clears the detected provider', async () => {
     state.subscriptions.activeSection.value = 'links';
     state.providerStore.detected = { id: 'pikpak' };
-    mountView();
+    await mountView();
 
     const button = wrapper!.get('[data-testid="online-button"]');
     await button.trigger('click');
@@ -590,7 +614,7 @@ describe('links tab', () => {
 describe('discover tab', () => {
   it('shows the channel view while loading or loaded', async () => {
     state.yt.channelLoading = true;
-    mountView();
+    await mountView();
     await flushPromises();
     expect(wrapper!.find('[data-testid="channel-view"]').exists()).toBe(true);
 
@@ -602,7 +626,7 @@ describe('discover tab', () => {
 
   it('shows the channel error and retries through submit', async () => {
     state.yt.channelError = 'boom';
-    mountView();
+    await mountView();
     await flushPromises();
     expect(wrapper!.findComponent(ChannelErrorStub).props('message')).toBe('boom');
     wrapper!.findComponent(ChannelErrorStub).vm.$emit('retry');
@@ -614,10 +638,10 @@ describe('discover tab', () => {
     state.yt.resolvedLoading = true;
     state.yt.resolvedCapped = true;
     state.yt.selectedResolved = new Set(['a', 'b']);
-    mountView();
+    await mountView();
     await flushPromises();
 
-    const panel = wrapper!.findComponent(ResolvedStub);
+    const panel = wrapper!.findComponent({ name: 'resolved-panel' });
     expect(panel.props()).toMatchObject({
       resolvedLoading: true,
       resolvedCapped: true,
@@ -665,18 +689,20 @@ describe('discover tab', () => {
 
   it('opens channels from resolved results in the discover tab', async () => {
     state.yt.resolved = { items: [] };
-    mountView();
+    await mountView();
     await flushPromises();
-    wrapper!.findComponent(ResolvedStub).vm.$emit('open-channel', 'https://yt/channel');
+    wrapper!
+      .findComponent({ name: 'resolved-panel' })
+      .vm.$emit('open-channel', 'https://yt/channel');
     expect(state.search.cancelPending).toHaveBeenCalled();
     expect(state.subscriptions.activeSection.value).toBe('discover');
     expect(state.yt.openChannel).toHaveBeenCalledWith('https://yt/channel');
   });
 
   it('renders the search results panel and forwards actions', async () => {
-    mountView();
+    await mountView();
     await flushPromises();
-    const panel = wrapper!.findComponent(ResultsStub);
+    const panel = wrapper!.findComponent({ name: 'results-panel' });
     expect(wrapper!.find('[data-testid="results-panel"]').exists()).toBe(true);
 
     panel.vm.$emit('update:expandedId', 'v1');
@@ -695,7 +721,7 @@ describe('discover tab', () => {
   it('renders search and resolve errors', async () => {
     state.search.searchError.value = 'search failed';
     state.search.resolveError.value = 'resolve failed';
-    mountView();
+    await mountView();
     await flushPromises();
     expect(wrapper!.text()).toContain('search failed');
     expect(wrapper!.text()).toContain('resolve failed');
@@ -713,7 +739,7 @@ describe('download config dialog', () => {
       video: { thumbnail: 'thumb.png' }
     };
     state.yt.resolved = { platform: 'vimeo', channel: { title: 'C' }, title: 'P' };
-    mountView();
+    await mountView();
     await flushPromises();
     await vi.dynamicImportSettled();
 
@@ -733,7 +759,7 @@ describe('download config dialog', () => {
   it('uses multi-target titles and omits the single thumbnail', async () => {
     state.dialogs.configTarget.value = { mode: 'channel', video: { thumbnail: 'x.png' } };
     state.yt.resolved = { platform: 'youtube', channel: { title: 'My Channel' }, title: 'P' };
-    mountView();
+    await mountView();
     await flushPromises();
     await vi.dynamicImportSettled();
 
@@ -750,7 +776,7 @@ describe('download config dialog', () => {
   it('passes playlist titles for playlist targets', async () => {
     state.dialogs.configTarget.value = { mode: 'playlist', video: {} };
     state.yt.resolved = { platform: 'youtube', channel: { title: 'C' }, title: 'My Playlist' };
-    mountView();
+    await mountView();
     await flushPromises();
     const playlistDialog = wrapper!.findComponent(DownloadConfigDialogMock as never) as any;
     expect(playlistDialog.props('playlistTitle')).toBe('playlist:My Playlist');

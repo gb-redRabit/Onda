@@ -40,6 +40,42 @@ vi.mock('@renderer/components/sources/SourceDetailModal.vue', () => ({
   }
 }));
 
+vi.mock('@renderer/components/sources/SourcesQueryBuilder.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'query-builder',
+    props: ['modelValue', 'keys', 'defaults'],
+    emits: ['update:modelValue'],
+    template: '<div data-testid="query-builder" />'
+  }
+}));
+vi.mock('@renderer/components/sources/SourcesQueryParamsDialog.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'params-dialog',
+    props: ['modelValue', 'open', 'requestUrl'],
+    emits: ['update:modelValue', 'apply', 'close'],
+    template: '<div data-testid="params-dialog" />'
+  }
+}));
+vi.mock('@renderer/components/sources/SourcesBulkBar.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'bulk-bar',
+    props: ['count', 'playableCount'],
+    emits: ['download', 'queue', 'play', 'clear'],
+    template: '<div data-testid="bulk-bar" />'
+  }
+}));
+vi.mock('@renderer/components/sources/SourceHealthBar.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'health-bar',
+    props: ['state', 'error', 'at', 'ms', 'itemCount', 'downloadedCount'],
+    template: '<div data-testid="health-bar" />'
+  }
+}));
+
 const SidebarStub = defineComponent({
   props: ['sources', 'activeSourceId', 'testStatus', 'checking'],
   emits: ['select', 'add', 'edit', 'remove', 'reorder', 'export-all', 'import-all', 'guide'],
@@ -84,25 +120,6 @@ const FilterStub = defineComponent({
   emits: ['update:filterText', 'update:sortMode'],
   template: '<div data-testid="filter-bar" />'
 });
-const BulkStub = defineComponent({
-  props: ['count', 'playableCount'],
-  emits: ['download', 'queue', 'play', 'clear'],
-  template: '<div data-testid="bulk-bar" />'
-});
-const BuilderStub = defineComponent({
-  props: ['modelValue', 'keys', 'defaults'],
-  emits: ['update:modelValue'],
-  template: '<div data-testid="query-builder" />'
-});
-const ParamsStub = defineComponent({
-  props: ['modelValue', 'open', 'requestUrl'],
-  emits: ['update:modelValue', 'apply', 'close'],
-  template: '<div data-testid="params-dialog" />'
-});
-const HealthStub = defineComponent({
-  props: ['state', 'error', 'at', 'ms', 'itemCount', 'downloadedCount'],
-  template: '<div data-testid="health-bar" />'
-});
 const EmptyStub = defineComponent({
   props: ['title', 'icon'],
   template: '<div data-testid="empty"><slot /></div>'
@@ -139,7 +156,12 @@ function task(id: string) {
   return { id, name: `item-${id}` } as any;
 }
 
-function mountView() {
+async function flushAsync(): Promise<void> {
+  await vi.dynamicImportSettled();
+  await wrapper!.vm.$nextTick();
+}
+
+async function mountView() {
   wrapper = mount(SourcesView, {
     global: {
       mocks: { $t: (key: string) => key },
@@ -147,16 +169,13 @@ function mountView() {
         SourcesSidebar: SidebarStub,
         SourcesContent: ContentStub,
         SourcesFilterBar: FilterStub,
-        SourcesBulkBar: BulkStub,
-        SourcesQueryBuilder: BuilderStub,
-        SourcesQueryParamsDialog: ParamsStub,
-        SourceHealthBar: HealthStub,
         EmptyState: EmptyStub,
         IconButton: IconStub,
         ExplorerPromptDialog: PromptStub
       }
     }
   });
+  await flushAsync();
   return wrapper;
 }
 
@@ -269,8 +288,8 @@ afterEach(() => {
 });
 
 describe('sidebar and empty state', () => {
-  it('passes sidebar state and forwards actions', () => {
-    mountView();
+  it('passes sidebar state and forwards actions', async () => {
+    await mountView();
     const sidebar = wrapper!.findComponent(SidebarStub);
     expect(sidebar.props()).toMatchObject({
       sources: state.view.sources.sources,
@@ -296,9 +315,9 @@ describe('sidebar and empty state', () => {
     expect(state.view.showGuide.value).toBe(true);
   });
 
-  it('shows the empty state without an active source', () => {
+  it('shows the empty state without an active source', async () => {
     state.view.activeSource.value = null;
-    mountView();
+    await mountView();
     expect(wrapper!.find('[data-testid="sources-detail"]').exists()).toBe(false);
     expect(wrapper!.find('[data-testid="empty"]').exists()).toBe(true);
 
@@ -309,7 +328,7 @@ describe('sidebar and empty state', () => {
 
 describe('toolbar navigation', () => {
   it('shows endpoint selection at the root and forwards changes', async () => {
-    mountView();
+    await mountView();
     const select = wrapper!.get('select');
     expect(select.findAll('option').map((o) => o.text())).toEqual(['One', 'Two']);
     expect((select.element as HTMLSelectElement).value).toBe('e1');
@@ -322,7 +341,7 @@ describe('toolbar navigation', () => {
       { endpointId: 'e0', context: {} },
       { endpointId: 'e1', context: {} }
     ];
-    mountView();
+    await mountView();
     expect(wrapper!.find('select').exists()).toBe(false);
     expect(wrapper!.text()).toContain('endpoint:e0');
     expect(wrapper!.text()).toContain('endpoint:e1');
@@ -342,7 +361,7 @@ describe('toolbar navigation', () => {
   it('disables navigation while loading', async () => {
     state.view.sources.navStack = [{ endpointId: 'e0', context: {} }];
     state.view.sources.loading = true;
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.back')!.attributes('disabled')).toBeDefined();
   });
 });
@@ -350,13 +369,14 @@ describe('toolbar navigation', () => {
 describe('query params and pagination', () => {
   it('opens parameter dialog and displays the query summary', async () => {
     state.view.queryText.value = 'a=1\n\nb=2\n';
-    mountView();
+    await mountView();
     const trigger = wrapper!.get('[data-testid="sources-query-params"]');
     expect(trigger.text()).toContain('a=1');
     expect(trigger.text()).toContain('2');
 
     await trigger.trigger('click');
-    const dialog = wrapper!.findComponent(ParamsStub);
+    await flushAsync();
+    const dialog = wrapper!.findComponent({ name: 'params-dialog' });
     expect(dialog.props()).toMatchObject({
       open: true,
       modelValue: 'a=1\n\nb=2\n',
@@ -368,11 +388,11 @@ describe('query params and pagination', () => {
     expect(state.view.refresh).toHaveBeenCalled();
     dialog.vm.$emit('close');
     await wrapper!.vm.$nextTick();
-    expect(dialog.props('open')).toBe(false);
+    expect(wrapper!.find('[data-testid="params-dialog"]').exists()).toBe(false);
   });
 
-  it('shows the placeholder without query text', () => {
-    mountView();
+  it('shows the placeholder without query text', async () => {
+    await mountView();
     expect(wrapper!.get('[data-testid="sources-query-params"]').text()).toContain(
       'sources.queryParams'
     );
@@ -380,7 +400,7 @@ describe('query params and pagination', () => {
 
   it('renders pagination controls and forwards actions', async () => {
     state.view.sources.paginationMode = 'page';
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.prevPage')!.attributes('disabled')).toBeUndefined();
     expect(buttonByLabel('sources.nextPage')!.attributes('disabled')).toBeUndefined();
 
@@ -397,13 +417,13 @@ describe('query params and pagination', () => {
     expect(state.view.goToPage).toHaveBeenCalled();
   });
 
-  it('disables pagination edges while loading', () => {
+  it('disables pagination edges while loading', async () => {
     state.view.sources.paginationMode = 'page';
     state.view.sources.currentPage = 1;
     state.view.sources.startPage = 1;
     state.view.sources.hasMore = false;
     state.view.sources.loading = true;
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.prevPage')!.attributes('disabled')).toBeDefined();
     expect(buttonByLabel('sources.nextPage')!.attributes('disabled')).toBeDefined();
   });
@@ -411,39 +431,39 @@ describe('query params and pagination', () => {
 
 describe('toolbar actions', () => {
   it('downloads all items when available', async () => {
-    mountView();
+    await mountView();
     const download = buttonByLabel('sources.downloadAll')!;
     expect(download.attributes('disabled')).toBeUndefined();
     await download.trigger('click');
     expect(state.view.onDownloadAll).toHaveBeenCalledWith(state.view.displayItems);
   });
 
-  it('hides download-all for pages, empty lists and non-downloadable sources', () => {
+  it('hides download-all for pages, empty lists and non-downloadable sources', async () => {
     state.view.isPage.value = true;
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.downloadAll')).toBeUndefined();
 
     state.view.isPage.value = false;
     state.view.sources.items = [];
     wrapper!.unmount();
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.downloadAll')).toBeUndefined();
 
     state.view.sources.items = [task('a')];
     state.view.downloadable.value = false;
     wrapper!.unmount();
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.downloadAll')).toBeUndefined();
   });
 
-  it('shows a spinner while downloading all', () => {
+  it('shows a spinner while downloading all', async () => {
     state.view.downloadingAll.value = true;
-    mountView();
+    await mountView();
     expect(buttonByLabel('sources.downloadAll')!.attributes('disabled')).toBeDefined();
   });
 
   it('toggles selection mode when rows exist', async () => {
-    mountView();
+    await mountView();
     const toggle = wrapper!.get('[data-testid="sources-select-toggle"]');
     expect(toggle.attributes('data-pressed')).toBe('false');
     await toggle.trigger('click');
@@ -456,16 +476,16 @@ describe('toolbar actions', () => {
     );
   });
 
-  it('uses table rows for page selection visibility', () => {
+  it('uses table rows for page selection visibility', async () => {
     state.view.isPage.value = true;
     state.view.sources.items = [];
     state.view.sources.tableRows = [task('r')];
-    mountView();
+    await mountView();
     expect(wrapper!.find('[data-testid="sources-select-toggle"]').exists()).toBe(true);
   });
 
   it('sets the adblock preference on mount and toggles it', async () => {
-    mountView();
+    await mountView();
     expect(state.invoke).toHaveBeenCalledWith('preview:setAdblock', true);
 
     await wrapper!.get('[data-testid="sources-adblock-toggle"]').trigger('click');
@@ -479,7 +499,7 @@ describe('toolbar actions', () => {
   });
 
   it('refreshes and shows the loading state', async () => {
-    mountView();
+    await mountView();
     await buttonByLabel('sources.refresh')!.trigger('click');
     expect(state.view.refresh).toHaveBeenCalled();
 
@@ -490,9 +510,9 @@ describe('toolbar actions', () => {
 });
 
 describe('panels and content', () => {
-  it('passes health-bar metrics', () => {
-    mountView();
-    expect(wrapper!.findComponent(HealthStub).props()).toMatchObject({
+  it('passes health-bar metrics', async () => {
+    await mountView();
+    expect(wrapper!.findComponent({ name: 'health-bar' }).props()).toMatchObject({
       state: state.view.healthState.value,
       error: 'e',
       at: 1,
@@ -503,7 +523,7 @@ describe('panels and content', () => {
   });
 
   it('shows filters and builder only outside page mode', async () => {
-    mountView();
+    await mountView();
     expect(wrapper!.findComponent(FilterStub).props()).toMatchObject({
       filterText: '',
       sortMode: 'name'
@@ -511,15 +531,15 @@ describe('panels and content', () => {
 
     state.view.paramKeys.value = ['q'];
     state.view.paramDefaults.value = { q: 'x' };
-    await wrapper!.vm.$nextTick();
-    expect(wrapper!.findComponent(BuilderStub).props()).toMatchObject({
+    await flushAsync();
+    expect(wrapper!.findComponent({ name: 'query-builder' }).props()).toMatchObject({
       keys: ['q'],
       defaults: { q: 'x' }
     });
 
     wrapper!.findComponent(FilterStub).vm.$emit('update:filterText', 'abc');
     wrapper!.findComponent(FilterStub).vm.$emit('update:sortMode', 'date');
-    wrapper!.findComponent(BuilderStub).vm.$emit('update:modelValue', { q: 'y' });
+    wrapper!.findComponent({ name: 'query-builder' }).vm.$emit('update:modelValue', { q: 'y' });
     await wrapper!.vm.$nextTick();
 
     expect(state.view.filterText.value).toBe('abc');
@@ -535,8 +555,8 @@ describe('panels and content', () => {
     state.view.selectMode.value = true;
     state.view.selectedCount.value = 2;
     state.view.selectedPlayableCount.value = 1;
-    mountView();
-    const bulk = wrapper!.findComponent(BulkStub);
+    await mountView();
+    const bulk = wrapper!.findComponent({ name: 'bulk-bar' });
     expect(bulk.props()).toMatchObject({ count: 2, playableCount: 1 });
 
     bulk.vm.$emit('download');
@@ -549,14 +569,14 @@ describe('panels and content', () => {
     expect(state.view.clearSelection).toHaveBeenCalled();
   });
 
-  it('renders request details when available', () => {
-    mountView();
+  it('renders request details when available', async () => {
+    await mountView();
     expect(wrapper!.text()).toContain('sources.requestDetails');
     expect(wrapper!.text()).toContain('https://api.example.com/list');
   });
 
-  it('passes content state and forwards content events', () => {
-    mountView();
+  it('passes content state and forwards content events', async () => {
+    await mountView();
     const content = wrapper!.findComponent(ContentStub);
     expect(content.props()).toMatchObject({
       isPage: false,
@@ -590,7 +610,7 @@ describe('dialogs', () => {
     state.view.showEditor.value = true;
     state.view.editingSource.value = { id: 's1', name: 'Edited' };
     state.view.showGuide.value = true;
-    mountView();
+    await mountView();
     await vi.dynamicImportSettled();
     await wrapper!.vm.$nextTick();
 
@@ -609,7 +629,7 @@ describe('dialogs', () => {
   it('renders the preview modal and forwards actions', async () => {
     const item = task('a');
     state.view.previewItem.value = item;
-    mountView();
+    await mountView();
     await vi.dynamicImportSettled();
     await wrapper!.vm.$nextTick();
 
@@ -628,7 +648,7 @@ describe('dialogs', () => {
   });
 
   it('binds the prompt dialog', async () => {
-    mountView();
+    await mountView();
     const prompt = wrapper!.findComponent(PromptStub);
     prompt.vm.$emit('update:value', 'typed');
     expect(state.view.prompt.promptValue.value).toBe('typed');

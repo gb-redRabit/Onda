@@ -14,18 +14,14 @@ import {
 } from '@lucide/vue';
 import SourcesContent from '@renderer/components/sources/SourcesContent.vue';
 import SourcesFilterBar from '@renderer/components/sources/SourcesFilterBar.vue';
-import SourcesBulkBar from '@renderer/components/sources/SourcesBulkBar.vue';
-import SourcesQueryBuilder from '@renderer/components/sources/SourcesQueryBuilder.vue';
-import SourcesQueryParamsDialog from '@renderer/components/sources/SourcesQueryParamsDialog.vue';
 import SourcesSidebar from '@renderer/components/sources/SourcesSidebar.vue';
-import SourceHealthBar from '@renderer/components/sources/SourceHealthBar.vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import IconButton from '@renderer/components/ui/IconButton.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
 import { useSourcesView } from '@renderer/composables/useSourcesView';
 import { useSettingsStore } from '@renderer/stores/settings';
 
-// Modale są leniwe — montowane tylko na żądanie (plan 3.5).
+// Modale i panele kontekstowe są leniwe — montowane tylko na żądanie (plan 3.5).
 const SourceGuideModal = defineAsyncComponent(
   () => import('@renderer/components/sources/SourceGuideModal.vue')
 );
@@ -34,6 +30,18 @@ const SourceEditorDialog = defineAsyncComponent(
 );
 const SourceDetailModal = defineAsyncComponent(
   () => import('@renderer/components/sources/SourceDetailModal.vue')
+);
+const SourcesQueryBuilder = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourcesQueryBuilder.vue')
+);
+const SourcesQueryParamsDialog = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourcesQueryParamsDialog.vue')
+);
+const SourcesBulkBar = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourcesBulkBar.vue')
+);
+const SourceHealthBar = defineAsyncComponent(
+  () => import('@renderer/components/sources/SourceHealthBar.vue')
 );
 
 const {
@@ -366,6 +374,7 @@ onMounted(() => {
     />
     <SourceGuideModal v-if="showGuide" @close="showGuide = false" />
     <SourcesQueryParamsDialog
+      v-if="showParams"
       v-model="queryText"
       :open="showParams"
       :request-url="currentUrl"

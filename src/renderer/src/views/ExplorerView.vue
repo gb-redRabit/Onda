@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, provide, watch } from 'vue';
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  provide,
+  watch,
+  defineAsyncComponent
+} from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { Monitor, Plus, Pin, PinOff, Copy, Eye, EyeOff, PanelLeft, Info } from '@lucide/vue';
@@ -21,10 +29,18 @@ import ExplorerBreadcrumb from '@renderer/components/explorer/ExplorerBreadcrumb
 import ExplorerViewModeDropdown from '@renderer/components/explorer/ExplorerViewModeDropdown.vue';
 import ExplorerContent from '@renderer/components/explorer/ExplorerContent.vue';
 import ExplorerTabs from '@renderer/components/explorer/ExplorerTabs.vue';
-import ExplorerDuplicatesPanel from '@renderer/components/explorer/ExplorerDuplicatesPanel.vue';
-import ExplorerDetailsPane from '@renderer/components/explorer/ExplorerDetailsPane.vue';
-import ExplorerPropertiesDialog from '@renderer/components/explorer/ExplorerPropertiesDialog.vue';
 import ExplorerPromptDialog from '@renderer/components/explorer/ExplorerPromptDialog.vue';
+// Panele i dialogi są ładowane dopiero po otwarciu — nie blokują pierwszego
+// malowania listy plików i nie rozdymają chunka Eksploratora.
+const ExplorerDuplicatesPanel = defineAsyncComponent(
+  () => import('@renderer/components/explorer/ExplorerDuplicatesPanel.vue')
+);
+const ExplorerDetailsPane = defineAsyncComponent(
+  () => import('@renderer/components/explorer/ExplorerDetailsPane.vue')
+);
+const ExplorerPropertiesDialog = defineAsyncComponent(
+  () => import('@renderer/components/explorer/ExplorerPropertiesDialog.vue')
+);
 import { useExplorerActions } from '@renderer/composables/useExplorerActions';
 import { useExplorerContextMenu } from '@renderer/composables/useExplorerContextMenu';
 import { useViewSearch } from '@renderer/composables/useViewSearch';
@@ -408,7 +424,11 @@ onBeforeUnmount(() => {
         @menu="onContentMenu"
       />
 
-      <ExplorerDuplicatesPanel v-model:open="dupPanelOpen" @reveal="revealDupFile" />
+      <ExplorerDuplicatesPanel
+        v-if="dupPanelOpen"
+        v-model:open="dupPanelOpen"
+        @reveal="revealDupFile"
+      />
 
       <ExplorerPromptDialog
         v-model:value="promptValue"

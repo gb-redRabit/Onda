@@ -23,19 +23,13 @@ import {
 import OnlineSearchBar from '@renderer/components/online/OnlineSearchBar.vue';
 import OnlineViewTabs from '@renderer/components/online/OnlineViewTabs.vue';
 import OnlineButton from '@renderer/components/online/OnlineButton.vue';
-import OnlineSubscriptionsPanel from '@renderer/components/online/OnlineSubscriptionsPanel.vue';
-import ProviderPanel from '@renderer/components/online/providers/ProviderPanel.vue';
-import ProviderSubscriptionsPanel from '@renderer/components/online/providers/ProviderSubscriptionsPanel.vue';
 import OnlineBatchPanel from '@renderer/components/online/OnlineBatchPanel.vue';
-import OnlineSearchResultsPanel from '@renderer/components/online/OnlineSearchResultsPanel.vue';
-import OnlineResolvedPanel from '@renderer/components/online/OnlineResolvedPanel.vue';
-import OnlineConfirmDialog from '@renderer/components/online/OnlineConfirmDialog.vue';
 import OnlineChannelError from '@renderer/components/online/OnlineChannelError.vue';
 import YTAuthButton from '@renderer/components/online/YTAuthButton.vue';
 import PageHeader from '@renderer/components/ui/PageHeader.vue';
 
 // Ciężkie dialogi/widoki są ładowane leniwie, żeby nie rozdymały chunka Online
-// (plan 3.5).
+// (plan 3.5). Panele zakładek montują się dopiero po wejściu w daną sekcję.
 const OnlineChannelView = defineAsyncComponent({
   loader: () => import('@renderer/components/online/OnlineChannelView.vue'),
   loadingComponent: Loader,
@@ -46,6 +40,24 @@ const DownloadConfigDialog = defineAsyncComponent(
 );
 const SubscribeConfigDialog = defineAsyncComponent(
   () => import('@renderer/components/online/SubscribeConfigDialog.vue')
+);
+const OnlineSubscriptionsPanel = defineAsyncComponent(
+  () => import('@renderer/components/online/OnlineSubscriptionsPanel.vue')
+);
+const ProviderPanel = defineAsyncComponent(
+  () => import('@renderer/components/online/providers/ProviderPanel.vue')
+);
+const ProviderSubscriptionsPanel = defineAsyncComponent(
+  () => import('@renderer/components/online/providers/ProviderSubscriptionsPanel.vue')
+);
+const OnlineResolvedPanel = defineAsyncComponent(
+  () => import('@renderer/components/online/OnlineResolvedPanel.vue')
+);
+const OnlineSearchResultsPanel = defineAsyncComponent(
+  () => import('@renderer/components/online/OnlineSearchResultsPanel.vue')
+);
+const OnlineConfirmDialog = defineAsyncComponent(
+  () => import('@renderer/components/online/OnlineConfirmDialog.vue')
 );
 const yt = useOnlineStore();
 const providerStore = useProvidersStore();
