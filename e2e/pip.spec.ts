@@ -47,9 +47,15 @@ test.describe('audio PiP', () => {
 
       await expect.poll(pipWindowVisible, { timeout: 10_000 }).toBe(true);
 
-      const pipPage = onda.app.windows().find((page) => page.url().includes(PIP_PAGE));
+      // BrowserWindow bywa widoczne, zanim Playwright zarejestruje nową stronę.
+      await expect
+        .poll(() => onda.app.windows().some((page) => page.url().includes(PIP_PAGE)), {
+          timeout: 10_000
+        })
+        .toBe(true);
+      const pipPage = onda.app.windows().find((page) => page.url().includes(PIP_PAGE))!;
       expect(pipPage).toBeTruthy();
-      await expect(pipPage!.locator('body')).toContainText('E2E Track');
+      await expect(pipPage.locator('body')).toContainText('E2E Track');
 
       await onda.page.evaluate(() => {
         const api = (window as unknown as { api: OndaTestApi }).api;
