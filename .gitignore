@@ -20,6 +20,7 @@ resources/*
 logs/
 .memory
 .opencode
+.npmrc
 .vscode
 generate-random-icon.js
 
