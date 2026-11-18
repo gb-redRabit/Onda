@@ -1,4 +1,4 @@
-import { computed, nextTick, ref, watch, type Ref } from 'vue';
+import { computed, nextTick, ref, type Ref } from 'vue';
 import { useVideoThumbnails } from '@renderer/composables/useVideoThumbnails';
 import {
   FRAME_STRIP_MIN_PX,
@@ -456,10 +456,6 @@ export function useClipTimeline(options: ClipTimelineOptions) {
     timelineViewportWidth.value = 0;
     previewing.value = false;
   }
-
-  watch(duration, () => {
-    void nextTick(updateTimelineMetrics);
-  });
 
   return {
     timelineZoom,
