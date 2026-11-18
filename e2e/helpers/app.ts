@@ -1,5 +1,6 @@
 import { _electron as electron, test, type ElectronApplication, type Page } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'fs';
+import { readFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -14,7 +15,58 @@ export interface OndaApp {
   stdout: string[];
   stderr: string[];
   userDataDir: string;
+  /** Czas od `electron.launch()` do pojawienia się okna głównego (ms). */
+  startupMs: number;
   dispose: () => Promise<void>;
+}
+
+export interface BootPhase {
+  label: string;
+  ms: number;
+}
+
+/** Regresja startu: łapiemy 2-3x spowolnienie, nie pojedyncze ms CI. */
+export const STARTUP_BUDGET_MS = Number(process.env['ONDA_E2E_STARTUP_BUDGET_MS'] ?? 20_000);
+
+/**
+ * Parsuje logi `[Onda/boot] <label> - <ms>ms` emitowane przez `perf()` w
+ * procesie głównym. Pozwala pokazać, gdzie zniknął czas startu, bez profilera.
+ */
+export function readBootPhases(stdout: string[]): BootPhase[] {
+  return parseBootLines(stdout);
+}
+
+function parseBootLines(lines: string[]): BootPhase[] {
+  const phases: BootPhase[] = [];
+  for (const line of lines) {
+    const match = /\[Onda\/boot\]\s+(.+?)\s+[—–-]\s+(\d+)ms/.exec(line);
+    if (match) phases.push({ label: match[1], ms: Number(match[2]) });
+  }
+  return phases;
+}
+
+/**
+ * Wczesne linie startu mogą zniknąć, zanim Playwright podłączy się do stdout
+ * (electron.launch() rozwiązuje się po starcie procesu). Log plikowy jest
+ * zapisywany od pierwszej fazy, więc czytamy go z profilu testowego.
+ */
+export async function readBootPhasesFromLog(
+  userDataDir: string,
+  timeoutMs = 3_000
+): Promise<BootPhase[]> {
+  const logPath = join(userDataDir, 'logs', 'main.log');
+  const deadline = Date.now() + timeoutMs;
+  let phases: BootPhase[] = [];
+  while (Date.now() < deadline) {
+    try {
+      phases = parseBootLines((await readFile(logPath, 'utf-8')).split(/\r?\n/));
+      if (phases.some((phase) => phase.label === 'window created')) return phases;
+    } catch {
+      // plik jeszcze nie istnieje albo jest w trakcie zapisu
+    }
+    await delay(100);
+  }
+  return phases;
 }
 
 export interface LaunchOptions {
@@ -86,6 +138,7 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
     ...options.env
   } as Record<string, string>;
 
+  const startedAt = Date.now();
   const app = await electron.launch({ args, env });
   const proc = app.process();
   const stdout: string[] = [];
@@ -94,6 +147,7 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
   collectProcessLogs(proc.stderr, stderr);
   try {
     const page = await waitForMainWindow(app, options.windowFile);
+    const startupMs = Date.now() - startedAt;
 
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -105,6 +159,7 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
       stdout,
       stderr,
       userDataDir,
+      startupMs,
       dispose: async () => {
         // Onda ukrywa się do tray zamiast zamykać (close-to-tray), więc najpierw zniszcz
         // okna; następnie daj Playwrightowi ograniczoną szansę na zebranie aplikacji.
