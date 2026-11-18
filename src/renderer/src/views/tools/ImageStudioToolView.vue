@@ -1,38 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch, type Component } from 'vue';
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  ArrowUpRight,
-  Check,
-  Crop,
-  Droplets,
-  FlipHorizontal2,
-  FlipVertical2,
-  Grid2x2,
-  Image as ImageIcon,
-  RotateCcw,
-  RotateCw,
-  Save,
-  Square,
-  Trash2,
-  Type,
-  Undo2
-} from '@lucide/vue';
+import { Check, Image as ImageIcon, Save } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import Spinner from '@renderer/components/ui/Spinner.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import Button from '@renderer/components/ui/Button.vue';
-import ColorInput from '@renderer/components/ui/ColorInput.vue';
-import NumberField from '@renderer/components/ui/NumberField.vue';
-import PathInput from '@renderer/components/ui/PathInput.vue';
-import Select from '@renderer/components/ui/Select.vue';
-import Slider from '@renderer/components/ui/Slider.vue';
+import ImageStudioAdjustPanel from '@renderer/components/tools/image/ImageStudioAdjustPanel.vue';
+import ImageStudioAnnotationPanel from '@renderer/components/tools/image/ImageStudioAnnotationPanel.vue';
+import ImageStudioCoverPanel from '@renderer/components/tools/image/ImageStudioCoverPanel.vue';
+import ImageStudioCropPanel from '@renderer/components/tools/image/ImageStudioCropPanel.vue';
+import ImageStudioOutputPanel from '@renderer/components/tools/image/ImageStudioOutputPanel.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
+import { drawAnnotations, drawCropOverlay, sharpenCanvas } from '@renderer/utils/imageStudioCanvas';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { filesForTool, toolContextPaths } from '@shared/tool-input';
 import {
   MAX_OUTPUT_DIMENSION,
-  annotationBounds,
   aspectRatioOf,
   clamp as clampTag,
   computeAspectCrop,
@@ -48,14 +32,9 @@ import {
   type AnnotationKind,
   type Aspect,
   type CropHandle,
-  type CropRect,
-  type TargetRect
+  type CropRect
 } from '@renderer/utils/imageStudio';
-import {
-  IMAGE_OUTPUT_FORMATS,
-  type ImageOutputFormat,
-  type ImageStudioLoadResult
-} from '@shared/types/tools';
+import type { ImageOutputFormat, ImageStudioLoadResult } from '@shared/types/tools';
 
 type Tool = 'crop' | AnnotationKind;
 const MAX_PREVIEW_W = 720;
@@ -137,30 +116,6 @@ const hasImage = computed(() => !!image.value);
 const selectedWidth = computed(
   () => annotations.value.find((annotation) => annotation.id === selectedId.value)?.width ?? null
 );
-
-const ASPECTS: Array<{ id: Aspect; key: string }> = [
-  { id: 'free', key: 'imageStudioAspectFree' },
-  { id: '1:1', key: 'imageStudioAspectSquare' },
-  { id: '16:9', key: 'imageStudioAspectWide' },
-  { id: '4:3', key: 'imageStudioAspectClassic' }
-];
-
-const TOOLS: Array<{ id: Tool; key: string; icon: Component }> = [
-  { id: 'crop', key: 'imageStudioToolCrop', icon: Crop },
-  { id: 'rect', key: 'imageStudioToolRect', icon: Square },
-  { id: 'arrow', key: 'imageStudioToolArrow', icon: ArrowUpRight },
-  { id: 'text', key: 'imageStudioToolText', icon: Type },
-  { id: 'blur', key: 'imageStudioToolBlur', icon: Droplets },
-  { id: 'pixelate', key: 'imageStudioToolPixelate', icon: Grid2x2 }
-];
-
-const ADJUST_FIELDS = [
-  { id: 'brightness', label: 'imageStudioBrightness', min: 0, max: 200 },
-  { id: 'contrast', label: 'imageStudioContrast', min: 0, max: 200 },
-  { id: 'saturation', label: 'imageStudioSaturation', min: 0, max: 200 },
-  { id: 'temperature', label: 'imageStudioTemperature', min: -100, max: 100 },
-  { id: 'sharpen', label: 'imageStudioSharpen', min: 0, max: 100 }
-] as const;
 
 let estimateTimer: ReturnType<typeof setTimeout> | null = null;
 let drag:
@@ -332,191 +287,6 @@ function buildBaseCanvas(maxDimension?: number): HTMLCanvasElement {
   return canvas;
 }
 
-function sharpenCanvas(canvas: HTMLCanvasElement, amount: number): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const width = canvas.width;
-  const height = canvas.height;
-  if (width < 3 || height < 3) return;
-  let data: ImageData;
-  try {
-    data = ctx.getImageData(0, 0, width, height);
-  } catch {
-    return;
-  }
-  const src = new Uint8ClampedArray(data.data);
-  const dst = data.data;
-  const center = 1 + 4 * amount;
-  const row = width * 4;
-  for (let y = 1; y < height - 1; y += 1) {
-    for (let x = 1; x < width - 1; x += 1) {
-      const i = y * row + x * 4;
-      for (let c = 0; c < 3; c += 1) {
-        dst[i + c] =
-          center * src[i + c] -
-          amount * (src[i - 4 + c] + src[i + 4 + c] + src[i - row + c] + src[i + row + c]);
-      }
-    }
-  }
-  ctx.putImageData(data, 0, 0);
-}
-
-function drawEffectRegion(
-  ctx: CanvasRenderingContext2D,
-  base: HTMLCanvasElement,
-  annotation: Annotation,
-  baseScale: number,
-  target: TargetRect
-): void {
-  const sx = annotation.x1 * baseScale;
-  const sy = annotation.y1 * baseScale;
-  const sw = Math.max(1, (annotation.x2 - annotation.x1) * baseScale);
-  const sh = Math.max(1, (annotation.y2 - annotation.y1) * baseScale);
-  const w = Math.max(1, Math.round(target.w));
-  const h = Math.max(1, Math.round(target.h));
-  const temp = document.createElement('canvas');
-  temp.width = w;
-  temp.height = h;
-  const tctx = temp.getContext('2d');
-  if (!tctx) return;
-  if (annotation.kind === 'blur') {
-    tctx.filter = `blur(${Math.max(2, Math.round(Math.min(w, h) * 0.08))}px)`;
-    tctx.drawImage(base, sx, sy, sw, sh, 0, 0, w, h);
-  } else {
-    const pixel = Math.max(2, Math.round(Math.min(w, h) * 0.05));
-    const small = document.createElement('canvas');
-    small.width = Math.max(1, Math.round(w / pixel));
-    small.height = Math.max(1, Math.round(h / pixel));
-    const sctx = small.getContext('2d');
-    if (!sctx) return;
-    sctx.imageSmoothingEnabled = false;
-    sctx.drawImage(base, sx, sy, sw, sh, 0, 0, small.width, small.height);
-    tctx.imageSmoothingEnabled = false;
-    tctx.drawImage(small, 0, 0, small.width, small.height, 0, 0, w, h);
-  }
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(target.x, target.y, w, h);
-  ctx.clip();
-  ctx.drawImage(temp, target.x, target.y, w, h);
-  ctx.restore();
-}
-
-function drawAnnotations(
-  ctx: CanvasRenderingContext2D,
-  base: HTMLCanvasElement,
-  baseScale: number,
-  toTarget: (annotation: Annotation) => TargetRect,
-  scale: number
-): void {
-  for (const annotation of annotations.value) {
-    const target = toTarget(annotation);
-    if (annotation.kind === 'blur' || annotation.kind === 'pixelate') {
-      drawEffectRegion(ctx, base, annotation, baseScale, target);
-    } else {
-      ctx.save();
-      ctx.strokeStyle = annotation.color;
-      ctx.fillStyle = annotation.color;
-      ctx.lineWidth = Math.max(1.5, annotation.width * scale);
-      ctx.lineCap = 'round';
-      if (annotation.kind === 'rect') {
-        ctx.strokeRect(target.x, target.y, target.w, target.h);
-      } else if (annotation.kind === 'arrow') {
-        const x2 = target.x + target.w;
-        const y2 = target.y + target.h;
-        ctx.beginPath();
-        ctx.moveTo(target.x, target.y);
-        ctx.lineTo(x2, y2);
-        const angle = Math.atan2(target.h, target.w);
-        const head = Math.max(8, annotation.width * scale * 2.5);
-        ctx.lineTo(
-          x2 - head * Math.cos(angle - Math.PI / 6),
-          y2 - head * Math.sin(angle - Math.PI / 6)
-        );
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(
-          x2 - head * Math.cos(angle + Math.PI / 6),
-          y2 - head * Math.sin(angle + Math.PI / 6)
-        );
-        ctx.stroke();
-      } else if (annotation.kind === 'text' && annotation.text) {
-        const fontSize = Math.max(10, annotation.width * scale * 2);
-        ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
-        ctx.textBaseline = 'top';
-        const lines = annotation.text.split('\n');
-        lines.forEach((line, index) => {
-          ctx.fillText(line, target.x, target.y + index * fontSize * 1.2);
-        });
-      }
-      ctx.restore();
-    }
-    if (annotation.id === selectedId.value) {
-      const bounds = annotationBounds(annotation);
-      const outline = toTarget({
-        ...annotation,
-        x1: bounds.x,
-        y1: bounds.y,
-        x2: bounds.x + bounds.w,
-        y2: bounds.y + bounds.h
-      });
-      ctx.save();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.strokeRect(
-        outline.x - 3,
-        outline.y - 3,
-        Math.max(4, outline.w) + 6,
-        Math.max(4, outline.h) + 6
-      );
-      ctx.restore();
-    }
-  }
-}
-
-function drawCropOverlay(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): void {
-  const scale = previewScale.value;
-  const x = crop.x * scale;
-  const y = crop.y * scale;
-  const w = crop.w * scale;
-  const h = crop.h * scale;
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(0, 0, canvas.width, y);
-  ctx.fillRect(0, y + h, canvas.width, canvas.height - y - h);
-  ctx.fillRect(0, y, x, h);
-  ctx.fillRect(x + w, y, canvas.width - x - w, h);
-  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-  ctx.beginPath();
-  for (let i = 1; i < 3; i += 1) {
-    ctx.moveTo(x + (w * i) / 3, y);
-    ctx.lineTo(x + (w * i) / 3, y + h);
-    ctx.moveTo(x, y + (h * i) / 3);
-    ctx.lineTo(x + w, y + (h * i) / 3);
-  }
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-  ctx.lineWidth = 1;
-  const corners: Array<[number, number]> = [
-    [x, y],
-    [x + w, y],
-    [x, y + h],
-    [x + w, y + h]
-  ];
-  for (const [cornerX, cornerY] of corners) {
-    ctx.beginPath();
-    ctx.rect(cornerX - 5, cornerY - 5, 10, 10);
-    ctx.fill();
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
 function renderPreview(): void {
   const canvas = canvasRef.value;
   if (!canvas || !image.value) return;
@@ -531,6 +301,8 @@ function renderPreview(): void {
   ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
   drawAnnotations(
     ctx,
+    annotations.value,
+    selectedId.value,
     base,
     baseScale,
     (annotation) => ({
@@ -541,7 +313,7 @@ function renderPreview(): void {
     }),
     previewScale.value
   );
-  if (tool.value === 'crop') drawCropOverlay(ctx, canvas);
+  if (tool.value === 'crop') drawCropOverlay(ctx, canvas, crop, previewScale.value);
 }
 
 function pointerToImage(event: PointerEvent): { x: number; y: number } {
@@ -818,6 +590,8 @@ function renderExportCanvas(): HTMLCanvasElement | null {
   const exportScale = outW / crop.w;
   drawAnnotations(
     ctx,
+    annotations.value,
+    selectedId.value,
     base,
     baseScale,
     (annotation) => ({
@@ -1048,280 +822,56 @@ onBeforeUnmount(() => {
           </div>
 
           <aside class="w-80 shrink-0 space-y-3 overflow-y-auto border-l border-hairline p-3">
-            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
-              <div class="text-xs font-semibold">{{ t('tools.imageStudioCrop') }}</div>
-              <div class="flex flex-wrap gap-1">
-                <button
-                  v-for="item in ASPECTS"
-                  :key="item.id"
-                  type="button"
-                  :data-testid="`image-studio-aspect-${item.id}`"
-                  class="rounded-field border px-2 py-1 text-2xs transition-colors"
-                  :class="
-                    aspect === item.id
-                      ? 'border-primary bg-primary/10 text-primary-text'
-                      : 'border-hairline text-base-content/60 hover:bg-base-content/10'
-                  "
-                  @click="
-                    aspect = item.id;
-                    applyAspect();
-                  "
-                >
-                  {{ t(`tools.${item.key}`) }}
-                </button>
-              </div>
-              <p class="text-3xs text-base-content/50">
-                {{ t('tools.imageStudioCropHint') }}
-              </p>
-              <div class="flex gap-1">
-                <button
-                  type="button"
-                  data-testid="image-studio-rotate-left"
-                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
-                  :title="t('tools.imageStudioRotateLeft')"
-                  :aria-label="t('tools.imageStudioRotateLeft')"
-                  @click="rotateBy(-1)"
-                >
-                  <RotateCcw :size="14" class="mx-auto" />
-                </button>
-                <button
-                  type="button"
-                  data-testid="image-studio-rotate-right"
-                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
-                  :title="t('tools.imageStudioRotateRight')"
-                  :aria-label="t('tools.imageStudioRotateRight')"
-                  @click="rotateBy(1)"
-                >
-                  <RotateCw :size="14" class="mx-auto" />
-                </button>
-                <button
-                  type="button"
-                  data-testid="image-studio-flip-h"
-                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
-                  :title="t('tools.imageStudioFlipH')"
-                  :aria-label="t('tools.imageStudioFlipH')"
-                  @click="toggleFlip('h')"
-                >
-                  <FlipHorizontal2 :size="14" class="mx-auto" />
-                </button>
-                <button
-                  type="button"
-                  data-testid="image-studio-flip-v"
-                  class="fx-noise flex-1 rounded-field border border-hairline p-1.5 hover:bg-base-content/10"
-                  :title="t('tools.imageStudioFlipV')"
-                  :aria-label="t('tools.imageStudioFlipV')"
-                  @click="toggleFlip('v')"
-                >
-                  <FlipVertical2 :size="14" class="mx-auto" />
-                </button>
-              </div>
-            </section>
+            <ImageStudioCropPanel
+              v-model:aspect="aspect"
+              @apply="applyAspect"
+              @rotate="rotateBy"
+              @flip="toggleFlip"
+            />
 
-            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
-              <div class="text-xs font-semibold">{{ t('tools.imageStudioAdjust') }}</div>
-              <label v-for="field in ADJUST_FIELDS" :key="field.id" class="block">
-                <span class="flex justify-between text-2xs text-base-content/60">
-                  <span>{{ t(`tools.${field.label}`) }}</span>
-                  <span>{{ adjust[field.id] }}</span>
-                </span>
-                <Slider
-                  v-model="adjust[field.id]"
-                  class="mt-1"
-                  :label="t(`tools.${field.label}`)"
-                  :min="field.min"
-                  :max="field.max"
-                  :value-text="String(adjust[field.id])"
-                />
-              </label>
-            </section>
+            <ImageStudioAdjustPanel
+              v-model:brightness="adjust.brightness"
+              v-model:contrast="adjust.contrast"
+              v-model:saturation="adjust.saturation"
+              v-model:temperature="adjust.temperature"
+              v-model:sharpen="adjust.sharpen"
+            />
 
-            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
-              <div class="text-xs font-semibold">{{ t('tools.imageStudioAnnotations') }}</div>
-              <div class="grid grid-cols-3 gap-1">
-                <button
-                  v-for="item in TOOLS"
-                  :key="item.id"
-                  type="button"
-                  :data-testid="`image-studio-tool-${item.id}`"
-                  class="flex flex-col items-center gap-1 rounded-field border px-1 py-1.5 text-3xs transition-colors"
-                  :class="
-                    tool === item.id
-                      ? 'border-primary bg-primary/10 text-primary-text'
-                      : 'border-hairline text-base-content/60 hover:bg-base-content/10'
-                  "
-                  @click="tool = item.id"
-                >
-                  <component :is="item.icon" :size="14" />
-                  {{ t(`tools.${item.key}`) }}
-                </button>
-              </div>
-              <div v-if="tool === 'text'" class="space-y-1">
-                <input
-                  v-model="textValue"
-                  type="text"
-                  :placeholder="t('tools.imageStudioTextPlaceholder')"
-                  class="w-full rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
-                />
-                <p class="text-3xs text-base-content/50">{{ t('tools.imageStudioTextHint') }}</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <ColorInput
-                  v-model="color"
-                  class="shrink-0"
-                  :label="t('tools.imageStudioStroke')"
-                />
-                <div class="min-w-0 flex-1">
-                  <div class="flex justify-between text-2xs text-base-content/60">
-                    <span>{{ t('tools.imageStudioStroke') }}: {{ strokeWidth }}</span>
-                  </div>
-                  <Slider
-                    v-model="strokeWidth"
-                    data-testid="image-studio-stroke"
-                    :label="t('tools.imageStudioStroke')"
-                    :min="2"
-                    :max="40"
-                    :value-text="String(strokeWidth)"
-                  />
-                </div>
-              </div>
-              <p class="text-3xs text-base-content/50">
-                {{ t('tools.imageStudioAnnotationHint') }}
-              </p>
-              <div class="flex gap-1">
-                <button
-                  type="button"
-                  class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
-                  :disabled="annotations.length === 0"
-                  @click="undoAnnotation"
-                >
-                  <Undo2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioUndo') }}
-                </button>
-                <button
-                  type="button"
-                  data-testid="image-studio-delete"
-                  class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
-                  :disabled="!selectedId"
-                  @click="deleteSelected"
-                >
-                  <Trash2 :size="12" class="mr-1 inline" />{{ t('tools.imageStudioDelete') }}
-                </button>
-                <button
-                  type="button"
-                  class="fx-noise flex-1 rounded-field border border-hairline px-2 py-1 text-2xs hover:bg-base-content/10 disabled:opacity-40"
-                  :disabled="annotations.length === 0"
-                  @click="clearAnnotations"
-                >
-                  {{ t('tools.imageStudioClear') }}
-                </button>
-              </div>
-            </section>
+            <ImageStudioAnnotationPanel
+              v-model:tool="tool"
+              v-model:text-value="textValue"
+              v-model:color="color"
+              v-model:stroke-width="strokeWidth"
+              :annotation-count="annotations.length"
+              :has-selection="!!selectedId"
+              @undo="undoAnnotation"
+              @remove="deleteSelected"
+              @clear="clearAnnotations"
+            />
 
-            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
-              <div class="text-xs font-semibold">{{ t('tools.imageStudioOutput') }}</div>
-              <label class="block">
-                <span class="mb-1 block text-2xs text-base-content/60">{{
-                  t('tools.imageStudioFormat')
-                }}</span>
-                <Select v-model="outputFormat" size="sm" data-testid="image-studio-format">
-                  <option v-for="format in IMAGE_OUTPUT_FORMATS" :key="format" :value="format">
-                    {{ format.toUpperCase() }}
-                  </option>
-                </Select>
-              </label>
-              <div v-if="outputFormat !== 'png'">
-                <div class="flex justify-between text-2xs text-base-content/60">
-                  <span>{{ t('tools.imageStudioQuality') }}</span>
-                  <span>{{ quality }}</span>
-                </div>
-                <Slider
-                  v-model="quality"
-                  :label="t('tools.imageStudioQuality')"
-                  :min="1"
-                  :max="100"
-                  :value-text="String(quality)"
-                />
-              </div>
-              <div class="block">
-                <span class="text-2xs text-base-content/60">{{ t('tools.imageStudioWidth') }}</span>
-                <div class="mt-1 flex items-center gap-2">
-                  <NumberField
-                    v-model="outputWidth"
-                    size="sm"
-                    class="w-24"
-                    data-testid="image-studio-width"
-                    :label="t('tools.imageStudioWidth')"
-                    :min="1"
-                    :max="MAX_OUTPUT_DIMENSION"
-                  />
-                  <span class="text-2xs text-base-content/50">→ {{ outputHeight }} px</span>
-                </div>
-              </div>
-              <div class="flex items-center justify-between text-2xs text-base-content/60">
-                <span
-                  >{{ t('tools.imageStudioEstimated') }}:
-                  {{ estimating ? '…' : formatBytes(estimatedBytes) }}</span
-                >
-                <button
-                  type="button"
-                  data-testid="image-studio-estimate"
-                  class="rounded-field border border-hairline px-2 py-0.5 hover:bg-base-content/10"
-                  :disabled="estimating"
-                  @click="estimateSize"
-                >
-                  {{ t('tools.imageStudioCheckSize') }}
-                </button>
-              </div>
-              <label class="block">
-                <span class="mb-1 block text-2xs text-base-content/60">{{
-                  t('tools.imageStudioPath')
-                }}</span>
-                <PathInput
-                  v-model="outputPath"
-                  :readonly="false"
-                  data-testid="image-studio-output-path"
-                  :label="t('tools.imageStudioPath')"
-                  @browse="pickOutputDir"
-                />
-              </label>
-              <p
-                v-if="savedPath"
-                data-testid="image-studio-saved"
-                class="flex items-center gap-1 text-2xs text-success"
-              >
-                <Check :size="12" />
-                {{ t('tools.imageStudioSaved', { size: formatBytes(savedBytes) }) }}
-              </p>
-              <p v-if="errorMsg" class="text-2xs text-error">{{ errorMsg }}</p>
-            </section>
+            <ImageStudioOutputPanel
+              v-model:output-format="outputFormat"
+              v-model:quality="quality"
+              v-model:output-width="outputWidth"
+              v-model:output-path="outputPath"
+              :output-height="outputHeight"
+              :estimated-bytes="estimatedBytes"
+              :estimating="estimating"
+              :saved-path="savedPath"
+              :saved-bytes="savedBytes"
+              :error-message="errorMsg"
+              @estimate="estimateSize"
+              @browse="pickOutputDir"
+            />
 
-            <section class="space-y-2 rounded-box border border-hairline bg-base-100/70 p-3">
-              <div class="text-xs font-semibold">{{ t('tools.imageStudioCover') }}</div>
-              <div class="flex items-center gap-1.5">
-                <PathInput
-                  v-model="coverAudioPath"
-                  :readonly="false"
-                  :label="t('tools.imageStudioCoverPick')"
-                  :placeholder="t('tools.imageStudioCoverPick')"
-                  @browse="pickCoverAudio"
-                />
-              </div>
-              <Button
-                variant="outline"
-                class="w-full"
-                data-testid="image-studio-cover-set"
-                :disabled="!savedPath || !coverAudioPath"
-                @click="setAsCover"
-              >
-                {{ t('tools.imageStudioCoverSetButton') }}
-              </Button>
-              <p
-                v-if="coverStatus"
-                class="text-2xs"
-                :class="coverOk ? 'text-success' : 'text-error'"
-              >
-                {{ coverStatus }}
-              </p>
-            </section>
+            <ImageStudioCoverPanel
+              v-model:cover-audio-path="coverAudioPath"
+              :saved-path="savedPath"
+              :status="coverStatus"
+              :ok="coverOk"
+              @browse="pickCoverAudio"
+              @apply="setAsCover"
+            />
           </aside>
         </div>
       </div>

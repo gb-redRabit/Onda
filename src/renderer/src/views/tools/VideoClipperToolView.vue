@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
-  CheckCircle2,
-  Clock,
-  FolderOpen,
   Layers,
   LocateFixed,
   Magnet,
@@ -24,229 +21,133 @@ import EmptyState from '@renderer/components/ui/EmptyState.vue';
 import Spinner from '@renderer/components/ui/Spinner.vue';
 import ToolWindowShell from '@renderer/components/tools/ToolWindowShell.vue';
 import Button from '@renderer/components/ui/Button.vue';
-import IconButton from '@renderer/components/ui/IconButton.vue';
-import PathInput from '@renderer/components/ui/PathInput.vue';
-import Select from '@renderer/components/ui/Select.vue';
+import ClipExportSettings from '@renderer/components/tools/clip/ClipExportSettings.vue';
+import ClipJobStatus from '@renderer/components/tools/clip/ClipJobStatus.vue';
+import ClipList from '@renderer/components/tools/clip/ClipList.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
+import { useClipExporter } from '@renderer/composables/useClipExporter';
+import { useClipTimeline } from '@renderer/composables/useClipTimeline';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { filesForTool, toolContextPaths } from '@shared/tool-input';
 import { VIDEO_TOOL_EXTS } from '@shared/types/tools';
 import { toMediaServerUrl } from '@renderer/utils/mediaUrl';
-import { useVideoThumbnails } from '@renderer/composables/useVideoThumbnails';
-import {
-  FRAME_STRIP_MIN_PX,
-  MAX_ZOOM,
-  MIN_ZOOM,
-  TRACK_PAD_PCT,
-  TRACK_SPAN_PCT,
-  ZOOM_LEVELS,
-  buildTimelineTicks,
-  extensionOf as extensionOfPath,
-  fileNameOf,
-  formatTimecode as formatTimecodeOf,
-  frameStripCovers as frameStripCoversOf,
-  percentageOf,
-  snapTimeToTargets,
-  trackPctOf
-} from '@renderer/utils/videoClipper';
-import type {
-  MediaConvertProgress,
-  VideoClipAudio,
-  VideoClipContainer,
-  VideoClipFormat,
-  VideoClipMode,
-  VideoClipRequest,
-  VideoClipRotation
-} from '@shared/types/tools';
-
-type ClipStatus = 'idle' | 'exporting' | 'done' | 'error' | 'canceled';
-type DragTarget = 'playhead' | 'start' | 'end' | null;
-
-interface ClipItem {
-  id: string;
-  startSec: number;
-  endSec: number;
-  status: 'pending' | 'exporting' | 'done' | 'error' | 'canceled';
-  outputPath?: string;
-  error?: string;
-}
+import { MAX_ZOOM, MIN_ZOOM, TRACK_PAD_PCT, extensionOf } from '@renderer/utils/videoClipper';
 
 const VIDEO_EXTS = new Set<string>(VIDEO_TOOL_EXTS);
 
 const { t } = useI18n();
-const { context, sendToMain } = useToolBridge();
+const { context } = useToolBridge();
 const videoEl = ref<HTMLVideoElement | null>(null);
 const timelineEl = ref<HTMLElement | null>(null);
 const timelineScrollEl = ref<HTMLElement | null>(null);
-const timelineZoom = ref(1);
 const videoPath = ref('');
 const videoLoading = ref(false);
 const duration = ref(0);
 const videoFps = ref(30);
-const timelineScrollLeft = ref(0);
-const timelineViewportWidth = ref(0);
-const timelineWidthPx = ref(0);
 const currentTime = ref(0);
 const startSec = ref(0);
 const endSec = ref(0);
-const container = ref<VideoClipContainer>('mp4');
-const clipMode = ref<VideoClipMode>('copy');
-const clipFormat = ref<VideoClipFormat>('video');
-const audioMode = ref<VideoClipAudio>('keep');
-const rotation = ref<VideoClipRotation>(0);
-const targetSizeMb = ref(0);
-
-function setRotation(value: string | number | undefined): void {
-  rotation.value = Number(value) as VideoClipRotation;
-}
-const outputDir = ref('');
-const status = ref<ClipStatus>('idle');
-const progress = ref(0);
-const speed = ref('');
-const error = ref('');
-const outputPath = ref('');
-const busy = ref(false);
 const isPlaying = ref(false);
-const previewing = ref(false);
-const dragging = ref<DragTarget>(null);
-const snapEnabled = ref(true);
-const loopRange = ref(false);
-const followPlayhead = ref(true);
-const cancelRequested = ref(false);
-const clips = ref<ClipItem[]>([]);
-let currentJobId = '';
-let offProgress: (() => void) | null = null;
-
 const videoUrl = computed(() => (videoPath.value ? toMediaServerUrl(videoPath.value) : ''));
-const clipDuration = computed(() => Math.max(0, endSec.value - startSec.value));
-const startPct = computed(() => percentageOf(startSec.value, duration.value));
-const endPct = computed(() => percentageOf(endSec.value, duration.value));
-const currentPct = computed(() => percentageOf(currentTime.value, duration.value));
-const zoomLabel = computed(() => {
-  const zoom = Math.round(timelineZoom.value * 100) / 100;
-  return Number.isInteger(zoom) ? String(zoom) : zoom.toFixed(1);
-});
-const fpsLabel = computed(() =>
-  Number.isInteger(videoFps.value) ? String(videoFps.value) : videoFps.value.toFixed(2)
-);
-const canExport = computed(
-  () =>
-    !!videoPath.value &&
-    !busy.value &&
-    Number.isFinite(startSec.value) &&
-    Number.isFinite(endSec.value) &&
-    endSec.value - startSec.value >= 0.05
-);
 
-watch([clipFormat, audioMode, rotation, targetSizeMb], () => {
-  if (
-    clipFormat.value === 'gif' ||
-    audioMode.value === 'mute' ||
-    rotation.value !== 0 ||
-    targetSizeMb.value > 0
-  ) {
-    clipMode.value = 'exact';
-  }
-});
-
-const frameDuration = computed(() => 1 / Math.max(1, videoFps.value));
-const timelineContentWidth = computed(() => (timelineWidthPx.value * TRACK_SPAN_PCT) / 100);
-const pixelsPerSecond = computed(() =>
-  duration.value > 0 && timelineContentWidth.value > 0
-    ? timelineContentWidth.value / duration.value
-    : 0
-);
-const frameWidthPx = computed(() =>
-  pixelsPerSecond.value > 0 ? pixelsPerSecond.value / Math.max(1, videoFps.value) : 0
-);
-const frameStripActive = computed(
-  () => frameWidthPx.value >= FRAME_STRIP_MIN_PX && duration.value > 0
-);
 const {
+  container,
+  clipMode,
+  clipFormat,
+  audioMode,
+  rotation,
+  targetSizeMb,
+  outputDir,
+  status,
+  progress,
+  speed,
+  error,
+  outputPath,
+  busy,
+  clips,
+  canExport,
+  resetExportState,
+  addClip,
+  removeClip,
+  clearClips,
+  startClipList,
+  startClip,
+  cancelClip,
+  openPath,
+  openOutput,
+  unsubscribeProgress
+} = useClipExporter({ videoPath, duration, startSec, endSec, clampRange: () => clampRange() });
+
+const {
+  timelineZoom,
+  previewing,
+  snapEnabled,
+  loopRange,
+  followPlayhead,
+  clipDuration,
+  startPct,
+  endPct,
+  currentPct,
+  zoomLabel,
+  fpsLabel,
+  frameStripActive,
   thumbnails,
   thumbsLoading,
   thumbsRefreshing,
   thumbsError,
   frameStrip,
   frameStripLoading,
+  frameStripCovers,
+  timelineTicks,
+  trackPct,
+  formatTimecode,
+  onMetadata,
+  onTimeUpdate,
+  clampRange,
+  seekBy,
+  seekByFrames,
+  togglePlay,
+  previewClip,
+  setStart,
+  setEnd,
+  resetRange,
+  toggleLoop,
+  fitAll,
+  fitSelection,
+  fitSecond,
+  zoomBy,
+  onTimelineScroll,
+  onTimelineWheel,
+  onWindowResize,
+  keepPlayheadVisible,
+  ratioFromEvent,
+  applyDrag,
+  onPointerMove,
+  beginMarkerDrag,
+  onTimelinePointerDown,
+  endDrag,
+  onDurationReset,
   cancelThumbnails,
-  cancelFrameStrip,
-  scheduleThumbnailRefresh,
-  scheduleFrameStrip,
-  generateThumbnails
-} = useVideoThumbnails({
+  cancelFrameStrip
+} = useClipTimeline({
   videoPath,
-  duration,
-  videoFps,
-  timelineZoom,
-  timelineScrollEl,
+  videoEl,
   timelineEl,
-  frameStripActive: () => frameStripActive.value
+  timelineScrollEl,
+  duration,
+  currentTime,
+  startSec,
+  endSec,
+  videoFps,
+  busy
 });
 
-const frameStripCovers = computed(() =>
-  frameStripCoversOf({
-    strip: frameStrip.value,
-    duration: duration.value,
-    widthPx: timelineWidthPx.value,
-    scrollLeft: timelineScrollLeft.value,
-    viewportWidth: timelineViewportWidth.value
-  })
-);
-
-const timelineTicks = computed(() =>
-  buildTimelineTicks({
-    duration: duration.value,
-    widthPx: timelineWidthPx.value,
-    pixelsPerSecond: pixelsPerSecond.value,
-    zoom: timelineZoom.value,
-    frameWidthPx: frameWidthPx.value,
-    frameDuration: frameDuration.value,
-    scrollLeft: timelineScrollLeft.value,
-    viewportWidth: timelineViewportWidth.value
-  })
-);
-
-function updateTimelineMetrics(): void {
-  const outer = timelineScrollEl.value;
-  const el = timelineEl.value;
-  if (!outer || !el) return;
-  timelineScrollLeft.value = outer.scrollLeft;
-  timelineViewportWidth.value = outer.clientWidth;
-  timelineWidthPx.value = el.clientWidth;
-}
-
-function onTimelineScroll(): void {
-  updateTimelineMetrics();
-  scheduleFrameStrip();
-}
-
-function trackPct(value: number): number {
-  return trackPctOf(value);
-}
-
-function fileName(path: string): string {
-  return fileNameOf(path);
-}
-
-function formatTimecode(seconds: number): string {
-  return formatTimecodeOf(seconds, videoFps.value);
-}
-
-function snapTime(value: number, exclude?: DragTarget): number {
-  return snapTimeToTargets(value, {
-    duration: duration.value,
-    fps: videoFps.value,
-    enabled: snapEnabled.value,
-    pixelsPerSecond: pixelsPerSecond.value,
-    targets: { start: startSec.value, end: endSec.value, playhead: currentTime.value },
-    exclude
-  });
-}
-
-function extensionOf(path: string): string {
-  return extensionOfPath(path);
-}
+// Helpery osi czasu używane w szablonie pośrednio (przez handlery) i w testach
+// jednostkowych przez `wrapper.vm` — jawna referencja zapobiega TS6133.
+void keepPlayheadVisible;
+void ratioFromEvent;
+void applyDrag;
+void onPointerMove;
 
 async function loadVideo(path: string): Promise<void> {
   videoLoading.value = path !== '';
@@ -266,18 +167,11 @@ async function loadVideo(path: string): Promise<void> {
     container.value = ext === 'webm' || ext === 'mkv' ? 'mkv' : 'mp4';
     duration.value = 0;
     videoFps.value = 30;
-    timelineScrollLeft.value = 0;
-    timelineWidthPx.value = 0;
-    timelineViewportWidth.value = 0;
+    onDurationReset();
     currentTime.value = 0;
     startSec.value = 0;
     endSec.value = 0;
-    status.value = 'idle';
-    progress.value = 0;
-    speed.value = '';
-    error.value = '';
-    outputPath.value = '';
-    previewing.value = false;
+    resetExportState();
     isPlaying.value = false;
   } finally {
     videoLoading.value = false;
@@ -322,484 +216,9 @@ watch(
   { immediate: true }
 );
 
-function onMetadata(): void {
-  const value = videoEl.value?.duration;
-  duration.value = Number.isFinite(value) && value !== undefined && value > 0 ? value : 0;
-  startSec.value = 0;
-  endSec.value = duration.value;
-  currentTime.value = 0;
-  void nextTick(updateTimelineMetrics);
-  void generateThumbnails();
-}
-
-function keepPlayheadVisible(): void {
-  if (!followPlayhead.value) return;
-  const outer = timelineScrollEl.value;
-  const el = timelineEl.value;
-  if (!outer || !el) return;
-  const x = (trackPct(currentPct.value) / 100) * el.clientWidth;
-  const margin = Math.min(80, outer.clientWidth * 0.2);
-  if (x < outer.scrollLeft + margin || x > outer.scrollLeft + outer.clientWidth - margin) {
-    outer.scrollLeft = Math.max(
-      0,
-      Math.min(outer.scrollWidth - outer.clientWidth, x - outer.clientWidth / 2)
-    );
-    updateTimelineMetrics();
-  }
-}
-
-function onTimeUpdate(): void {
-  const video = videoEl.value;
-  if (!video) return;
-  currentTime.value = video.currentTime;
-  if (
-    loopRange.value &&
-    !video.paused &&
-    currentTime.value >= endSec.value - frameDuration.value / 2
-  ) {
-    video.currentTime = startSec.value;
-    currentTime.value = startSec.value;
-    keepPlayheadVisible();
-    return;
-  }
-  if (previewing.value && currentTime.value >= endSec.value) {
-    video.pause();
-    video.currentTime = endSec.value;
-    currentTime.value = endSec.value;
-    previewing.value = false;
-  }
-  if (!video.paused) keepPlayheadVisible();
-}
-
-function clampRange(): void {
-  if (duration.value <= 0) return;
-  startSec.value = Math.min(Math.max(0, startSec.value || 0), duration.value);
-  endSec.value = Math.min(Math.max(startSec.value + 0.05, endSec.value || 0), duration.value);
-}
-
-function seekTo(seconds: number): void {
-  const video = videoEl.value;
-  if (!video) return;
-  const value = snapTime(Math.min(Math.max(0, seconds), duration.value || 0), 'playhead');
-  video.currentTime = value;
-  currentTime.value = value;
-  keepPlayheadVisible();
-}
-
-function seekBy(delta: number): void {
-  seekTo(currentTime.value + delta);
-}
-
-function seekByFrames(frames: number): void {
-  seekBy(frames * frameDuration.value);
-}
-
-async function togglePlay(): Promise<void> {
-  const video = videoEl.value;
-  if (!video) return;
-  if (video.paused) {
-    previewing.value = false;
-    await video.play().catch(() => undefined);
-  } else {
-    video.pause();
-  }
-}
-
-async function previewClip(): Promise<void> {
-  const video = videoEl.value;
-  if (!video) return;
-  clampRange();
-  seekTo(startSec.value);
-  previewing.value = true;
-  await video.play().catch(() => {
-    previewing.value = false;
-  });
-}
-
-function setStart(): void {
-  startSec.value = Math.min(snapTime(currentTime.value, 'start'), Math.max(0, endSec.value - 0.05));
-}
-
-function setEnd(): void {
-  endSec.value = Math.max(snapTime(currentTime.value, 'end'), startSec.value + 0.05);
-}
-
-function resetRange(): void {
-  startSec.value = 0;
-  endSec.value = duration.value;
-  seekTo(0);
-}
-
-function toggleLoop(): void {
-  loopRange.value = !loopRange.value;
-  if (
-    loopRange.value &&
-    (currentTime.value < startSec.value || currentTime.value >= endSec.value)
-  ) {
-    seekTo(startSec.value);
-  }
-}
-
-function fitAll(): void {
-  timelineZoom.value = MIN_ZOOM;
-  void nextTick(() => {
-    const outer = timelineScrollEl.value;
-    if (outer) outer.scrollLeft = 0;
-    updateTimelineMetrics();
-    scheduleThumbnailRefresh();
-    scheduleFrameStrip();
-  });
-}
-
-function fitSelection(): void {
-  if (clipDuration.value <= 0) return;
-  const target = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, duration.value / clipDuration.value));
-  timelineZoom.value = target;
-  void nextTick(() => {
-    const outer = timelineScrollEl.value;
-    const el = timelineEl.value;
-    if (outer && el) {
-      const startX = (trackPct(startPct.value) / 100) * el.clientWidth;
-      outer.scrollLeft = Math.max(
-        0,
-        Math.min(outer.scrollWidth - outer.clientWidth, startX - outer.clientWidth * 0.04)
-      );
-    }
-    updateTimelineMetrics();
-    scheduleThumbnailRefresh();
-    scheduleFrameStrip();
-  });
-}
-
-function fitSecond(): void {
-  if (duration.value <= 0) return;
-  const target = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, duration.value / (TRACK_SPAN_PCT / 100)));
-  timelineZoom.value = target;
-  void nextTick(() => {
-    const outer = timelineScrollEl.value;
-    const el = timelineEl.value;
-    if (outer && el) {
-      const x = (trackPct(currentPct.value) / 100) * el.clientWidth;
-      outer.scrollLeft = Math.max(
-        0,
-        Math.min(outer.scrollWidth - outer.clientWidth, x - outer.clientWidth / 2)
-      );
-    }
-    updateTimelineMetrics();
-    scheduleThumbnailRefresh();
-    scheduleFrameStrip();
-  });
-}
-
-function zoomBy(direction: number, clientX?: number): void {
-  const current = timelineZoom.value;
-  const next =
-    direction > 0
-      ? (ZOOM_LEVELS.find((level) => level > current + 0.001) ?? MAX_ZOOM)
-      : ([...ZOOM_LEVELS].reverse().find((level) => level < current - 0.001) ?? MIN_ZOOM);
-  if (next !== current) applyZoom(next, clientX);
-}
-
-function applyZoom(next: number, clientX?: number): void {
-  const outer = timelineScrollEl.value;
-  const el = timelineEl.value;
-  if (!outer || !el) return;
-  const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next));
-  if (Math.abs(zoom - timelineZoom.value) < 0.001) return;
-
-  const outerRect = outer.getBoundingClientRect();
-  let contentX: number;
-  let viewportX: number;
-  if (clientX !== undefined) {
-    viewportX = Math.min(outer.clientWidth, Math.max(0, clientX - outerRect.left));
-    contentX = outer.scrollLeft + viewportX;
-  } else {
-    const playheadContent = (trackPct(currentPct.value) / 100) * el.clientWidth;
-    const playheadViewport = playheadContent - outer.scrollLeft;
-    contentX = playheadContent;
-    viewportX =
-      playheadViewport >= 0 && playheadViewport <= outer.clientWidth
-        ? playheadViewport
-        : outer.clientWidth / 2;
-  }
-  const contentRatio = contentX / Math.max(1, el.clientWidth);
-
-  timelineZoom.value = zoom;
-  void nextTick(() => {
-    const maxScroll = Math.max(0, outer.scrollWidth - outer.clientWidth);
-    outer.scrollLeft = Math.min(
-      maxScroll,
-      Math.max(0, contentRatio * outer.scrollWidth - viewportX)
-    );
-    updateTimelineMetrics();
-    scheduleThumbnailRefresh();
-    scheduleFrameStrip();
-  });
-}
-
-function onTimelineWheel(event: WheelEvent): void {
-  if (!event.ctrlKey && !event.metaKey) return;
-  event.preventDefault();
-  applyZoom(timelineZoom.value * (event.deltaY < 0 ? 1.2 : 1 / 1.2), event.clientX);
-}
-
-function onWindowResize(): void {
-  updateTimelineMetrics();
-  scheduleThumbnailRefresh(300);
-  scheduleFrameStrip(300);
-}
-
-function addClip(): void {
-  if (busy.value || duration.value <= 0) return;
-  clampRange();
-  if (endSec.value - startSec.value < 0.05) return;
-  clips.value.push({
-    id: crypto.randomUUID(),
-    startSec: startSec.value,
-    endSec: endSec.value,
-    status: 'pending'
-  });
-}
-
-function removeClip(id: string): void {
-  if (busy.value) return;
-  clips.value = clips.value.filter((clip) => clip.id !== id);
-}
-
-function clearClips(): void {
-  if (busy.value) return;
-  clips.value = [];
-}
-
-function requestFor(jobId: string, start: number, end: number): VideoClipRequest {
-  return {
-    jobId,
-    inputPath: videoPath.value,
-    outputDir: outputDir.value.trim() || undefined,
-    startSec: start,
-    endSec: end,
-    container: container.value,
-    mode: clipMode.value,
-    format: clipFormat.value,
-    audio: audioMode.value,
-    rotation: rotation.value,
-    targetSizeMb: targetSizeMb.value || undefined
-  };
-}
-
-async function startClipList(): Promise<void> {
-  if (busy.value || clips.value.length === 0) return;
-  busy.value = true;
-  cancelRequested.value = false;
-  status.value = 'exporting';
-  progress.value = 0;
-  speed.value = '';
-  error.value = '';
-  outputPath.value = '';
-
-  for (const clip of clips.value) {
-    clip.status = 'pending';
-    clip.error = undefined;
-    clip.outputPath = undefined;
-  }
-
-  offProgress?.();
-  offProgress = window.api.on('tools:progress', (payload) => {
-    const update = payload as MediaConvertProgress;
-    if (update.jobId !== currentJobId) return;
-    if (update.percent >= 0) progress.value = update.percent;
-    if (update.speed) speed.value = update.speed;
-  });
-
-  try {
-    for (const clip of clips.value) {
-      if (cancelRequested.value) {
-        clip.status = 'canceled';
-        continue;
-      }
-      currentJobId = crypto.randomUUID();
-      clip.status = 'exporting';
-      progress.value = 0;
-      try {
-        const result = await window.api.clipVideo(
-          requestFor(currentJobId, clip.startSec, clip.endSec)
-        );
-        if (result.canceled) {
-          clip.status = 'canceled';
-          cancelRequested.value = true;
-        } else if (result.success) {
-          clip.status = 'done';
-          clip.outputPath = result.outputPath;
-          outputPath.value = result.outputPath ?? '';
-        } else {
-          clip.status = 'error';
-          clip.error = result.error || t('tools.clipFailed');
-          error.value = clip.error;
-        }
-      } catch (e) {
-        clip.status = 'error';
-        clip.error = e instanceof Error ? e.message : String(e);
-        error.value = clip.error;
-      }
-    }
-
-    const done = clips.value.filter((clip) => clip.status === 'done').length;
-    if (done > 0) {
-      void sendToMain('clip-complete', {
-        name: t('tools.clipListComplete', { count: done }),
-        outputPath: outputPath.value
-      });
-    }
-    if (clips.value.some((clip) => clip.status === 'canceled')) {
-      status.value = 'canceled';
-    } else if (clips.value.some((clip) => clip.status === 'error')) {
-      status.value = 'error';
-      error.value =
-        clips.value.find((clip) => clip.status === 'error')?.error || t('tools.clipFailed');
-    } else {
-      status.value = 'done';
-      progress.value = 100;
-    }
-  } finally {
-    busy.value = false;
-    currentJobId = '';
-    offProgress?.();
-    offProgress = null;
-  }
-}
-
-function ratioFromEvent(event: PointerEvent): number | null {
-  const el = timelineEl.value;
-  if (!el || duration.value <= 0) return null;
-  const rect = el.getBoundingClientRect();
-  const position = ((event.clientX - rect.left) / rect.width) * 100;
-  return Math.min(1, Math.max(0, (position - TRACK_PAD_PCT) / TRACK_SPAN_PCT));
-}
-
-function applyDrag(event: PointerEvent): void {
-  const ratio = ratioFromEvent(event);
-  if (ratio === null) return;
-  const value = snapTime(ratio * duration.value, dragging.value);
-  if (dragging.value === 'start') {
-    startSec.value = Math.min(value, Math.max(0, endSec.value - 0.05));
-  } else if (dragging.value === 'end') {
-    endSec.value = Math.max(value, Math.min(duration.value, startSec.value + 0.05));
-  } else {
-    previewing.value = false;
-    seekTo(value);
-  }
-}
-
-function onPointerMove(event: PointerEvent): void {
-  if (!dragging.value) return;
-  applyDrag(event);
-}
-
-function endDrag(): void {
-  dragging.value = null;
-  window.removeEventListener('pointermove', onPointerMove);
-  window.removeEventListener('pointerup', endDrag);
-}
-
-function beginDrag(target: DragTarget, event: PointerEvent): void {
-  if (busy.value || duration.value <= 0) return;
-  event.preventDefault();
-  dragging.value = target;
-  applyDrag(event);
-  window.addEventListener('pointermove', onPointerMove);
-  window.addEventListener('pointerup', endDrag);
-}
-
-function onTimelinePointerDown(event: PointerEvent): void {
-  beginDrag('playhead', event);
-}
-
-function beginMarkerDrag(target: 'start' | 'end', event: PointerEvent): void {
-  beginDrag(target, event);
-}
-
 async function pickOutputDir(): Promise<void> {
   const paths = (await window.api.invoke('dialog:openFolder')) as string[];
   if (paths.length > 0) outputDir.value = paths[0];
-}
-
-async function startClip(): Promise<void> {
-  if (!canExport.value) return;
-  clampRange();
-  if (endSec.value - startSec.value < 0.05) {
-    error.value = t('tools.clipInvalidRange');
-    return;
-  }
-
-  busy.value = true;
-  cancelRequested.value = false;
-  status.value = 'exporting';
-  progress.value = 0;
-  speed.value = '';
-  error.value = '';
-  outputPath.value = '';
-  currentJobId = crypto.randomUUID();
-
-  offProgress?.();
-  offProgress = window.api.on('tools:progress', (payload) => {
-    const update = payload as MediaConvertProgress;
-    if (update.jobId !== currentJobId) return;
-    if (update.percent >= 0) progress.value = update.percent;
-    if (update.speed) speed.value = update.speed;
-  });
-
-  const request: VideoClipRequest = {
-    jobId: currentJobId,
-    inputPath: videoPath.value,
-    outputDir: outputDir.value.trim() || undefined,
-    startSec: startSec.value,
-    endSec: endSec.value,
-    container: container.value,
-    mode: clipMode.value,
-    format: clipFormat.value,
-    audio: audioMode.value,
-    rotation: rotation.value,
-    targetSizeMb: targetSizeMb.value || undefined
-  };
-
-  try {
-    const result = await window.api.clipVideo(request);
-    if (result.canceled) {
-      status.value = 'canceled';
-    } else if (result.success) {
-      status.value = 'done';
-      progress.value = 100;
-      outputPath.value = result.outputPath ?? '';
-      void sendToMain('clip-complete', {
-        name: fileName(videoPath.value),
-        outputPath: result.outputPath
-      });
-    } else {
-      status.value = 'error';
-      error.value = result.error || t('tools.clipFailed');
-    }
-  } catch (e) {
-    status.value = 'error';
-    error.value = e instanceof Error ? e.message : String(e);
-  } finally {
-    busy.value = false;
-    offProgress?.();
-    offProgress = null;
-  }
-}
-
-function cancelClip(): void {
-  cancelRequested.value = true;
-  if (!busy.value || !currentJobId) return;
-  void window.api.cancelVideoClip(currentJobId);
-}
-
-function openPath(path?: string): void {
-  if (path) void window.api.invoke('shell:showItemInFolder', path);
-}
-
-function openOutput(): void {
-  openPath(outputPath.value);
 }
 
 function onGlobalKeydown(event: KeyboardEvent): void {
@@ -848,8 +267,7 @@ onBeforeUnmount(() => {
   endDrag();
   cancelThumbnails();
   cancelFrameStrip();
-  offProgress?.();
-  offProgress = null;
+  unsubscribeProgress();
   videoEl.value?.pause();
 });
 </script>
@@ -1326,227 +744,37 @@ onBeforeUnmount(() => {
             </p>
           </div>
 
-          <section
-            v-if="clips.length"
-            data-testid="clip-list"
-            class="rounded-box border border-hairline bg-base-100/70 p-3"
-          >
-            <div class="mb-2 flex items-center justify-between gap-2">
-              <span class="text-xs font-semibold">
-                {{ t('tools.clipList', { count: clips.length }) }}
-              </span>
-              <button
-                type="button"
-                class="fx-noise rounded-field px-2 py-1 text-2xs text-base-content/50 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
-                :disabled="busy"
-                @click="clearClips"
-              >
-                {{ t('tools.clipClearList') }}
-              </button>
-            </div>
-            <div class="space-y-1">
-              <div
-                v-for="(clip, index) in clips"
-                :key="clip.id"
-                class="flex items-center gap-2 rounded-field border border-hairline/60 bg-base-200/40 px-2 py-1.5"
-              >
-                <span class="w-5 text-center font-mono text-3xs text-base-content/45">
-                  {{ index + 1 }}
-                </span>
-                <span class="min-w-0 flex-1 font-mono text-2xs">
-                  {{ formatTimecode(clip.startSec) }} – {{ formatTimecode(clip.endSec) }}
-                </span>
-                <span class="shrink-0 text-3xs text-base-content/45">
-                  {{
-                    clip.status === 'exporting'
-                      ? t('tools.clipExporting')
-                      : t(`tools.${clip.status}`)
-                  }}
-                </span>
-                <button
-                  v-if="clip.outputPath"
-                  type="button"
-                  class="fx-noise shrink-0 rounded-field p-1 text-base-content/45 transition-colors hover:bg-base-content/10 hover:text-base-content"
-                  :title="t('tools.openOutput')"
-                  :aria-label="t('tools.openOutput')"
-                  @click="openPath(clip.outputPath)"
-                >
-                  <FolderOpen :size="11" />
-                </button>
-                <button
-                  type="button"
-                  class="fx-noise shrink-0 rounded-field p-1 text-base-content/40 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-30"
-                  :disabled="busy"
-                  :aria-label="t('tools.remove')"
-                  @click="removeClip(clip.id)"
-                >
-                  <Trash2 :size="11" />
-                </button>
-              </div>
-            </div>
-          </section>
+          <ClipList
+            :clips="clips"
+            :busy="busy"
+            :fps="videoFps"
+            @clear="clearClips"
+            @remove="removeClip"
+            @open="openPath"
+          />
         </section>
 
         <aside class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <section class="rounded-box border border-hairline bg-base-100/70 p-4 lg:row-span-2">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <label class="block">
-                <span class="text-2xs font-medium text-base-content/60">
-                  {{ t('tools.clipFormat') }}
-                </span>
-                <Select
-                  v-model="clipFormat"
-                  size="sm"
-                  class="mt-1"
-                  data-testid="clip-format"
-                  :disabled="busy"
-                >
-                  <option value="video">{{ t('tools.clipFormatVideo') }}</option>
-                  <option value="gif">{{ t('tools.clipFormatGif') }}</option>
-                </Select>
-              </label>
+          <ClipExportSettings
+            v-model:clip-format="clipFormat"
+            v-model:clip-mode="clipMode"
+            v-model:container="container"
+            v-model:audio-mode="audioMode"
+            v-model:rotation="rotation"
+            v-model:target-size-mb="targetSizeMb"
+            v-model:output-dir="outputDir"
+            :busy="busy"
+            @browse="pickOutputDir"
+          />
 
-              <label class="block">
-                <span class="mb-1 block text-2xs font-medium text-base-content/60">
-                  {{ t('tools.clipMode') }}
-                </span>
-                <Select
-                  v-model="clipMode"
-                  size="sm"
-                  data-testid="clip-mode"
-                  :disabled="busy || clipFormat === 'gif'"
-                >
-                  <option value="copy">{{ t('tools.clipModeCopy') }}</option>
-                  <option value="exact">{{ t('tools.clipModeExact') }}</option>
-                </Select>
-              </label>
-
-              <label class="block">
-                <span class="mb-1 block text-2xs font-medium text-base-content/60">
-                  {{ t('tools.clipContainer') }}
-                </span>
-                <Select
-                  v-model="container"
-                  size="sm"
-                  data-testid="clip-container"
-                  :disabled="busy || clipFormat === 'gif'"
-                >
-                  <option value="mp4">{{ t('tools.mp4') }}</option>
-                  <option value="mkv">{{ t('tools.mkv') }}</option>
-                  <option value="webm">{{ t('tools.webm') }}</option>
-                </Select>
-              </label>
-
-              <label class="block">
-                <span class="mb-1 block text-2xs font-medium text-base-content/60">
-                  {{ t('tools.clipAudio') }}
-                </span>
-                <Select
-                  v-model="audioMode"
-                  size="sm"
-                  data-testid="clip-audio"
-                  :disabled="busy || clipFormat === 'gif'"
-                >
-                  <option value="keep">{{ t('tools.clipAudioKeep') }}</option>
-                  <option value="mute">{{ t('tools.clipAudioMute') }}</option>
-                  <option value="remove">{{ t('tools.clipAudioRemove') }}</option>
-                </Select>
-              </label>
-
-              <label class="block">
-                <span class="mb-1 block text-2xs font-medium text-base-content/60">
-                  {{ t('tools.clipRotation') }}
-                </span>
-                <Select
-                  :model-value="rotation"
-                  size="sm"
-                  data-testid="clip-rotation"
-                  :disabled="busy || clipFormat === 'gif'"
-                  @update:model-value="setRotation($event)"
-                >
-                  <option :value="0">{{ t('tools.clipRotationNone') }}</option>
-                  <option :value="90">90°</option>
-                  <option :value="180">180°</option>
-                  <option :value="270">270°</option>
-                </Select>
-              </label>
-
-              <label class="block">
-                <span class="mb-1 block text-2xs font-medium text-base-content/60">
-                  {{ t('tools.clipTargetSize') }}
-                </span>
-                <Select
-                  :model-value="targetSizeMb"
-                  size="sm"
-                  data-testid="clip-target-size"
-                  :disabled="busy || clipFormat === 'gif'"
-                  @update:model-value="targetSizeMb = Number($event)"
-                >
-                  <option :value="0">{{ t('tools.clipTargetNone') }}</option>
-                  <option :value="10">10 MB</option>
-                  <option :value="25">25 MB</option>
-                </Select>
-              </label>
-
-              <label class="block sm:col-span-2">
-                <span class="mb-1 block text-2xs font-medium text-base-content/60">
-                  {{ t('tools.outputFolder') }}
-                </span>
-                <PathInput
-                  v-model="outputDir"
-                  :readonly="false"
-                  :label="t('tools.outputFolder')"
-                  :placeholder="t('tools.outputDefault')"
-                  :disabled="busy"
-                  @browse="pickOutputDir"
-                />
-              </label>
-            </div>
-          </section>
-
-          <section
-            v-if="status !== 'idle'"
-            data-testid="clip-job"
-            :data-status="status"
-            class="rounded-box border border-hairline bg-base-100/70 px-3 py-2"
-          >
-            <div class="flex items-center gap-2">
-              <CheckCircle2 v-if="status === 'done'" :size="14" class="shrink-0 text-success" />
-              <Square
-                v-else-if="status === 'canceled'"
-                :size="14"
-                class="shrink-0 text-base-content/40"
-              />
-              <Clock v-else :size="14" class="shrink-0 text-primary-text" />
-              <span class="min-w-0 flex-1 truncate text-xs">{{ t('tools.clipJob') }}</span>
-              <span class="shrink-0 text-2xs text-base-content/50">
-                {{ status === 'exporting' ? t('tools.clipExporting') : t(`tools.${status}`) }}
-                <template v-if="status === 'exporting'">
-                  {{ t('tools.progress', { percent: Math.round(progress) }) }}
-                  <template v-if="speed"> · {{ speed }}</template>
-                </template>
-              </span>
-              <IconButton
-                v-if="outputPath"
-                :icon="FolderOpen"
-                :label="t('tools.openOutput')"
-                :size="12"
-                @click="openOutput"
-              />
-            </div>
-            <div
-              v-if="status === 'exporting'"
-              class="mt-1.5 h-1 overflow-hidden rounded-full bg-base-300"
-            >
-              <div
-                class="h-full rounded-full bg-primary transition-[width] duration-300"
-                :style="{ width: `${Math.max(2, Math.min(100, progress))}%` }"
-              />
-            </div>
-            <p v-if="error" class="mt-1 text-2xs text-error line-clamp-2" :title="error">
-              {{ error }}
-            </p>
-          </section>
+          <ClipJobStatus
+            :status="status"
+            :progress="progress"
+            :speed="speed"
+            :error="error"
+            :output-path="outputPath"
+            @open="openOutput"
+          />
         </aside>
       </div>
     </div>
