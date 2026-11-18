@@ -157,3 +157,63 @@ trafić do wydania — v0.10.0 była niepodpisana.
 | release-please nie otwiera PR-a po pushu                        | brak `GH_TOKEN` z `contents: write`, albo manifest wskazuje już opublikowaną wersję | sprawdź `permissions` w `release.yml` i log akcji Release                                                                                                  |
 | `format:check` zgłasza plik, którego nie ma w `git status`      | test zostawił artefakt w katalogu repo                                              | `npm run check:artifacts` wskaże plik; napisz test tak, by używał `os.tmpdir()`                                                                            |
 | Brak `latest.yml` przy działającej aktualizacji                 | target nie jest tym, którego używa electron-updater (Windows: `nsis`, macOS: `zip`) | porównaj targety w `electron-builder.yml`                                                                                                                  |
+
+## 8. Checklista wydania
+
+### Przed merge PR-a release-please
+
+- [ ] `main` zielony (Build & Publish na wszystkich trzech systemach).
+- [ ] PR `chore(main): release X.Y.Z` podnosi tę samą wersję w
+      `package.json`, `.release-please-manifest.json` i `CHANGELOG.md`.
+- [ ] Nie edytuj wersji ręcznie. Zły bump popraw typem commita (albo zamknij PR
+      i wypchnij `feat:`/`fix:`) — `version:check` tego pilnuje.
+- [ ] Sekret `GH_TOKEN` (repo scope) jest ustawiony; bez niego release-please
+      nie utworzy tagu, a publish nie wgra assetów.
+- [ ] Zapisz numer poprzedniego wydania — posłuży do testu auto-update.
+
+### Merge i obserwacja
+
+- [ ] Merge PR-a (squash). Release workflow tworzy tag `vX.Y.Z` i GitHub Release.
+- [ ] Tag odpala Build & Publish: pełne E2E (nie tylko smoke) + build instalatorów.
+- [ ] Poczekaj na zielone joby. Dopiero krok `Publish installers (tags only)`
+      wgrywa assety; nie publikuj nic ręcznie.
+
+### Weryfikacja assetów w GitHub Release
+
+- [ ] Windows: `onda-X.Y.Z-setup.exe` + `.blockmap` + `latest.yml`.
+- [ ] macOS: `Onda-X.Y.Z-universal-mac.zip` (+ blockmap),
+      `Onda-X.Y.Z-universal.pkg`, `onda-X.Y.Z.dmg` (+ blockmap), `latest-mac.yml`.
+- [ ] Linux: `onda-X.Y.Z.AppImage`, `onda_X.Y.Z_amd64.deb`,
+      `onda-X.Y.Z.x86_64.rpm`, `latest-linux.yml`.
+- [ ] Każdy `latest*.yml` wskazuje nową wersję i istniejące nazwy assetów.
+- [ ] Release nie jest draftem ani prerelease (chyba że świadomie kanał beta).
+- [ ] Logi smoke: `[Onda/boot] window created`; macOS przeszło
+      `codesign --verify --deep --strict`, a `lipo -archs` pokazuje
+      `x86_64 arm64`.
+
+### Auto-update
+
+- [ ] Zainstaluj poprzednie wydanie (X.Y.Z-1), uruchom i sprawdź, że widzi
+      nową wersję i pobiera asset wskazany przez `latest*.yml`.
+- [ ] Windows: aktualizacja NSIS przechodzi bez błędu podpisu (do czasu
+      certyfikatu `verifyUpdateCodeSignature` pozostaje `false`).
+- [ ] macOS: aktualizacja idzie przez ZIP; DMG/PKG są tylko do ręcznej instalacji.
+- [ ] Linux: AppImage aktualizuje się z `latest-linux.yml`.
+
+### Po wydaniu
+
+- [ ] Tag i Release pokazują X.Y.Z, a `main` ma tę samą wersję w
+      `package.json` i manifeście (`version:check`).
+- [ ] Kolejne commity na `main` nie ruszają wersji; następny release-please
+      zaczyna od X.Y.Z.
+
+### Gdy coś padnie
+
+- [ ] Publish częściowo nieudany — „Re-run failed jobs” wystarczy;
+      `--clobber` nadpisze assety.
+- [ ] Zła wersja lub artefakt — nie usuwaj tagu i nie wydawaj ponownie tego
+      samego numeru; wypuść patch przez `fix:`.
+- [ ] Brak `latest*.yml` — sprawdź targety w `electron-builder.yml`
+      (Windows `nsis`, macOS `zip`, Linux `AppImage`).
+- [ ] macOS bez Developer ID — oczekiwane „niezidentyfikowany deweloper”;
+      notaryzacja dopiero po certyfikacie (patrz §6).
