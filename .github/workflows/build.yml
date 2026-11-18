@@ -345,6 +345,20 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
+
+          # Każdy runner produkuje tylko swój manifest auto-update. Bez tego
+          # guardu release mógł zostać opublikowany bez latest*.yml, a
+          # użytkownicy nie dostaliby aktualizacji.
+          case "$RUNNER_OS" in
+            Windows) expected_manifest=latest.yml ;;
+            macOS) expected_manifest=latest-mac.yml ;;
+            *) expected_manifest=latest-linux.yml ;;
+          esac
+          if [ ! -f "dist/$expected_manifest" ]; then
+            echo "Missing update manifest: dist/$expected_manifest" >&2
+            exit 1
+          fi
+
           artifacts=(
             dist/*.exe
             dist/*.dmg
@@ -363,7 +377,14 @@ jobs:
 
           # Manifesty auto-update publikujemy na końcu: jeżeli upload
           # instalatora padnie, użytkownicy nie zobaczą nowego `latest.yml`.
-          manifests=(dist/latest.yml dist/latest-linux.yml dist/latest-mac.yml)
+          # Budujemy listę przez `-f`, a nie samo `nullglob`: nullglob nie
+          # usuwa literalnych ścieżek bez wildcardów, więc `gh` dostawał
+          # nieistniejące `dist/latest*.yml` i kończył krok błędem
+          # "no matches found".
+          manifests=()
+          for name in latest.yml latest-linux.yml latest-mac.yml; do
+            if [ -f "dist/$name" ]; then manifests+=("dist/$name"); fi
+          done
           if [ ${#manifests[@]} -gt 0 ]; then
             gh release upload "$GITHUB_REF_NAME" "${manifests[@]}" --clobber
           fi
