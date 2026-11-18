@@ -1,0 +1,58 @@
+name: E2E (nightly)
+
+# Pełny zestaw E2E (69 specyfikacji) poza ścieżką push/PR: main uruchamia tylko
+# smoke, a tagi pełny zestaw — nocny przebieg łapie regresje wcześnie, bez
+# zużywania minut na każdym pushu. Ręcznie: workflow_dispatch.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-nightly
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Full E2E (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Część specyfikacji narzędzi korzysta z FFmpeg; na czystym runnerze
+      # trzeba go doinstalować (ten sam krok co w build.yml dla PR/tagów).
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Build
+        run: npm run build
+
+      - name: E2E
+        run: xvfb-run -a npm run e2e
+
+      - name: Upload E2E report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-nightly
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+          if-no-files-found: ignore
