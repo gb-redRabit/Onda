@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import en from '../locales/en';
+import pl from '../locales/pl';
 
 // App.vue posiada okablowanie na poziomie aplikacji, które trudno zamontować w teście jednostkowym (brak
 // @vue/test-utils w tym repo), więc te kontrole strukturalne chronią dokładnie te
@@ -8,8 +10,6 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const APP = readFileSync(join(ROOT, 'src/renderer/src/App.vue'), 'utf8');
-const EN = readFileSync(join(ROOT, 'src/renderer/src/locales/en.ts'), 'utf8');
-const PL = readFileSync(join(ROOT, 'src/renderer/src/locales/pl.ts'), 'utf8');
 
 describe('App.vue wiring', () => {
   it('updates the narrow layout on resize without debouncing', () => {
@@ -35,7 +35,7 @@ describe('App.vue wiring', () => {
     // Gałąź skrótu musi powiadamiać zamiast po cichu zwracać.
     expect(APP).toMatch(/ui\.notify\(/);
     expect(APP).toMatch(/menu\.viewSearchUnavailable/);
-    expect(EN).toContain('viewSearchUnavailable');
-    expect(PL).toContain('viewSearchUnavailable');
+    expect(en.menu.viewSearchUnavailable).toBeTruthy();
+    expect(pl.menu.viewSearchUnavailable).toBeTruthy();
   });
 });
