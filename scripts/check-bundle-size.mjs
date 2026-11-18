@@ -2,14 +2,14 @@ import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
 // Budżet bundla: pilnuje, żeby nowe zależności/assety nie rozdęły instalatora
-// po cichu. Limity są celowo z zapasem względem obecnego stanu (2026-11-05):
-// renderer ~8.57 MB, main ~0.84 MB, preload ~0.02 MB.
+// po cichu. Limity mają ~15-20% zapasu względem stanu (2026-11-18):
+// renderer ~8.58 MB, największy asset ~2.08 MB, main ~0.82 MB, preload ~0.02 MB.
 
 const LIMITS = {
-  rendererTotal: 12 * 1024 * 1024,
-  rendererSingle: 4 * 1024 * 1024,
-  main: 1.5 * 1024 * 1024,
-  preload: 128 * 1024
+  rendererTotal: 10 * 1024 * 1024,
+  rendererSingle: 2.5 * 1024 * 1024,
+  main: 1024 * 1024,
+  preload: 32 * 1024
 };
 
 const failures = [];
