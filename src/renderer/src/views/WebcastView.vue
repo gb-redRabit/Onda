@@ -218,7 +218,7 @@ const trackCount = computed(() => saved.tracks.length);
                       </div>
                       <button
                         type="button"
-                        class="absolute right-2 bottom-2 grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-content shadow-md transition-transform hover:scale-105 active:scale-95"
+                        class="absolute inset-0 m-auto grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-content shadow-md transition-transform hover:scale-105 active:scale-95"
                         :title="$t('youtube.playStream')"
                         :aria-label="$t('youtube.playStream')"
                         @click="playTrack(s)"

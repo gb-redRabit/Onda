@@ -128,7 +128,7 @@ function onHoverLeave() {
           <button
             type="button"
             data-testid="library-track-play"
-            class="pointer-events-auto absolute bottom-2 right-2 w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 transition shadow-lg"
+            class="pointer-events-auto absolute inset-0 m-auto w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center scale-90 group-hover:scale-100 group-focus-within:scale-100 transition shadow-lg"
             :aria-label="$t('common.play')"
             @click.stop="playNow"
           >
