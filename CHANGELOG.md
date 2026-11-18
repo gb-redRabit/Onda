@@ -9,6 +9,13 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI
 (patrz `RELEASE.md`).
 
+## [1.0.1](https://github.com/gb-redRabit/Onda/compare/v1.0.0...v1.0.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **ci:** publish only existing update manifests ([93da3fb](https://github.com/gb-redRabit/Onda/commit/93da3fbb08a0b63e56721bb2a2dfb79b86137d15))
+
 ## 1.0.0 (2026-11-18)
 
 
