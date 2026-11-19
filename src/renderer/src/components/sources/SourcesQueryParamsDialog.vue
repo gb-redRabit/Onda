@@ -26,7 +26,10 @@ watch(
   () => props.open,
   (open) => {
     if (open) draft.value = props.modelValue;
-  }
+  },
+  // Widok montuje dialog leniwie (`v-if="showParams"`), więc wartość modelu
+  // trzeba zaszczepić już przy montowaniu z `open = true`.
+  { immediate: true }
 );
 
 function apply(): void {

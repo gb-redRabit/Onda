@@ -63,8 +63,13 @@ describe('opening', () => {
     mountDialog({ open: false, modelValue: 'first=1' });
 
     await wrapper!.setProps({ open: true });
-
     expect((textarea().element as HTMLTextAreaElement).value).toBe('first=1');
+  });
+
+  it('seeds the draft when mounted already open', () => {
+    mountDialog({ open: true, modelValue: 'mounted=1' });
+
+    expect((textarea().element as HTMLTextAreaElement).value).toBe('mounted=1');
   });
 
   it('does not overwrite the draft while closed', async () => {
