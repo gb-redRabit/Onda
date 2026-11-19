@@ -34,6 +34,7 @@ import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
 import { initMainLocale, mainMessages } from './i18n-main';
 import { installGracefulShutdown, performShutdownTasks } from './bootstrap/shutdown';
+import { registerShellIpc } from './bootstrap/shell-ipc';
 import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
 import { relaunchApp } from './bootstrap/relaunch';
 import { sendToWindow } from './utils/broadcast';
@@ -454,54 +455,32 @@ app.whenReady().then(async () => {
 
   splash.send(mainMessages().bootStartingUi, 50);
 
-  ipcMain.handle('app:isCoreShell', () => coreShellEnabled);
-  ipcMain.handle('app:getWindowMode', () => startupMode);
-  ipcMain.handle('app:setWindowMode', async (_event, mode: unknown) => {
-    if (mode === 'main' || mode === 'compact') await switchWindowMode(mode);
-  });
-  ipcMain.handle('app:hideCompact', () => {
-    compactWindow?.hide();
-  });
-  ipcMain.handle('app:getStartupMode', async () => (await loadCompactState()).mode);
-  ipcMain.handle('app:setStartupMode', async (_event, mode: unknown) => {
-    if (mode === 'main' || mode === 'compact') await saveCompactState({ mode });
-  });
-  ipcMain.handle('app:getCompactPinned', () => compactWindow?.isAlwaysOnTop() ?? false);
-  ipcMain.handle('app:setCompactPinned', async (_event, pinned: unknown) => {
-    const value = pinned === true;
-    compactWindow?.setAlwaysOnTop(value);
-    await saveCompactState({ alwaysOnTop: value });
-  });
-  ipcMain.handle('app:consumeRestoreOnce', async () => {
-    const state = await loadCompactState();
-    if (state.restoreSessionOnce !== true) return false;
-    await saveCompactState({ restoreSessionOnce: false });
-    return true;
-  });
-  ipcMain.handle('app:getShellActive', (event) => {
-    const shell = activeShell();
-    return !!shell && !shell.isDestroyed() && shell.webContents.id === event.sender.id;
-  });
-
-  ipcMain.handle('app:rendererReady', (event) => {
-    perf('renderer ready');
-    splash.onRendererReady();
-    // Renderer może zamontować się po tym, jak zdarzenie aktualizacji już
-    // wystrzeliło (sprawdzenie przy starcie, przeładowanie, ponowna aktywacja
-    // macOS) — odtwórz ostatnie, aby globalne powiadomienie nie przepadło.
-    replayUpdaterEvent(event.sender);
-  });
-
-  ipcMain.handle('window:id', (event) => {
-    return BrowserWindow.fromWebContents(event.sender)?.id ?? 0;
-  });
-
-  ipcMain.handle('app:getPendingFiles', () => {
-    return openFiles.takePending();
-  });
-
-  ipcMain.handle('app:quit', () => {
-    quitApp();
+  registerShellIpc({
+    isCoreShell: () => coreShellEnabled,
+    getWindowMode: () => startupMode,
+    setWindowMode: switchWindowMode,
+    hideCompact: () => {
+      compactWindow?.hide();
+    },
+    getCompactPinned: () => compactWindow?.isAlwaysOnTop() ?? false,
+    setCompactPinned: async (pinned) => {
+      compactWindow?.setAlwaysOnTop(pinned);
+      await saveCompactState({ alwaysOnTop: pinned });
+    },
+    isActiveShellSender: (senderId) => {
+      const shell = activeShell();
+      return !!shell && !shell.isDestroyed() && shell.webContents.id === senderId;
+    },
+    getPendingFiles: () => openFiles.takePending(),
+    onRendererReady: (sender) => {
+      perf('renderer ready');
+      splash.onRendererReady();
+      // Renderer może zamontować się po tym, jak zdarzenie aktualizacji już
+      // wystrzeliło (sprawdzenie przy starcie, przeładowanie, ponowna aktywacja
+      // macOS) — odtwórz ostatnie, aby globalne powiadomienie nie przepadło.
+      replayUpdaterEvent(sender);
+    },
+    quit: quitApp
   });
 
   // Łagodne wyłączanie: opróżnia debounce'owaną persystencję i zatrzymuje pracę

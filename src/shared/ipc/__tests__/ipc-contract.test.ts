@@ -14,9 +14,9 @@ import {
 const ROOT = process.cwd();
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', 'release']);
 // `ipcMain.handle`/`handleOnce` oraz lokalne wrappery rejestrujące handlery
-// (np. `handleSpawnSubtitle`, który dokłada semafor) są źródłem prawdy o tym,
-// jakie kanały main faktycznie obsługuje.
-const HANDLE_RE = /(?:ipcMain\.handle(?:Once)?|handleSpawnSubtitle)\(\s*'([^']+)'/g;
+// (np. `handleSpawnSubtitle`, który dokłada semafor, i typowany `handleIpc`
+// z kontraktem) są źródłem prawdy o tym, jakie kanały main faktycznie obsługuje.
+const HANDLE_RE = /(?:ipcMain\.handle(?:Once)?|handleSpawnSubtitle|handleIpc)\(\s*'([^']+)'/g;
 // `ipcMain.on`/`once` obsługują kanały SEND (renderer → main).
 const ON_RE = /ipcMain\.(?:on|once)\(\s*'([^']+)'/g;
 

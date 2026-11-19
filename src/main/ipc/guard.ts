@@ -1,5 +1,5 @@
 import { ipcMain, app } from 'electron';
-import type { IpcMainInvokeEvent, IpcMainEvent, WebFrameMain } from 'electron';
+import type { WebFrameMain } from 'electron';
 import { fileURLToPath } from 'url';
 import { logger } from '../../shared/logger';
 import { isPathInside } from '../path-security';
@@ -79,10 +79,9 @@ export function installIpcGuards(): void {
   const originalOn = ipcMain.on.bind(ipcMain);
   const originalOnce = ipcMain.once.bind(ipcMain);
 
-  ipcMain.handle = ((
-    channel: string,
-    listener: (event: IpcMainInvokeEvent, ...args: any[]) => any
-  ) => {
+  // Typy parametrów pochodzą z samego Electrona (`typeof ipcMain.handle`), więc
+  // nie trzeba przepisywać `any[]` z jego sygnatury ani rzutować całej lambdy.
+  const handle: typeof ipcMain.handle = (channel, listener) => {
     originalHandle(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('invoke', channel);
@@ -98,9 +97,10 @@ export function installIpcGuards(): void {
       }
       return listener(event, ...args);
     });
-  }) as typeof ipcMain.handle;
+  };
+  ipcMain.handle = handle;
 
-  ipcMain.on = ((channel: string, listener: (event: IpcMainEvent, ...args: any[]) => void) => {
+  const on: typeof ipcMain.on = (channel, listener) => {
     originalOn(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('event', channel);
@@ -112,9 +112,11 @@ export function installIpcGuards(): void {
       }
       listener(event, ...args);
     });
-  }) as typeof ipcMain.on;
+    return ipcMain;
+  };
+  ipcMain.on = on;
 
-  ipcMain.once = ((channel: string, listener: (event: IpcMainEvent, ...args: any[]) => void) => {
+  const once: typeof ipcMain.once = (channel, listener) => {
     originalOnce(channel, (event, ...args) => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('once event', channel);
@@ -123,5 +125,7 @@ export function installIpcGuards(): void {
       }
       listener(event, ...args);
     });
-  }) as typeof ipcMain.once;
+    return ipcMain;
+  };
+  ipcMain.once = once;
 }

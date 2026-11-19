@@ -33,6 +33,16 @@ export default defineConfig(
   },
   eslintConfigPrettier,
   {
+    // Kod produkcyjny: jawne `any` wyłącza kontrolę typów w miejscu użycia, więc
+    // traktujemy je jak błąd. Testy celowo używają `as any` w mockach, a setup
+    // Vitest nadpisuje globalne `window.api` — te pliki zostają poza regułą.
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['src/**/__tests__/**', 'src/renderer/src/vitest.setup.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error'
+    }
+  },
+  {
     files: ['**/*.{ts,mts,tsx,vue}'],
     rules: {
       'vue/require-default-prop': 'off',

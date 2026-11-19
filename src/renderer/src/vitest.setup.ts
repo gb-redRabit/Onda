@@ -5,7 +5,7 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
     setTimeout(cb, 0) as unknown as number;
 }
 
-(window as any).api = {
+(window as unknown as { api: unknown }).api = {
   invoke: vi.fn(),
   send: vi.fn(),
   on: vi.fn(() => () => {}),
