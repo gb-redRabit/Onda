@@ -8,7 +8,13 @@ const h = vi.hoisted(() => ({ userData: '' }));
 
 vi.mock('electron', () => ({ app: { getPath: () => h.userData } }));
 
-import { decryptConf, encryptConf, legacyStoreKey, migrateLegacyStore } from '../store-crypto';
+import {
+  decryptConf,
+  encryptConf,
+  encryptConfWithIv,
+  legacyStoreKey,
+  migrateLegacyStore
+} from '../store-crypto';
 
 let root = '';
 
@@ -102,5 +108,18 @@ describe('migrateLegacyStore', () => {
 
     expect(fresh).toBeTruthy();
     expect(await readFile(join(nested, 'store.key'), 'utf-8')).toBe(fresh);
+  });
+
+  it('migrates even when the encrypted IV starts with a JSON brace', async () => {
+    // Regresja: losowy IV zaczynający się od 0x7b (`{`) był brany za jawny JSON,
+    // więc migracja zwracała null mniej więcej raz na 256 uruchomień.
+    await mkdir(h.userData, { recursive: true });
+    const iv = Buffer.concat([Buffer.from('{'), Buffer.alloc(15, 7)]);
+    await writeFile(configPath(), encryptConfWithIv('{"legacy":true}', legacyStoreKey(), iv));
+
+    const fresh = await migrateLegacyStore(keyPath());
+
+    expect(fresh).toBeTruthy();
+    expect(decryptConf(await readFile(configPath()), fresh!)).toBe('{"legacy":true}');
   });
 });

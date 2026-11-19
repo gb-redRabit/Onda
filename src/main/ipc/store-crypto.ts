@@ -30,7 +30,11 @@ export function decryptConf(data: Buffer, key: string): string | null {
 }
 
 export function encryptConf(plain: string, key: string): Buffer {
-  const iv = randomBytes(IV_LENGTH);
+  return encryptConfWithIv(plain, key, randomBytes(IV_LENGTH));
+}
+
+/** Wariant z jawnym IV — wyłącznie dla testów deterministycznych. */
+export function encryptConfWithIv(plain: string, key: string, iv: Buffer): Buffer {
   const cipher = createCipheriv('aes-256-cbc', derivePassword(key, iv), iv);
   const encrypted = Buffer.concat([cipher.update(Buffer.from(plain, 'utf8')), cipher.final()]);
   return Buffer.concat([iv, Buffer.from(':'), encrypted]);
@@ -46,8 +50,18 @@ export async function migrateLegacyStore(keyPath: string): Promise<string | null
   } catch {
     return null;
   }
-  // Pusty plik lub jawny JSON ('{') — nie ma czego migrować.
-  if (raw.length === 0 || raw[0] === 0x7b) return null;
+  // Pusty plik lub jawny JSON — nie ma czego migrować. Sam pierwszy bajt `{`
+  // nie wystarcza: zaszyfrowany config zaczyna się od losowego IV, który raz na
+  // 256 przypadków ma 0x7b. Dopiero udany `JSON.parse` całego pliku oznacza jawny config.
+  if (raw.length === 0) return null;
+  if (raw[0] === 0x7b) {
+    try {
+      JSON.parse(raw.toString('utf8'));
+      return null;
+    } catch {
+      // to nie jest jawny JSON — może być zaszyfrowany config z IV zaczynającym się od `{`
+    }
+  }
   if (raw.length < IV_LENGTH + 1 || raw[IV_LENGTH] !== ':'.charCodeAt(0)) return null;
   const plain = decryptConf(raw, legacyStoreKey());
   if (plain === null) return null;
