@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   getPath: vi.fn(() => 'C:/user'),
   readFile: vi.fn(),
   writeFile: vi.fn(),
+  rename: vi.fn(),
   mkdir: vi.fn(),
   loggerWarn: vi.fn()
 }));
@@ -13,6 +14,7 @@ vi.mock('electron', () => ({ app: { getPath: state.getPath } }));
 vi.mock('fs/promises', () => ({
   readFile: state.readFile,
   writeFile: state.writeFile,
+  rename: state.rename,
   mkdir: state.mkdir
 }));
 vi.mock('../../../shared/logger', () => ({
@@ -35,6 +37,8 @@ beforeEach(() => {
   state.readFile.mockRejectedValue(new Error('ENOENT'));
   state.writeFile.mockReset();
   state.writeFile.mockResolvedValue(undefined);
+  state.rename.mockReset();
+  state.rename.mockResolvedValue(undefined);
   state.mkdir.mockReset();
   state.mkdir.mockResolvedValue(undefined);
   state.loggerWarn.mockReset();
@@ -118,14 +122,19 @@ describe('saving', () => {
 
     expect(state.mkdir).toHaveBeenCalledWith(join('C:/user'), { recursive: true });
     expect(state.writeFile).toHaveBeenCalledWith(
-      FILE,
-      JSON.stringify({
-        mode: 'compact',
-        alwaysOnTop: false,
-        bounds: { x: 1, y: 2, width: 400, height: 600 }
-      }),
+      `${FILE}.tmp`,
+      JSON.stringify(
+        {
+          mode: 'compact',
+          alwaysOnTop: false,
+          bounds: { x: 1, y: 2, width: 400, height: 600 }
+        },
+        null,
+        2
+      ),
       'utf-8'
     );
+    expect(state.rename).toHaveBeenCalledWith(`${FILE}.tmp`, FILE);
     expect(store.compactStateSync()).toMatchObject({ mode: 'compact' });
   });
 
@@ -184,5 +193,21 @@ describe('saving', () => {
 
     expect(maxActive).toBe(1);
     expect(state.writeFile).toHaveBeenCalledTimes(2);
+  });
+
+  it('merges concurrent patches instead of losing one', async () => {
+    setStored({ mode: 'main' });
+    const store = await load();
+
+    await Promise.all([
+      store.saveCompactState({ alwaysOnTop: true }),
+      store.saveCompactState({ bounds: { x: 1, y: 2, width: 400, height: 600 } })
+    ]);
+
+    expect(store.compactStateSync()).toMatchObject({
+      mode: 'main',
+      alwaysOnTop: true,
+      bounds: { x: 1, y: 2, width: 400, height: 600 }
+    });
   });
 });

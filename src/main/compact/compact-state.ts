@@ -1,7 +1,8 @@
 import { app } from 'electron';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { logger } from '../../shared/logger';
+import { writeJsonAtomic } from '../utils/write-queue';
 
 export type WindowMode = 'main' | 'compact';
 
@@ -70,20 +71,23 @@ export function compactStateSync(): CompactState {
 }
 
 export async function saveCompactState(patch: Partial<CompactState>): Promise<void> {
-  const current = await loadCompactState();
-  const next: CompactState = {
-    ...current,
-    ...patch,
-    ...(patch.bounds !== undefined ? { bounds: validBounds(patch.bounds) } : {})
-  };
+  // `next` musi powstać wewnątrz locka: dwa równoległe zapisy różnych pól
+  // nadpisywały się stanem sprzed pierwszego zapisu (lost update).
   while (writeLock) await writeLock;
   let release: () => void;
   writeLock = new Promise<void>((resolve) => {
     release = resolve;
   });
   try {
-    await mkdir(dirname(stateFile()), { recursive: true });
-    await writeFile(stateFile(), JSON.stringify(next), 'utf-8');
+    const current = await loadCompactState();
+    const next: CompactState = {
+      ...current,
+      ...patch,
+      ...(patch.bounds !== undefined ? { bounds: validBounds(patch.bounds) } : {})
+    };
+    // Zapis przez plik tymczasowy + rename: przerwany zapis nie zostawia
+    // połowy JSON-a, który `loadCompactState` musiałby odrzucić.
+    await writeJsonAtomic(stateFile(), next);
     state = next;
   } catch (error) {
     logger.warn('compact', 'saving compact state failed', error);

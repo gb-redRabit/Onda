@@ -698,7 +698,7 @@ describe('window modes', () => {
       mode: 'compact',
       restoreSessionOnce: true
     });
-    expect(state.relaunch).toHaveBeenCalledWith(300);
+    expect(state.relaunch).toHaveBeenCalledWith(300, expect.any(Function));
   });
 
   it('hides the previous shell audio PiP when switching', async () => {
@@ -973,7 +973,7 @@ describe('mode switching edges', () => {
     await state.ipcHandlers['app:setWindowMode']({}, 'compact');
     await flush();
 
-    expect(state.relaunch).toHaveBeenCalledWith(300);
+    expect(state.relaunch).toHaveBeenCalledWith(300, expect.any(Function));
   });
 
   it('settles the handoff only once even if the IPC arrives twice', async () => {
@@ -986,7 +986,7 @@ describe('mode switching edges', () => {
     await promise;
     await flush();
 
-    expect(state.relaunch).toHaveBeenCalledWith(300);
+    expect(state.relaunch).toHaveBeenCalledWith(300, expect.any(Function));
   });
 });
 

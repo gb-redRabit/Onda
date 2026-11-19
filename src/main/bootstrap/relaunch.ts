@@ -44,20 +44,31 @@ function restartDevCommand(): void {
  * W dev z `ELECTRON_RENDERER_URL` podnosi nowe `electron-vite dev`; w buildzie
  * spakowanym używa `app.relaunch()`.
  */
-export function relaunchApp(delayMs = 300): void {
+export function relaunchApp(delayMs = 300, beforeExit?: () => Promise<void>): void {
   setTimeout(() => {
-    try {
-      if (app.isPackaged) {
-        app.relaunch();
-      } else if (process.env['ELECTRON_RENDERER_URL']) {
-        restartDevCommand();
+    void (async () => {
+      if (beforeExit) {
+        try {
+          // `app.exit(0)` nie emituje `before-quit`, więc bez tego kroku restart
+          // gubił zbuforowany stan i zostawiał procesy ffmpeg/yt-dlp.
+          await beforeExit();
+        } catch (error) {
+          logger.warn('relaunch', 'pre-restart cleanup failed', error);
+        }
       }
-      app.exit(0);
-    } catch (error) {
-      // Handler `closed` okna mógł rzucić wyjątkiem podczas zamykania — ponawiamy,
-      // żeby restart się odbył.
-      logger.warn('relaunch', 'app.exit threw - retrying', error);
-      setTimeout(() => app.exit(0), 200);
-    }
+      try {
+        if (app.isPackaged) {
+          app.relaunch();
+        } else if (process.env['ELECTRON_RENDERER_URL']) {
+          restartDevCommand();
+        }
+        app.exit(0);
+      } catch (error) {
+        // Handler `closed` okna mógł rzucić wyjątkiem podczas zamykania — ponawiamy,
+        // żeby restart się odbył.
+        logger.warn('relaunch', 'app.exit threw - retrying', error);
+        setTimeout(() => app.exit(0), 200);
+      }
+    })();
   }, delayMs);
 }

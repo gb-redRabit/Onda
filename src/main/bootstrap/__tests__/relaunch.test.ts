@@ -124,6 +124,34 @@ describe('development restart', () => {
 });
 
 describe('failure handling', () => {
+  it('runs the pre-restart cleanup before exiting', async () => {
+    mocks.app.isPackaged = true;
+    const cleanup = vi.fn(async () => undefined);
+
+    relaunchApp(0, cleanup);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    expect(mocks.app.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('still exits when the pre-restart cleanup fails', async () => {
+    mocks.app.isPackaged = true;
+    const cleanup = vi.fn(async () => {
+      throw new Error('flush failed');
+    });
+
+    relaunchApp(0, cleanup);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mocks.warn).toHaveBeenCalledWith(
+      'relaunch',
+      'pre-restart cleanup failed',
+      expect.any(Error)
+    );
+    expect(mocks.app.exit).toHaveBeenCalledWith(0);
+  });
+
   it('logs and retries exit when the first exit throws', () => {
     mocks.app.isPackaged = true;
     mocks.app.exit.mockImplementationOnce(() => {

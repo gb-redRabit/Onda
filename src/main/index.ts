@@ -33,7 +33,7 @@ import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
 import { OpenFileForwarder } from './bootstrap/open-files';
 import { initMainLocale, mainMessages } from './i18n-main';
-import { installGracefulShutdown } from './bootstrap/shutdown';
+import { installGracefulShutdown, performShutdownTasks } from './bootstrap/shutdown';
 import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
 import { relaunchApp } from './bootstrap/relaunch';
 import { sendToWindow } from './utils/broadcast';
@@ -42,6 +42,9 @@ let mainWindow: BrowserWindow | null = null;
 let compactWindow: BrowserWindow | null = null;
 let startHidden = false;
 let startupMode: WindowMode = 'main';
+/** Serializuje przełączenia trybu (IPC + tray mogą trafić równocześnie). */
+let modeSwitch: Promise<void> | null = null;
+let shutdownCleanup: (() => Promise<void>) | null = null;
 let coreShellEnabled = false;
 let quitting = false;
 let pipReady = false;
@@ -311,6 +314,22 @@ function prepareSessionHandoff(shell: BrowserWindow | null): Promise<void> {
 
 async function switchWindowMode(mode: WindowMode): Promise<void> {
   if (mode !== 'main' && mode !== 'compact') return;
+  // Bez serializacji dwa równoległe wywołania (menu/tray + IPC) przechodziły
+  // przez `mode === startupMode` przed zapisem stanu i tworzyły dwa okna.
+  while (modeSwitch) await modeSwitch;
+  let release!: () => void;
+  modeSwitch = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  try {
+    await switchWindowModeLocked(mode);
+  } finally {
+    modeSwitch = null;
+    release();
+  }
+}
+
+async function switchWindowModeLocked(mode: WindowMode): Promise<void> {
   if (mode === startupMode) return;
 
   if (mode === 'compact' && !coreShellEnabled) {
@@ -321,7 +340,8 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
     await saveCompactState({ mode: 'compact', restoreSessionOnce: true });
     quitting = true;
     logger.info('compact', 'legacy main -> compact: relaunching with Core shell');
-    relaunchApp(300);
+    if (shutdownCleanup) relaunchApp(300, shutdownCleanup);
+    else relaunchApp(300);
     return;
   }
 
@@ -368,6 +388,9 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
     mainWindow.show();
     mainWindow.focus();
     compactWindow?.hide();
+    // Powrót z compact po zniszczeniu PiP (np. zamknięcie compacta) musi
+    // przepiąć menedżera z powrotem na główne okno.
+    initPipForMain(mainWindow);
   }
   sendShellActivity();
 }
@@ -484,6 +507,7 @@ app.whenReady().then(async () => {
   // Łagodne wyłączanie: opróżnia debounce'owaną persystencję i zatrzymuje pracę
   // w tle przed `app.quit()` (szczegóły w `bootstrap/shutdown.ts`).
   installGracefulShutdown({ getMediaServer: () => mediaServer });
+  shutdownCleanup = () => performShutdownTasks({ getMediaServer: () => mediaServer });
 
   registerOndaProtocolHandler();
 
@@ -570,7 +594,20 @@ app.whenReady().then(async () => {
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    // W trybie Core/tray okno żyje, ale jest ukryte — `getAllWindows().length`
+    // nigdy nie jest wtedy zerem, więc dawny warunek nie przywracał UI. Sprawdzamy
+    // tylko okna faktycznie znane Electronowi, żeby nie „wskrzeszać” martwej referencji.
+    const windows = BrowserWindow.getAllWindows();
+    const existing =
+      (mainWindow && windows.includes(mainWindow) ? mainWindow : null) ??
+      (compactWindow && windows.includes(compactWindow) ? compactWindow : null);
+    if (existing) {
+      if (existing.isMinimized?.()) existing.restore?.();
+      existing.show?.();
+      existing.focus?.();
+      return;
+    }
+    if (windows.length === 0) {
       mainWindow = createWindow();
       wireMainWindow(mainWindow);
       mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());

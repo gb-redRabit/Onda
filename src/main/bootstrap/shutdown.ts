@@ -42,6 +42,76 @@ export interface ShutdownDeps {
  * zapisane. Opóźnij wyjście raz na `before-quit`, zaczekaj na każde opróżnienie,
  * potem wyjdź naprawdę.
  */
+export async function performShutdownTasks(deps: ShutdownDeps): Promise<void> {
+  try {
+    globalShortcut.unregisterAll();
+    // Zatrzymaj harmonogramy w tle, aby żadne przeglądanie yt-dlp/sieci nie zaczęło się podczas wyjścia.
+    stopSubscriptionChecker();
+    stopLinkSubsChecker();
+    // Zatrzymaj watcher biblioteki i analizę głośności, zanim zaczniemy
+    // opróżniać persystencję.
+    stopLibraryWatcher();
+    cancelLibraryLoudness();
+    cancelAllMediaConvert();
+    cancelAllMediaJobs();
+    cancelAllBatchImages();
+    cancelAllWaveformDecodes();
+    abortAllDependencies();
+    // Cache strumieni jest zapisywany synchronicznie; mapa okładek ma
+    // debounce, więc trafia do `flushes` niżej.
+    flushStreamCache();
+    deps.getMediaServer()?.close();
+    closeLoginWindow();
+    closeProviderLoginWindow();
+    shutdownDiscord();
+    // Najpierw zatrzymaj pracę: procesy potomne yt-dlp/ffmpeg i strumienie HTTP
+    // inaczej piszą do plików w trakcie opróżniania persystencji (i przeżywają
+    // zamknięcie aplikacji).
+    for (const job of jobs.values()) {
+      if (job.status !== 'downloading') continue;
+      if (job.child) {
+        try {
+          killDownloadProcess(job.child);
+        } catch {
+          /* już nie istnieje */
+        }
+      } else {
+        jobAbortControllers.get(job.id)?.abort();
+      }
+    }
+    // Opróżnij debounce'owaną persystencję, aby ostatnie zmiany nie przepadły.
+    // Limit czasu gwarantuje, że zamknięcie zawsze się kończy.
+    const flushes = Promise.allSettled([
+      // Linie zapisane podczas zamykania są tymi, które warto mieć, gdy
+      // doprowadziła nas tu awaria.
+      flushLogWrites(),
+      flushLibraryScanned(),
+      // Statystyki odtwarzania są debounce'owane (400 ms); opróżnij je, inaczej ostatnie odtworzenia przepadną.
+      flushStats(),
+      // Pozycje odtwarzania są debounce'owane (15 s) — bez tego ostatnie ~15 s przepada.
+      flushPlaybackPositions(),
+      // Kolejka pobierania jest debounce'owana (400 ms) — bez awaitowania
+      // ostatni zapis mógł przepaść.
+      flushQueueNow(),
+      // Cache providerów (foldery) jest debounce'owany — opróżnij przy wyjściu.
+      flushProviderCache(),
+      flushCoverMapWrite(),
+      getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
+    ]);
+    const shutdownTimeout = new Promise<'timeout'>((r) =>
+      setTimeout(() => r('timeout'), SHUTDOWN_FLUSH_TIMEOUT_MS)
+    );
+    if ((await Promise.race([flushes, shutdownTimeout])) === 'timeout') {
+      logger.warn(
+        'main',
+        `graceful shutdown flush exceeded ${SHUTDOWN_FLUSH_TIMEOUT_MS}ms — quitting anyway`
+      );
+    }
+  } catch (e) {
+    logger.error('main', 'graceful shutdown failed', e);
+  }
+}
+
 export function installGracefulShutdown(deps: ShutdownDeps): void {
   let quitting = false;
   app.on('before-quit', (event) => {
@@ -49,75 +119,8 @@ export function installGracefulShutdown(deps: ShutdownDeps): void {
     event.preventDefault();
     quitting = true;
     void (async () => {
-      try {
-        globalShortcut.unregisterAll();
-        // Zatrzymaj harmonogramy w tle, aby żadne przeglądanie yt-dlp/sieci nie zaczęło się podczas wyjścia.
-        stopSubscriptionChecker();
-        stopLinkSubsChecker();
-        // Zatrzymaj watcher biblioteki i analizę głośności, zanim zaczniemy
-        // opróżniać persystencję.
-        stopLibraryWatcher();
-        cancelLibraryLoudness();
-        cancelAllMediaConvert();
-        cancelAllMediaJobs();
-        cancelAllBatchImages();
-        cancelAllWaveformDecodes();
-        abortAllDependencies();
-        // Cache strumieni jest zapisywany synchronicznie; mapa okładek ma
-        // debounce, więc trafia do `flushes` niżej.
-        flushStreamCache();
-        deps.getMediaServer()?.close();
-        closeLoginWindow();
-        closeProviderLoginWindow();
-        shutdownDiscord();
-        // Najpierw zatrzymaj pracę: procesy potomne yt-dlp/ffmpeg i strumienie HTTP
-        // inaczej piszą do plików w trakcie opróżniania persystencji (i przeżywają
-        // zamknięcie aplikacji).
-        for (const job of jobs.values()) {
-          if (job.status !== 'downloading') continue;
-          if (job.child) {
-            try {
-              killDownloadProcess(job.child);
-            } catch {
-              /* już nie istnieje */
-            }
-          } else {
-            jobAbortControllers.get(job.id)?.abort();
-          }
-        }
-        // Opróżnij debounce'owaną persystencję, aby ostatnie zmiany nie przepadły.
-        // Limit czasu gwarantuje, że zamknięcie zawsze się kończy.
-        const flushes = Promise.allSettled([
-          // Linie zapisane podczas zamykania są tymi, które warto mieć, gdy
-          // doprowadziła nas tu awaria.
-          flushLogWrites(),
-          flushLibraryScanned(),
-          // Statystyki odtwarzania są debounce'owane (400 ms); opróżnij je, inaczej ostatnie odtworzenia przepadną.
-          flushStats(),
-          // Pozycje odtwarzania są debounce'owane (15 s) — bez tego ostatnie ~15 s przepada.
-          flushPlaybackPositions(),
-          // Kolejka pobierania jest debounce'owana (400 ms) — bez awaitowania
-          // ostatni zapis mógł przepaść.
-          flushQueueNow(),
-          // Cache providerów (foldery) jest debounce'owany — opróżnij przy wyjściu.
-          flushProviderCache(),
-          flushCoverMapWrite(),
-          getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
-        ]);
-        const shutdownTimeout = new Promise<'timeout'>((r) =>
-          setTimeout(() => r('timeout'), SHUTDOWN_FLUSH_TIMEOUT_MS)
-        );
-        if ((await Promise.race([flushes, shutdownTimeout])) === 'timeout') {
-          logger.warn(
-            'main',
-            `graceful shutdown flush exceeded ${SHUTDOWN_FLUSH_TIMEOUT_MS}ms — quitting anyway`
-          );
-        }
-      } catch (e) {
-        logger.error('main', 'graceful shutdown failed', e);
-      } finally {
-        app.quit();
-      }
+      await performShutdownTasks(deps);
+      app.quit();
     })();
   });
 }
