@@ -129,11 +129,72 @@ export function urlAllowed(url: string, patterns: string[]): boolean {
   // Dopasowujemy na ZNORMALIZOWANYM URL-u, nie na surowym wejściu. Parser WHATWG
   // zamienia `\` na `/` w autorytecie, więc regex na surowym stringu widział inny
   // host niż ten, z którym połączy się transport (`https://evil.com\.example.com/x`).
-  const canonical = `${parsed.origin}${parsed.pathname}${parsed.search}`;
-  return patterns.some((p) => {
-    const re = compileNetworkPattern(p);
-    return re ? re.test(canonical) : false;
-  });
+  return patterns.some((p) => networkPatternMatches(p, parsed));
+}
+
+/**
+ * Dopasowanie wzorca manifestu bez RegExp. Wzorce pochodzą od autora pluginu;
+ * `.*`/`[^/:?#]+` skompilowane do regexu pozwalały na wykładniczy backtracking
+ * na wątku głównym (ReDoS). Algorytm gwiazdki jest liniowy (z cofaniem tylko do
+ * ostatniej `*`) i nie może się zapętlić.
+ */
+function globMatch(pattern: string, text: string, canConsume: (ch: string) => boolean): boolean {
+  let p = 0;
+  let t = 0;
+  let star = -1;
+  let consumed = 0;
+  while (t < text.length) {
+    if (p < pattern.length && pattern[p] === text[t]) {
+      p += 1;
+      t += 1;
+    } else if (p < pattern.length && pattern[p] === '*') {
+      star = p;
+      p += 1;
+      consumed = t;
+    } else if (star !== -1 && consumed < text.length && canConsume(text[consumed])) {
+      consumed += 1;
+      t = consumed;
+      p = star + 1;
+    } else {
+      return false;
+    }
+  }
+  while (p < pattern.length && pattern[p] === '*') p += 1;
+  return p === pattern.length;
+}
+
+function pathPatternMatches(pattern: string, text: string): boolean {
+  // Wzorzec zakończony `*` jest prefiksem obejmującym resztę ścieżki.
+  if (pattern.endsWith('*')) return globMatch(pattern, text, () => true);
+  // Bez końcowej gwiazdki dopasowanie kończy się na granicy segmentu/parametrów.
+  for (let i = 0; i <= text.length; i += 1) {
+    if (i < text.length && !'/:?#'.includes(text[i])) continue;
+    if (globMatch(pattern, text.slice(0, i), () => true)) return true;
+  }
+  return false;
+}
+
+function networkPatternMatches(pattern: string, parsed: URL): boolean {
+  const match = /^(https?:\/\/)([^/?#]+)(.*)$/.exec(pattern);
+  if (!match) return false;
+  const [, proto, hostPattern, pathPattern] = match;
+  if (`${parsed.protocol}//` !== proto) return false;
+  // Gwiazdka w hoście nie przechodzi przez separator portu (`:`), jak wcześniej
+  // `[^/:?#]+`; kropki i myślniki są dozwolone.
+  if (!hostPatternMatches(hostPattern, parsed.host)) return false;
+  return pathPatternMatches(pathPattern, `${parsed.pathname}${parsed.search}`);
+}
+
+function hostPatternMatches(pattern: string, host: string): boolean {
+  // Wzorzec bez końcowej gwiazdki pasuje do hosta także wtedy, gdy URL ma port:
+  // granica hosta to `:` albo koniec. Dzięki temu `api.example.com` nie pasuje
+  // do `api.example.com.evil`, ale pasuje do `api.example.com:8443`.
+  if (pattern.endsWith('*')) return globMatch(pattern, host, (ch) => ch !== ':');
+  for (let i = 0; i <= host.length; i += 1) {
+    if (i < host.length && host[i] !== ':') continue;
+    if (globMatch(pattern, host.slice(0, i), (ch) => ch !== ':')) return true;
+  }
+  return false;
 }
 
 export function resolveRedirectUrl(baseUrl: string, location: string): string | null {

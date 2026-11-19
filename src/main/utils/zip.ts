@@ -15,6 +15,10 @@ const LOCAL_SIG = 0x04034b50;
 // ZIP bomb: pojedynczy wpis nie może rozpakować się do nieograniczonej pamięci
 // w procesie głównym. AnimeSub używa małych napisów, więc 16 MB jest hojnym limitem.
 const MAX_ENTRY_OUTPUT_BYTES = 16 * 1024 * 1024;
+// ZIP bomb: limit liczby wpisów i łącznego rozmiaru po dekompresji. Bez tego
+// archiwum z dziesiątkami tysięcy wpisów po 16 MB wyczerpałoby pamięć main.
+const MAX_ENTRIES = 10_000;
+const MAX_TOTAL_OUTPUT_BYTES = 512 * 1024 * 1024;
 
 function findEndOfCentralDirectory(buf: Buffer): number {
   const min = Math.max(0, buf.length - 65557);
@@ -30,8 +34,9 @@ export function readZip(buf: Buffer): ZipEntry[] {
   const count = buf.readUInt16LE(eocd + 10);
   let off = buf.readUInt32LE(eocd + 16);
   const entries: ZipEntry[] = [];
+  let totalOutput = 0;
 
-  for (let i = 0; i < count && off + 46 <= buf.length; i++) {
+  for (let i = 0; i < count && i < MAX_ENTRIES && off + 46 <= buf.length; i++) {
     if (buf.readUInt32LE(off) !== CENTRAL_SIG) break;
     const method = buf.readUInt16LE(off + 10);
     const compressedSize = buf.readUInt32LE(off + 20);
@@ -49,13 +54,14 @@ export function readZip(buf: Buffer): ZipEntry[] {
     const dataStart = localOffset + 30 + localNameLen + localExtraLen;
     const raw = buf.subarray(dataStart, dataStart + compressedSize);
     try {
-      entries.push({
-        name,
-        data:
-          method === 0
-            ? Buffer.from(raw)
-            : inflateRawSync(raw, { maxOutputLength: MAX_ENTRY_OUTPUT_BYTES })
-      });
+      if (method === 0 && raw.length > MAX_ENTRY_OUTPUT_BYTES) continue;
+      const data =
+        method === 0
+          ? Buffer.from(raw)
+          : inflateRawSync(raw, { maxOutputLength: MAX_ENTRY_OUTPUT_BYTES });
+      totalOutput += data.length;
+      if (totalOutput > MAX_TOTAL_OUTPUT_BYTES) break;
+      entries.push({ name, data });
     } catch {
       /* pomiń wpis, którego nie da się rozpakować */
     }

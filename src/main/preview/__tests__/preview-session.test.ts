@@ -66,6 +66,9 @@ describe('installWebviewGuard', () => {
     expect(prefs.partition).toBe(PREVIEW_PARTITION);
     expect(prefs.preload).toBeUndefined();
     expect(prefs.sandbox).toBe(true);
+    expect(prefs.webSecurity).toBe(true);
+    expect(prefs.allowRunningInsecureContent).toBe(false);
+    expect(prefs.nodeIntegrationInSubFrames).toBe(false);
 
     const ev2 = { preventDefault: vi.fn() };
     attachListener!(ev2, {}, { src: 'file:///C:/Windows/win.ini' });

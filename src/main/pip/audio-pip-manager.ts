@@ -241,7 +241,10 @@ export class AudioPipManager {
   }
 
   update(state: Partial<AudioPipState>): void {
-    Object.assign(this.currentState, state);
+    // `safeAssign` odrzuca `__proto__`/`constructor`; stan przychodzi z IPC.
+    for (const [key, value] of Object.entries(state)) {
+      safeAssign(this.currentState as unknown as Record<string, unknown>, key, value);
+    }
     if (this.window && !this.window.isDestroyed() && this.window.isVisible()) {
       this.updateUi();
     }
@@ -429,7 +432,9 @@ export class AudioPipManager {
       mainWindow: () => this.mainWindow,
       isPreview: () => this.isPreview,
       onTimeUpdate: (state) => {
-        Object.assign(this.currentState, state);
+        for (const [key, value] of Object.entries(state)) {
+          safeAssign(this.currentState as unknown as Record<string, unknown>, key, value);
+        }
         if (this.window && !this.window.isDestroyed() && this.window.isVisible() && this.ready) {
           this.window.webContents.send('audio-pip:update', {
             dock: this.dock,

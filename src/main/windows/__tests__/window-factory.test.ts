@@ -187,9 +187,16 @@ describe('external links', () => {
     );
   });
 
-  it('does not install the handler when external links are disabled', () => {
+  it('installs a denying handler when external links are disabled', () => {
     const win = createWindow({ openExternal: false });
-    expect(win.webContents.setWindowOpenHandler).not.toHaveBeenCalled();
+    expect(win.webContents.setWindowOpenHandler).toHaveBeenCalledTimes(1);
+
+    const setHandler = win.webContents.setWindowOpenHandler as unknown as {
+      mock: { calls: Array<[(details: { url: string }) => { action: string }]> };
+    };
+    const handler = setHandler.mock.calls[0][0];
+    expect(handler({ url: 'https://example.com' })).toEqual({ action: 'deny' });
+    expect(state.openExternal).not.toHaveBeenCalled();
   });
 });
 

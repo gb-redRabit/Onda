@@ -58,6 +58,9 @@ export function installWebviewGuard(): void {
       webPreferences.nodeIntegration = false;
       webPreferences.contextIsolation = true;
       webPreferences.sandbox = true;
+      webPreferences.webSecurity = true;
+      webPreferences.allowRunningInsecureContent = false;
+      webPreferences.nodeIntegrationInSubFrames = false;
       webPreferences.partition = PREVIEW_PARTITION;
       if (params.partition && params.partition !== PREVIEW_PARTITION) {
         event.preventDefault();
@@ -67,5 +70,12 @@ export function installWebviewGuard(): void {
         event.preventDefault();
       }
     });
+    if (contents.getType?.() === 'webview') {
+      // Nawigacja top-level wewnątrz playera tylko po http(s); `file:`/`javascript:`
+      // i nietypowe schematy nie mogą przejąć osadzonego widoku.
+      contents.on('will-navigate', (event, url) => {
+        if (!/^https?:\/\//i.test(url)) event.preventDefault();
+      });
+    }
   });
 }

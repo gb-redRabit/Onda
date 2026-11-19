@@ -726,3 +726,15 @@ describe('plugin sanitizer fallbacks', () => {
     expect(await loadStateFile(file)).toEqual({ 'a.b': { enabled: false } });
   });
 });
+
+describe('linear network pattern matching', () => {
+  it('treats the port as a host boundary and avoids regex backtracking', () => {
+    expect(urlAllowed('https://api.example.com:8443/v1', ['https://api.example.com/v1'])).toBe(
+      true
+    );
+
+    const longHost = `https://${'a'.repeat(2000)}.example.com/x`;
+    const pattern = `https://${'*a'.repeat(40)}z.example.com/*`;
+    expect(urlAllowed(longHost, [pattern])).toBe(false);
+  });
+});

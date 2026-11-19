@@ -77,8 +77,11 @@ export function createWindow(options: WindowFactoryOptions): BrowserWindow {
     win.webContents.send('window:fullscreenChanged', false);
   });
 
-  if (openExternal) {
-    win.webContents.setWindowOpenHandler((details) => {
+  // Zawsze rejestrujemy handler: bez niego Electron pozwala otwierać dowolne
+  // nowe okna z renderera (np. ze splash). Otwieranie zewnętrzne tylko gdy
+  // okno jawnie na to pozwala, i tylko dla http(s)/mailto.
+  win.webContents.setWindowOpenHandler((details) => {
+    if (openExternal) {
       try {
         const parsed = new URL(details.url);
         if (['https:', 'http:', 'mailto:'].includes(parsed.protocol)) {
@@ -87,9 +90,9 @@ export function createWindow(options: WindowFactoryOptions): BrowserWindow {
       } catch (e) {
         logger.warn('window', 'setWindowOpenHandler: invalid URL', details.url, e);
       }
-      return { action: 'deny' };
-    });
-  }
+    }
+    return { action: 'deny' };
+  });
 
   installNavigationGuard(win);
 

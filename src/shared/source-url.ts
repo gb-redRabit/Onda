@@ -18,6 +18,9 @@ export function dotGet(obj: unknown, path: string | undefined): unknown {
       if (!Number.isInteger(idx) || idx < 0 || idx >= current.length) return undefined;
       current = current[idx];
     } else if (typeof current === 'object') {
+      // Bez `hasOwn` ścieżka `constructor.name` / `__proto__` wychodziła poza dane
+      // źródła i wstawiała do URL-a wartości z łańcucha prototypów.
+      if (!Object.prototype.hasOwnProperty.call(current, seg)) return undefined;
       current = (current as Record<string, unknown>)[seg];
     } else {
       return undefined;

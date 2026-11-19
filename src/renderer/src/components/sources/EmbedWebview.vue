@@ -22,6 +22,9 @@ function destroy(): void {
 function create(): void {
   const container = host.value;
   if (!container || !props.src) return;
+  // Main i tak blokuje nie-http(s) w `will-attach-webview`; nie tworzymy
+  // bezużytecznego elementu dla `javascript:`/`file:`.
+  if (!/^https?:\/\//i.test(props.src)) return;
   // Zawsze jeden element: równoległe `setup()`/zmiana `src` nie mogą dołożyć
   // drugiego <webview>, którego nikt już nie usunie.
   destroy();

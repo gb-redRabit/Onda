@@ -45,6 +45,12 @@ describe('dotGet', () => {
     expect(dotGet(obj, 'a.b.-1')).toBeUndefined();
     expect(dotGet({ a: 1 }, 'a.b')).toBeUndefined();
   });
+
+  it('does not walk the prototype chain', () => {
+    expect(dotGet({}, 'constructor.name')).toBeUndefined();
+    expect(dotGet({}, '__proto__.polluted')).toBeUndefined();
+    expect(dotGet({ a: {} }, 'a.toString')).toBeUndefined();
+  });
 });
 
 describe('asString', () => {
