@@ -272,7 +272,15 @@ describe('handleStreamProxy upstream', () => {
 
     const pending = handleStreamProxy(makeRequest(), res, 'https://cdn.example/a');
     for (let i = 0; i < 3; i += 1) {
-      await new Promise((resolve) => setImmediate(resolve));
+      // Listenery `error` z poprzednich prób zostają podpięte, więc czekamy na
+      // KOLEJNY (i + 1), a nie na sam niezerowy licznik. Sztywne trzy obroty
+      // pętli pod obciążeniem CI mogły trafić w jeszcze niepodpięty listener.
+      await vi.waitFor(
+        () => {
+          if (up.listenerCount('error') < i + 1) throw new Error('error listener not attached yet');
+        },
+        { timeout: 2000, interval: 5 }
+      );
       up.emit('error', new Error('body failed'));
     }
     await pending;

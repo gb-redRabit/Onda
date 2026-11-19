@@ -150,11 +150,14 @@ function sha256(content: Buffer | string): string {
 }
 
 async function waitFor(predicate: () => boolean): Promise<void> {
-  for (let i = 0; i < 500; i += 1) {
-    if (predicate()) return;
-    await new Promise((resolve) => setImmediate(resolve));
-  }
-  throw new Error('condition was not met');
+  // `vi.waitFor` odpytuje aż do skutku w realnym czasie (i sam przesuwa zegar przy
+  // fake timerach), więc nie zależy od liczby obrotów pętli pod obciążeniem CI.
+  await vi.waitFor(
+    () => {
+      if (!predicate()) throw new Error('condition was not met');
+    },
+    { timeout: 5000, interval: 5 }
+  );
 }
 
 describe('downloadFile', () => {
