@@ -65,6 +65,14 @@ export async function migrateLegacyStore(keyPath: string): Promise<string | null
   if (raw.length < IV_LENGTH + 1 || raw[IV_LENGTH] !== ':'.charCodeAt(0)) return null;
   const plain = decryptConf(raw, legacyStoreKey());
   if (plain === null) return null;
+  // AES-CBC nie uwierzytelnia danych: przy złym kluczu padding przechodzi średnio
+  // raz na 256 prób. Legacy config zawsze jest JSON-em, więc dopiero udany parse
+  // potwierdza, że klucz był właściwy (inaczej migracja przepisałaby śmieci).
+  try {
+    JSON.parse(plain);
+  } catch {
+    return null;
+  }
   const fresh = randomBytes(32).toString('hex');
   await mkdir(app.getPath('userData'), { recursive: true });
   await writeFile(keyPath, fresh, { mode: 0o600 });
