@@ -7,7 +7,10 @@ import { join } from 'path';
 const ROOT = process.cwd();
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', 'release']);
 
-const HANDLE_RE = /ipcMain\.handle(?:Once)?\(\s*'([^']+)'/g;
+// Wrappery rejestrujące handlery (`handleIpc` z kontraktem, `handleSpawnSubtitle`
+// z semaforem) muszą być tu rozpoznawane tak samo jak surowe `ipcMain.handle`,
+// inaczej kanały przeniesione do wrappera wyglądają na nieobsługiwane.
+const HANDLE_RE = /(?:ipcMain\.handle(?:Once)?|handleIpc|handleSpawnSubtitle)\(\s*'([^']+)'/g;
 const ON_RE = /ipcMain\.on\(\s*'([^']+)'/g;
 
 async function walk(dir, out = []) {
