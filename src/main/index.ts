@@ -1,6 +1,6 @@
-﻿import { app, BrowserWindow, ipcMain, globalShortcut, dialog } from 'electron';
-import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { createMediaServer, addAllowedRoot } from './media/media-server';
+﻿import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
+import { electronApp, optimizer } from '@electron-toolkit/utils';
+import { createMediaServer } from './media/media-server';
 import { registerOndaProtocolHandler } from './protocol';
 import { registerWindowHandlers } from './windows/window-ipc';
 import { registerIPC } from './ipc/handlers';
@@ -9,109 +9,48 @@ import { audioPipManager } from './pip/audio-pip-manager';
 import { logger } from '../shared/logger';
 import { extractMediaPaths } from './media/media-paths';
 import { setMediaServerUrl, registerMediaUrlHandler } from './media/media-url-args';
-import {
-  installProcessSafetyNets,
-  installSessionHardening,
-  installRendererRecovery
-} from './bootstrap/safety-nets';
+import { installProcessSafetyNets, installSessionHardening } from './bootstrap/safety-nets';
 import { setupFileLogging } from './log-file';
 import { initAutoUpdater, replayUpdaterEvent } from './updater';
 import { markBootPhase, markBootStart } from './boot-timeline';
 import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-handlers';
 import { syncLinkSubsScheduler } from './ipc/providers/providers-handlers';
-import { shouldCloseToTray, shouldHideShellOnClose } from './windows/close-behavior';
-import { windowIcon } from './windows/window-icon';
-import { createWindow as createBrowserWindow } from './windows/window-factory';
-import { GLASS_WINDOW_OPTS } from './windows/window-presets';
-import { destroyTray, hasTray, setupTray } from './windows/tray';
-import { SplashController } from './windows/splash';
+import { destroyTray, setupTray } from './windows/tray';
 import { startCoreService } from './core/core-spike';
 import { createCompactWindow } from './compact/compact-window';
 import { loadCompactState, saveCompactState, type WindowMode } from './compact/compact-state';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
 import { startBootWatchdog } from './bootstrap/boot-watchdog';
-import { OpenFileForwarder } from './bootstrap/open-files';
 import { initMainLocale, mainMessages } from './i18n-main';
 import { installGracefulShutdown, performShutdownTasks } from './bootstrap/shutdown';
 import { registerShellIpc } from './bootstrap/shell-ipc';
 import { seedMediaServerAndSettings } from './bootstrap/seed-roots';
 import { relaunchApp } from './bootstrap/relaunch';
 import { sendToWindow } from './utils/broadcast';
+import {
+  activeShell,
+  openFiles,
+  quitApp,
+  sendShellActivity,
+  shell,
+  shouldHideShell,
+  splash
+} from './windows/shell-state';
+import {
+  createWindow,
+  initPipForCompact,
+  initPipForMain,
+  wireCompactWindow,
+  wireMainWindow
+} from './windows/shell-windows';
 
-let mainWindow: BrowserWindow | null = null;
-let compactWindow: BrowserWindow | null = null;
-let startHidden = false;
-let startupMode: WindowMode = 'main';
 /** Serializuje przełączenia trybu (IPC + tray mogą trafić równocześnie). */
 let modeSwitch: Promise<void> | null = null;
-let shutdownCleanup: (() => Promise<void>) | null = null;
-let coreShellEnabled = false;
-let quitting = false;
-let pipReady = false;
-let audioPipReady = false;
-
-function activeShell(): BrowserWindow | null {
-  if (startupMode === 'compact') {
-    if (compactWindow && !compactWindow.isDestroyed()) return compactWindow;
-    return mainWindow;
-  }
-  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
-  return compactWindow;
-}
-
-/** Informuje oba shelle, który z nich jest aktywny (Media Session). */
-function sendShellActivity(): void {
-  const send = (win: BrowserWindow | null, active: boolean): void => {
-    if (!win || win.isDestroyed() || win.webContents.isDestroyed()) return;
-    win.webContents.send('app:shellActive', active);
-  };
-  send(mainWindow, startupMode === 'main');
-  send(compactWindow, startupMode === 'compact');
-}
-
-const splash = new SplashController({
-  windowIcon,
-  getMainWindow: () => activeShell(),
-  isStartHidden: () => startHidden
-});
 
 app.on('before-quit', () => {
-  quitting = true;
+  shell.quitting = true;
 });
-
-/** Wspólna decyzja dla obu shelli: chowamy do tray tylko gdy jest po co. */
-function shouldHideShell(): boolean {
-  return shouldHideShellOnClose({
-    quitting,
-    trayAvailable: hasTray(),
-    closeToTray: shouldCloseToTray()
-  });
-}
-
-/**
- * Kończy aplikację bez pozostawiania procesu w tle. `quitting` musi być ustawione
- * przed `app.quit()`, żeby handlery `close` nie schowały okien do tray.
- */
-function quitApp(): void {
-  if (quitting) return;
-  quitting = true;
-  app.quit();
-}
-
-/**
- * Wywoływane, gdy aktywny shell zostanie naprawdę zniszczony (nie schowany).
- * Ukryte okna PiP nie mogą utrzymywać procesu przy życiu ani blokować
- * `window-all-closed`, dlatego zamykamy je razem z shellem.
- */
-function handleShellClosed(): void {
-  if (quitting) return;
-  pipManager.destroy();
-  audioPipManager.destroy();
-  pipReady = false;
-  audioPipReady = false;
-  if (process.platform !== 'darwin') quitApp();
-}
 
 // Zapisuje fazę na osi czasu startu (Diagnostyka → Wydajność) i loguje ją.
 function perf(label: string): number {
@@ -121,11 +60,6 @@ function perf(label: string): number {
 }
 
 const preFullscreenBounds: { current: Electron.Rectangle | null } = { current: null };
-
-const openFiles = new OpenFileForwarder(
-  () => activeShell(),
-  (dir) => void addAllowedRoot(dir, { external: true })
-);
 
 // Nadpisanie E2E/portable: kieruje cały profil (ustawienia, logi, tokeny) do
 // katalogu jednorazowego, zanim cokolwiek go odczyta. Musi zadziałać przed
@@ -149,155 +83,13 @@ if (!gotSingleInstanceLock) {
   });
 }
 
-function createWindow(options: { showWhenReady?: boolean } = {}): BrowserWindow {
-  const win = createBrowserWindow({
-    width: 1200,
-    height: 800,
-    // Poniżej połowy typowych ekranów (1366×768 → 683, 1920×1080 → 540 wysokości),
-    // inaczej Windows nie pozwala przykleić okna do krawędzi.
-    minWidth: 640,
-    minHeight: 480,
-    show: false,
-    ...GLASS_WINDOW_OPTS,
-    icon: windowIcon(),
-    // `<webview>` dla osadzeń playerów inline (modal) — izolowana partycja
-    // podglądu, wymuszana przez globalny guard w `preview-session`.
-    webPreferences: { webviewTag: true },
-    // Splash decyduje, kiedy okno główne pojawi się po raz pierwszy.
-    onReadyToShow: (w) => {
-      if (options.showWhenReady) {
-        w.show();
-        w.focus();
-        return;
-      }
-      if (!splash.isActive() && !startHidden) w.show();
-    }
-  });
-
-  win.on('close', (e) => {
-    if (shouldHideShell()) {
-      e.preventDefault();
-      win.hide();
-    }
-  });
-  win.on('closed', () => {
-    if (mainWindow === win) mainWindow = null;
-    handleShellClosed();
-  });
-
-  // Diagnostyka startu: renderer, który nigdy nie kończy ładowania, wygląda
-  // inaczej jak ciche zawieszenie (żadne okno nie jest pokazywane). Prawdziwa
-  // awaria renderera od razu pokazuje okno (z zalogowanym błędem), zamiast
-  // zostawiać użytkownika wpatrzonego w splash.
-  win.webContents.on(
-    'did-fail-load',
-    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
-      // -3 (ERR_ABORTED) to normalny artefakt nawigacji/przeładowania, nie awaria.
-      if (errorCode === -3) return;
-      logger.error('main', `did-fail-load ${errorCode} ${errorDescription} ${validatedURL}`);
-      if (!isMainFrame) return;
-      // Awaria ramki głównej zostawia aplikację całkiem bez UI: wyjaśnij to
-      // zamiast pokazywać puste (białe/akrylowe) okno. W trybie dev zwykłą
-      // przyczyną jest niedziałający serwer dev Vite.
-      const m = mainMessages();
-      const hint = is.dev ? m.loadFailedDevHint : '';
-      dialog.showErrorBox(
-        m.loadFailedTitle,
-        `${m.loadFailedMessage(errorCode, errorDescription)}${hint}`
-      );
-      splash.forceClose();
-    }
-  );
-  win.webContents.on('preload-error', (_event, preloadPath, error) => {
-    logger.error('main', `preload-error ${preloadPath}`, error);
-    splash.forceClose();
-  });
-  // Crash renderera: zamknij splash i spróbuj odzyskać okno (reload z limitem).
-  installRendererRecovery(win, () => splash.forceClose());
-
-  return win;
-}
-
-function wireMainWindow(win: BrowserWindow): void {
-  win.webContents.on('did-start-loading', () => openFiles.resetListening());
-  win.webContents.on('did-finish-load', sendShellActivity);
-  if (coreShellEnabled) {
-    win.webContents.on('console-message', (_event, level, message) => {
-      if (message.includes('[core-shell]')) {
-        logger.info('core-shell', `shell console [${level}]: ${message}`);
-      }
-    });
-  }
-}
-
-function wireCompactWindow(win: BrowserWindow): void {
-  win.on('closed', () => {
-    if (compactWindow === win) compactWindow = null;
-    handleShellClosed();
-  });
-  win.webContents.on('did-finish-load', sendShellActivity);
-  installRendererRecovery(win, () => {}, {
-    onExhausted: () => {
-      logger.warn('compact', 'renderer recovery exhausted - opening full window');
-      void switchWindowMode('main');
-    }
-  });
-  // `BrowserWindow.hide()` nie zmienia `document.visibilityState` w Electronie,
-  // więc renderer nie może sam wykryć schowania do tray. Jawny sygnał pozwala
-  // pokazać PiP audio przy ✕/Alt+F4, ale nie przy przełączeniu na pełne okno.
-  win.on('hide', () => {
-    if (win.isDestroyed()) return;
-    win.webContents.send('compact:hidden', {
-      autoPip: startupMode === 'compact' && !quitting
-    });
-  });
-  win.on('show', () => {
-    if (win.isDestroyed()) return;
-    win.webContents.send('compact:shown');
-    sendShellActivity();
-  });
-  win.webContents.on('console-message', (_event, level, message) => {
-    if (message.includes('[core-shell]') || message.includes('[compact]')) {
-      logger.info('compact', `console [${level}]: ${message}`);
-    }
-  });
-}
-
-function initPipForMain(win: BrowserWindow): void {
-  audioPipManager.setMainWindow(win);
-  if (!audioPipReady) {
-    audioPipReady = true;
-    audioPipManager.init();
-  }
-  if (pipReady) {
-    pipManager.setMainWindow(win);
-    return;
-  }
-  pipReady = true;
-  pipManager.setMainWindow(win);
-  pipManager.init();
-}
-
-/**
- * Compact to audio-only shell, więc potrzebuje wyłącznie Audio PiP (okno wideo PiP
- * tworzyłoby zbędny, ukryty renderer). Gdy później otworzy się pełne okno,
- * `initPipForMain` dokończy inicjalizację wideo PiP.
- */
-function initPipForCompact(win: BrowserWindow): void {
-  audioPipManager.setMainWindow(win);
-  if (!audioPipReady) {
-    audioPipReady = true;
-    audioPipManager.init();
-  }
-}
-
 /**
  * Prosi aktywny shell o synchroniczny zapis sesji przed restartem trybu.
  * Renderer odpowiada `app:session-handoff-ready`; timeout chroni przed
  * zawieszonym/nieobsługującym tego zdarzenia oknem.
  */
-function prepareSessionHandoff(shell: BrowserWindow | null): Promise<void> {
-  if (!shell || shell.isDestroyed()) return Promise.resolve();
+function prepareSessionHandoff(target: BrowserWindow | null): Promise<void> {
+  if (!target || target.isDestroyed()) return Promise.resolve();
   return new Promise<void>((resolve) => {
     let settled = false;
     const done = (): void => {
@@ -309,14 +101,14 @@ function prepareSessionHandoff(shell: BrowserWindow | null): Promise<void> {
     };
     const timer = setTimeout(done, 400);
     ipcMain.once('app:session-handoff-ready', done);
-    shell.webContents.send('app:prepare-session-handoff');
+    target.webContents.send('app:prepare-session-handoff');
   });
 }
 
 async function switchWindowMode(mode: WindowMode): Promise<void> {
   if (mode !== 'main' && mode !== 'compact') return;
   // Bez serializacji dwa równoległe wywołania (menu/tray + IPC) przechodziły
-  // przez `mode === startupMode` przed zapisem stanu i tworzyły dwa okna.
+  // przez `mode === shell.mode` przed zapisem stanu i tworzyły dwa okna.
   while (modeSwitch) await modeSwitch;
   let release!: () => void;
   modeSwitch = new Promise<void>((resolve) => {
@@ -331,17 +123,17 @@ async function switchWindowMode(mode: WindowMode): Promise<void> {
 }
 
 async function switchWindowModeLocked(mode: WindowMode): Promise<void> {
-  if (mode === startupMode) return;
+  if (mode === shell.mode) return;
 
-  if (mode === 'compact' && !coreShellEnabled) {
+  if (mode === 'compact' && !shell.coreShellEnabled) {
     // Start w trybie klasycznym nie ma Core - proces musi wstać ponownie w trybie
     // Core, żeby nie mieć dwóch właścicieli audio. Restart jest automatyczny,
     // a sesję przenosimy jednorazowym znacznikiem w stanie okna.
     await prepareSessionHandoff(activeShell());
     await saveCompactState({ mode: 'compact', restoreSessionOnce: true });
-    quitting = true;
+    shell.quitting = true;
     logger.info('compact', 'legacy main -> compact: relaunching with Core shell');
-    if (shutdownCleanup) relaunchApp(300, shutdownCleanup);
+    if (shell.shutdownCleanup) relaunchApp(300, shell.shutdownCleanup);
     else relaunchApp(300);
     return;
   }
@@ -349,49 +141,52 @@ async function switchWindowModeLocked(mode: WindowMode): Promise<void> {
   const previousShell = activeShell();
 
   await saveCompactState({ mode });
-  startupMode = mode;
+  shell.mode = mode;
 
   // PiP audio należy do poprzedniego shella — chowamy je i resetujemy stan hooka,
   // żeby nowy shell nie odziedziczył "aktywnego" PiP, którego nie kontroluje.
-  if (audioPipReady) {
+  if (shell.audioPipReady) {
     sendToWindow(previousShell, 'audio-pip:closed');
     audioPipManager.hide();
   }
 
   if (mode === 'compact') {
-    if (!compactWindow || compactWindow.isDestroyed()) {
-      compactWindow = createCompactWindow({
+    if (!shell.compactWindow || shell.compactWindow.isDestroyed()) {
+      shell.compactWindow = createCompactWindow({
         state: await loadCompactState(),
         showOnReady: true,
         hideOnClose: shouldHideShell
       });
-      wireCompactWindow(compactWindow);
-      initPipForCompact(compactWindow);
+      wireCompactWindow(shell.compactWindow, () => {
+        logger.warn('compact', 'renderer recovery exhausted - opening full window');
+        void switchWindowMode('main');
+      });
+      initPipForCompact(shell.compactWindow);
     } else {
-      compactWindow.show();
-      compactWindow.focus();
-      initPipForCompact(compactWindow);
+      shell.compactWindow.show();
+      shell.compactWindow.focus();
+      initPipForCompact(shell.compactWindow);
     }
-    mainWindow?.hide();
+    shell.mainWindow?.hide();
     sendShellActivity();
     return;
   }
 
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    mainWindow = createWindow({ showWhenReady: true });
-    wireMainWindow(mainWindow);
-    mainWindow.webContents.once('did-finish-load', () => {
+  if (!shell.mainWindow || shell.mainWindow.isDestroyed()) {
+    shell.mainWindow = createWindow({ showWhenReady: true });
+    wireMainWindow(shell.mainWindow);
+    shell.mainWindow.webContents.once('did-finish-load', () => {
       splash.onMainReady();
-      compactWindow?.hide();
+      shell.compactWindow?.hide();
     });
-    initPipForMain(mainWindow);
+    initPipForMain(shell.mainWindow);
   } else {
-    mainWindow.show();
-    mainWindow.focus();
-    compactWindow?.hide();
+    shell.mainWindow.show();
+    shell.mainWindow.focus();
+    shell.compactWindow?.hide();
     // Powrót z compact po zniszczeniu PiP (np. zamknięcie compacta) musi
     // przepiąć menedżera z powrotem na główne okno.
-    initPipForMain(mainWindow);
+    initPipForMain(shell.mainWindow);
   }
   sendShellActivity();
 }
@@ -446,30 +241,30 @@ app.whenReady().then(async () => {
   // Tryb startu: plik `compact-window-state.json` (wybór użytkownika), a `ONDA_COMPACT`
   // tylko nadpisuje go w dev/testach bez zapisu.
   const savedState = await loadCompactState();
-  startupMode = process.env.ONDA_COMPACT === '1' ? 'compact' : savedState.mode;
-  coreShellEnabled = process.env.ONDA_CORE_SHELL === '1' || startupMode === 'compact';
+  shell.mode = process.env.ONDA_COMPACT === '1' ? 'compact' : savedState.mode;
+  shell.coreShellEnabled = process.env.ONDA_CORE_SHELL === '1' || shell.mode === 'compact';
   // Uruchomienie przy logowaniu z "start zminimalizowany" — trzymaj okno ukryte,
   // dopóki użytkownik nie otworzy go z tray.
-  startHidden = process.argv.includes('--hidden');
-  perf(`settings ready (${bootFolders} folders, ${bootRoots} roots, mode=${startupMode})`);
+  shell.startHidden = process.argv.includes('--hidden');
+  perf(`settings ready (${bootFolders} folders, ${bootRoots} roots, mode=${shell.mode})`);
 
   splash.send(mainMessages().bootStartingUi, 50);
 
   registerShellIpc({
-    isCoreShell: () => coreShellEnabled,
-    getWindowMode: () => startupMode,
+    isCoreShell: () => shell.coreShellEnabled,
+    getWindowMode: () => shell.mode,
     setWindowMode: switchWindowMode,
     hideCompact: () => {
-      compactWindow?.hide();
+      shell.compactWindow?.hide();
     },
-    getCompactPinned: () => compactWindow?.isAlwaysOnTop() ?? false,
+    getCompactPinned: () => shell.compactWindow?.isAlwaysOnTop() ?? false,
     setCompactPinned: async (pinned) => {
-      compactWindow?.setAlwaysOnTop(pinned);
+      shell.compactWindow?.setAlwaysOnTop(pinned);
       await saveCompactState({ alwaysOnTop: pinned });
     },
     isActiveShellSender: (senderId) => {
-      const shell = activeShell();
-      return !!shell && !shell.isDestroyed() && shell.webContents.id === senderId;
+      const current = activeShell();
+      return !!current && !current.isDestroyed() && current.webContents.id === senderId;
     },
     getPendingFiles: () => openFiles.takePending(),
     onRendererReady: (sender) => {
@@ -486,12 +281,12 @@ app.whenReady().then(async () => {
   // Łagodne wyłączanie: opróżnia debounce'owaną persystencję i zatrzymuje pracę
   // w tle przed `app.quit()` (szczegóły w `bootstrap/shutdown.ts`).
   installGracefulShutdown({ getMediaServer: () => mediaServer });
-  shutdownCleanup = () => performShutdownTasks({ getMediaServer: () => mediaServer });
+  shell.shutdownCleanup = () => performShutdownTasks({ getMediaServer: () => mediaServer });
 
   registerOndaProtocolHandler();
 
   splash.send(mainMessages().bootCreatingWindow, 60);
-  if (coreShellEnabled || process.env.ONDA_CORE_SPIKE === '1') {
+  if (shell.coreShellEnabled || process.env.ONDA_CORE_SPIKE === '1') {
     // Core startuje przed shellem, żeby pierwsze komendy (np. przywrócenie sesji)
     // nie przepadły. Stan jest cache'owany do momentu, gdy shell się podłączy.
     startCoreService({
@@ -500,24 +295,27 @@ app.whenReady().then(async () => {
     });
   }
 
-  if (startupMode === 'compact') {
-    compactWindow = createCompactWindow({
+  if (shell.mode === 'compact') {
+    shell.compactWindow = createCompactWindow({
       state: savedState,
       showOnReady: false,
       hideOnClose: shouldHideShell
     });
-    wireCompactWindow(compactWindow);
-    initPipForCompact(compactWindow);
-    compactWindow.webContents.on('did-finish-load', () => {
+    wireCompactWindow(shell.compactWindow, () => {
+      logger.warn('compact', 'renderer recovery exhausted - opening full window');
+      void switchWindowMode('main');
+    });
+    initPipForCompact(shell.compactWindow);
+    shell.compactWindow.webContents.on('did-finish-load', () => {
       perf('compact did-finish-load');
       splash.onMainReady();
     });
     perf('compact window created');
   } else {
-    mainWindow = createWindow();
+    shell.mainWindow = createWindow();
     perf('window created');
-    wireMainWindow(mainWindow);
-    mainWindow.webContents.on('did-finish-load', () => {
+    wireMainWindow(shell.mainWindow);
+    shell.mainWindow.webContents.on('did-finish-load', () => {
       perf('did-finish-load');
       splash.onMainReady();
     });
@@ -528,12 +326,12 @@ app.whenReady().then(async () => {
   configureAutoCheck();
   syncSubscriptionsScheduler();
   void syncLinkSubsScheduler();
-  if (mainWindow) initPipForMain(mainWindow);
+  if (shell.mainWindow) initPipForMain(shell.mainWindow);
   sendShellActivity();
   setupTray(() => activeShell(), {
     canToggleMode: () => true,
     toggleMode: () => {
-      void switchWindowMode(startupMode === 'compact' ? 'main' : 'compact');
+      void switchWindowMode(shell.mode === 'compact' ? 'main' : 'compact');
     }
   });
   registerGlobalShortcuts(() => activeShell());
@@ -578,8 +376,8 @@ app.whenReady().then(async () => {
     // tylko okna faktycznie znane Electronowi, żeby nie „wskrzeszać” martwej referencji.
     const windows = BrowserWindow.getAllWindows();
     const existing =
-      (mainWindow && windows.includes(mainWindow) ? mainWindow : null) ??
-      (compactWindow && windows.includes(compactWindow) ? compactWindow : null);
+      (shell.mainWindow && windows.includes(shell.mainWindow) ? shell.mainWindow : null) ??
+      (shell.compactWindow && windows.includes(shell.compactWindow) ? shell.compactWindow : null);
     if (existing) {
       if (existing.isMinimized?.()) existing.restore?.();
       existing.show?.();
@@ -587,10 +385,10 @@ app.whenReady().then(async () => {
       return;
     }
     if (windows.length === 0) {
-      mainWindow = createWindow();
-      wireMainWindow(mainWindow);
-      mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
-      initPipForMain(mainWindow);
+      shell.mainWindow = createWindow();
+      wireMainWindow(shell.mainWindow);
+      shell.mainWindow.webContents.on('did-finish-load', () => splash.onMainReady());
+      initPipForMain(shell.mainWindow);
     }
   });
 });
@@ -600,8 +398,8 @@ app.on('window-all-closed', () => {
   destroyTray();
   pipManager.destroy();
   audioPipManager.destroy();
-  pipReady = false;
-  audioPipReady = false;
+  shell.pipReady = false;
+  shell.audioPipReady = false;
   if (process.platform !== 'darwin') {
     quitApp();
   }

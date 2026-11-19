@@ -216,18 +216,23 @@ describe('resolveLocalCover', () => {
   it('aborts a stalled upload after the timeout', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
+      // Zamiast odpytywania `setImmediate` (które pod obciążeniem CI potrafi nie
+      // dojść do wywołania `fetch` w 500 iteracjach) czekamy na sam start żądania.
+      let markFetchStarted!: () => void;
+      const fetchStarted = new Promise<void>((resolve) => {
+        markFetchStarted = resolve;
+      });
       const fetchMock = vi.fn(
         (_url: unknown, init: { signal: AbortSignal }) =>
           new Promise((_resolve, reject) => {
+            markFetchStarted();
             init.signal.addEventListener('abort', () => reject(new Error('aborted')));
           })
       );
       vi.stubGlobal('fetch', fetchMock);
       const pending = resolveLocalCover(file);
 
-      for (let i = 0; i < 500 && fetchMock.mock.calls.length === 0; i += 1) {
-        await new Promise((resolve) => setImmediate(resolve));
-      }
+      await fetchStarted;
       expect(fetchMock).toHaveBeenCalledTimes(1);
 
       await vi.advanceTimersByTimeAsync(20_000);

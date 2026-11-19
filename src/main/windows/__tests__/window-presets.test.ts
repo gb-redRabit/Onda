@@ -50,18 +50,18 @@ describe('GLASS_WINDOW_OPTS', () => {
 });
 
 describe('glass window options are shared, not copied', () => {
-  const index = read('src/main/index.ts');
+  const shellWindows = read('src/main/windows/shell-windows.ts');
   const explorer = read('src/main/windows/explorer-windows.ts');
 
   it.each([
-    ['src/main/index.ts', index],
+    ['src/main/windows/shell-windows.ts', shellWindows],
     ['src/main/windows/explorer-windows.ts', explorer]
   ])('%s uses GLASS_WINDOW_OPTS', (_name, source) => {
     expect(source).toContain('GLASS_WINDOW_OPTS');
   });
 
   it('does not re-inline the acrylic/vibrancy block', () => {
-    expect(index).not.toMatch(/backgroundMaterial: 'acrylic'/);
+    expect(shellWindows).not.toMatch(/backgroundMaterial: 'acrylic'/);
     expect(explorer).not.toMatch(/backgroundMaterial: 'acrylic'/);
   });
 });
