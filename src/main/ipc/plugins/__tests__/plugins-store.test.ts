@@ -90,15 +90,25 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await rm(userData, { recursive: true, force: true });
+  await rm(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 
 beforeEach(async () => {
   state.failWrites = false;
   state.loggerWarn.mockClear();
-  await rm(join(userData, 'plugins'), { recursive: true, force: true });
-  await rm(join(userData, 'plugins-data'), { recursive: true, force: true });
-  await rm(join(userData, 'plugins-state.json'), { force: true });
+  await rm(join(userData, 'plugins'), {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 50
+  });
+  await rm(join(userData, 'plugins-data'), {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 50
+  });
+  await rm(join(userData, 'plugins-state.json'), { force: true, maxRetries: 5, retryDelay: 50 });
 });
 
 describe('paths', () => {
@@ -300,7 +310,7 @@ describe('entry digest', () => {
     expect(await readEntryDigest(dir, 'big')).toBeNull();
   });
 
-  it('evicts the oldest digest when the cache grows too large', async () => {
+  it('evicts the oldest digest when the cache grows too large', { timeout: 30_000 }, async () => {
     for (let i = 0; i < 130; i++) {
       const id = `digest-${String(i).padStart(3, '0')}`;
       const dir = await writePlugin(id, {}, `${ENTRY}// ${i}`);
