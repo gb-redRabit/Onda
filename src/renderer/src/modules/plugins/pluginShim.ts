@@ -60,10 +60,22 @@ export const PLUGIN_API_SHIM = [
   // worker z Blob URL (CSP dopuszcza `worker-src blob:`), a tam świeży global ma
   // natywny `fetch` — blokada na `self` nie chroni nowego kontekstu.
   '  var BLOCKED_GLOBALS = ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","indexedDB","caches","Worker","SharedWorker","WebTransport","BroadcastChannel","RTCPeerConnection","RTCDataChannel"];',
-  '  var globalProto = Object.getPrototypeOf(self);',
-  '  for (var bi = 0; bi < BLOCKED_GLOBALS.length; bi++) {',
-  '    try { Object.defineProperty(globalProto, BLOCKED_GLOBALS[bi], { value: undefined, writable: false, configurable: false }); } catch (e) { /* ignore */ }',
-  '    try { Object.defineProperty(self, BLOCKED_GLOBALS[bi], { value: undefined, writable: false, configurable: false }); } catch (e) { /* ignore */ }',
+  // Chromium trzyma te metody na `WorkerGlobalScope.prototype`, czyli dwa poziomy
+  // nad `self`; blokada tylko bezpośredniego prototypu pozwalała obejść sandbox
+  // przez `Object.getPrototypeOf(Object.getPrototypeOf(self)).fetch.call(...)`.
+  // Idziemy po całym łańcuchu, zatrzymując się przed współdzielonym `Object.prototype`.
+  '  var lockTarget = self;',
+  '  var guardDepth = 0;',
+  '  while (lockTarget && guardDepth < 8) {',
+  '    var nextTarget = Object.getPrototypeOf(lockTarget);',
+  // Nie zaśmiecamy `Object.prototype` (jedynego obiektu z prototypem null)
+  // w żadnym realmie; `self` z prototypem null nadal blokujemy.
+  '    if (!nextTarget && lockTarget !== self) break;',
+  '    for (var bi = 0; bi < BLOCKED_GLOBALS.length; bi++) {',
+  '      try { Object.defineProperty(lockTarget, BLOCKED_GLOBALS[bi], { value: undefined, writable: false, configurable: false }); } catch (e) { /* ignore */ }',
+  '    }',
+  '    lockTarget = nextTarget;',
+  '    guardDepth++;',
   '  }',
   '  try { Object.defineProperty(navigator, "sendBeacon", { value: undefined, writable: false, configurable: false }); } catch (e) { /* ignore */ }',
   '  var pending = Object.create(null);',

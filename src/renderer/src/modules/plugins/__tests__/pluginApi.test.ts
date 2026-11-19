@@ -337,6 +337,24 @@ describe('storage and settings', () => {
     expect(state.storageRemove).toHaveBeenCalledWith('plugin-1', 'key');
   });
 
+  it('denies storage without the storage permission', async () => {
+    state.manifests['no-store'] = manifest({ permissions: { player: true } });
+    state.storageGet.mockClear();
+    state.storageSet.mockClear();
+    state.storageRemove.mockClear();
+    const api = setup('no-store');
+
+    await expect(api.op('storage:keys')).rejects.toThrow('permission-denied:storage');
+    await expect(api.op('storage:get', 'key')).rejects.toThrow('permission-denied:storage');
+    await expect(api.op('storage:set', 'key', 1)).rejects.toThrow('permission-denied:storage');
+    await expect(api.op('storage:remove', 'key')).rejects.toThrow('permission-denied:storage');
+
+    expect(state.storageKeys).not.toHaveBeenCalled();
+    expect(state.storageGet).not.toHaveBeenCalled();
+    expect(state.storageSet).not.toHaveBeenCalled();
+    expect(state.storageRemove).not.toHaveBeenCalled();
+  });
+
   it('reads settings with a null fallback', async () => {
     const api = setup();
 

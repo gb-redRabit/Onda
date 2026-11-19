@@ -294,6 +294,12 @@ export function createPluginApi(deps: PluginApiDeps): PluginApiDispatch {
     args: unknown[],
     pluginId: string
   ): Promise<unknown> {
+    // Main egzekwuje to samo (`storagePermissionGranted`), ale renderer nie powinien
+    // wysyłać żądań, do których plugin nie ma uprawnień — mniej powierzchni i
+    // spójny błąd po obu stronach mostu.
+    if (op.startsWith('storage:') && !hasPermission(pluginId, 'storage')) {
+      throw new Error('permission-denied:storage');
+    }
     switch (op) {
       case 'query':
         return dispatchQuery(args, pluginId);

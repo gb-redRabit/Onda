@@ -61,6 +61,29 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function loadStoragePlugin(): void {
+  (window as any).api.pluginsList = vi.fn().mockResolvedValue([
+    {
+      id: 'ctrl',
+      name: 'Ctrl',
+      version: '1',
+      enabled: true,
+      permissions: { player: true, storage: true }
+    }
+  ]);
+  (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
+    success: true,
+    manifest: {
+      id: 'ctrl',
+      name: 'Ctrl',
+      version: '1',
+      entry: 'i.js',
+      permissions: { player: true, storage: true }
+    },
+    code: '// plugin'
+  });
+}
+
 function apiMock() {
   const api = (window as unknown as Record<string, Record<string, unknown>>).api;
   api.pluginsList = vi.fn().mockResolvedValue([]);
@@ -177,7 +200,7 @@ describe('player extension actions', () => {
         name: 'Ctrl',
         version: '1',
         entry: 'i.js',
-        permissions: { player: true }
+        permissions: { player: true, storage: true }
       },
       code: '// plugin'
     });
@@ -247,7 +270,7 @@ describe('permission gating', () => {
         name: 'Ctrl',
         version: '1',
         entry: 'i.js',
-        permissions: { player: true }
+        permissions: { player: true, storage: true }
       },
       code: '// plugin'
     });
@@ -297,7 +320,7 @@ describe('permission gating', () => {
         name: 'P',
         version: '1',
         entry: 'a.js',
-        permissions: { notifications: true }
+        permissions: { notifications: true, storage: true }
       },
       code: '// x'
     });
@@ -312,17 +335,21 @@ describe('permission gating', () => {
 describe('IPC forwarding', () => {
   it('storage:get forwards to window.api', async () => {
     apiMock();
+    loadStoragePlugin();
     (window as any).api.pluginsStorageGet = vi.fn().mockResolvedValue('v');
     const store = usePluginsStore();
-    await expect(store.dispatchApi('storage:get', ['k'], 'p')).resolves.toBe('v');
-    expect((window as any).api.pluginsStorageGet).toHaveBeenCalledWith('p', 'k');
+    await store.load();
+    await expect(store.dispatchApi('storage:get', ['k'], 'ctrl')).resolves.toBe('v');
+    expect((window as any).api.pluginsStorageGet).toHaveBeenCalledWith('ctrl', 'k');
   });
 
   it('storage:set forwards key and value', async () => {
     apiMock();
+    loadStoragePlugin();
     const store = usePluginsStore();
-    await store.dispatchApi('storage:set', ['k', { a: 1 }], 'p');
-    expect((window as any).api.pluginsStorageSet).toHaveBeenCalledWith('p', 'k', { a: 1 });
+    await store.load();
+    await store.dispatchApi('storage:set', ['k', { a: 1 }], 'ctrl');
+    expect((window as any).api.pluginsStorageSet).toHaveBeenCalledWith('ctrl', 'k', { a: 1 });
   });
 
   it('fetch maps success result to {ok,status,...}', async () => {
@@ -353,8 +380,10 @@ describe('IPC forwarding', () => {
 
   it('unknown op throws', async () => {
     apiMock();
+    loadStoragePlugin();
     const store = usePluginsStore();
-    await expect(store.dispatchApi('storage:wipe', [], 'p')).rejects.toThrow('unknown-op');
+    await store.load();
+    await expect(store.dispatchApi('storage:wipe', [], 'ctrl')).rejects.toThrow('unknown-op');
   });
 });
 
@@ -977,7 +1006,7 @@ describe('worker lifecycle', () => {
         description: 'd',
         author: 'a',
         enabled: true,
-        permissions: { notifications: true }
+        permissions: { notifications: true, storage: true }
       }
     ]);
     (window as any).api.pluginsGet = vi.fn().mockResolvedValue({
@@ -987,7 +1016,7 @@ describe('worker lifecycle', () => {
         name: 'Hello',
         version: '1.0.0',
         entry: 'i.js',
-        permissions: { notifications: true },
+        permissions: { notifications: true, storage: true },
         hooks: ['app:start', 'track:play']
       },
       code: '// plugin'

@@ -77,15 +77,16 @@ describe('PLUGIN_API_SHIM', () => {
 describe('PLUGIN_API_SHIM runtime', () => {
   type SandboxSelf = { api?: unknown; postMessage: (m: unknown) => void };
 
-  function runShim(): {
+  function runShim(existingSelf?: SandboxSelf & Record<string, unknown>): {
     api: Record<string, unknown>;
     messages: unknown[];
     sandboxSelf: SandboxSelf;
   } {
     const messages: unknown[] = [];
-    // Celowo prototyp null: shim wzmacnia `Object.getPrototypeOf(self)`,
+    // Domyślnie prototyp null: shim wzmacnia `Object.getPrototypeOf(self)`,
     // a zwykły obiekt rozwiązywałby się do HOSTOWEGO Object.prototype wewnątrz vm.
-    const sandboxSelf = Object.create(null) as SandboxSelf;
+    const sandboxSelf = (existingSelf ?? Object.create(null)) as SandboxSelf &
+      Record<string, unknown>;
     sandboxSelf.postMessage = (m: unknown) => messages.push(m);
     const sandbox: Record<string, unknown> = {
       self: sandboxSelf,
@@ -126,6 +127,24 @@ describe('PLUGIN_API_SHIM runtime', () => {
     vm.runInContext(PLUGIN_API_SHIM, sandbox);
     expect(sandboxSelf.Worker).toBeUndefined();
     expect(sandboxSelf.SharedWorker).toBeUndefined();
+  });
+
+  it('blocks network globals reached through the whole prototype chain', () => {
+    // Chromium: self -> DedicatedWorkerGlobalScope.prototype ->
+    // WorkerGlobalScope.prototype (tu siedzi fetch). Blokada jednego poziomu
+    // wystarczała do obejścia sandboxa przez drugi `getPrototypeOf`.
+    const workerGlobalScopeProto = { fetch: () => 'native', XMLHttpRequest: class {} };
+    const workerProto = Object.create(workerGlobalScopeProto);
+    const workerSelf = Object.create(workerProto) as SandboxSelf & Record<string, unknown>;
+
+    runShim(workerSelf);
+
+    expect(workerSelf.fetch).toBeUndefined();
+    expect(workerProto.fetch).toBeUndefined();
+    expect(workerGlobalScopeProto.fetch).toBeUndefined();
+    expect(workerGlobalScopeProto.XMLHttpRequest).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty('fetch');
+    expect(Object.prototype).not.toHaveProperty('XMLHttpRequest');
   });
 
   it('truncates plugin log lines to MAX_LOG_CHARS', () => {
