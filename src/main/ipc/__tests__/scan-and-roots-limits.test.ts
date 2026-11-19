@@ -75,8 +75,18 @@ describe('scanDir budget stops the walk instead of the result', () => {
     const budget = createScanBudget(10);
     const result = await scanDir(dir, 8, 0, undefined, undefined, budget);
 
-    expect(result.files.length).toBeLessThanOrEqual(10);
+    // Rezerwacja budżetu nie może porzucić plików, na które wystarczyło miejsca.
+    expect(result.files).toHaveLength(10);
     expect(budget.truncated).toBe(true);
+  });
+
+  it('processes every file that fits the budget exactly', async () => {
+    await makeTracks(10);
+    const budget = createScanBudget(10);
+    const result = await scanDir(dir, 8, 0, undefined, undefined, budget);
+
+    expect(result.files).toHaveLength(10);
+    expect(budget.truncated).toBe(false);
   });
 
   it('leaves the flag alone when everything fits', async () => {

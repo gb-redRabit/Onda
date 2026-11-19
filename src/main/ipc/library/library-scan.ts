@@ -331,10 +331,9 @@ export async function scanDir(
     let ii = 0;
     while (ai < audioTasks.length || vi < videoTasks.length || ii < imageTasks.length) {
       if (signal?.aborted) return { files: [], audioCount: 0, videoCount: 0, imageCount: 0 };
-      if (budget && budget.remaining <= 0) {
-        budget.truncated = true;
-        break;
-      }
+      // Budżet został już zarezerwowany przy kolejkowaniu (po jednym na zadanie),
+      // więc przerwanie tutaj porzucałoby dokładnie te pliki, na które wystarczyło
+      // miejsca. Podkatalogi same zatrzymają się na `remaining <= 0`.
       const chunk: Array<() => Promise<{ file: MediaFile | null }>> = [];
       while (
         chunk.length < chunkSize &&

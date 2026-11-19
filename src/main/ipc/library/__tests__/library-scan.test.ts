@@ -361,7 +361,8 @@ describe('scanDir', () => {
 
     expect(budget.truncated).toBe(true);
     expect(res.audioCount).toBe(2);
-    expect(res.files).toHaveLength(0);
+    // Pliki, na które wystarczyło budżetu, muszą zostać przetworzone.
+    expect(res.files).toHaveLength(2);
   });
 
   it('processes mixed chunks over several batches', async () => {
