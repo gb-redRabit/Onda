@@ -8,12 +8,13 @@ import {
   Disc3,
   FolderOpen,
   Download,
-  Globe,
+  Globe2,
+  Library,
   Settings,
   ChevronLeft,
   ChevronRight,
-  RadioTower,
-  Radio,
+  Rss,
+  Tv,
   Wrench,
   ChevronDown,
   ChevronRight as ChevronRightSmall
@@ -78,11 +79,11 @@ interface NavEntry {
 
 const navItems = computed<NavEntry[]>(() => [
   { label: t('nav.home'), icon: Home, route: '/' },
-  { label: t('nav.library'), icon: Disc3, route: '/library' },
+  { label: t('nav.library'), icon: Library, route: '/library' },
   { label: t('nav.explorer'), icon: FolderOpen, route: '/explorer' },
-  { label: t('nav.online'), icon: Radio, route: '/online' },
-  { label: t('nav.webcast'), icon: RadioTower, route: '/webcast' },
-  { label: t('nav.sources'), icon: Globe, route: '/sources' },
+  { label: t('nav.online'), icon: Globe2, route: '/online' },
+  { label: t('nav.sources'), icon: Rss, route: '/sources' },
+  { label: t('nav.webcast'), icon: Tv, route: '/webcast' },
   { label: t('nav.downloads'), icon: Download, route: '/downloads', blink: downloadBlink.value },
   { label: t('nav.tools'), icon: Wrench, route: '/tools' }
 ]);

@@ -60,7 +60,9 @@ describe('AppMenuViewDropdown keyboard', () => {
     expect(text).toContain('Ctrl+home');
     expect(text).toContain('Ctrl+library');
     expect(text).toContain('Ctrl+settings');
-    expect(text).not.toContain('Ctrl+audioView');
+    expect(text).not.toContain('menu.audioView');
+    expect(text).not.toContain('nav.player');
+    expect(text).toContain('menu.tools');
   });
 
   it('navigates to downloads and settings', async () => {
@@ -70,7 +72,8 @@ describe('AppMenuViewDropdown keyboard', () => {
 
     await item('menu.downloads').trigger('click');
     await item('menu.settings').trigger('click');
+    await item('menu.tools').trigger('click');
 
-    expect(wrapper.emitted('navigate')).toEqual([['/downloads'], ['/settings']]);
+    expect(wrapper.emitted('navigate')).toEqual([['/downloads'], ['/settings'], ['/tools']]);
   });
 });

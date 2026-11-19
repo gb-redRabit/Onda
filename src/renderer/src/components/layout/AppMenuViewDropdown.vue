@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@renderer/stores/settings';
 import {
-  AudioLines,
   Download,
   FolderOpen,
   Globe2,
   Home,
   Library,
-  MonitorPlay,
   PanelBottom,
   Rss,
   Settings,
-  Tv
+  Tv,
+  Wrench
 } from '@lucide/vue';
 import AppMenuItem from './AppMenuItem.vue';
 
@@ -25,11 +24,10 @@ const ROUTES: Array<{ path: string; label: string; shortcut?: string; icon: unkn
   { path: '/', label: 'menu.home', shortcut: 'home', icon: Home },
   { path: '/library', label: 'menu.library', shortcut: 'library', icon: Library },
   { path: '/explorer', label: 'menu.explorer', shortcut: 'explorer', icon: FolderOpen },
-  { path: '/audio', label: 'menu.audioView', icon: AudioLines },
-  { path: '/player', label: 'nav.player', icon: MonitorPlay },
   { path: '/online', label: 'menu.online', icon: Globe2 },
   { path: '/sources', label: 'menu.sources', icon: Rss },
-  { path: '/webcast', label: 'menu.webcast', icon: Tv }
+  { path: '/webcast', label: 'menu.webcast', icon: Tv },
+  { path: '/tools', label: 'menu.tools', icon: Wrench }
 ];
 </script>
 
