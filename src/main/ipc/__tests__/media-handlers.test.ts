@@ -1,5 +1,14 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  ftruncateSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  realpathSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -118,7 +127,7 @@ vi.mock('../../media/cover-embed', () => ({
   embedCover: mocks.embedCover
 }));
 
-const { registerMediaHandlers, getDuration, writeCoverToAudioFile } =
+const { registerMediaHandlers, getDuration, writeCoverToAudioFile, MAX_COVER_BYTES } =
   await import('../media/media-handlers');
 registerMediaHandlers();
 
@@ -134,9 +143,22 @@ function handler(channel: string): (...args: any[]) => any {
   return found;
 }
 
-function tempFile(name: string, content = 'x'): string {
+function tempFile(name: string, content: string | Buffer = 'x'): string {
   const path = join(root, name);
   writeFileSync(path, content);
+  return path;
+}
+
+// Duży plik bez realnego zapisu danych — `stat` widzi rozmiar, więc test limitu
+// nie alokuje 20 MB w pamięci.
+function sparseFile(name: string, size: number): string {
+  const path = join(root, name);
+  const fd = openSync(path, 'w');
+  try {
+    ftruncateSync(fd, size);
+  } finally {
+    closeSync(fd);
+  }
   return path;
 }
 
@@ -270,6 +292,31 @@ describe('media:writeTags', () => {
     expect(mocks.id3Update).toHaveBeenCalledWith({ title: 'Song' }, file);
   });
 
+  it('drops file-path tags and unknown keys so node-id3 cannot read from disk', async () => {
+    const file = tempFile('tags-injection.mp3');
+    const secret = tempFile('secret.txt', 'top-secret');
+
+    const result = await handler('media:writeTags')({}, file, {
+      title: 'Song',
+      image: secret,
+      picture: secret,
+      unknownKey: 'value'
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mocks.id3Update).toHaveBeenCalledWith({ title: 'Song' }, file);
+  });
+
+  it('rejects a tags payload that is not an object', async () => {
+    const file = tempFile('tags-invalid.mp3');
+
+    expect(await handler('media:writeTags')({}, file, ['title'])).toEqual({
+      success: false,
+      error: 'Invalid tags'
+    });
+    expect(mocks.id3Update).not.toHaveBeenCalled();
+  });
+
   it('reports library errors', async () => {
     const file = tempFile('tags2.mp3');
     mocks.id3Update.mockRejectedValueOnce(new Error('bad tag'));
@@ -359,14 +406,81 @@ describe('media:writeCover', () => {
 
   it('infers the mime type from an image file path', async () => {
     const file = tempFile('cover3.mp3');
-    const image = tempFile('cover.png', 'png-bytes');
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+    const image = tempFile('cover.png', png);
 
     expect(await writeCoverToAudioFile(file, image)).toEqual({ success: true });
 
     expect(mocks.embedCover).toHaveBeenCalledWith(file, {
-      buffer: Buffer.from('png-bytes'),
+      buffer: png,
       mime: 'image/png'
     });
+  });
+
+  it('rejects a non-image file renamed to an image extension', async () => {
+    const file = tempFile('cover-sniff.mp3');
+    const fake = tempFile('secret.jpg', 'ssh-rsa AAAA top-secret');
+
+    expect(await handler('media:writeCover')({}, file, fake)).toEqual({
+      success: false,
+      error: 'Invalid image data'
+    });
+    expect(mocks.embedCover).not.toHaveBeenCalled();
+  });
+
+  it('rejects sensitive and non-image cover paths before reading them', async () => {
+    const file = tempFile('cover-sec.mp3');
+    const secret = tempFile('id_rsa');
+    mocks.sensitive.add(secret);
+
+    expect(await handler('media:writeCover')({}, file, secret)).toEqual({
+      success: false,
+      error: 'Invalid image path'
+    });
+
+    const notes = tempFile('notes.txt', 'plain text');
+    expect(await handler('media:writeCover')({}, file, notes)).toEqual({
+      success: false,
+      error: 'Invalid image path'
+    });
+    expect(mocks.embedCover).not.toHaveBeenCalled();
+  });
+
+  it('rejects cover files above the size limit without reading them', async () => {
+    const file = tempFile('cover-big.mp3');
+    const image = sparseFile('huge.png', MAX_COVER_BYTES + 1);
+
+    expect(await handler('media:writeCover')({}, file, image)).toEqual({
+      success: false,
+      error: 'Image file too large'
+    });
+    expect(mocks.embedCover).not.toHaveBeenCalled();
+  });
+
+  it('rejects image data that is not a byte array', async () => {
+    const file = tempFile('cover-bad.mp3');
+
+    expect(await handler('media:writeCover')({}, file, { data: 1 })).toEqual({
+      success: false,
+      error: 'Invalid image data'
+    });
+    expect(await handler('media:writeCover')({}, file, [])).toEqual({
+      success: false,
+      error: 'Invalid image data'
+    });
+    expect(mocks.embedCover).not.toHaveBeenCalled();
+  });
+
+  it('rejects a cover path that is a directory', async () => {
+    const file = tempFile('cover-dir.mp3');
+    const dir = join(root, 'folder.png');
+    mkdirSync(dir);
+
+    expect(await handler('media:writeCover')({}, file, dir)).toEqual({
+      success: false,
+      error: 'Invalid image path'
+    });
+    expect(mocks.embedCover).not.toHaveBeenCalled();
   });
 
   it('refuses formats that cannot embed a cover', async () => {
@@ -647,12 +761,13 @@ describe('coverCache:clear', () => {
 describe('media handler edge paths', () => {
   it('embeds covers from files with fallback mime and overrides', async () => {
     const audio = tempFile('cover-edge.m4a');
+    const gifBytes = Buffer.from('GIF89a');
     const gif = tempFile('cover-edge.gif');
-    writeFileSync(gif, 'gif');
+    writeFileSync(gif, gifBytes);
 
     await writeCoverToAudioFile(audio, gif);
     expect(mocks.embedCover).toHaveBeenLastCalledWith(audio, {
-      buffer: Buffer.from('gif'),
+      buffer: gifBytes,
       mime: 'image/jpeg'
     });
 

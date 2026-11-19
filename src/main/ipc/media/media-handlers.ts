@@ -40,6 +40,48 @@ function isProtectedTarget(filePath: string): boolean {
   return isProtectedPath(filePath) || isProtectedPath(dirname(filePath));
 }
 
+// Tylko tekstowe ramki ID3. `node-id3` traktuje string `image` jako ścieżkę do
+// wczytania z dysku, więc dowolny klucz z żądania renderera był wektorem
+// eksfiltracji plików (np. `{ image: 'C:\\Users\\...\\id_rsa' }`).
+const ALLOWED_ID3_TEXT_TAGS = new Set([
+  'title',
+  'artist',
+  'album',
+  'albumArtist',
+  'performerInfo',
+  'year',
+  'genre',
+  'track',
+  'trackNumber',
+  'partOfSet',
+  'discNumber',
+  'composer',
+  'publisher',
+  'bpm',
+  'comment',
+  'copyright'
+]);
+
+const ALLOWED_COVER_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
+export const MAX_COVER_BYTES = 20 * 1024 * 1024;
+
+// Rozszerzenie nie wystarcza: przejęty renderer mógł skopiować sekret do
+// `tmp/x.jpg`. Sprawdzamy sygnaturę, zanim bajty trafią do tagu.
+function looksLikeImage(buffer: Buffer): boolean {
+  if (buffer.length < 4) return false;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return true; // JPEG
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+    return true; // PNG
+  }
+  if (buffer[0] === 0x42 && buffer[1] === 0x4d) return true; // BMP
+  if (buffer.toString('ascii', 0, 4) === 'GIF8') return true; // GIF
+  return (
+    buffer.length >= 12 &&
+    buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP'
+  );
+}
+
 export async function getDuration(filePath: string): Promise<number> {
   const cached = getCachedDuration(filePath);
   if (cached) {
@@ -115,6 +157,12 @@ export async function writeCoverToAudioFile(
       imageBuffer = Buffer.from(imageSource);
       if (mimeOverride) mime = mimeOverride;
     }
+    if (imageBuffer.length === 0 || imageBuffer.length > MAX_COVER_BYTES) {
+      return { success: false, error: 'Invalid image data' };
+    }
+    if (typeof imageSource === 'string' && !looksLikeImage(imageBuffer)) {
+      return { success: false, error: 'Invalid image data' };
+    }
     await embedCover(filePath, { buffer: imageBuffer, mime });
     invalidateCachedCover(filePath);
     // Mapa okładek żyje we własnym pliku JSON (`cover-map`), NIE w szyfrowanym
@@ -176,10 +224,14 @@ export function registerMediaHandlers(): void {
     ): Promise<{ success: boolean; error?: string }> => {
       if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
       if (isProtectedTarget(filePath)) return { success: false, error: 'Protected path' };
+      if (!tags || typeof tags !== 'object' || Array.isArray(tags)) {
+        return { success: false, error: 'Invalid tags' };
+      }
       try {
         const toWrite: Record<string, string> = {};
         for (const [key, val] of Object.entries(tags)) {
-          if (val !== undefined) toWrite[key] = val;
+          if (typeof val !== 'string' || !ALLOWED_ID3_TEXT_TAGS.has(key)) continue;
+          toWrite[key] = val;
         }
         await NodeID3.Promise.update(toWrite, filePath);
         return { success: true };
@@ -226,8 +278,28 @@ export function registerMediaHandlers(): void {
     ): Promise<{ success: boolean; error?: string }> => {
       if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
       if (isProtectedTarget(filePath)) return { success: false, error: 'Protected path' };
-      if (typeof imageSource === 'string' && !isSafeAbsolutePath(imageSource)) {
-        return { success: false, error: 'Invalid image path' };
+      if (typeof imageSource === 'string') {
+        if (!isSafeAbsolutePath(imageSource) || isSensitivePath(imageSource)) {
+          return { success: false, error: 'Invalid image path' };
+        }
+        if (!ALLOWED_COVER_EXTS.has(extname(imageSource).toLowerCase())) {
+          return { success: false, error: 'Invalid image path' };
+        }
+        try {
+          const info = await stat(imageSource);
+          if (!info.isFile()) return { success: false, error: 'Invalid image path' };
+          if (info.size > MAX_COVER_BYTES) {
+            return { success: false, error: 'Image file too large' };
+          }
+        } catch {
+          return { success: false, error: 'Image file inaccessible' };
+        }
+      } else if (
+        !Array.isArray(imageSource) ||
+        imageSource.length === 0 ||
+        imageSource.length > MAX_COVER_BYTES
+      ) {
+        return { success: false, error: 'Invalid image data' };
       }
       return writeCoverToAudioFile(filePath, imageSource);
     }
