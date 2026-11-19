@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, shallowRef, triggerRef } from 'vue';
 import type { Ref } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 import { audioEngine } from '@renderer/modules/audioEngine';
@@ -9,7 +9,7 @@ export function usePlayerNavigation(
   recordPlay: (track: MediaFile) => void
 ) {
   const currentTrack = ref<MediaFile | null>(null);
-  const history = ref<MediaFile[]>([]);
+  const history = shallowRef<MediaFile[]>([]);
   const isPlaying = ref(false);
   const currentTime = ref(0);
   const pipActive = ref(false);
@@ -25,6 +25,7 @@ export function usePlayerNavigation(
     if (currentTrack.value) {
       history.value.unshift(currentTrack.value);
       if (history.value.length > 100) history.value.pop();
+      triggerRef(history);
     }
     if (track.type === 'video') audioEngine.resume();
     resumeIntent.value = options?.resume === true ? track.path : null;
@@ -77,6 +78,7 @@ export function usePlayerNavigation(
     if (pendingQueue.value.length > 0) {
       const idx = shuffle.value ? Math.floor(Math.random() * pendingQueue.value.length) : 0;
       const next = pendingQueue.value.splice(idx, 1)[0]!;
+      triggerRef(pendingQueue);
       setTrack(next);
       return next;
     }
@@ -85,6 +87,7 @@ export function usePlayerNavigation(
         const next = history.value[history.value.length - 1];
         setTrack(next);
         history.value.pop();
+        triggerRef(history);
         return next;
       }
       return null;
@@ -93,6 +96,7 @@ export function usePlayerNavigation(
     const next = queue.value[nextIdx];
     setTrack(next);
     queue.value.splice(nextIdx, 1);
+    triggerRef(queue);
     return next;
   }
 
@@ -102,6 +106,7 @@ export function usePlayerNavigation(
     if (currentTrack.value) {
       history.value.unshift(currentTrack.value);
       if (history.value.length > 100) history.value.pop();
+      triggerRef(history);
     }
     currentTrack.value = track;
     currentTime.value = 0;
@@ -122,6 +127,7 @@ export function usePlayerNavigation(
       if (history.value.length > 100) history.value.pop();
     }
     const prev = history.value.shift()!;
+    triggerRef(history);
     currentTrack.value = prev;
     currentTime.value = 0;
     isPlaying.value = true;

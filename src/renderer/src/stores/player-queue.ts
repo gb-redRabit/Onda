@@ -1,9 +1,11 @@
-import { ref, computed } from 'vue';
+import { computed, ref, shallowRef, triggerRef } from 'vue';
 import type { MediaFile } from '@renderer/types/media';
 
 export function usePlayerQueue(enrich: (track: MediaFile) => void) {
-  const queue = ref<MediaFile[]>([]);
-  const pendingQueue = ref<MediaFile[]>([]);
+  // Płytka reaktywność: elementy MediaFile nie są proxowane (duże kolejki
+  // „Odtwórz wszystko”), a każdą mutację tablicy jawnie sygnalizujemy `triggerRef`.
+  const queue = shallowRef<MediaFile[]>([]);
+  const pendingQueue = shallowRef<MediaFile[]>([]);
   const queueVisible = ref(false);
 
   const queueLength = computed(() => queue.value.length + pendingQueue.value.length);
@@ -11,17 +13,21 @@ export function usePlayerQueue(enrich: (track: MediaFile) => void) {
 
   function addToQueue(track: MediaFile) {
     queue.value.push(track);
+    triggerRef(queue);
     enrich(track);
   }
   function addToQueueMultiple(tracks: MediaFile[]) {
     queue.value.push(...tracks);
+    triggerRef(queue);
     tracks.forEach(enrich);
   }
   function removeFromQueue(index: number) {
     if (index < pendingQueue.value.length) {
       pendingQueue.value.splice(index, 1);
+      triggerRef(pendingQueue);
     } else {
       queue.value.splice(index - pendingQueue.value.length, 1);
+      triggerRef(queue);
     }
   }
   function clearQueue() {
@@ -49,9 +55,12 @@ export function usePlayerQueue(enrich: (track: MediaFile) => void) {
     const destArr = toInPending ? pendingQueue.value : queue.value;
     const destIdx = toInPending ? to : to - newPendingLen;
     destArr.splice(destIdx, 0, item);
+    triggerRef(fromInPending ? pendingQueue : queue);
+    if (toInPending !== fromInPending) triggerRef(toInPending ? pendingQueue : queue);
   }
   function insertInQueue(index: number, track: MediaFile) {
     queue.value.splice(index, 0, track);
+    triggerRef(queue);
     enrich(track);
   }
   function toggleQueue() {

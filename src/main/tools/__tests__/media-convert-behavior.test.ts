@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetH264EncoderCache } from '../media-convert';
 
 const state = vi.hoisted(() => ({
   existsSync: vi.fn(),
@@ -56,6 +57,7 @@ function sender() {
 }
 
 beforeEach(() => {
+  resetH264EncoderCache();
   state.existsSync.mockReset();
   state.existsSync.mockReturnValue(false);
   state.mkdir.mockReset();
@@ -211,24 +213,37 @@ describe('video arguments', () => {
 
 describe('encoder detection', () => {
   it('prefers libx264 and then fallbacks', async () => {
-    const { detectH264Encoder } = await load();
+    const { detectH264Encoder, resetH264EncoderCache } = await load();
     state.runCommand.mockResolvedValueOnce('libx264 libopenh264');
     expect(await detectH264Encoder()).toBe('libx264');
+
+    // Wynik jest cache'owany na czas procesu — drugie wywołanie nie odpala ffmpeg.
+    state.runCommand.mockClear();
+    expect(await detectH264Encoder()).toBe('libx264');
+    expect(state.runCommand).not.toHaveBeenCalled();
+
+    resetH264EncoderCache();
     state.runCommand.mockResolvedValueOnce('libopenh264');
     expect(await detectH264Encoder()).toBe('libopenh264');
+
+    resetH264EncoderCache();
     state.runCommand.mockResolvedValueOnce('h264_mf');
     expect(await detectH264Encoder()).toBe('h264_mf');
+
+    resetH264EncoderCache();
     state.runCommand.mockResolvedValueOnce('nothing');
     expect(await detectH264Encoder()).toBe('mpeg4');
   });
 
   it('falls back to the ffmpeg name and mpeg4 on errors', async () => {
-    const { detectH264Encoder } = await load();
+    const { detectH264Encoder, resetH264EncoderCache } = await load();
+    resetH264EncoderCache();
     state.resolveBin.mockResolvedValueOnce(null);
     state.runCommand.mockResolvedValueOnce('libx264');
     expect(await detectH264Encoder()).toBe('libx264');
     expect(state.runCommand.mock.calls.at(-1)?.[0]).toBe('ffmpeg');
 
+    resetH264EncoderCache();
     state.runCommand.mockRejectedValueOnce(new Error('exec'));
     expect(await detectH264Encoder()).toBe('mpeg4');
   });

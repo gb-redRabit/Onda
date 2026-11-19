@@ -139,7 +139,21 @@ export function buildVideoConvertArgs(
   return args;
 }
 
-export async function detectH264Encoder(): Promise<H264Encoder> {
+let h264EncoderPromise: Promise<H264Encoder> | null = null;
+
+/** Czyści cache detekcji — używane w testach po zmianie mocków ffmpeg. */
+export function resetH264EncoderCache(): void {
+  h264EncoderPromise = null;
+}
+
+export function detectH264Encoder(): Promise<H264Encoder> {
+  // `ffmpeg -encoders` to stały koszt przy każdym cięciu/konwersji; wynik nie
+  // zmienia się w czasie życia procesu.
+  if (!h264EncoderPromise) h264EncoderPromise = detectH264EncoderUncached();
+  return h264EncoderPromise;
+}
+
+async function detectH264EncoderUncached(): Promise<H264Encoder> {
   try {
     const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
     const out = await runCommand(ffmpeg, ['-hide_banner', '-encoders'], { timeout: 10000 });
