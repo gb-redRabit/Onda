@@ -179,7 +179,9 @@ export function registerAnimeSubHandlers(): void {
           return await saveSubtitle(videoPath, looksAss ? 'x.ass' : 'x.srt', buf);
         }
 
-        const files = readZip(buf).filter((e) => SUB_EXTS.includes(extname(e.name).toLowerCase()));
+        const files = (await readZip(buf)).filter((e) =>
+          SUB_EXTS.includes(extname(e.name).toLowerCase())
+        );
         const chosen = pickEpisodeFile(files, basename(videoPath));
         if (!chosen) return { success: false, error: 'no-subtitles' };
         return await saveSubtitle(videoPath, chosen.name, chosen.data);

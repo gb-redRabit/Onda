@@ -1,4 +1,16 @@
-import { inflateRawSync } from 'zlib';
+import { inflateRaw } from 'zlib';
+
+// Dekompresja asynchroniczna: `inflateRawSync` blokował pętlę zdarzeń procesu
+// głównego na czas rozpakowania całego archiwum (nawet kilku MB), przez co
+// okno przestawało odpowiadać na IPC.
+function inflateEntry(raw: Buffer, maxOutputLength: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    inflateRaw(raw, { maxOutputLength }, (err, result) => {
+      if (err) reject(err);
+      else resolve(result);
+    });
+  });
+}
 
 // Minimalny czytnik ZIP (wystarczający dla archiwów AnimeSub: deflate lub stored).
 // Bez zależności — centralny katalog daje poprawne rozmiary, więc dane lokalnego
@@ -28,7 +40,7 @@ function findEndOfCentralDirectory(buf: Buffer): number {
   return -1;
 }
 
-export function readZip(buf: Buffer): ZipEntry[] {
+export async function readZip(buf: Buffer): Promise<ZipEntry[]> {
   const eocd = findEndOfCentralDirectory(buf);
   if (eocd < 0) return [];
   const count = buf.readUInt16LE(eocd + 10);
@@ -56,9 +68,7 @@ export function readZip(buf: Buffer): ZipEntry[] {
     try {
       if (method === 0 && raw.length > MAX_ENTRY_OUTPUT_BYTES) continue;
       const data =
-        method === 0
-          ? Buffer.from(raw)
-          : inflateRawSync(raw, { maxOutputLength: MAX_ENTRY_OUTPUT_BYTES });
+        method === 0 ? Buffer.from(raw) : await inflateEntry(raw, MAX_ENTRY_OUTPUT_BYTES);
       totalOutput += data.length;
       if (totalOutput > MAX_TOTAL_OUTPUT_BYTES) break;
       entries.push({ name, data });
