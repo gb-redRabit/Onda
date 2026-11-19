@@ -39,7 +39,7 @@ export interface AppChannels {
   'window:minimize': { args: []; result: void };
   'window:maximize': { args: []; result: void };
   'window:close': { args: []; result: void };
-  'window:setAlwaysOnTop': { args: [flag: boolean]; result: void };
+  'window:setAlwaysOnTop': { args: [flag: boolean]; result: boolean };
   /** Windows 11: true = systemowe zaokrąglenie DWM, false = kwadratowe narożniki. */
   'window:setRoundedCorners': { args: [rounded: boolean]; result: boolean };
   /** Windows 11: kolor 1px obramowania okna (DWM), np. kolor ramki aplikacji. */
@@ -50,7 +50,10 @@ export interface AppChannels {
   'window:isFullscreen': { args: []; result: boolean };
 
   'explorer:create': { args: [path?: string]; result: number | null };
-  'explorer:tabMoved': { args: [sourceWindowId: number, path: string]; result: void };
+  'explorer:tabMoved': {
+    args: [sourceWindowId: number, path: string];
+    result: { ok: boolean; error?: string };
+  };
   'explorer:sendTabToMain': { args: [path: string]; result: void };
 
   'imageViewer:open': {

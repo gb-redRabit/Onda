@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron';
 import type { PresenceKind, PresenceState } from '../../shared/types/discord';
+import { handleIpc } from '../ipc/typed-handle';
 import { configureDiscord, getDiscordStatus, updatePresence } from './rich-presence';
 import { normalizeCoverQuery, resolveCoverUrl } from './cover-lookup';
 import { resolveLocalCover } from './cover-upload';
@@ -43,15 +44,15 @@ export function sanitizePresence(value: unknown): PresenceState | null {
 }
 
 export function registerDiscordHandlers(): void {
-  ipcMain.handle('discord:configure', async (_event, options: unknown): Promise<void> => {
+  handleIpc('discord:configure', async (_event, options: unknown): Promise<void> => {
     configureDiscord(options);
   });
-  ipcMain.handle('discord:getStatus', () => getDiscordStatus());
-  ipcMain.handle('discord:resolveCover', async (_event, query: unknown): Promise<string | null> => {
+  handleIpc('discord:getStatus', () => getDiscordStatus());
+  handleIpc('discord:resolveCover', async (_event, query: unknown): Promise<string | null> => {
     const normalized = normalizeCoverQuery(query);
     return normalized ? resolveCoverUrl(normalized) : null;
   });
-  ipcMain.handle(
+  handleIpc(
     'discord:resolveLocalCover',
     async (_event, filePath: unknown): Promise<string | null> => resolveLocalCover(filePath)
   );

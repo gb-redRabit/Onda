@@ -1,4 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron';
+import { handleIpc } from '../ipc/typed-handle';
 import type { PipManager } from '../pip/pip-manager';
 import type { AudioPipManager } from '../pip/audio-pip-manager';
 import { logger } from '../../shared/logger';
@@ -122,7 +123,7 @@ export function registerWindowHandlers(context: {
   const isPositiveIntId = (value: unknown): value is number =>
     typeof value === 'number' && Number.isInteger(value) && value > 0;
 
-  ipcMain.handle('imageViewer:open', (_event, files: unknown[], index: unknown) => {
+  handleIpc('imageViewer:open', (_event, files: unknown[], index: unknown) => {
     // Renderer może wysłać cokolwiek; indeks NaN / ujemny zostałby zapisany i
     // później użyty do pocięcia listy plików. Znormalizuj go tutaj, na granicy.
     const safeIndex =
@@ -130,19 +131,19 @@ export function registerWindowHandlers(context: {
     return openImageViewer(files, safeIndex, getMainWindow());
   });
 
-  ipcMain.handle('imageViewer:getData', () => {
-    return getImageViewerData();
+  handleIpc('imageViewer:getData', () => {
+    return getImageViewerData() ?? undefined;
   });
 
-  ipcMain.handle('imageViewer:close', () => {
+  handleIpc('imageViewer:close', () => {
     closeImageViewer();
   });
 
-  ipcMain.handle('explorer:create', async (_event, path?: string) => {
+  handleIpc('explorer:create', async (_event, path?: string) => {
     return createExplorerWindow(typeof path === 'string' ? path : undefined);
   });
 
-  ipcMain.handle('explorer:tabMoved', (_event, sourceWindowId: unknown, path: unknown) => {
+  handleIpc('explorer:tabMoved', (_event, sourceWindowId: unknown, path: unknown) => {
     if (!isPositiveIntId(sourceWindowId)) return { ok: false, error: 'invalid window id' };
     if (typeof path !== 'string' || path.length === 0 || path.length > 4096) {
       return { ok: false, error: 'invalid path' };
@@ -154,7 +155,7 @@ export function registerWindowHandlers(context: {
     return { ok: true };
   });
 
-  ipcMain.handle('explorer:sendTabToMain', (_event, path: string) => {
+  handleIpc('explorer:sendTabToMain', (_event, path: string) => {
     const mainWindow = getMainWindow();
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('explorer:add-tab', path);
@@ -171,7 +172,7 @@ export function registerWindowHandlers(context: {
     }
   });
 
-  ipcMain.handle('app:setBackgroundMaterial', (event, material: string) => {
+  handleIpc('app:setBackgroundMaterial', (event, material: string) => {
     if (process.platform !== 'win32') return false;
     const valid: WindowBackgroundMaterial[] = ['auto', 'none', 'mica', 'acrylic', 'tabbed'];
     if (!(valid as string[]).includes(material)) return false;
@@ -190,7 +191,7 @@ export function registerWindowHandlers(context: {
 
   // Windows 11 rysuje 1px obramowanie okna w kolorze akcentu (domyślnie jasnym).
   // Ustawiamy je na kolor ramki aplikacji, żeby nie odcinało się od zawartości.
-  ipcMain.handle('window:setBorderColor', async (event, color: unknown) => {
+  handleIpc('window:setBorderColor', async (event, color: unknown) => {
     if (process.platform !== 'win32') return false;
     if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) return false;
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -207,7 +208,7 @@ export function registerWindowHandlers(context: {
 
   // Kwadratowe narożniki przy `geometry.radiusBox = 0`; dodatnia wartość zostawia
   // systemowe zaokrąglenie DWM (Windows 11 sam dobiera promień).
-  ipcMain.handle('window:setRoundedCorners', async (event, rounded: unknown) => {
+  handleIpc('window:setRoundedCorners', async (event, rounded: unknown) => {
     if (typeof rounded !== 'boolean') return false;
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
@@ -215,21 +216,21 @@ export function registerWindowHandlers(context: {
     return applyWindowCorners(win, rounded);
   });
 
-  ipcMain.handle('window:minimize', (event) => {
+  handleIpc('window:minimize', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize();
   });
 
-  ipcMain.handle('window:maximize', (event) => {
+  handleIpc('window:maximize', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win?.isMaximized()) win.unmaximize();
     else win?.maximize();
   });
 
-  ipcMain.handle('window:close', (event) => {
+  handleIpc('window:close', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
-  ipcMain.handle('window:setAlwaysOnTop', (event, flag: unknown) => {
+  handleIpc('window:setAlwaysOnTop', (event, flag: unknown) => {
     if (typeof flag !== 'boolean') return false;
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
@@ -256,7 +257,7 @@ export function registerWindowHandlers(context: {
     win.setResizable(true);
   }
 
-  ipcMain.handle('window:toggleFullscreen', (event) => {
+  handleIpc('window:toggleFullscreen', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
     if (!win) return false;
     if (win.isFullScreen()) {
@@ -281,7 +282,7 @@ export function registerWindowHandlers(context: {
     }
   });
 
-  ipcMain.handle('window:exitFullscreen', (event) => {
+  handleIpc('window:exitFullscreen', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
     if (!win || !win.isFullScreen()) return;
     win.setFullScreen(false);
@@ -295,22 +296,22 @@ export function registerWindowHandlers(context: {
     setTimeout(doRestore, 400);
   });
 
-  ipcMain.handle('window:isFullscreen', (event) => {
+  handleIpc('window:isFullscreen', (event) => {
     return BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false;
   });
 
-  ipcMain.handle('app:getAutoLaunch', (): { enabled: boolean; hidden: boolean } => {
+  handleIpc('app:getAutoLaunch', (): { enabled: boolean; hidden: boolean } => {
     return getAutoLaunch();
   });
 
-  ipcMain.handle(
+  handleIpc(
     'app:setAutoLaunch',
     (_event, opts: { enabled: boolean; hidden?: boolean }): boolean => {
       return setAutoLaunch({ enabled: !!opts?.enabled, hidden: !!opts?.hidden });
     }
   );
 
-  ipcMain.handle('app:setCloseToTray', (_event, value: boolean) => {
+  handleIpc('app:setCloseToTray', (_event, value: boolean) => {
     setCloseToTray(!!value);
     return true;
   });

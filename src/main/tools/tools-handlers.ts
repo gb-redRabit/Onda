@@ -1,4 +1,4 @@
-import { ipcMain, type BrowserWindow } from 'electron';
+import type { BrowserWindow } from 'electron';
 import type {
   MediaConvertRequest,
   MediaConvertResult,
@@ -6,6 +6,7 @@ import type {
   VideoClipThumbnailsRequest,
   VideoConcatRequest
 } from '../../shared/types/tools';
+import { handleIpc } from '../ipc/typed-handle';
 import { cancelMediaConvert, convertMedia } from './media-convert';
 import { batchConvertImages, cancelBatchImages } from './batch-images';
 import { exportHistory } from './history-export';
@@ -30,56 +31,50 @@ export interface ToolsHandlerContext {
 }
 
 export function registerToolsHandlers(context: ToolsHandlerContext): void {
-  ipcMain.handle('tools:openWindow', (_event, toolId: unknown, params: unknown) =>
+  handleIpc('tools:openWindow', (_event, toolId: unknown, params: unknown) =>
     isToolId(toolId) ? openToolWindow(toolId, params, context.getMainWindow()) : null
   );
-  ipcMain.handle('tools:getContext', (event) => getToolWindowContext(event.sender));
-  ipcMain.handle('tools:sendToMain', (event, message: unknown) =>
+  handleIpc('tools:getContext', (event) => getToolWindowContext(event.sender));
+  handleIpc('tools:sendToMain', (event, message: unknown) =>
     sendToolMessageToMain(event.sender, message, context.getMainWindow())
   );
-  ipcMain.handle(
+  handleIpc(
     'tools:convert',
     async (event, request: MediaConvertRequest): Promise<MediaConvertResult> =>
       convertMedia(event.sender, request)
   );
-  ipcMain.handle('tools:cancel', async (_event, jobId: string): Promise<boolean> =>
+  handleIpc('tools:cancel', async (_event, jobId: string): Promise<boolean> =>
     cancelMediaConvert(jobId)
   );
-  ipcMain.handle(
-    'tools:clip',
-    async (event, request: VideoClipRequest): Promise<MediaConvertResult> =>
-      clipVideo(event.sender, request)
+  handleIpc('tools:clip', async (event, request: VideoClipRequest): Promise<MediaConvertResult> =>
+    clipVideo(event.sender, request)
   );
-  ipcMain.handle('tools:clipCancel', async (_event, jobId: string): Promise<boolean> =>
+  handleIpc('tools:clipCancel', async (_event, jobId: string): Promise<boolean> =>
     cancelVideoClip(jobId)
   );
-  ipcMain.handle(
+  handleIpc(
     'tools:concat',
     async (event, request: VideoConcatRequest): Promise<MediaConvertResult> =>
       concatVideos(event.sender, request)
   );
-  ipcMain.handle('tools:concatCancel', async (_event, jobId: string): Promise<boolean> =>
+  handleIpc('tools:concatCancel', async (_event, jobId: string): Promise<boolean> =>
     cancelVideoConcat(jobId)
   );
-  ipcMain.handle('tools:clipThumbnails', async (_event, request: VideoClipThumbnailsRequest) =>
+  handleIpc('tools:clipThumbnails', async (_event, request: VideoClipThumbnailsRequest) =>
     clipThumbnails(request)
   );
-  ipcMain.handle('tools:tagEditorRead', async (_event, paths: unknown) => readAudioTags(paths));
-  ipcMain.handle('tools:tagEditorWrite', async (_event, entries: unknown) =>
-    writeAudioTags(entries)
-  );
-  ipcMain.handle('tools:imageRead', async (_event, path: unknown) => readImageForEditing(path));
-  ipcMain.handle('tools:imageSave', async (_event, request: unknown) => saveEditedImage(request));
-  ipcMain.handle('tools:imageEstimate', async (_event, request: unknown) =>
+  handleIpc('tools:tagEditorRead', async (_event, paths: unknown) => readAudioTags(paths));
+  handleIpc('tools:tagEditorWrite', async (_event, entries: unknown) => writeAudioTags(entries));
+  handleIpc('tools:imageRead', async (_event, path: unknown) => readImageForEditing(path));
+  handleIpc('tools:imageSave', async (_event, request: unknown) => saveEditedImage(request));
+  handleIpc('tools:imageEstimate', async (_event, request: unknown) =>
     estimateEditedImage(request)
   );
-  ipcMain.handle('tools:batchImagesStart', async (event, request: unknown) =>
+  handleIpc('tools:batchImagesStart', async (event, request: unknown) =>
     batchConvertImages(event.sender, request)
   );
-  ipcMain.handle('tools:batchImagesCancel', async (_event, jobId: string) =>
-    cancelBatchImages(jobId)
-  );
-  ipcMain.handle('tools:exportHistory', async (event, request: unknown) =>
+  handleIpc('tools:batchImagesCancel', async (_event, jobId: string) => cancelBatchImages(jobId));
+  handleIpc('tools:exportHistory', async (event, request: unknown) =>
     exportHistory(event, request)
   );
 }
