@@ -9,6 +9,9 @@ export function isSafeAbsolutePath(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   if (!value || value.length > MAX_PATH_LENGTH) return false;
   if (value.includes('\0')) return false;
+  // CR/LF są legalne w nazwach na POSIX, ale trafiają do list argumentów i plików
+  // (`ffconcat`: `file '…'`), więc mogłyby wstrzyknąć dodatkowe dyrektywy.
+  if (value.includes('\r') || value.includes('\n')) return false;
   // Akceptuj ścieżkę absolutną w którejkolwiek gramatyce — win32 (C:/... lub C:\...)
   // albo posix (/...). Wywołujący IPC są testowani na wszystkich platformach, a
   // ścieżka jest "safe-absolute" tylko wtedy, gdy jest jednoznacznie absolutna w co

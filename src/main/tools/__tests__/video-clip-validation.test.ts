@@ -65,4 +65,14 @@ describe('video tool validation', () => {
       } as never)
     ).resolves.toEqual({ success: false, error: 'Invalid output container' });
   });
+
+  it('rejects input paths with CR/LF before writing the concat list', async () => {
+    await expect(
+      concatVideos(sender, {
+        jobId: 'concat-lf',
+        inputPaths: ['/tmp/a\nfile.mp4', '/b.mp4'],
+        container: 'mp4'
+      } as never)
+    ).resolves.toEqual({ success: false, error: 'Invalid input path' });
+  });
 });

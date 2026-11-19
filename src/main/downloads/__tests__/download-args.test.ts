@@ -13,7 +13,8 @@ const state = vi.hoisted(() => ({
   readNetwork: vi.fn(),
   readSpeed: vi.fn(),
   addRoot: vi.fn(),
-  loggerInfo: vi.fn()
+  loggerInfo: vi.fn(),
+  resolveTarget: vi.fn()
 }));
 
 vi.mock('fs/promises', () => ({ mkdir: state.mkdir }));
@@ -33,6 +34,7 @@ vi.mock('../../ipc/proxy-utils', () => ({
   readSpeedLimitArgs: state.readSpeed
 }));
 vi.mock('../../media/media-server', () => ({ addAllowedRoot: state.addRoot }));
+vi.mock('../../ipc/network-target', () => ({ resolveNetworkTarget: state.resolveTarget }));
 vi.mock('../../../shared/logger', () => ({
   logger: { info: state.loggerInfo, warn: vi.fn(), error: vi.fn() }
 }));
@@ -68,6 +70,8 @@ beforeEach(() => {
   state.readSpeed.mockResolvedValue(['--limit-rate', '1M']);
   state.addRoot.mockReset();
   state.loggerInfo.mockReset();
+  state.resolveTarget.mockReset();
+  state.resolveTarget.mockResolvedValue({ url: new URL('https://example.com'), addresses: [] });
 });
 
 describe('base args', () => {
@@ -75,6 +79,35 @@ describe('base args', () => {
     const args = await buildBaseArgs(job({ source: { mode: 'provider' } }));
 
     expect(args).toEqual([]);
+    expect(state.mkdir).not.toHaveBeenCalled();
+    expect(state.addRoot).not.toHaveBeenCalled();
+  });
+
+  it('validates the target before any filesystem work', async () => {
+    await buildBaseArgs(job());
+
+    expect(state.resolveTarget).toHaveBeenCalledWith('https://www.youtube.com/watch?v=x', {
+      allowPrivateNetwork: false,
+      blockLoopback: false
+    });
+    expect(state.mkdir).toHaveBeenCalled();
+  });
+
+  it('honours private-network trust but still blocks loopback', async () => {
+    await buildBaseArgs(job({ source: { mode: 'ytdlp', allowPrivateNetwork: true } }));
+
+    expect(state.resolveTarget).toHaveBeenCalledWith('https://www.youtube.com/watch?v=x', {
+      allowPrivateNetwork: true,
+      blockLoopback: true
+    });
+  });
+
+  it('propagates target rejections without creating the output folder', async () => {
+    state.resolveTarget.mockRejectedValueOnce(new Error('Private network address is not allowed'));
+
+    await expect(buildBaseArgs(job({ url: 'http://127.0.0.1/media' }))).rejects.toThrow(
+      'Private network address is not allowed'
+    );
     expect(state.mkdir).not.toHaveBeenCalled();
     expect(state.addRoot).not.toHaveBeenCalled();
   });
@@ -110,11 +143,12 @@ describe('base args', () => {
     expect(state.readNetwork).toHaveBeenCalledWith('youtube');
   });
 
-  it('rejects non-http URLs after preparing the folder', async () => {
+  it('rejects non-http URLs before touching the filesystem', async () => {
     await expect(buildBaseArgs(job({ url: 'file:///etc/passwd' }))).rejects.toThrow(
       'Invalid download URL'
     );
-    expect(state.mkdir).toHaveBeenCalled();
+    expect(state.mkdir).not.toHaveBeenCalled();
+    expect(state.resolveTarget).not.toHaveBeenCalled();
   });
 
   it('accepts plain http', async () => {

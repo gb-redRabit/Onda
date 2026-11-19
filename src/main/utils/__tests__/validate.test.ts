@@ -15,8 +15,10 @@ describe('isSafeAbsolutePath', () => {
     expect(isSafeAbsolutePath('relative/file.mp3')).toBe(false);
   });
 
-  it('rejects null bytes and oversized paths', () => {
+  it('rejects null bytes, CR/LF and oversized paths', () => {
     expect(isSafeAbsolutePath('C:/a\0b.mp3')).toBe(false);
+    expect(isSafeAbsolutePath('/tmp/a\nb.mp3')).toBe(false);
+    expect(isSafeAbsolutePath('/tmp/a\rb.mp3')).toBe(false);
     expect(isSafeAbsolutePath('C:/' + 'a'.repeat(5000))).toBe(false);
   });
 });

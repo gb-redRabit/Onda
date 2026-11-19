@@ -7,6 +7,7 @@ import { buildThumbnailArgs, buildSectionArgs } from './cover-spec';
 import { buildSubtitleArgs } from './subtitle-args';
 import { buildSponsorBlockArgs } from './sponsorblock';
 import { readNetworkArgs, readSpeedLimitArgs } from '../ipc/proxy-utils';
+import { resolveNetworkTarget } from '../ipc/network-target';
 import { addAllowedRoot } from '../media/media-server';
 
 // Bazowa lista argumentów yt-dlp dla zadania pobierania, wyodrębniona z
@@ -25,6 +26,20 @@ export async function buildBaseArgs(job: Job): Promise<string[]> {
   // Tryb providera (PikPak/MEGA/Drive…) nie używa yt-dlp: URL jest syntetyczny
   // (`provider://…`), a walidacja http niżej by go odrzuciła. Bez efektów ubocznych.
   if (job.source?.mode === 'provider') return [];
+  // Zabezpieczenie przed wstrzyknięciem opcji: URL zaczynający się od "-" zostałby
+  // sparsowany jako flaga yt-dlp. Dodaj "--" na końcu listy opcji, potem waliduj.
+  if (!job.url.startsWith('https://') && !job.url.startsWith('http://')) {
+    throw new Error(`Invalid download URL: rejected non-http(s) scheme`);
+  }
+  // yt-dlp sam rozwiązuje DNS i łączy się bez naszego klienta HTTP, więc zanim
+  // uruchomimy proces, odrzucamy loopback/LAN/endpoint metadanych. Zaufanie do
+  // sieci prywatnej dziedziczymy tylko ze źródła zatwierdzonego przez użytkownika
+  // i nawet wtedy blokujemy loopback/link-local.
+  const allowPrivateNetwork = job.source?.allowPrivateNetwork === true;
+  await resolveNetworkTarget(job.url, {
+    allowPrivateNetwork,
+    blockLoopback: allowPrivateNetwork
+  });
   const dir = resolveOutputDir(job);
   await mkdir(dir, { recursive: true });
   // Serwer mediów zna tylko foldery biblioteki + jawnie otwarte pliki.
@@ -33,11 +48,6 @@ export async function buildBaseArgs(job: Job): Promise<string[]> {
   // trafiają tu plik audio i towarzyszący mu animowany cover.
   void addAllowedRoot(dir);
   const outputTemplate = join(dir, `${mapFilenameTemplate(job.filenameTemplate)}.%(ext)s`);
-  // Zabezpieczenie przed wstrzyknięciem opcji: URL zaczynający się od "-" zostałby
-  // sparsowany jako flaga yt-dlp. Dodaj "--" na końcu listy opcji, potem waliduj.
-  if (!job.url.startsWith('https://') && !job.url.startsWith('http://')) {
-    throw new Error(`Invalid download URL: rejected non-http(s) scheme`);
-  }
   const base: string[] = [
     '--newline',
     '--no-playlist',
