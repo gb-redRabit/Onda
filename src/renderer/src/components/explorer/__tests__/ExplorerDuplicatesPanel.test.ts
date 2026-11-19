@@ -55,6 +55,13 @@ describe('ExplorerDuplicatesPanel', () => {
     expect(h.invoke).toHaveBeenCalledWith('fs:findDuplicates', '/music/a');
   });
 
+  it('scans immediately when mounted already open', async () => {
+    mountPanel(true);
+    await flushPromises();
+
+    expect(h.invoke).toHaveBeenCalledWith('fs:findDuplicates', '/music/a');
+  });
+
   it('rescans when the folder changes while open', async () => {
     const wrapper = mountPanel(false);
     await wrapper.setProps({ open: true });

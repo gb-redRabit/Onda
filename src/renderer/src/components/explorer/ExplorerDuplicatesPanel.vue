@@ -35,7 +35,10 @@ watch(
   () => props.open,
   (open) => {
     if (open) rescanDuplicates();
-  }
+  },
+  // Panel jest montowany leniwie dopiero po otwarciu (`v-if` w widoku), więc
+  // pierwszy skan musi wystartować już przy montowaniu z `open = true`.
+  { immediate: true }
 );
 
 watch(
