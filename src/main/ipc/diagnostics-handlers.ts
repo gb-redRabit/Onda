@@ -1,15 +1,17 @@
-import { ipcMain, dialog, BrowserWindow, app } from 'electron';
+import { dialog, BrowserWindow, app } from 'electron';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { readLogTail, clearLogFile, copyLogTo, getEnvironmentInfo } from '../log-file';
 import { getRecentWarnings } from '../warnings';
 import { getPerfSnapshot } from '../boot-timeline';
 import { logger } from '../../shared/logger';
+import { errMsg } from '../../shared/helpers';
+import { handleIpc } from './typed-handle';
 
 export function registerDiagnosticsHandlers(): void {
-  ipcMain.handle('app:getInfo', () => getEnvironmentInfo());
+  handleIpc('app:getInfo', () => getEnvironmentInfo());
 
-  ipcMain.handle('app:getLicenses', async () => {
+  handleIpc('app:getLicenses', async () => {
     try {
       const appPath = join(app.getAppPath(), 'package.json');
       const pkg = JSON.parse(await readFile(appPath, 'utf-8')) as {
@@ -40,20 +42,20 @@ export function registerDiagnosticsHandlers(): void {
     }
   });
 
-  ipcMain.handle('diagnostics:readLogs', (_event, lines?: number) => {
+  handleIpc('diagnostics:readLogs', (_event, lines?: number) => {
     // Ogranicza liczbę linii logu, jakie renderer może pobrać w jednym wywołaniu.
     const n = Math.floor(Number(lines));
     const clamped = Number.isFinite(n) && n > 0 ? Math.min(n, 2000) : undefined;
     return readLogTail(clamped);
   });
 
-  ipcMain.handle('diagnostics:clearLogs', () => clearLogFile());
+  handleIpc('diagnostics:clearLogs', () => clearLogFile());
 
-  ipcMain.handle('diagnostics:getWarnings', () => getRecentWarnings());
+  handleIpc('diagnostics:getWarnings', () => getRecentWarnings());
 
-  ipcMain.handle('diagnostics:getPerf', () => getPerfSnapshot());
+  handleIpc('diagnostics:getPerf', () => getPerfSnapshot());
 
-  ipcMain.handle(
+  handleIpc(
     'diagnostics:downloadLog',
     async (event): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
       try {
@@ -68,9 +70,8 @@ export function registerDiagnosticsHandlers(): void {
         await copyLogTo(result.filePath);
         return { success: true };
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
         logger.warn('diagnostics', 'diagnostics:downloadLog failed', e);
-        return { success: false, error: msg };
+        return { success: false, error: errMsg(e) };
       }
     }
   );

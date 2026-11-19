@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
 import type { BinTool } from './dependency-utils';
 import { resolveBinInfo, invalidateBinaries } from '../../binaries';
 import { abortTool, fetchLatestYtdlpVersion } from './dependency-download';
@@ -47,21 +47,21 @@ async function checkTool(tool: BinTool): Promise<{
 }
 
 export function registerDependencyHandlers(): void {
-  ipcMain.handle('dep:checkFfmpeg', async () => checkTool('ffmpeg'));
-  ipcMain.handle('dep:checkFfprobe', async () => checkTool('ffprobe'));
-  ipcMain.handle('dep:checkMkvextract', async () => checkTool('mkvextract'));
-  ipcMain.handle('dep:checkYtdlp', async () => checkTool('yt-dlp'));
+  handleIpc('dep:checkFfmpeg', async () => checkTool('ffmpeg'));
+  handleIpc('dep:checkFfprobe', async () => checkTool('ffprobe'));
+  handleIpc('dep:checkMkvextract', async () => checkTool('mkvextract'));
+  handleIpc('dep:checkYtdlp', async () => checkTool('yt-dlp'));
 
   // Czyści cache prób na proces, aby następne `dep:check*` naprawdę ponownie uruchomiło
   // binarki. Bez tego narzędzie usunięte poza aplikacją (ręcznie, przez innego menedżera
   // pakietów) było raportowane jako zainstalowane aż do restartu — resolver unieważnia
   // tylko po instalacji/dezinstalacji zainicjowanej stąd.
-  ipcMain.handle('dep:recheck', () => {
+  handleIpc('dep:recheck', () => {
     invalidateBinaries();
     return true;
   });
 
-  ipcMain.handle(
+  handleIpc(
     'dep:getPaths',
     async (): Promise<
       Array<{
@@ -93,7 +93,7 @@ export function registerDependencyHandlers(): void {
     }
   );
 
-  ipcMain.handle('dep:checkUpdateYtdlp', async () => {
+  handleIpc('dep:checkUpdateYtdlp', async () => {
     const latest = await fetchLatestYtdlpVersion();
     const info = await resolveBinInfo('yt-dlp');
     const current = info?.version ?? null;
@@ -101,12 +101,12 @@ export function registerDependencyHandlers(): void {
     return { updateAvailable, current, latest };
   });
 
-  ipcMain.handle('dep:cancelInstall', (_event, tool: string) => {
+  handleIpc('dep:cancelInstall', (_event, tool: string) => {
     abortTool(tool);
     return true;
   });
 
-  ipcMain.handle('dep:installFfmpeg', async (event) => {
+  handleIpc('dep:installFfmpeg', async (event) => {
     // Zarządzane pobieranie (przypięte + zweryfikowane SHA-256, bez sudo) jest domyślne na
     // każdej platformie, dla której manifest przypina build. Spakowana aplikacja nie
     // dołącza już FFmpeg, więc to główna ścieżka instalacji; systemowi menedżerowie
@@ -117,18 +117,14 @@ export function registerDependencyHandlers(): void {
     return installSystem(event.sender, 'ffmpeg');
   });
 
-  ipcMain.handle('dep:installMkvextract', async (event) =>
-    installSystem(event.sender, 'mkvextract')
-  );
+  handleIpc('dep:installMkvextract', async (event) => installSystem(event.sender, 'mkvextract'));
 
-  ipcMain.handle('dep:installYtdlp', async (event) => installYtdlpManaged(event.sender, false));
+  handleIpc('dep:installYtdlp', async (event) => installYtdlpManaged(event.sender, false));
 
-  ipcMain.handle('dep:updateYtdlp', async (event) => installYtdlpManaged(event.sender, true));
+  handleIpc('dep:updateYtdlp', async (event) => installYtdlpManaged(event.sender, true));
 
-  ipcMain.handle('dep:removeYtdlp', async (event) => uninstallTool(event.sender, 'yt-dlp'));
-  ipcMain.handle('dep:removeFfmpeg', async (event) => uninstallTool(event.sender, 'ffmpeg'));
-  ipcMain.handle('dep:removeFfprobe', async (event) => uninstallTool(event.sender, 'ffprobe'));
-  ipcMain.handle('dep:removeMkvextract', async (event) =>
-    uninstallTool(event.sender, 'mkvextract')
-  );
+  handleIpc('dep:removeYtdlp', async (event) => uninstallTool(event.sender, 'yt-dlp'));
+  handleIpc('dep:removeFfmpeg', async (event) => uninstallTool(event.sender, 'ffmpeg'));
+  handleIpc('dep:removeFfprobe', async (event) => uninstallTool(event.sender, 'ffprobe'));
+  handleIpc('dep:removeMkvextract', async (event) => uninstallTool(event.sender, 'mkvextract'));
 }

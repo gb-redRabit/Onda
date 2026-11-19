@@ -1,6 +1,6 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from './typed-handle';
 import { clearAppCaches } from './app-cache';
 
 export function registerCacheHandlers(): void {
-  ipcMain.handle('cache:clear', () => clearAppCaches());
+  handleIpc('cache:clear', () => clearAppCaches());
 }

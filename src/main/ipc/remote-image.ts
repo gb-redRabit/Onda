@@ -1,5 +1,5 @@
+import { handleIpc } from './typed-handle';
 import { CHROME_USER_AGENT } from '../../shared/constants';
-import { ipcMain } from 'electron';
 import https from 'node:https';
 import { isIP } from 'node:net';
 import { logger } from '../../shared/logger';
@@ -232,7 +232,7 @@ export async function getRemoteImage(
 }
 
 export function registerRemoteImageHandler(): void {
-  ipcMain.handle('media:remoteImage', (_event, url: string) => getRemoteImage(url));
+  handleIpc('media:remoteImage', (_event, url: string) => getRemoteImage(url));
 }
 
 /** Usuwa każdy zbuforowany zdalny obraz (LRU w pamięci). Zwraca liczbę wpisów. */

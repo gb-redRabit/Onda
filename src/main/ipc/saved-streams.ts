@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from './typed-handle';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
 import type { IpcSavedData, IpcSavedPlaylist, IpcSavedStream } from '../../shared/types/ipc';
@@ -85,14 +86,14 @@ export function registerSavedHandlers(): void {
   let data: IpcSavedData | null = null;
   const filePath = savedFilePath();
 
-  ipcMain.handle('saved:load', async () => {
+  handleIpc('saved:load', async () => {
     if (!data) {
       data = await loadSavedData(filePath);
     }
     return data;
   });
 
-  ipcMain.handle('saved:saveTrack', async (_event, track: IpcSavedStream) => {
+  handleIpc('saved:saveTrack', async (_event, track: IpcSavedStream) => {
     if (!data) data = { tracks: [], playlists: [] };
     if (!track || typeof track.id !== 'string' || !track.id || typeof track.title !== 'string') {
       return false;
@@ -104,7 +105,7 @@ export function registerSavedHandlers(): void {
     return true;
   });
 
-  ipcMain.handle('saved:removeTrack', async (_event, id: string) => {
+  handleIpc('saved:removeTrack', async (_event, id: string) => {
     if (!data) return false;
     const before = data.tracks.length;
     data.tracks = data.tracks.filter((t) => t.id !== id);
@@ -112,7 +113,7 @@ export function registerSavedHandlers(): void {
     return true;
   });
 
-  ipcMain.handle('saved:savePlaylist', async (_event, playlist: IpcSavedPlaylist) => {
+  handleIpc('saved:savePlaylist', async (_event, playlist: IpcSavedPlaylist) => {
     if (!data) data = { tracks: [], playlists: [] };
     if (
       !playlist ||
@@ -135,7 +136,7 @@ export function registerSavedHandlers(): void {
     return true;
   });
 
-  ipcMain.handle('saved:removePlaylist', async (_event, id: string) => {
+  handleIpc('saved:removePlaylist', async (_event, id: string) => {
     if (!data) return false;
     const before = data.playlists.length;
     data.playlists = data.playlists.filter((p) => p.id !== id);

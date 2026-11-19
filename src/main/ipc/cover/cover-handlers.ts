@@ -1,11 +1,11 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { extractAndCacheCover, extractAndCacheStill } from './cover-cache';
 import { isSafeAbsolutePath } from '../../utils/validate';
 import { isReadableMediaPath } from '../../media/read-access';
 import { logger } from '../../../shared/logger';
 
 export function registerCoverHandlers(): void {
-  ipcMain.handle(
+  handleIpc(
     'media:getCover',
     async (
       _event,
@@ -24,7 +24,7 @@ export function registerCoverHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:getCoverStill',
     async (_event, filePath: string): Promise<{ type: 'image' | null; data: string | null }> => {
       if (!isSafeAbsolutePath(filePath)) {

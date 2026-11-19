@@ -27,8 +27,19 @@ export interface IpcFileItem {
   thumbnail?: string;
 }
 
+export type OpenFileProperty =
+  | 'openFile'
+  | 'openDirectory'
+  | 'multiSelections'
+  | 'showHiddenFiles'
+  | 'createDirectory'
+  | 'promptToCreate'
+  | 'noResolveAliases'
+  | 'treatPackageAsDirectory'
+  | 'dontAddToRecent';
+
 export interface OpenFileOptions {
   title?: string;
   filters?: Array<{ name: string; extensions: string[] }>;
-  properties?: string[];
+  properties?: OpenFileProperty[];
 }

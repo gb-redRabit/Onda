@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { join } from 'node:path';
 import http from 'node:http';
 import https from 'node:https';
@@ -200,13 +201,13 @@ export function registerProvidersHandlers(): void {
     ]);
   });
 
-  ipcMain.handle('providers:detect', async (_event, url: string) =>
+  handleIpc('providers:detect', async (_event, url: string) =>
     e2eFixturesEnabled()
       ? e2eProviderDetect(typeof url === 'string' ? url : '')
       : detectProvider(url)
   );
 
-  ipcMain.handle(
+  handleIpc(
     'providers:list',
     async (_event, opts: { ref?: unknown; folderId?: string; force?: boolean }) => {
       if (e2eFixturesEnabled()) {
@@ -233,7 +234,7 @@ export function registerProvidersHandlers(): void {
   );
 
   // ── Poświadczenia providerów (cookie) ──────────────────────────────────────
-  ipcMain.handle('providers:auth:list', async () => {
+  handleIpc('providers:auth:list', async () => {
     if (e2eFixturesEnabled()) return e2eProviderAuthList();
     // Wymagające cookie (auth !== 'none') ORAZ te, dla których logowanie jest OPCJONALNE
     // (np. Google Drive — publiczne linki działają bez logowania, prywatne wymagają).
@@ -248,20 +249,20 @@ export function registerProvidersHandlers(): void {
       [...map.values()].map(async (p) => ({ ...p, hasCookie: await hasProviderCookie(p.id) }))
     );
   });
-  ipcMain.handle('providers:cred:get', async (_event, providerId: string) => ({
+  handleIpc('providers:cred:get', async (_event, providerId: string) => ({
     hasCookie: typeof providerId === 'string' ? await hasProviderCookie(providerId) : false
   }));
-  ipcMain.handle(
+  handleIpc(
     'providers:cred:set',
     async (_event, input: { providerId?: string; cookie?: string }) => {
       if (typeof input?.providerId !== 'string' || typeof input?.cookie !== 'string') return false;
       return setProviderCookie(input.providerId, input.cookie);
     }
   );
-  ipcMain.handle('providers:cred:clear', async (_event, providerId: string) =>
+  handleIpc('providers:cred:clear', async (_event, providerId: string) =>
     typeof providerId === 'string' ? clearProviderCookie(providerId) : false
   );
-  ipcMain.handle(
+  handleIpc(
     'providers:cred:login',
     async (
       _event,
@@ -273,7 +274,7 @@ export function registerProvidersHandlers(): void {
   );
 
   // ── Subskrypcje linków ─────────────────────────────────────────────────────
-  ipcMain.handle(
+  handleIpc(
     'providers:downloaded',
     async (_event, opts: { provider?: string; shareId?: string }) => {
       if (e2eFixturesEnabled()) return e2eProviderDownloaded();
@@ -282,12 +283,12 @@ export function registerProvidersHandlers(): void {
     }
   );
 
-  ipcMain.handle('providers:subs:list', async () => loadRemoteSubscriptions(subsFile()));
+  handleIpc('providers:subs:list', async () => loadRemoteSubscriptions(subsFile()));
 
   // Podgląd/odtwarzanie w aplikacji. WSZYSTKO idzie przez `/stream?provider=<token>`:
   // dla providerów z URL-em fabryka pobiera upstream z NAGŁÓWKAMI providera (np. Referer)
   // i przekazuje zakresy; dla strumieni (MEGA) zwraca deszyfrowany strumień.
-  ipcMain.handle(
+  handleIpc(
     'providers:streamUrl',
     async (_event, opts: { ref?: unknown; itemId?: string; mime?: string }) => {
       const ref = sanitizeRef(opts?.ref);
@@ -351,7 +352,7 @@ export function registerProvidersHandlers(): void {
     }
   );
 
-  ipcMain.handle('providers:subs:add', async (_event, input: RemoteSubscriptionInput) => {
+  handleIpc('providers:subs:add', async (_event, input: RemoteSubscriptionInput) => {
     const url = typeof input?.url === 'string' ? input.url.trim() : '';
     if (!url) return null;
     const detected = detectProvider(url);
@@ -364,17 +365,15 @@ export function registerProvidersHandlers(): void {
     );
   });
 
-  ipcMain.handle('providers:subs:remove', async (_event, id: string) =>
+  handleIpc('providers:subs:remove', async (_event, id: string) =>
     removeRemoteSubscription(subsFile(), id)
   );
 
-  ipcMain.handle(
-    'providers:subs:update',
-    async (_event, id: string, patch: RemoteSubscriptionPatch) =>
-      updateRemoteSubscription(subsFile(), id, patch)
+  handleIpc('providers:subs:update', async (_event, id: string, patch: RemoteSubscriptionPatch) =>
+    updateRemoteSubscription(subsFile(), id, patch)
   );
 
-  ipcMain.handle('providers:subs:check', async (_event, id: string) => {
+  handleIpc('providers:subs:check', async (_event, id: string) => {
     const subs = await loadRemoteSubscriptions(subsFile());
     const sub = subs.find((s) => s.id === id);
     if (!sub) return null;
@@ -393,7 +392,7 @@ export function registerProvidersHandlers(): void {
   });
 
   // Ręczne „sprawdź wszystkie" (z wykrywaniem nowych pozycji) — zwraca odświeżoną listę.
-  ipcMain.handle('providers:subs:checkAll', async () => {
+  handleIpc('providers:subs:checkAll', async () => {
     await checkRemoteSubscriptions(subsFile());
     return loadRemoteSubscriptions(subsFile());
   });

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../ipc/typed-handle';
 import { configurePreviewSession, installWebviewGuard } from './preview-session';
 import { installPreviewAdblock, setPreviewAdblock } from './adblock';
 
@@ -13,14 +13,14 @@ export function registerPreviewHandlers(): void {
   installPreviewAdblock();
 
   // Włącz/wyłącz ad-blocker podglądu (stan trzyma ustawienie `appearance.previewAdblock`).
-  ipcMain.handle('preview:setAdblock', (_event, on: unknown) => {
+  handleIpc('preview:setAdblock', (_event, on: unknown) => {
     setPreviewAdblock(on === true);
     return on === true;
   });
 
   // Wołane przez osadzenie inline PRZED utworzeniem `<webview>`: konfiguruje sesję
   // podglądu (UA), aby pierwsze żądania były już poprawnie nagłówkowane.
-  ipcMain.handle('preview:prepare', () => {
+  handleIpc('preview:prepare', () => {
     configurePreviewSession();
     return { success: true };
   });

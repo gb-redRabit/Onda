@@ -1,5 +1,6 @@
 import { CHROME_USER_AGENT } from '../../../shared/constants';
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { join } from 'path';
 import { writeFile, readFile } from 'fs/promises';
 import {
@@ -29,7 +30,7 @@ import {
   getDownloadedForSource,
   removeDownloadedItems
 } from './sources-downloaded-store';
-import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
+import type { IpcDownloadJobInput, IpcDownloadTask } from '../../../shared/types/ipc';
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../../shared/types/sources';
 import { logger } from '../../../shared/logger';
 import { mapLimit } from '../../utils/map-limit';
@@ -66,14 +67,14 @@ export function registerSourcesHandlers(): void {
     void appendDownloadedItem(getDownloadedFile(), sourceId, itemId);
   });
 
-  ipcMain.handle('sources:list', async (): Promise<MediaSource[]> => loadSources(getSourcesFile()));
+  handleIpc('sources:list', async (): Promise<MediaSource[]> => loadSources(getSourcesFile()));
 
-  ipcMain.handle('sources:downloaded', async (_event, sourceId: string): Promise<string[]> =>
+  handleIpc('sources:downloaded', async (_event, sourceId: string): Promise<string[]> =>
     getDownloadedForSource(getDownloadedFile(), typeof sourceId === 'string' ? sourceId : '')
   );
 
   // Odznaczanie pobranych: pusta lista `itemIds` czyści całą listę źródła.
-  ipcMain.handle(
+  handleIpc(
     'sources:unmarkDownloaded',
     async (_event, sourceId: string, itemIds: string[]): Promise<string[]> =>
       removeDownloadedItems(
@@ -84,7 +85,7 @@ export function registerSourcesHandlers(): void {
   );
 
   /** Eksport źródeł do pliku JSON (natywny dialog zapisu). */
-  ipcMain.handle(
+  handleIpc(
     'sources:export',
     async (event): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
       const win = BrowserWindow.fromWebContents(event.sender);
@@ -112,7 +113,7 @@ export function registerSourcesHandlers(): void {
   );
 
   /** Import źródeł z pliku JSON (natywny dialog otwarcia); każdy wpis sanityzowany. */
-  ipcMain.handle(
+  handleIpc(
     'sources:import',
     async (
       event
@@ -153,7 +154,7 @@ export function registerSourcesHandlers(): void {
 
   /** Domyślny katalog pobierania źródeł: ustawienie sourcesDir, inaczej
    *  <ścieżka z ustawień Pobranych>/api, inaczej systemowe Pobrane/api. */
-  ipcMain.handle('sources:downloadDir', async (): Promise<string> => {
+  handleIpc('sources:downloadDir', async (): Promise<string> => {
     let dir: string;
     try {
       const store = await getStore();
@@ -167,7 +168,7 @@ export function registerSourcesHandlers(): void {
     return resolved;
   });
 
-  ipcMain.handle(
+  handleIpc(
     'sources:save',
     async (
       _event,
@@ -176,7 +177,7 @@ export function registerSourcesHandlers(): void {
       saveSource(getSourcesFile(), raw)
   );
 
-  ipcMain.handle('sources:delete', async (_event, id: string): Promise<MediaSource[]> => {
+  handleIpc('sources:delete', async (_event, id: string): Promise<MediaSource[]> => {
     const sourceId = typeof id === 'string' ? id : '';
     const list = await deleteSource(getSourcesFile(), sourceId);
     // Usunięcie API usuwa też jego oznaczenia „pobrane" (nie zostawiamy sierot w store).
@@ -184,14 +185,14 @@ export function registerSourcesHandlers(): void {
     return list;
   });
 
-  ipcMain.handle('sources:reorder', async (_event, idsRaw: unknown): Promise<MediaSource[]> =>
+  handleIpc('sources:reorder', async (_event, idsRaw: unknown): Promise<MediaSource[]> =>
     reorderSources(
       getSourcesFile(),
       Array.isArray(idsRaw) ? idsRaw.filter((id): id is string => typeof id === 'string') : []
     )
   );
 
-  ipcMain.handle(
+  handleIpc(
     'sources:test',
     async (
       _event,
@@ -217,7 +218,7 @@ export function registerSourcesHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'sources:fetch',
     async (
       _event,
@@ -243,7 +244,7 @@ export function registerSourcesHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'sources:tableRows',
     async (
       _event,
@@ -260,9 +261,9 @@ export function registerSourcesHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'sources:enqueue',
-    async (_event, inputs: IpcDownloadJobInput[]): Promise<unknown[]> => {
+    async (_event, inputs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> => {
       const list = Array.isArray(inputs)
         ? inputs.filter((i) => i && typeof i.url === 'string' && typeof i.title === 'string')
         : [];

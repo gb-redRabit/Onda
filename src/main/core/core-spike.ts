@@ -1,4 +1,5 @@
 import { app, ipcMain, type BrowserWindow, type IpcMainEvent } from 'electron';
+import { handleIpc } from '../ipc/typed-handle';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import os from 'os';
@@ -314,7 +315,7 @@ function registerIpc(): void {
     }
   });
 
-  ipcMain.handle('core:getState', () => mergedState());
+  handleIpc('core:getState', () => mergedState());
 }
 
 export function startCoreService(options: CoreServiceOptions): void {

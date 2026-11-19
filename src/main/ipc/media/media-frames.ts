@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { mkdir, stat, writeFile } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import { resolveBin } from '../../binaries';
@@ -89,13 +89,13 @@ export async function saveVideoScreenshot(
 }
 
 export function registerMediaFrameHandlers(): void {
-  ipcMain.handle('media:getVideoFps', async (_event, filePath: string): Promise<number> => {
+  handleIpc('media:getVideoFps', async (_event, filePath: string): Promise<number> => {
     if (!isSafeAbsolutePath(filePath)) return 0;
     if (!isReadableMediaPath(filePath)) return 0;
     return getVideoFps(filePath);
   });
 
-  ipcMain.handle(
+  handleIpc(
     'media:saveScreenshot',
     async (
       _event,

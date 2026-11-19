@@ -69,7 +69,7 @@ export interface OnlineChannels {
       code?: IpcDownloadErrorCode;
       items: YouTubeResolvedItem[];
       hasMore: boolean;
-      totalItems: number;
+      totalItems: number | null;
     };
   };
   'yt:channel': {

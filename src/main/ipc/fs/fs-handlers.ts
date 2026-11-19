@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { readdir, stat, mkdir, lstat, unlink, rm, realpath } from 'fs/promises';
 import { join } from 'path';
 import { withTimeout } from '../../utils/with-timeout';
@@ -95,11 +96,11 @@ function touchesAppData(value: unknown): boolean {
 }
 
 export function registerFsHandlers(): void {
-  ipcMain.handle('fs:getDrives', async (): Promise<FileItem[]> => {
+  handleIpc('fs:getDrives', async (): Promise<FileItem[]> => {
     return getDrives();
   });
 
-  ipcMain.handle('fs:getDriveUsage', async () => {
+  handleIpc('fs:getDriveUsage', async () => {
     try {
       return await withTimeout(getDriveUsage(), FS_OP_TIMEOUT_MS);
     } catch (e) {
@@ -108,7 +109,7 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:getProperties', async (_event, filePath: unknown) => {
+  handleIpc('fs:getProperties', async (_event, filePath: unknown) => {
     if (!isSafeAbsolutePath(filePath)) {
       logger.warn('fs', 'getProperties rejected invalid path');
       return null;
@@ -121,7 +122,7 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'fs:readdir',
     async (event, dirPath: unknown, options?: { showHidden?: boolean }): Promise<void> => {
       // Brak ścieżki oznacza widok dysków, a nie nieprawidłową ścieżkę — panel nawigacji
@@ -189,7 +190,7 @@ export function registerFsHandlers(): void {
     }
   );
 
-  ipcMain.handle('fs:mkdir', async (_event, dirPath: unknown) => {
+  handleIpc('fs:mkdir', async (_event, dirPath: unknown) => {
     if (!isSafeAbsolutePath(dirPath)) {
       logger.warn('fs', 'mkdir rejected invalid path');
       return false;
@@ -210,7 +211,7 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:delete', async (_event, filePath: unknown) => {
+  handleIpc('fs:delete', async (_event, filePath: unknown) => {
     if (!isSafeAbsolutePath(filePath)) {
       logger.warn('fs', 'delete rejected invalid path');
       return false;
@@ -246,7 +247,7 @@ export function registerFsHandlers(): void {
     }
   });
 
-  ipcMain.handle('fs:move', async (_event, paths: unknown, destination: unknown) => {
+  handleIpc('fs:move', async (_event, paths: unknown, destination: unknown) => {
     if (touchesAppData(paths) || touchesAppData(destination)) {
       logger.warn('fs', 'move rejected app data target');
       return;
@@ -254,7 +255,7 @@ export function registerFsHandlers(): void {
     await moveItems(paths, destination, destructiveRoots());
   });
 
-  ipcMain.handle('fs:copy', async (_event, paths: unknown, destination: unknown) => {
+  handleIpc('fs:copy', async (_event, paths: unknown, destination: unknown) => {
     if (touchesAppData(paths) || touchesAppData(destination)) {
       logger.warn('fs', 'copy rejected app data target');
       return;
@@ -262,42 +263,42 @@ export function registerFsHandlers(): void {
     await copyItems(paths, destination, destructiveRoots());
   });
 
-  ipcMain.handle('fs:findDuplicates', async (_event, directory: unknown) => {
+  handleIpc('fs:findDuplicates', async (_event, directory: unknown) => {
     return findDuplicates(directory as string);
   });
 
-  ipcMain.handle('shell:showItemInFolder', (_event, fullPath: unknown) => {
+  handleIpc('shell:showItemInFolder', (_event, fullPath: unknown) => {
     void showItemInFolder(fullPath);
   });
 
-  ipcMain.handle('shell:openTerminal', async (_event, dirPath: unknown) => {
+  handleIpc('shell:openTerminal', async (_event, dirPath: unknown) => {
     await openTerminal(dirPath);
   });
 
-  ipcMain.handle('shell:openWithDefault', async (event, filePath: unknown) => {
+  handleIpc('shell:openWithDefault', async (event, filePath: unknown) => {
     await openWithDefault(event, filePath);
   });
 
-  ipcMain.handle('shell:getFileIcon', async (_event, filePath: unknown) => {
+  handleIpc('shell:getFileIcon', async (_event, filePath: unknown) => {
     return getFileIcon(filePath);
   });
 
-  ipcMain.handle('fs:copyPath', (_event, filePath: unknown) => {
+  handleIpc('fs:copyPath', (_event, filePath: unknown) => {
     copyPath(filePath);
   });
 
-  ipcMain.handle('app:readClipboard', (): Promise<string> => {
+  handleIpc('app:readClipboard', (): Promise<string> => {
     return readClipboard();
   });
 
-  ipcMain.handle('app:getPath', (_event, name: string) => {
+  handleIpc('app:getPath', (_event, name: string) => {
     return getAppPath(name);
   });
 
   // Czyta mały plik tekstowy (używane do wsadowego importu TXT/CSV). Ograniczenia
   // rozszerzeń i rozmiaru są w jednym miejscu współdzielonym z czytnikiem napisów, więc żaden
   // kanał nie może zostać rozszerzony w ogólną prymitywę odczytu plików.
-  ipcMain.handle('fs:readTextFile', async (_event, filePath: string): Promise<string | null> => {
+  handleIpc('fs:readTextFile', async (_event, filePath: string): Promise<string | null> => {
     if (isProtectedAppDataPath(filePath)) return null;
     const result = await readTextFileWithinBounds(filePath, TEXT_EXTS, TEXT_MAX_BYTES, 'fs');
     return result.ok ? result.text : null;
@@ -305,7 +306,7 @@ export function registerFsHandlers(): void {
 
   // Zwraca tylko istniejące ścieżki (stat w main, bez wycieku błędów). Używane do
   // sprzątania sesji/kolejki po plikach usuniętych z dysku między uruchomieniami.
-  ipcMain.handle('fs:existing', async (_event, paths: unknown): Promise<string[]> => {
+  handleIpc('fs:existing', async (_event, paths: unknown): Promise<string[]> => {
     if (!Array.isArray(paths)) return [];
     const list = paths
       .filter((p): p is string => typeof p === 'string' && isSafeAbsolutePath(p))

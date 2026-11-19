@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { readFile, rename, stat, realpath } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import NodeID3 from 'node-id3';
@@ -199,7 +199,7 @@ async function isThumbnailPathAllowed(filePath: string): Promise<boolean> {
 }
 
 export function registerMediaHandlers(): void {
-  ipcMain.handle(
+  handleIpc(
     'media:getThumbnail',
     async (_event, filePath: string, maxSize: number = 320): Promise<string | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
@@ -208,7 +208,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:batchThumbnails',
     async (_event, files: string[], maxSize: number = 320): Promise<Record<string, string>> => {
       if (!isSafeStringArray(files)) return {};
@@ -220,7 +220,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:writeTags',
     async (
       _event,
@@ -246,7 +246,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:renameFile',
     async (
       _event,
@@ -274,7 +274,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:writeCover',
     async (
       _event,
@@ -310,7 +310,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:readCover',
     async (_event, filePath: string): Promise<{ mime?: string; data?: number[] } | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
@@ -339,7 +339,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:checkAudioCodec',
     async (_event, filePath: string): Promise<{ codec: string; supported: boolean } | null> => {
       if (!isSafeAbsolutePath(filePath)) return null;
@@ -385,7 +385,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'media:transcodeAudioChunk',
     async (
       _event,
@@ -399,23 +399,17 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle(
-    'media:transcodeAudio',
-    async (_event, filePath: string): Promise<string | null> => {
-      if (!isSafeAbsolutePath(filePath)) return null;
-      if (!isReadableMediaPath(filePath)) return null;
-      return transcodeAudio(filePath);
-    }
-  );
+  handleIpc('media:transcodeAudio', async (_event, filePath: string): Promise<string | null> => {
+    if (!isSafeAbsolutePath(filePath)) return null;
+    if (!isReadableMediaPath(filePath)) return null;
+    return transcodeAudio(filePath);
+  });
 
-  ipcMain.handle(
-    'media:transcodeVideo',
-    async (_event, filePath: string): Promise<string | null> => {
-      if (!isSafeAbsolutePath(filePath)) return null;
-      if (!isReadableMediaPath(filePath)) return null;
-      return transcodeVideo(filePath);
-    }
-  );
+  handleIpc('media:transcodeVideo', async (_event, filePath: string): Promise<string | null> => {
+    if (!isSafeAbsolutePath(filePath)) return null;
+    if (!isReadableMediaPath(filePath)) return null;
+    return transcodeVideo(filePath);
+  });
 
   // posprzątaj stare transkodowane pliki przy starcie
   cleanupOldTranscodes();
@@ -427,7 +421,7 @@ export function registerMediaHandlers(): void {
   // (a więc i przejętemu rendererowi) katalogu systemowego. `extraRoots` to
   // zwykła lista ścieżek bez innej bramy, więc poniższe sprawdzenia są wszystkim, co
   // dzieli wywołującego od dostępu do odczytu tego, co może otworzyć proces main.
-  ipcMain.handle('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
+  handleIpc('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
     if (
       !isSystemTempPath(filePath) &&
@@ -465,7 +459,7 @@ export function registerMediaHandlers(): void {
     return addAllowedRoot(filePath);
   });
 
-  ipcMain.handle('media:getDuration', async (_event, filePath: string): Promise<number> => {
+  handleIpc('media:getDuration', async (_event, filePath: string): Promise<number> => {
     if (!isSafeAbsolutePath(filePath)) return 0;
     if (!isReadableMediaPath(filePath)) return 0;
     try {
@@ -476,7 +470,7 @@ export function registerMediaHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'media:getWaveform',
     async (_event, filePath: unknown, durationSec?: unknown): Promise<number[]> => {
       if (!isSafeAbsolutePath(filePath)) return [];
@@ -495,7 +489,7 @@ export function registerMediaHandlers(): void {
   // Wsadowe pobieranie długości (plan 1.7): masowe kolejkowanie kiedyś odpalało jedno wywołanie IPC
   // na utwór. Ograniczona współbieżność nie pozwala procesowi main uruchamiać setek
   // parsowań naraz.
-  ipcMain.handle(
+  handleIpc(
     'media:batchDurations',
     async (_event, paths: string[]): Promise<Record<string, number>> => {
       const out: Record<string, number> = {};
@@ -522,7 +516,7 @@ export function registerMediaHandlers(): void {
     }
   );
 
-  ipcMain.handle('coverCache:clear', async () => {
+  handleIpc('coverCache:clear', async () => {
     try {
       const r = await clearCoverCache();
       return { success: true, removed: r.removed, bytesFreed: r.bytesFreed };

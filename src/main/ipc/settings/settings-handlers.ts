@@ -1,4 +1,5 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { writeFile, readFile } from 'fs/promises';
 import { getStore, applyCoverCacheSettings } from '../cover/cover-cache';
 import { isResetting } from '../factory-reset';
@@ -54,9 +55,9 @@ function encryptKeysOrDrop(payload: Partial<AppSettings>): boolean {
 export function registerSettingsHandlers(): void {
   // Raportowane do panelu kluczy API, aby użytkownik dowiedział się, że platforma nie może
   // chronić sekretu, zanim go wklei, a nie po zaufaniu, że został zapisany.
-  ipcMain.handle('settings:secretStorageStatus', () => encryptionStatus());
+  handleIpc('settings:secretStorageStatus', () => encryptionStatus());
 
-  ipcMain.handle('settings:get', async (): Promise<Partial<AppSettings>> => {
+  handleIpc('settings:get', async (): Promise<Partial<AppSettings>> => {
     try {
       const store = await getStore();
       const { sanitized } = sanitizeSettings(store.store || {});
@@ -70,7 +71,7 @@ export function registerSettingsHandlers(): void {
     }
   });
 
-  ipcMain.handle('settings:set', async (event, data: Partial<AppSettings>): Promise<boolean> => {
+  handleIpc('settings:set', async (event, data: Partial<AppSettings>): Promise<boolean> => {
     // Factory reset już wyczyścił store; późne debounce'owane zapisy z
     // renderera nie mogą wskrzesić starych ustawień przed restartem.
     if (isResetting()) return false;
@@ -131,7 +132,7 @@ export function registerSettingsHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'settings:export',
     async (event): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
       try {
@@ -159,7 +160,7 @@ export function registerSettingsHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'settings:import',
     async (
       event

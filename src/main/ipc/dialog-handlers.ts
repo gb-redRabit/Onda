@@ -1,9 +1,11 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron';
+import { handleIpc } from './typed-handle';
 import { readdir } from 'fs/promises';
 import { join, extname, dirname } from 'path';
 import { VIDEO_EXTS, AUDIO_EXTS } from '../../shared/constants';
 import { addAllowedRoot } from '../media/media-server';
 import { logger } from '../../shared/logger';
+import type { OpenFileOptions } from '../../shared/types/ipc/media';
 
 // Ustawia okno, które faktycznie wywołało dialog, jako jego rodzica. `getFocusedWindow()`
 // może wskazywać inne okno (PiP, eksplorator), jeśli fokus zmieni się w trakcie
@@ -18,7 +20,7 @@ function getParentWindow(sender: Electron.WebContents): BrowserWindow | null {
 }
 
 export function registerDialogHandlers(): void {
-  ipcMain.handle(
+  handleIpc(
     'dialog:openImage',
     async (event): Promise<{ canceled: boolean; filePaths: string[] }> => {
       try {
@@ -43,7 +45,7 @@ export function registerDialogHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'dialog:openSubtitle',
     async (event): Promise<{ canceled: boolean; filePaths: string[] }> => {
       try {
@@ -72,7 +74,7 @@ export function registerDialogHandlers(): void {
     }
   );
 
-  ipcMain.handle('dialog:openFile', async (event, options?: Electron.OpenDialogOptions) => {
+  handleIpc('dialog:openFile', async (event, options?: OpenFileOptions) => {
     try {
       const win = getParentWindow(event.sender);
       const dialogOptions: Electron.OpenDialogOptions = {
@@ -118,7 +120,7 @@ export function registerDialogHandlers(): void {
     }
   });
 
-  ipcMain.handle('dialog:openFolder', async (event): Promise<string[]> => {
+  handleIpc('dialog:openFolder', async (event): Promise<string[]> => {
     try {
       const win = getParentWindow(event.sender);
       const result = win
@@ -136,7 +138,7 @@ export function registerDialogHandlers(): void {
     }
   });
 
-  ipcMain.handle('dialog:openFolderFiles', async (event) => {
+  handleIpc('dialog:openFolderFiles', async (event) => {
     try {
       const win = getParentWindow(event.sender);
       const result = win

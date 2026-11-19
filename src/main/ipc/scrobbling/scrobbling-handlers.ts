@@ -1,4 +1,5 @@
-import { ipcMain, shell } from 'electron';
+import { shell } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { logger } from '../../../shared/logger';
 import type {
   ScrobbleTrack,
@@ -119,9 +120,9 @@ async function flushQueue(): Promise<void> {
 }
 
 export function registerScrobblingHandlers(): void {
-  ipcMain.handle('scrobbling:status', () => readScrobblingStatus());
+  handleIpc('scrobbling:status', () => readScrobblingStatus());
 
-  ipcMain.handle('scrobbling:test', async (_event, service: unknown) => {
+  handleIpc('scrobbling:test', async (_event, service: unknown) => {
     if (service !== 'lastfm' && service !== 'listenbrainz') {
       return { ok: false, error: 'Unknown service' };
     }
@@ -148,7 +149,7 @@ export function registerScrobblingHandlers(): void {
     }
   });
 
-  ipcMain.handle('scrobbling:lastfmAuth', async () => {
+  handleIpc('scrobbling:lastfmAuth', async () => {
     try {
       const config = await readScrobblingConfig();
       if (!config.lastfm.apiKey || !config.lastfm.apiSecret) {
@@ -166,7 +167,7 @@ export function registerScrobblingHandlers(): void {
     }
   });
 
-  ipcMain.handle('scrobbling:lastfmAuthComplete', async () => {
+  handleIpc('scrobbling:lastfmAuthComplete', async () => {
     if (!pendingLastfmToken) {
       return { ok: false, error: 'No pending Last.fm authorization' };
     }
@@ -184,13 +185,13 @@ export function registerScrobblingHandlers(): void {
     }
   });
 
-  ipcMain.handle('scrobbling:nowPlaying', async (_event, input: unknown) => {
+  handleIpc('scrobbling:nowPlaying', async (_event, input: unknown) => {
     const track = cleanTrack(input);
     if (!track) return;
     await sendNowPlaying(track);
   });
 
-  ipcMain.handle('scrobbling:scrobble', async (_event, input: unknown) => {
+  handleIpc('scrobbling:scrobble', async (_event, input: unknown) => {
     const track = cleanTrack(input);
     if (!track) return;
     await sendScrobble(track);

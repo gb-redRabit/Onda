@@ -1,5 +1,5 @@
+import { handleIpc } from './typed-handle';
 import { createHash } from 'crypto';
-import { ipcMain } from 'electron';
 import { mkdir, open, writeFile } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import { httpRequest } from './http-request';
@@ -156,14 +156,14 @@ async function cachedNapiCheck(videoPath: string): Promise<NapiProjektCheckResul
 
 export function registerNapiProjektHandlers(): void {
   // Wyszukiwarka odpytuje to równolegle z OpenSubtitles — tylko sprawdzenie, bez zapisu.
-  ipcMain.handle(
+  handleIpc(
     'napiprojekt:check',
     async (_event, params: NapiProjektDownloadParams): Promise<NapiProjektCheckResult> => {
       return cachedNapiCheck(typeof params?.videoPath === 'string' ? params.videoPath : '');
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'napiprojekt:download',
     async (_event, params: NapiProjektDownloadParams): Promise<NapiProjektDownloadResult> => {
       const videoPath = typeof params?.videoPath === 'string' ? params.videoPath : '';

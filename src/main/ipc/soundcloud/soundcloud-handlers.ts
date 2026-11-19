@@ -2,7 +2,8 @@
 // wewnętrzny klient api-v2; yt-dlp to jawny silnik fallbacku dla każdego
 // kanału (search/resolve/stream), więc zrotowany client_id lub zmiana API
 // degraduje do "wolno, ale działa" zamiast psuć platformę.
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
+import type { IpcResult } from '../../../shared/ipc/contract';
 import { logger } from '../../../shared/logger';
 import { detectScKind, normalizeScUrl } from '../../../shared/soundcloud';
 import { mapResolvedContainer } from '../youtube/youtube-utils';
@@ -30,7 +31,7 @@ import { e2eFixturesEnabled } from '../../e2e-fixtures';
 // Rejestracja IPC
 
 export function registerSoundcloudHandlers(): void {
-  ipcMain.handle('sc:search', async (_event, query: string, offset?: number) => {
+  handleIpc('sc:search', async (_event, query: string, offset?: number) => {
     if (typeof query !== 'string' || !query.trim() || query.length > 200) {
       return { success: false, error: 'Invalid search query', items: [] };
     }
@@ -63,7 +64,7 @@ export function registerSoundcloudHandlers(): void {
     }
   });
 
-  ipcMain.handle('sc:resolve', async (_event, rawUrl: string) => {
+  handleIpc('sc:resolve', async (_event, rawUrl: string): Promise<IpcResult<'sc:resolve'>> => {
     const kind = detectScKind(rawUrl);
     if (!kind) {
       return { success: false, error: 'Unsupported or invalid SoundCloud link' };
@@ -183,158 +184,146 @@ export function registerSoundcloudHandlers(): void {
     }
   });
 
-  ipcMain.handle(
-    'sc:resolveMore',
-    async (_event, opts: { url: string; start: number; end: number }) => {
-      if (
-        !opts ||
-        typeof opts.url !== 'string' ||
-        detectScKind(opts.url) === null ||
-        detectScKind(opts.url) === 'channel'
-      ) {
+  handleIpc('sc:resolveMore', async (_event, opts: { url: string; start: number; end: number }) => {
+    if (
+      !opts ||
+      typeof opts.url !== 'string' ||
+      detectScKind(opts.url) === null ||
+      detectScKind(opts.url) === 'channel'
+    ) {
+      return {
+        success: false,
+        error: 'Invalid SoundCloud link',
+        items: [],
+        hasMore: false,
+        totalItems: null
+      };
+    }
+    const start = Math.max(1, Math.floor(Number(opts.start) || 1));
+    const end = Math.max(start, Math.min(start + 199, Math.floor(Number(opts.end) || start + 29)));
+    const limit = end - start + 1;
+    try {
+      const resource = await scResolve(normalizeScUrl(opts.url));
+      if (resource.kind !== 'playlist' || resource.playlist.id == null) {
+        return { success: true, items: [], hasMore: false, totalItems: null };
+      }
+      const page = await scPlaylistTracks(resource.playlist.id, limit, start - 1);
+      const count = resource.playlist.track_count;
+      return {
+        success: true,
+        items: page.items.map((v) => ({
+          id: v.id,
+          title: v.title,
+          duration: v.duration,
+          thumbnail: v.thumbnail,
+          channelTitle: v.channelTitle,
+          channelId: v.channelId,
+          isPlayable: true,
+          url: v.url || ''
+        })),
+        hasMore:
+          page.items.length >= limit && (count == null || start - 1 + page.items.length < count),
+        totalItems: count ?? null
+      };
+    } catch (e: unknown) {
+      logger.warn('sc', 'api resolveMore failed, falling back to yt-dlp', String(e));
+      try {
+        const parsed = await fetchRangeJson(normalizeScUrl(opts.url), start, end);
+        const valid = (parsed.entries || []).filter((e) => e.title && (e.id || entryUrl(e)));
+        const items = valid.map((e) => {
+          const base = mapResolvedContainer({ entries: [e] })[0];
+          return {
+            ...base,
+            thumbnail: scThumbFromEntry(e),
+            url: entryUrl(e) || undefined
+          };
+        });
+        const count = parsed.playlist_count;
+        return {
+          success: true,
+          items,
+          hasMore: items.length >= limit && (count == null || start - 1 + items.length < count),
+          totalItems: count ?? null
+        };
+      } catch (e2: unknown) {
+        const err = e2 as { message?: string };
+        logger.warn('sc', 'resolveMore failed', err.message || String(e2));
         return {
           success: false,
-          error: 'Invalid SoundCloud link',
+          error: err.message || 'Could not load more items',
+          code: errorCodeOf(e2),
           items: [],
           hasMore: false,
           totalItems: null
         };
       }
-      const start = Math.max(1, Math.floor(Number(opts.start) || 1));
-      const end = Math.max(
-        start,
-        Math.min(start + 199, Math.floor(Number(opts.end) || start + 29))
-      );
-      const limit = end - start + 1;
-      try {
-        const resource = await scResolve(normalizeScUrl(opts.url));
-        if (resource.kind !== 'playlist' || resource.playlist.id == null) {
-          return { success: true, items: [], hasMore: false, totalItems: null };
-        }
-        const page = await scPlaylistTracks(resource.playlist.id, limit, start - 1);
-        const count = resource.playlist.track_count;
-        return {
-          success: true,
-          items: page.items.map((v) => ({
-            id: v.id,
-            title: v.title,
-            duration: v.duration,
-            thumbnail: v.thumbnail,
-            channelTitle: v.channelTitle,
-            channelId: v.channelId,
-            isPlayable: true,
-            url: v.url || ''
-          })),
-          hasMore:
-            page.items.length >= limit && (count == null || start - 1 + page.items.length < count),
-          totalItems: count ?? null
-        };
-      } catch (e: unknown) {
-        logger.warn('sc', 'api resolveMore failed, falling back to yt-dlp', String(e));
-        try {
-          const parsed = await fetchRangeJson(normalizeScUrl(opts.url), start, end);
-          const valid = (parsed.entries || []).filter((e) => e.title && (e.id || entryUrl(e)));
-          const items = valid.map((e) => {
-            const base = mapResolvedContainer({ entries: [e] })[0];
-            return {
-              ...base,
-              thumbnail: scThumbFromEntry(e),
-              url: entryUrl(e) || undefined
-            };
-          });
-          const count = parsed.playlist_count;
-          return {
-            success: true,
-            items,
-            hasMore: items.length >= limit && (count == null || start - 1 + items.length < count),
-            totalItems: count ?? null
-          };
-        } catch (e2: unknown) {
-          const err = e2 as { message?: string };
-          logger.warn('sc', 'resolveMore failed', err.message || String(e2));
-          return {
-            success: false,
-            error: err.message || 'Could not load more items',
-            code: errorCodeOf(e2),
-            items: [],
-            hasMore: false,
-            totalItems: null
-          };
-        }
-      }
     }
-  );
+  });
 
-  ipcMain.handle(
-    'sc:channel',
-    async (_event, opts: { url: string; start?: number; end?: number }) => {
-      if (detectScKind(opts?.url || '') !== 'channel') {
+  handleIpc('sc:channel', async (_event, opts: { url: string; start?: number; end?: number }) => {
+    if (detectScKind(opts?.url || '') !== 'channel') {
+      return {
+        success: false,
+        error: 'Expected a SoundCloud profile link',
+        items: [],
+        hasMore: false
+      };
+    }
+    const target = normalizeScUrl(opts.url);
+    const start = Math.max(1, Math.floor(Number(opts.start) || 1));
+    const end = Math.max(start, Math.min(start + 199, Math.floor(Number(opts.end) || start + 29)));
+    const limit = end - start + 1;
+    try {
+      const resource = await scResolve(target);
+      if (resource.kind !== 'user') throw new ScApiError('Not a SoundCloud profile');
+      const user = resource.user;
+      if (user.id == null) throw new ScApiError('Profile without id');
+      const page = await scUserTracks(user.id, limit, start - 1);
+      const avatar = upgradeArtworkUrl(user.avatar_url);
+      const permalink = user.permalink ? `https://soundcloud.com/${user.permalink}` : target;
+      const count = user.track_count;
+      return {
+        success: true,
+        channel: {
+          id: user.permalink || String(user.id),
+          url: permalink,
+          title: user.username || '',
+          thumbnail: avatar,
+          // Profile SC nie mają osobnego banera — użyj ponownie awatara, aby
+          // nagłówek wyglądał tak samo jak kanały YT (baner za tytułem).
+          bannerUrl: avatar || undefined,
+          subscriberCount: user.followers_count,
+          description: typeof user.description === 'string' ? user.description : '',
+          videoCount: count ?? page.items.length
+        },
+        items: page.items,
+        hasMore:
+          page.items.length >= limit && (count == null || start - 1 + page.items.length < count)
+      };
+    } catch (e: unknown) {
+      logger.warn('sc', 'api channel failed, falling back to yt-dlp', String(e));
+      try {
+        return { success: true, ...(await fallbackChannelPage(target, start, end, limit)) };
+      } catch (e2: unknown) {
+        const err = e2 as { message?: string };
+        logger.warn('sc', 'channel failed', err.message || String(e2));
         return {
           success: false,
-          error: 'Expected a SoundCloud profile link',
+          error: err.message || 'Could not load this profile',
+          code: errorCodeOf(e2),
           items: [],
           hasMore: false
         };
       }
-      const target = normalizeScUrl(opts.url);
-      const start = Math.max(1, Math.floor(Number(opts.start) || 1));
-      const end = Math.max(
-        start,
-        Math.min(start + 199, Math.floor(Number(opts.end) || start + 29))
-      );
-      const limit = end - start + 1;
-      try {
-        const resource = await scResolve(target);
-        if (resource.kind !== 'user') throw new ScApiError('Not a SoundCloud profile');
-        const user = resource.user;
-        if (user.id == null) throw new ScApiError('Profile without id');
-        const page = await scUserTracks(user.id, limit, start - 1);
-        const avatar = upgradeArtworkUrl(user.avatar_url);
-        const permalink = user.permalink ? `https://soundcloud.com/${user.permalink}` : target;
-        const count = user.track_count;
-        return {
-          success: true,
-          channel: {
-            id: user.permalink || String(user.id),
-            url: permalink,
-            title: user.username || '',
-            thumbnail: avatar,
-            // Profile SC nie mają osobnego banera — użyj ponownie awatara, aby
-            // nagłówek wyglądał tak samo jak kanały YT (baner za tytułem).
-            bannerUrl: avatar || undefined,
-            subscriberCount: user.followers_count,
-            description: typeof user.description === 'string' ? user.description : '',
-            videoCount: count ?? page.items.length
-          },
-          items: page.items,
-          hasMore:
-            page.items.length >= limit && (count == null || start - 1 + page.items.length < count)
-        };
-      } catch (e: unknown) {
-        logger.warn('sc', 'api channel failed, falling back to yt-dlp', String(e));
-        try {
-          return { success: true, ...(await fallbackChannelPage(target, start, end, limit)) };
-        } catch (e2: unknown) {
-          const err = e2 as { message?: string };
-          logger.warn('sc', 'channel failed', err.message || String(e2));
-          return {
-            success: false,
-            error: err.message || 'Could not load this profile',
-            code: errorCodeOf(e2),
-            items: [],
-            hasMore: false
-          };
-        }
-      }
     }
-  );
+  });
 
-  ipcMain.handle('sc:stream:get', async (_event, url: string) => {
+  handleIpc('sc:stream:get', async (_event, url: string) => {
     return getScStreamUrl(url);
   });
 
   // Cały profil w jednym wywołaniu (subskrypcja "pobierz wszystko" + checker).
-  ipcMain.handle('sc:channelAll', async (_event, opts: { url: string }) => {
+  handleIpc('sc:channelAll', async (_event, opts: { url: string }) => {
     if (detectScKind(opts?.url || '') !== 'channel') {
       return { success: false, error: 'Expected a SoundCloud profile link', items: [] };
     }

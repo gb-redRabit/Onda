@@ -1,6 +1,8 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from './typed-handle';
 import https from 'https';
 import type { MusicbrainzRelease } from '../../shared/types/ipc';
+import type { IpcResult } from '../../shared/ipc/contract';
 import { logger } from '../../shared/logger';
 import { decideRateLimitRetry } from './musicbrainz-rate-limit';
 
@@ -171,7 +173,7 @@ function fetchCoverWithRedirect(url: string, redirects = 0): Promise<Buffer> {
 }
 
 export function registerMusicBrainzHandlers() {
-  ipcMain.handle('musicbrainz:searchRelease', async (_event, query: string) => {
+  handleIpc('musicbrainz:searchRelease', async (_event, query: string) => {
     try {
       const q = encodeURIComponent(query);
       const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=10`);
@@ -183,7 +185,7 @@ export function registerMusicBrainzHandlers() {
     }
   });
 
-  ipcMain.handle('musicbrainz:lookupRelease', async (_event, releaseId: string) => {
+  handleIpc('musicbrainz:lookupRelease', async (_event, releaseId: string) => {
     try {
       if (!isReleaseId(releaseId)) return { success: false, error: 'Invalid release id' };
       const res = await mbFetch(
@@ -198,7 +200,7 @@ export function registerMusicBrainzHandlers() {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'musicbrainz:getCoverData',
     async (
       _event,
@@ -224,25 +226,28 @@ export function registerMusicBrainzHandlers() {
 
   // 8.9 — autodetekcja + batch
 
-  ipcMain.handle('musicbrainz:autodetect', async (_event, query: string) => {
-    try {
-      const q = encodeURIComponent(query);
-      const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=5`);
-      const data = typeof res === 'string' ? { releases: [] } : res;
-      const releases = (data.releases as MusicbrainzRelease[] | undefined) || [];
-      if (releases.length === 0) return { success: true, match: 'none', releases };
-      // pewność: score 100 lub 1 wynik znacznie wyższy
-      const score = Number(releases[0]?.score || 0);
-      const secondScore = Number(releases[1]?.score || 0);
-      const match =
-        score >= 90 && score - secondScore > 20
-          ? 'certain'
-          : releases.length === 1
+  handleIpc(
+    'musicbrainz:autodetect',
+    async (_event, query): Promise<IpcResult<'musicbrainz:autodetect'>> => {
+      try {
+        const q = encodeURIComponent(query);
+        const res = await mbFetch(`${MB_URL}/release/?query=${q}&fmt=json&limit=5`);
+        const data = typeof res === 'string' ? { releases: [] } : res;
+        const releases = (data.releases as MusicbrainzRelease[] | undefined) || [];
+        if (releases.length === 0) return { success: true, match: 'none', releases };
+        // pewność: score 100 lub 1 wynik znacznie wyższy
+        const score = Number(releases[0]?.score || 0);
+        const secondScore = Number(releases[1]?.score || 0);
+        const match =
+          score >= 90 && score - secondScore > 20
             ? 'certain'
-            : 'ambiguous';
-      return { success: true, match, releases };
-    } catch (e) {
-      return { success: false, error: String(e), match: 'none', releases: [] };
+            : releases.length === 1
+              ? 'certain'
+              : 'ambiguous';
+        return { success: true, match, releases };
+      } catch (e) {
+        return { success: false, error: String(e), match: 'none', releases: [] };
+      }
     }
-  });
+  );
 }

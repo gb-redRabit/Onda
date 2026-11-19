@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { join } from 'path';
 import { getStore } from '../cover/cover-cache';
 import {
@@ -40,10 +41,10 @@ export function registerSubscriptionHandlers(): void {
       }
     );
   });
-  ipcMain.handle('yt:subs:list', async (): Promise<IpcSubscription[]> =>
+  handleIpc('yt:subs:list', async (): Promise<IpcSubscription[]> =>
     loadSubscriptions(getSubscriptionsFile())
   );
-  ipcMain.handle(
+  handleIpc(
     'yt:subs:add',
     async (_event, input: SubscriptionInput): Promise<IpcSubscription | null> => {
       const file = getSubscriptionsFile();
@@ -55,19 +56,19 @@ export function registerSubscriptionHandlers(): void {
       return sub;
     }
   );
-  ipcMain.handle('yt:subs:remove', async (_event, channelId: string): Promise<boolean> =>
+  handleIpc('yt:subs:remove', async (_event, channelId: string): Promise<boolean> =>
     removeSubscription(getSubscriptionsFile(), channelId)
   );
-  ipcMain.handle(
+  handleIpc(
     'yt:subs:update',
     async (_event, channelId: string, patch: SubscriptionPatch): Promise<IpcSubscription | null> =>
       updateSubscription(getSubscriptionsFile(), channelId, patch)
   );
   // Ręczne sprawdzenie (przycisk) dodatkowo weryfikuje pliki na dysku i odznacza braki.
-  ipcMain.handle('yt:subs:checkNow', async (): Promise<IpcSubscriptionCheckResult> =>
+  handleIpc('yt:subs:checkNow', async (): Promise<IpcSubscriptionCheckResult> =>
     checkSubscriptions(getSubscriptionsFile(), undefined, true)
   );
-  ipcMain.handle(
+  handleIpc(
     'yt:subs:checkChannel',
     async (_event, channelId: string): Promise<IpcSubscriptionCheckResult> =>
       checkSingleChannel(getSubscriptionsFile(), channelId)

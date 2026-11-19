@@ -12,7 +12,7 @@ export interface FsChannels {
     result: void;
   };
   'fs:mkdir': { args: [dirPath: string]; result: boolean };
-  'fs:delete': { args: [filePath: string]; result: void };
+  'fs:delete': { args: [filePath: string]; result: boolean };
   'fs:move': { args: [paths: string[], destination: string]; result: void };
   'fs:copy': { args: [paths: string[], destination: string]; result: void };
   'fs:findDuplicates': {

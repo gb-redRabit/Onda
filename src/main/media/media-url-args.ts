@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../ipc/typed-handle';
 
 // URL serwera mediów zawiera token uwierzytelniający na jeden przebieg. Nigdy nie
 // może być przekazywany przez argumenty CLI (widoczne przez `Get-Process` /
@@ -17,5 +17,5 @@ function getMediaServerUrl(): string {
 }
 
 export function registerMediaUrlHandler(): void {
-  ipcMain.handle('media:getServerUrl', () => getMediaServerUrl());
+  handleIpc('media:getServerUrl', () => getMediaServerUrl());
 }

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from './typed-handle';
 import { mkdir, writeFile } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import { httpRequest } from './http-request';
@@ -117,7 +117,7 @@ async function saveSubtitle(
 }
 
 export function registerAnimeSubHandlers(): void {
-  ipcMain.handle(
+  handleIpc(
     'animesub:search',
     async (_event, params: AnimeSubSearchParams): Promise<AnimeSubSearchResult> => {
       const query = typeof params?.query === 'string' ? params.query.trim().slice(0, 200) : '';
@@ -143,7 +143,7 @@ export function registerAnimeSubHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'animesub:download',
     async (_event, params: AnimeSubDownloadParams): Promise<AnimeSubDownloadResult> => {
       const id = typeof params?.id === 'string' ? params.id.replace(/\D/g, '').slice(0, 12) : '';

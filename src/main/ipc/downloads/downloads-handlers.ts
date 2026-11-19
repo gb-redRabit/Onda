@@ -1,4 +1,5 @@
-import { ipcMain, BrowserWindow, dialog } from 'electron';
+import { BrowserWindow, dialog } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { writeFile, readFile } from 'fs/promises';
 import { dirname } from 'path';
 import {
@@ -68,7 +69,7 @@ export function registerDownloadHandlers(): void {
   // Przywróć zapisaną kolejkę (przerwane pobrania stają się wstrzymane), zanim
   // renderer poprosi o listę, aby żadna zakolejkowana praca nie przepadła przy restartach.
   void restoreDownloadQueue();
-  ipcMain.handle(
+  handleIpc(
     'yt:download:add',
     async (_event, jobs: IpcDownloadJobInput[]): Promise<IpcDownloadTask[]> => {
       logger.info('downloads', `[IPC yt:download:add] received ${jobs?.length} jobs`);
@@ -79,31 +80,30 @@ export function registerDownloadHandlers(): void {
       return tasks;
     }
   );
-  ipcMain.handle('yt:download:cancel', async (_event, id: string): Promise<boolean> =>
+  handleIpc('yt:download:cancel', async (_event, id: string): Promise<boolean> =>
     e2eFixturesEnabled() ? e2eCancelDownloadTask(id) : cancelDownloadJob(id)
   );
-  ipcMain.handle('yt:download:pause', async (_event, id: string): Promise<boolean> =>
+  handleIpc('yt:download:pause', async (_event, id: string): Promise<boolean> =>
     e2eFixturesEnabled() ? e2ePauseDownloadTask(id) : pauseDownloadJob(id)
   );
-  ipcMain.handle('yt:download:resume', async (_event, id: string): Promise<boolean> =>
+  handleIpc('yt:download:resume', async (_event, id: string): Promise<boolean> =>
     e2eFixturesEnabled() ? e2eResumeDownloadTask(id) : resumeDownloadJob(id)
   );
-  ipcMain.handle('yt:download:list', async (): Promise<IpcDownloadTask[]> =>
+  handleIpc('yt:download:list', async (): Promise<IpcDownloadTask[]> =>
     e2eFixturesEnabled() ? e2eListDownloadTasks() : listDownloadJobs()
   );
-  ipcMain.handle('yt:download:clearFinished', async (): Promise<boolean> =>
+  handleIpc('yt:download:clearFinished', async (): Promise<boolean> =>
     e2eFixturesEnabled() ? e2eClearFinishedDownloadTasks() : clearFinishedDownloads()
   );
-  ipcMain.handle('yt:download:pauseAll', async (): Promise<boolean> => pauseAllDownloads());
-  ipcMain.handle('yt:download:resumeAll', async (): Promise<boolean> => resumeAllDownloads());
-  ipcMain.handle('yt:download:moveToFront', async (_event, id: string): Promise<boolean> =>
+  handleIpc('yt:download:pauseAll', async (): Promise<boolean> => pauseAllDownloads());
+  handleIpc('yt:download:resumeAll', async (): Promise<boolean> => resumeAllDownloads());
+  handleIpc('yt:download:moveToFront', async (_event, id: string): Promise<boolean> =>
     moveDownloadToFront(id)
   );
-  ipcMain.handle(
-    'yt:download:move',
-    async (_event, id: string, direction: -1 | 1): Promise<boolean> => moveDownload(id, direction)
+  handleIpc('yt:download:move', async (_event, id: string, direction: -1 | 1): Promise<boolean> =>
+    moveDownload(id, direction)
   );
-  ipcMain.handle('yt:download:export', async (event) => {
+  handleIpc('yt:download:export', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     const options = {
       title: 'Eksportuj kolejkę',
@@ -125,7 +125,7 @@ export function registerDownloadHandlers(): void {
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
-  ipcMain.handle('yt:download:import', async (event) => {
+  handleIpc('yt:download:import', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     const options = {
       title: 'Importuj kolejkę',
@@ -146,17 +146,13 @@ export function registerDownloadHandlers(): void {
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
-  ipcMain.handle(
-    'yt:download:schedule',
-    async (_event, timestamp: number | null): Promise<boolean> =>
-      scheduleDownloadStart(typeof timestamp === 'number' ? timestamp : null)
+  handleIpc('yt:download:schedule', async (_event, timestamp: number | null): Promise<boolean> =>
+    scheduleDownloadStart(typeof timestamp === 'number' ? timestamp : null)
   );
-  ipcMain.handle('yt:download:schedule:get', async (): Promise<number | null> =>
-    getScheduledStart()
-  );
+  handleIpc('yt:download:schedule:get', async (): Promise<number | null> => getScheduledStart());
   // Ponownie nakłada metadane (artysta/album/rok) na już pobrany plik bez
   // ponownego pobierania go.
-  ipcMain.handle(
+  handleIpc(
     'yt:download:updateMetadata',
     async (_event, filePath: string, meta: IpcMetaOverride) => {
       if (typeof filePath !== 'string' || !isSafeAbsolutePath(filePath)) {
@@ -177,7 +173,7 @@ export function registerDownloadHandlers(): void {
   );
   // Ponownie przetwarza okładkę ukończonego zadania (custom/frame/clip) bez
   // ponownego pobierania pliku — używane przez przycisk „ponów okładkę".
-  ipcMain.handle(
+  handleIpc(
     'yt:download:retryCover',
     async (_event, id: string): Promise<{ success: boolean; error?: string }> => {
       if (typeof id !== 'string' || !id) return { success: false, error: 'Invalid id' };

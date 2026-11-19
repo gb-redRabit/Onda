@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from './typed-handle';
 import { join } from 'path';
 import { isIP } from 'node:net';
 import { readFile } from 'fs/promises';
@@ -120,14 +121,14 @@ export function registerRadioHandlers(): void {
   let stations: IpcRadioStation[] = [];
   const filePath = radioFilePath();
 
-  ipcMain.handle('radio:load', async () => {
+  handleIpc('radio:load', async () => {
     if (stations.length === 0) {
       stations = await loadRadioData(filePath);
     }
     return { stations };
   });
 
-  ipcMain.handle('radio:save', async (_event, input: IpcRadioStation[]) => {
+  handleIpc('radio:save', async (_event, input: IpcRadioStation[]) => {
     const cleaned = sanitizeStations(input);
     stations = cleaned;
     syncAllowedRadioHosts(cleaned);

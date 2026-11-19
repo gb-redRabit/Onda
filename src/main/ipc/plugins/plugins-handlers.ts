@@ -1,4 +1,5 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 import type {
@@ -83,7 +84,7 @@ async function installFromFolder(sender: Electron.WebContents): Promise<IpcPlugi
 }
 
 export function registerPluginsHandlers(): void {
-  ipcMain.handle('plugins:list', async (): Promise<PluginInfo[]> => {
+  handleIpc('plugins:list', async (): Promise<PluginInfo[]> => {
     try {
       const plugins = await listInstalledPlugins();
       return await mergeInfos(plugins, await loadEnabledState());
@@ -93,7 +94,7 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle('plugins:listExamples', async (): Promise<PluginExample[]> => {
+  handleIpc('plugins:listExamples', async (): Promise<PluginExample[]> => {
     try {
       return await listPluginExamples(getExamplesDir());
     } catch (e) {
@@ -102,29 +103,26 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle(
-    'plugins:installExample',
-    async (_e, id: string): Promise<IpcPluginInstallResult> => {
-      try {
-        if (!validatePluginId(id)) return { success: false, error: 'Invalid plugin id' };
-        const examples = await listPluginExamples(getExamplesDir());
-        if (!examples.some((example) => example.id === id)) {
-          return { success: false, error: 'Unknown example' };
-        }
-        const result = await installPluginFromDir(join(getExamplesDir(), id), getPluginsDir(), id);
-        if (!result.success || !result.installed) return result;
-        await setEnabled(id, false, null);
-        const enabled = await loadEnabledState();
-        const [info] = await mergeInfos([result.installed], enabled);
-        return { success: true, installed: info };
-      } catch (e) {
-        logger.warn('plugins', 'plugins:installExample failed', e);
-        return { success: false, error: errMsg(e) };
+  handleIpc('plugins:installExample', async (_e, id: string): Promise<IpcPluginInstallResult> => {
+    try {
+      if (!validatePluginId(id)) return { success: false, error: 'Invalid plugin id' };
+      const examples = await listPluginExamples(getExamplesDir());
+      if (!examples.some((example) => example.id === id)) {
+        return { success: false, error: 'Unknown example' };
       }
+      const result = await installPluginFromDir(join(getExamplesDir(), id), getPluginsDir(), id);
+      if (!result.success || !result.installed) return result;
+      await setEnabled(id, false, null);
+      const enabled = await loadEnabledState();
+      const [info] = await mergeInfos([result.installed], enabled);
+      return { success: true, installed: info };
+    } catch (e) {
+      logger.warn('plugins', 'plugins:installExample failed', e);
+      return { success: false, error: errMsg(e) };
     }
-  );
+  });
 
-  ipcMain.handle('plugins:get', async (_e, id: string): Promise<IpcPluginGetResult> => {
+  handleIpc('plugins:get', async (_e, id: string): Promise<IpcPluginGetResult> => {
     try {
       if (!validatePluginId(id)) return { success: false, error: 'Invalid plugin id' };
       const dir = join(getPluginsDir(), id);
@@ -146,7 +144,7 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'plugins:toggle',
     async (_e, id: string, enabled: boolean, approvedConsent?: string): Promise<boolean> => {
       try {
@@ -169,7 +167,7 @@ export function registerPluginsHandlers(): void {
     }
   );
 
-  ipcMain.handle('plugins:uninstall', async (_e, id: string): Promise<IpcPluginUninstallResult> => {
+  handleIpc('plugins:uninstall', async (_e, id: string): Promise<IpcPluginUninstallResult> => {
     try {
       if (!validatePluginId(id)) return { success: false, error: 'Invalid plugin id' };
       const dir = join(getPluginsDir(), id);
@@ -187,7 +185,7 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle('plugins:installFromFolder', async (event): Promise<IpcPluginInstallResult> => {
+  handleIpc('plugins:installFromFolder', async (event): Promise<IpcPluginInstallResult> => {
     try {
       return await installFromFolder(event.sender);
     } catch (e) {
@@ -196,7 +194,7 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle('plugins:storage:keys', async (_e, id: string): Promise<string[]> => {
+  handleIpc('plugins:storage:keys', async (_e, id: string): Promise<string[]> => {
     try {
       const manifest = await approvedManifest(id);
       if (!manifest || !storagePermissionGranted(manifest.permissions)) return [];
@@ -207,7 +205,7 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle('plugins:storage:get', async (_e, id: string, key: string): Promise<unknown> => {
+  handleIpc('plugins:storage:get', async (_e, id: string, key: string): Promise<unknown> => {
     try {
       const manifest = await approvedManifest(id);
       if (!manifest || !storagePermissionGranted(manifest.permissions) || !validStorageKey(key)) {
@@ -221,7 +219,7 @@ export function registerPluginsHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'plugins:storage:set',
     async (_e, id: string, key: string, value: unknown): Promise<boolean> =>
       pluginDataLock(async () => {
@@ -247,7 +245,7 @@ export function registerPluginsHandlers(): void {
       })
   );
 
-  ipcMain.handle('plugins:storage:remove', async (_e, id: string, key: string): Promise<boolean> =>
+  handleIpc('plugins:storage:remove', async (_e, id: string, key: string): Promise<boolean> =>
     pluginDataLock(async () => {
       try {
         const manifest = await approvedManifest(id);
@@ -266,22 +264,19 @@ export function registerPluginsHandlers(): void {
     })
   );
 
-  ipcMain.handle(
-    'plugins:settings:get',
-    async (_e, id: string): Promise<Record<string, unknown>> => {
-      try {
-        if (!validatePluginId(id)) return {};
-        // Odczyt przez manifest migruje też wartości, które nie pasują już
-        // do bieżącego schematu, przepisując plik raz.
-        return await settingsData(id, await readManifestById(id));
-      } catch (e) {
-        logger.warn('plugins', 'plugins:settings:get failed', e);
-        return {};
-      }
+  handleIpc('plugins:settings:get', async (_e, id: string): Promise<Record<string, unknown>> => {
+    try {
+      if (!validatePluginId(id)) return {};
+      // Odczyt przez manifest migruje też wartości, które nie pasują już
+      // do bieżącego schematu, przepisując plik raz.
+      return await settingsData(id, await readManifestById(id));
+    } catch (e) {
+      logger.warn('plugins', 'plugins:settings:get failed', e);
+      return {};
     }
-  );
+  });
 
-  ipcMain.handle(
+  handleIpc(
     'plugins:settings:set',
     async (_e, id: string, key: string, value: unknown): Promise<boolean> =>
       pluginDataLock(async () => {
@@ -306,7 +301,7 @@ export function registerPluginsHandlers(): void {
       })
   );
 
-  ipcMain.handle(
+  handleIpc(
     'plugins:fetch',
     async (
       _e,

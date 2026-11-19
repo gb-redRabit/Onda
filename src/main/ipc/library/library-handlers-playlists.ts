@@ -1,4 +1,5 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { writeFile } from 'fs/promises';
 import { basename } from 'path';
 import type { Playlist } from '../../../shared/types/media';
@@ -32,7 +33,7 @@ function isValidSmartPlaylistArray(v: unknown): v is SmartPlaylist[] {
 }
 
 export function registerPlaylistHandlers(): void {
-  ipcMain.handle('playlist:loadAll', async (): Promise<Playlist[]> => {
+  handleIpc('playlist:loadAll', async (): Promise<Playlist[]> => {
     try {
       const store = await getStore();
       const raw = store.get('playlists', []);
@@ -44,7 +45,7 @@ export function registerPlaylistHandlers(): void {
     }
   });
 
-  ipcMain.handle('playlist:saveAll', async (_event, playlists: Playlist[]): Promise<void> => {
+  handleIpc('playlist:saveAll', async (_event, playlists: Playlist[]): Promise<void> => {
     try {
       const store = await getStore();
       store.set('playlists', playlists);
@@ -53,7 +54,7 @@ export function registerPlaylistHandlers(): void {
     }
   });
 
-  ipcMain.handle('smartPlaylists:loadAll', async (): Promise<SmartPlaylist[]> => {
+  handleIpc('smartPlaylists:loadAll', async (): Promise<SmartPlaylist[]> => {
     try {
       const store = await getStore();
       const raw = store.get('smartPlaylists', []);
@@ -64,22 +65,19 @@ export function registerPlaylistHandlers(): void {
     }
   });
 
-  ipcMain.handle(
-    'smartPlaylists:saveAll',
-    async (_event, playlists: SmartPlaylist[]): Promise<void> => {
-      if (!isValidSmartPlaylistArray(playlists)) return;
-      try {
-        const store = await getStore();
-        store.set('smartPlaylists', playlists);
-      } catch (err) {
-        logger.error('library', 'saveSmartPlaylists failed', err);
-      }
+  handleIpc('smartPlaylists:saveAll', async (_event, playlists: SmartPlaylist[]): Promise<void> => {
+    if (!isValidSmartPlaylistArray(playlists)) return;
+    try {
+      const store = await getStore();
+      store.set('smartPlaylists', playlists);
+    } catch (err) {
+      logger.error('library', 'saveSmartPlaylists failed', err);
     }
-  );
+  });
 
   // Eksportuje playlistę biblioteki jako plik M3U. Przez IPC nie przechodzą żadne sekrety —
   // wpisy utworów to zwykłe ścieżki plików rozwiązywane przez proces main.
-  ipcMain.handle(
+  handleIpc(
     'playlist:export',
     async (
       event,

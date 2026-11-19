@@ -30,7 +30,7 @@ export interface YouTubeResolvedItem {
 interface YouTubeResolveMeta {
   channelId?: string;
   channelTitle?: string;
-  totalItems?: number;
+  totalItems?: number | null;
   hasMore?: boolean;
 }
 

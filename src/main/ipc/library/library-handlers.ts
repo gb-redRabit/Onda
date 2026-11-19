@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { stat } from 'fs/promises';
 import { dirname } from 'path';
 import type { MediaFile } from '../../../shared/types/media';
@@ -70,19 +70,19 @@ export async function addLibraryFolder(folder: string): Promise<string[]> {
 }
 
 export function registerLibraryHandlers(): void {
-  ipcMain.handle('library:scanCancel', (): boolean => {
+  handleIpc('library:scanCancel', (): boolean => {
     activeScanController?.abort();
     return true;
   });
 
-  ipcMain.handle('library:loudnessCancel', (): boolean => {
+  handleIpc('library:loudnessCancel', (): boolean => {
     activeLoudnessController?.abort();
     return true;
   });
 
   // Analiza głośności plików bez tagów ReplayGain. Długotrwała (dekoduje całe pliki),
   // więc raportuje postęp i daje się anulować; nowe uruchomienie zastępuje poprzednie.
-  ipcMain.handle('library:analyzeLoudness', async (event) => {
+  handleIpc('library:analyzeLoudness', async (event) => {
     const controller = new AbortController();
     const previous = activeLoudnessController;
     activeLoudnessController = controller;
@@ -132,7 +132,7 @@ export function registerLibraryHandlers(): void {
 
   // Dodaje konkretne pliki (przeciągnięte z systemu) bez skanowania całych folderów.
   // Duplikaty są pomijane, więc upuszczenie tego samego pliku nie tworzy drugiej pozycji.
-  ipcMain.handle('library:addFiles', async (_event, input: unknown) => {
+  handleIpc('library:addFiles', async (_event, input: unknown) => {
     const total = Array.isArray(input) ? input.length : 0;
     const paths = sanitizeFilePaths(input);
     if (paths.length === 0) return { added: 0, skipped: total, total };
@@ -178,41 +178,38 @@ export function registerLibraryHandlers(): void {
     }
   });
 
-  ipcMain.handle(
-    'library:scan',
-    async (event, folderPaths: string[]): Promise<LibraryScanResult> => {
-      // Nowe skanowanie zastępuje uruchomione. Nadpisanie kontrolera
-      // bez przerwania zostawiało poprzednie skanowanie przechodzące całą bibliotekę
-      // równolegle — dwa pełne przejścia po katalogach, podwójna pamięć, a
-      // wolniejsze decydowało, co finalnie zawiera biblioteka.
-      const controller = new AbortController();
-      const previous = activeScanController;
-      activeScanController = controller;
-      previous?.abort();
-      try {
-        currentLibraryFolders = sanitizeFolderPaths(folderPaths);
-        const fastScan = await libraryFastScanEnabled();
-        return await runLibraryScan(
-          currentLibraryFolders,
-          controller.signal,
-          (current, total) => {
-            if (event.sender.isDestroyed?.() !== true) {
-              event.sender.send('library:scan:progress', { current, total });
-            }
-          },
-          false,
-          fastScan
-        );
-      } catch (err) {
-        logger.error('library', 'scan handler failed', err);
-        return { count: 0, folderTypes: {}, aborted: false, truncated: false };
-      } finally {
-        releaseScanController(controller);
-      }
+  handleIpc('library:scan', async (event, folderPaths: string[]): Promise<LibraryScanResult> => {
+    // Nowe skanowanie zastępuje uruchomione. Nadpisanie kontrolera
+    // bez przerwania zostawiało poprzednie skanowanie przechodzące całą bibliotekę
+    // równolegle — dwa pełne przejścia po katalogach, podwójna pamięć, a
+    // wolniejsze decydowało, co finalnie zawiera biblioteka.
+    const controller = new AbortController();
+    const previous = activeScanController;
+    activeScanController = controller;
+    previous?.abort();
+    try {
+      currentLibraryFolders = sanitizeFolderPaths(folderPaths);
+      const fastScan = await libraryFastScanEnabled();
+      return await runLibraryScan(
+        currentLibraryFolders,
+        controller.signal,
+        (current, total) => {
+          if (event.sender.isDestroyed?.() !== true) {
+            event.sender.send('library:scan:progress', { current, total });
+          }
+        },
+        false,
+        fastScan
+      );
+    } catch (err) {
+      logger.error('library', 'scan handler failed', err);
+      return { count: 0, folderTypes: {}, aborted: false, truncated: false };
+    } finally {
+      releaseScanController(controller);
     }
-  );
+  });
 
-  ipcMain.handle('library:loadFolders', async (): Promise<string[]> => {
+  handleIpc('library:loadFolders', async (): Promise<string[]> => {
     try {
       const store = await getStore();
       const folders = store.get('libraryFolders', []);
@@ -227,7 +224,7 @@ export function registerLibraryHandlers(): void {
     }
   });
 
-  ipcMain.handle('library:saveFolders', async (_event, folders: string[]): Promise<string[]> => {
+  handleIpc('library:saveFolders', async (_event, folders: string[]): Promise<string[]> => {
     try {
       const clean = withoutSensitivePaths(sanitizeFolderPaths(folders));
       const store = await getStore();
@@ -242,7 +239,7 @@ export function registerLibraryHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'library:loadScannedChunk',
     async (
       _event,
@@ -275,7 +272,7 @@ export function registerLibraryHandlers(): void {
     }
   );
 
-  ipcMain.handle('library:saveScanned', async (_event, data: unknown): Promise<void> => {
+  handleIpc('library:saveScanned', async (_event, data: unknown): Promise<void> => {
     try {
       const clean = sanitizeScannedPayload(data);
       if (!clean) {
@@ -288,7 +285,7 @@ export function registerLibraryHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'library:updateStats',
     async (
       _event,

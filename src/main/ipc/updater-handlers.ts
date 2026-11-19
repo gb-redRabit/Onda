@@ -1,11 +1,11 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from './typed-handle';
 import { getUpdaterState, checkForUpdates, downloadUpdate, installUpdate } from '../updater';
 
 export function registerUpdaterHandlers(): void {
-  ipcMain.handle('updater:getState', () => getUpdaterState());
-  ipcMain.handle('updater:check', () => checkForUpdates());
-  ipcMain.handle('updater:download', () => downloadUpdate());
-  ipcMain.handle('updater:install', () => {
+  handleIpc('updater:getState', () => getUpdaterState());
+  handleIpc('updater:check', () => checkForUpdates());
+  handleIpc('updater:download', () => downloadUpdate());
+  handleIpc('updater:install', () => {
     installUpdate();
   });
 }

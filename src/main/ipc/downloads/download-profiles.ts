@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from '../typed-handle';
 import { join, dirname } from 'path';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { randomUUID } from 'crypto';
@@ -34,9 +35,9 @@ async function persistProfiles(list: IpcDownloadProfile[]): Promise<void> {
 }
 
 export function registerDownloadProfileHandlers(): void {
-  ipcMain.handle('profiles:list', async (): Promise<IpcDownloadProfile[]> => readProfiles());
+  handleIpc('profiles:list', async (): Promise<IpcDownloadProfile[]> => readProfiles());
 
-  ipcMain.handle(
+  handleIpc(
     'profiles:save',
     async (
       _event,
@@ -61,7 +62,7 @@ export function registerDownloadProfileHandlers(): void {
     }
   );
 
-  ipcMain.handle('profiles:delete', async (_event, id: string): Promise<IpcDownloadProfile[]> => {
+  handleIpc('profiles:delete', async (_event, id: string): Promise<IpcDownloadProfile[]> => {
     return withWriteLock(async () => {
       const list = await readProfiles();
       const next = list.filter((p) => p.id !== id);

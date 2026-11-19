@@ -1,4 +1,5 @@
-import { app, ipcMain, session } from 'electron';
+import { app, session } from 'electron';
+import { handleIpc } from './typed-handle';
 import type { AppFactoryResetResult } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
 import { getStore } from './cover/cover-store';
@@ -99,5 +100,5 @@ export async function factoryReset(): Promise<AppFactoryResetResult> {
 }
 
 export function registerFactoryResetHandler(): void {
-  ipcMain.handle('app:factoryReset', () => factoryReset());
+  handleIpc('app:factoryReset', () => factoryReset());
 }

@@ -1,4 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron';
+import { handleIpc } from '../ipc/typed-handle';
 import { join } from 'path';
 import { PipPreview } from './pip-preview';
 import { logger } from '../../shared/logger';
@@ -135,7 +136,7 @@ export class PipManager {
     // zamknij okno PiP i przekaż bieżącą pozycję z powrotem do odtwarzacza, bez
     // skoku do pełnego ekranu, który sugeruje `pip:maximize`.
     ipcMain.removeHandler('pip:restore');
-    ipcMain.handle('pip:restore', () => {
+    handleIpc('pip:restore', () => {
       if (!this.window || this.window.isDestroyed()) return false;
       const time = this.lastTime;
       this.stop();

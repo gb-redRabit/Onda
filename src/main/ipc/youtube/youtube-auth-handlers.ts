@@ -1,4 +1,5 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron';
+import { handleIpc } from '../typed-handle';
 import {
   startGoogleLogin,
   logout,
@@ -10,7 +11,7 @@ import {
 import { logger } from '../../../shared/logger';
 
 export function registerYoutubeAuthHandlers(): void {
-  ipcMain.handle('yt:authStatus', async (): Promise<YoutubeAuthStatus> => {
+  handleIpc('yt:authStatus', async (): Promise<YoutubeAuthStatus> => {
     try {
       return await getAuthStatus();
     } catch (e) {
@@ -19,11 +20,11 @@ export function registerYoutubeAuthHandlers(): void {
     }
   });
 
-  ipcMain.handle('yt:login', async () => {
+  handleIpc('yt:login', async () => {
     return startGoogleLogin();
   });
 
-  ipcMain.handle('yt:logout', async (): Promise<{ success: boolean; error?: string }> => {
+  handleIpc('yt:logout', async (): Promise<{ success: boolean; error?: string }> => {
     try {
       await logout();
       return { success: true };
@@ -33,7 +34,7 @@ export function registerYoutubeAuthHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'yt:importCookies',
     async (event): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
       const win = BrowserWindow.fromWebContents(event.sender);
@@ -48,7 +49,7 @@ export function registerYoutubeAuthHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'yt:exportCookies',
     async (event): Promise<{ success: boolean; canceled?: boolean; error?: string }> => {
       const win = BrowserWindow.fromWebContents(event.sender);

@@ -1,4 +1,5 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
+import { handleIpc } from './typed-handle';
 import { mkdir, writeFile } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import { httpRequest } from './http-request';
@@ -89,7 +90,7 @@ function errorMessage(e: unknown): string {
 }
 
 export function registerOpenSubtitlesHandlers(): void {
-  ipcMain.handle(
+  handleIpc(
     'opensubtitles:search',
     async (_event, params: OpenSubtitlesSearchParams): Promise<OpenSubtitlesSearchResult> => {
       try {
@@ -121,7 +122,7 @@ export function registerOpenSubtitlesHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'opensubtitles:download',
     async (_event, params: OpenSubtitlesDownloadParams): Promise<OpenSubtitlesDownloadResult> => {
       try {

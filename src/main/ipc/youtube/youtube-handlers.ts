@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../typed-handle';
+import type { IpcResult } from '../../../shared/ipc/contract';
 import { classifyYtDlpError } from '../../downloads/error-classifier';
 import { logger } from '../../../shared/logger';
 import { detectPlatform, isHttpUrl } from '../../../shared/platform';
@@ -23,11 +24,11 @@ export { getStreamUrl };
 export { fetchChannelItems, fetchChannelAll } from './youtube-channel';
 
 export function registerYoutubeHandlers(): void {
-  ipcMain.handle('yt:search', async (_event, query: string) => {
+  handleIpc('yt:search', async (_event, query: string) => {
     return searchYoutube(query);
   });
 
-  ipcMain.handle(
+  handleIpc(
     'yt:channel',
     async (
       _event,
@@ -37,20 +38,17 @@ export function registerYoutubeHandlers(): void {
     }
   );
 
-  ipcMain.handle(
-    'yt:channelAll',
-    async (_event, opts: { url: string; tab?: 'videos' | 'shorts' }) => {
-      logger.info('yt', `[IPC yt:channelAll] received opts: ${JSON.stringify(opts)}`);
-      const res = await fetchChannelAll(opts);
-      logger.info(
-        'yt',
-        `[IPC yt:channelAll] result: success=${res.success}, items=${res.items?.length}, error=${res.error}`
-      );
-      return res;
-    }
-  );
+  handleIpc('yt:channelAll', async (_event, opts: { url: string; tab?: 'videos' | 'shorts' }) => {
+    logger.info('yt', `[IPC yt:channelAll] received opts: ${JSON.stringify(opts)}`);
+    const res = await fetchChannelAll(opts);
+    logger.info(
+      'yt',
+      `[IPC yt:channelAll] result: success=${res.success}, items=${res.items?.length}, error=${res.error}`
+    );
+    return res;
+  });
 
-  ipcMain.handle('yt:resolve', async (_event, url: string) => {
+  handleIpc('yt:resolve', async (_event, url: string): Promise<IpcResult<'yt:resolve'>> => {
     if (e2eFixturesEnabled()) {
       if (!detectPlatform(url) && isHttpUrl(url)) {
         return {
@@ -185,9 +183,12 @@ export function registerYoutubeHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'yt:resolveMore',
-    async (_event, opts: { url: string; start: number; end: number }) => {
+    async (
+      _event,
+      opts: { url: string; start: number; end: number }
+    ): Promise<IpcResult<'yt:resolveMore'>> => {
       const kind = typeof opts?.url === 'string' ? detectYtKind(opts.url) : null;
       if (!opts || typeof opts.url !== 'string' || (!kind && !isHttpUrl(opts.url))) {
         return {
@@ -234,7 +235,7 @@ export function registerYoutubeHandlers(): void {
     }
   );
 
-  ipcMain.handle('yt:stream:get', async (_event, url: string) => {
+  handleIpc('yt:stream:get', async (_event, url: string) => {
     return getStreamUrl(url);
   });
 }

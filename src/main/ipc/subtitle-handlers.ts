@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from './typed-handle';
+import type { IpcArgs, IpcInvokeChannel, IpcResult } from '../../shared/ipc/contract';
 import { readdir, readFile, mkdir, unlink, rm, stat, realpath } from 'fs/promises';
 import { join, extname, basename, dirname, sep } from 'path';
 import { getTempDir } from './cover/cover-cache';
@@ -37,13 +38,11 @@ async function withSubtitleSlot<T>(task: () => Promise<T>): Promise<T> {
 }
 
 /** Rejestruje handler spawnujący procesy pod globalnym limitem współbieżności. */
-function handleSpawnSubtitle<A extends unknown[], R>(
-  channel: string,
-  listener: (event: Electron.IpcMainInvokeEvent, ...args: A) => Promise<R>
+function handleSpawnSubtitle<C extends IpcInvokeChannel>(
+  channel: C,
+  listener: (event: Electron.IpcMainInvokeEvent, ...args: IpcArgs<C>) => Promise<IpcResult<C>>
 ): void {
-  ipcMain.handle(channel, (event, ...args) =>
-    withSubtitleSlot(() => listener(event, ...(args as A)))
-  );
+  handleIpc(channel, (event, ...args) => withSubtitleSlot(() => listener(event, ...args)));
 }
 
 // Załączniki-czcionki są wczytywane w całości do pamięci i wysyłane przez IPC.
@@ -218,7 +217,7 @@ export function registerSubtitleHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'subtitles:findExternal',
     async (
       _event,
@@ -253,7 +252,7 @@ export function registerSubtitleHandlers(): void {
   // Zwraca zawartość pliku do renderera, więc ścieżka jest ograniczona do rozszerzeń
   // napisów i pułapu rozmiaru — inaczej ten kanał czytałby dowolny plik, jaki może
   // otworzyć proces main (cookies sesji, konfiguracja, klucze).
-  ipcMain.handle('subtitles:readFile', async (_event, filePath: string): Promise<string | null> => {
+  handleIpc('subtitles:readFile', async (_event, filePath: string): Promise<string | null> => {
     const result = await readTextFileWithinBounds(
       filePath,
       SUBTITLE_EXTS,
@@ -412,12 +411,12 @@ export function registerSubtitleHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleIpc(
     'subtitles:fontCacheStats',
     async (): Promise<{ files: number; bytes: number; videos: number }> => fontCacheStats()
   );
 
-  ipcMain.handle(
+  handleIpc(
     'subtitles:fontCacheClear',
     async (): Promise<{ removed: number; bytesFreed: number }> => clearFontCache()
   );

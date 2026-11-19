@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from '../ipc/typed-handle';
 import type { PipManager } from '../pip/pip-manager';
 import type { AudioPipManager } from '../pip/audio-pip-manager';
 import type { AudioPipLayoutOpts, PipLayoutOpts } from '../../shared/types/ipc/channels-pip';
@@ -16,7 +16,7 @@ export function registerPipHandlers(context: {
 }): void {
   const { pipManager, audioPipManager } = context;
 
-  ipcMain.handle(
+  handleIpc(
     'pip:start',
     async (
       _event,
@@ -40,44 +40,41 @@ export function registerPipHandlers(context: {
     }
   );
 
-  ipcMain.handle('pip:stop', () => {
+  handleIpc('pip:stop', () => {
     pipManager.stop();
     return true;
   });
 
-  ipcMain.handle('pip:previewStart', (_event, opts: PipLayoutOpts) => {
+  handleIpc('pip:previewStart', (_event, opts: PipLayoutOpts) => {
     return pipManager.showPreview(opts);
   });
 
-  ipcMain.handle('pip:previewStop', () => {
+  handleIpc('pip:previewStop', () => {
     pipManager.hidePreview();
     return true;
   });
 
-  ipcMain.handle('pip:previewUpdate', (_event, opts: PipLayoutOpts) => {
+  handleIpc('pip:previewUpdate', (_event, opts: PipLayoutOpts) => {
     pipManager.updatePreview(opts);
     return true;
   });
 
-  ipcMain.handle(
-    'pip:preload',
-    (_event, videoSrc: string, subtitleData: PipSubtitlePayload | null) => {
-      pipManager.preload(videoSrc, subtitleData);
-    }
-  );
+  handleIpc('pip:preload', (_event, videoSrc: string, subtitleData: PipSubtitlePayload | null) => {
+    pipManager.preload(videoSrc, subtitleData);
+  });
 
-  ipcMain.handle(
+  handleIpc(
     'pip:loadtrack',
     (_event, videoSrc: string, subtitleData: PipSubtitlePayload | null) => {
       pipManager.loadTrack(videoSrc, subtitleData);
     }
   );
 
-  ipcMain.handle('pip:updateSubtitle', (_event, data: PipSubtitlePayload | null) => {
+  handleIpc('pip:updateSubtitle', (_event, data: PipSubtitlePayload | null) => {
     pipManager.updateSubtitle(data);
   });
 
-  ipcMain.handle(
+  handleIpc(
     'audio-pip:show',
     (_event: unknown, state: Record<string, unknown>, opts?: AudioPipLayoutOpts) => {
       audioPipManager.show(state, opts ?? {});
@@ -85,41 +82,41 @@ export function registerPipHandlers(context: {
     }
   );
 
-  ipcMain.handle('audio-pip:hide', () => {
+  handleIpc('audio-pip:hide', () => {
     audioPipManager.hide();
     return true;
   });
 
-  ipcMain.handle('audio-pip:release', () => {
+  handleIpc('audio-pip:release', () => {
     audioPipManager.releaseWindow();
     return true;
   });
 
-  ipcMain.handle('audio-pip:autoHide', () => {
+  handleIpc('audio-pip:autoHide', () => {
     audioPipManager.autoHideNow();
     return true;
   });
 
-  ipcMain.handle('audio-pip:prewarm', () => {
+  handleIpc('audio-pip:prewarm', () => {
     audioPipManager.prewarm();
     return true;
   });
 
-  ipcMain.handle('audio-pip:previewStart', (_event: unknown, opts?: AudioPipLayoutOpts) => {
+  handleIpc('audio-pip:previewStart', (_event: unknown, opts?: AudioPipLayoutOpts) => {
     return audioPipManager.showPreview(opts ?? {});
   });
 
-  ipcMain.handle('audio-pip:previewStop', () => {
+  handleIpc('audio-pip:previewStop', () => {
     audioPipManager.hidePreview();
     return true;
   });
 
-  ipcMain.handle('audio-pip:previewUpdate', (_event: unknown, opts?: AudioPipLayoutOpts) => {
+  handleIpc('audio-pip:previewUpdate', (_event: unknown, opts?: AudioPipLayoutOpts) => {
     audioPipManager.updatePreview(opts ?? {});
     return true;
   });
 
-  ipcMain.handle(
+  handleIpc(
     'audio-pip:update',
     (_event: unknown, state: Record<string, unknown>, opts?: AudioPipLayoutOpts) => {
       if (

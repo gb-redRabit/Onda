@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { handleIpc } from './typed-handle';
 import { stat } from 'fs/promises';
 import { getStore } from './cover/cover-cache';
 import { logger } from '../../shared/logger';
@@ -72,7 +72,7 @@ export async function flushPlaybackPositions(): Promise<void> {
 }
 
 export function registerPlaybackHandlers(): void {
-  ipcMain.handle('playback:getPosition', async (_event, filePath: string): Promise<number> => {
+  handleIpc('playback:getPosition', async (_event, filePath: string): Promise<number> => {
     try {
       if (playbackPositions.has(filePath)) return playbackPositions.get(filePath) || 0;
       const store = await getStore();
@@ -97,7 +97,7 @@ export function registerPlaybackHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleIpc(
     'playback:setPosition',
     async (_event, filePath: string, position: number): Promise<void> => {
       try {
@@ -114,7 +114,7 @@ export function registerPlaybackHandlers(): void {
     }
   );
 
-  ipcMain.handle('playback:clearPosition', async (_event, filePath: string): Promise<void> => {
+  handleIpc('playback:clearPosition', async (_event, filePath: string): Promise<void> => {
     try {
       playbackPositions.delete(filePath);
       pendingWrites.set(filePath, null);
