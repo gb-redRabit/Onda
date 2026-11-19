@@ -9,7 +9,7 @@ import { useSettingsStore } from './stores/settings';
 import { usePluginsStore } from './stores/plugins';
 import { usePluginsHooks } from './composables/usePluginsHooks';
 import { ensureMediaServerUrl } from './utils/mediaUrl';
-import { setCoreShellMode } from './utils/runtimeMode';
+import { isStandaloneWindowRoute, setCoreShellMode } from './utils/runtimeMode';
 import { setPrefetchedToolContext } from './composables/useToolBridge';
 import type { ToolWindowContext } from '@shared/types/tools';
 import { vActivate } from './utils/activateDirective';
@@ -127,9 +127,13 @@ async function bootstrap(): Promise<void> {
   ]);
   app.mount('#app');
   mounted = true;
-  usePluginsHooks();
-  void usePluginsStore().load();
-  prefetchLikelyRoutes();
+  // Okna narzędzi/Eksploratora nie potrzebują pluginów ani prefetchu widoków
+  // głównych; ich uruchamianie tylko zwiększało RAM i czas pierwszego malowania.
+  if (!isStandaloneWindowRoute()) {
+    usePluginsHooks();
+    void usePluginsStore().load();
+    prefetchLikelyRoutes();
+  }
 }
 
 // Odrzucenie przed `app.mount` (np. dynamiczny import locale albo init modułu)

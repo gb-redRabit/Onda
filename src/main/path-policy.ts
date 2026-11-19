@@ -280,6 +280,10 @@ export function isSystemTempPath(
       return value;
     }
   };
+  // Kanonizacja korzeni (realpath) była liczona przy KAŻDYM żądaniu obrazu
+  // `onda://`. Korzenie temp nie zmieniają się w czasie życia procesu, więc
+  // cache jest kluczowany listą surowych wartości — testy, które podmieniają
+  // TEMP/TMPDIR, nadal dostają świeży wynik.
   const roots = [
     tmpdir(),
     process.env.TEMP,
@@ -287,20 +291,28 @@ export function isSystemTempPath(
     process.env.TMPDIR,
     process.env.RUNNER_TEMP
   ].filter((value): value is string => typeof value === 'string' && value.length > 0);
-  const variants = new Set<string>();
-  for (const root of roots) {
-    for (const value of [root, realOrSelf(root)]) {
-      variants.add(normalizeFor(value, platform).replace(/[\\/]+$/, ''));
+  const cacheKey = `${platform}\0${roots.join('\0')}`;
+  if (cacheKey !== tempVariantsKey) {
+    const variants = new Set<string>();
+    for (const root of roots) {
+      for (const value of [root, realOrSelf(root)]) {
+        variants.add(normalizeFor(value, platform).replace(/[\\/]+$/, ''));
+      }
     }
+    tempVariantsKey = cacheKey;
+    tempVariants = [...variants];
   }
   for (const value of [target, realOrSelf(target)]) {
     const normalized = normalizeFor(value, platform);
-    for (const root of variants) {
+    for (const root of tempVariants) {
       if (root && (normalized === root || normalized.startsWith(root + separator))) return true;
     }
   }
   return false;
 }
+
+let tempVariantsKey = '';
+let tempVariants: string[] = [];
 
 /**
  * Zewnętrzny root mediów (np. plik otwarty z argv przez `open-files`) może być

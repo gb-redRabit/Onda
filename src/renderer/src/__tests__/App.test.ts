@@ -37,7 +37,8 @@ const state = vi.hoisted(() => ({
   loadLocale: vi.fn(),
   i18nT: vi.fn((key: string) => key),
   t: vi.fn((key: string) => key),
-  coreShell: false
+  coreShell: false,
+  standalone: false
 }));
 
 vi.mock('vue-router', () => ({
@@ -99,7 +100,10 @@ vi.mock('../modules/audioEngine', () => ({
   }
 }));
 vi.mock('../utils/bootMetrics', () => ({ markRendererReady: state.markReady }));
-vi.mock('../utils/runtimeMode', () => ({ isCoreShell: () => state.coreShell }));
+vi.mock('../utils/runtimeMode', () => ({
+  isCoreShell: () => state.coreShell,
+  isStandaloneWindowRoute: () => state.standalone
+}));
 vi.mock('../utils/bootGuard', () => ({
   guardBootStep: async (fn: () => unknown, onError: (error: unknown) => void) => {
     try {
@@ -284,6 +288,7 @@ beforeEach(() => {
   state.loadLocale.mockReset();
   state.loadLocale.mockResolvedValue(undefined);
   state.coreShell = false;
+  state.standalone = false;
   localStorage.clear();
   localStorage.setItem('onda.viz.splash-default-v1', '1');
   Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 1400 });
@@ -331,6 +336,17 @@ describe('boot', () => {
     expect(state.moduleManager.switchTo).toHaveBeenCalledWith('home');
     expect(state.audioEngine.warmUp).toHaveBeenCalled();
     expect(state.session.restore).toHaveBeenCalledWith(state.router);
+  });
+
+  it('skips main-only bootstrap in standalone windows', async () => {
+    state.standalone = true;
+    mountApp();
+    await flush();
+
+    expect(state.library.loadFromDisk).not.toHaveBeenCalled();
+    expect(state.audioEngine.warmUp).not.toHaveBeenCalled();
+    expect(state.session.restore).not.toHaveBeenCalled();
+    expect(state.markReady).toHaveBeenCalled();
   });
 
   it('opens the setup wizard for a first run profile', async () => {

@@ -104,33 +104,33 @@ describe('findSiblingVideo', () => {
   const root = mkdtempSync(join(tmpdir(), 'onda-sibling-video-'));
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  it('returns the preferred sibling video for an audio file', () => {
+  it('returns the preferred sibling video for an audio file', async () => {
     const audio = join(root, 'preferred.mp3');
     writeFileSync(audio, 'x');
     writeFileSync(join(root, 'preferred.mkv'), 'x');
     writeFileSync(join(root, 'preferred.mp4'), 'x');
 
-    expect(findSiblingVideo(audio)).toBe(join(root, 'preferred.mp4'));
+    expect(await findSiblingVideo(audio)).toBe(join(root, 'preferred.mp4'));
   });
 
-  it('falls back to another supported video extension', () => {
+  it('falls back to another supported video extension', async () => {
     const audio = join(root, 'other.flac');
     writeFileSync(audio, 'x');
     writeFileSync(join(root, 'other.mkv'), 'x');
 
-    expect(findSiblingVideo(audio)).toBe(join(root, 'other.mkv'));
+    expect(await findSiblingVideo(audio)).toBe(join(root, 'other.mkv'));
   });
 
-  it('returns null when there is no sibling video', () => {
+  it('returns null when there is no sibling video', async () => {
     const audio = join(root, 'lonely.wav');
     writeFileSync(audio, 'x');
-    expect(findSiblingVideo(audio)).toBeNull();
+    expect(await findSiblingVideo(audio)).toBeNull();
   });
 
-  it('ignores non-audio files', () => {
+  it('ignores non-audio files', async () => {
     const video = join(root, 'clip.mp4');
     writeFileSync(video, 'x');
     writeFileSync(join(root, 'clip.mkv'), 'x');
-    expect(findSiblingVideo(video)).toBeNull();
+    expect(await findSiblingVideo(video)).toBeNull();
   });
 });

@@ -196,9 +196,9 @@ export function registerSettingsHandlers(): void {
         stripProxyPasswords(toPersist.network);
         const keysStored = encryptKeysOrDrop(toPersist);
         const store = await getStore();
-        for (const [key, value] of Object.entries(toPersist)) {
-          store.set(key, value);
-        }
+        // Jeden zapis zamiast N `store.set`: każde pojedyncze `set` re-szyfrowało
+        // cały config (pbkdf2Sync) i synchronicznie przepisywało plik.
+        store.store = { ...(store.store || {}), ...toPersist };
         if (toPersist.general) {
           setCloseToTray(toPersist.general.closeToTray !== false);
           applyLogSettings(toPersist.general.logLevel, toPersist.general.logMaxSizeMB);

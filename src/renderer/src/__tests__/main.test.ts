@@ -32,6 +32,7 @@ const state = vi.hoisted(() => ({
   directive: vi.fn(),
   idleCallback: null as any,
   prefetchFails: false,
+  standalone: false,
   rejectionHandlers: [] as Array<(event: any) => void>
 }));
 
@@ -68,7 +69,10 @@ vi.mock('../composables/usePluginsHooks', () => ({
 vi.mock('../utils/mediaUrl', () => ({
   ensureMediaServerUrl: state.ensureMediaServerUrl
 }));
-vi.mock('../utils/runtimeMode', () => ({ setCoreShellMode: state.setCoreShellMode }));
+vi.mock('../utils/runtimeMode', () => ({
+  setCoreShellMode: state.setCoreShellMode,
+  isStandaloneWindowRoute: () => state.standalone
+}));
 vi.mock('../composables/useToolBridge', () => ({
   setPrefetchedToolContext: state.setPrefetchedToolContext
 }));
@@ -191,6 +195,7 @@ beforeEach(() => {
   state.directive.mockReset();
   state.idleCallback = null;
   state.prefetchFails = false;
+  state.standalone = false;
   vi.stubGlobal(
     'requestIdleCallback',
     vi.fn((callback: () => void) => {
@@ -247,6 +252,16 @@ describe('app setup', () => {
     expect(window.requestIdleCallback).toHaveBeenCalledWith(expect.any(Function), {
       timeout: 4000
     });
+  });
+
+  it('skips plugins and route prefetch in standalone windows', async () => {
+    state.standalone = true;
+    await loadMain();
+
+    expect(state.app.mount).toHaveBeenCalledWith('#app');
+    expect(state.usePluginsHooks).not.toHaveBeenCalled();
+    expect(state.pluginsLoad).not.toHaveBeenCalled();
+    expect(window.requestIdleCallback).not.toHaveBeenCalled();
   });
 
   it('falls back to non-core mode when the probe fails', async () => {

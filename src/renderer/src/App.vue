@@ -19,7 +19,7 @@ import { matchesShortcut, matchesPluginShortcut, navShortcutBindings } from './u
 import { registerAppIpc } from './composables/useAppIpcEvents';
 import { useDiscordPresence } from './composables/useDiscordPresence';
 import { useCoreSync } from './composables/useCoreSync';
-import { isCoreShell } from './utils/runtimeMode';
+import { isCoreShell, isStandaloneWindowRoute } from './utils/runtimeMode';
 import { handlePlayerShortcutKeydown } from './composables/playerShortcutHandler';
 import { moduleManager } from './modules/ModuleManager';
 import { useAudioPiP } from './composables/useAudioPiP';
@@ -64,16 +64,22 @@ const library = useLibraryStore();
 const pluginsStore = usePluginsStore();
 const route = useRoute();
 const router = useRouter();
+// Okna narzędzi/Eksploratora nie potrzebują globalnych efektów aplikacji.
+const standaloneShell = isStandaloneWindowRoute();
 const audioPip = useAudioPiP({ prewarm: 'track' });
-useNewVideoNotifications();
-useUpdater();
-const mediaSession = useMediaSession();
+if (!standaloneShell) {
+  useNewVideoNotifications();
+  useUpdater();
+  useScrobbling();
+  useDiscordPresence();
+}
+const mediaSession = standaloneShell ? { dispose: () => {} } : useMediaSession();
 if (isCoreShell()) useCoreSync();
-useScrobbling();
 useToolMessages();
 useViewTransitions(router);
-useDiscordPresence();
-const session = useSessionPersistence();
+const session = standaloneShell
+  ? { restore: async (_router: unknown) => {}, persistNow: () => {} }
+  : useSessionPersistence();
 const alwaysOnTop = useAlwaysOnTop();
 const isWinMaximized = ref(false);
 const isNarrowLayout = ref(window.innerWidth < 1200);
@@ -236,7 +242,9 @@ onMounted(async () => {
   // Biblioteka nie może wstrzymywać splashu: odczyt startuje równolegle z resztą
   // bootstrapu, a wynik jest oczekiwany dopiero po zgłoszeniu gotowości (main zamyka
   // splash wcześniej). Czas startu nie rośnie już liniowo z rozmiarem biblioteki.
-  const libraryReady = library.loadFromDisk().catch(onBootStepError);
+  const libraryReady = standaloneShell
+    ? Promise.resolve()
+    : library.loadFromDisk().catch(onBootStepError);
   // Ustawienia → Odtwarzanie → domyślna głośność to głośność, z którą startuje aplikacja.
   await guardBootStep(() => player.setVolume(settings.playback.defaultVolume), onBootStepError);
   await guardBootStep(() => {
@@ -270,7 +278,7 @@ onMounted(async () => {
 
   // Utwórz AudioContext z wyprzedzeniem w czasie bezczynności, żeby pierwszego kliknięcia play nie
   // blokował jednorazowy koszt tworzenia kontekstu.
-  if (!isCoreShell()) {
+  if (!isCoreShell() && !standaloneShell) {
     if ('requestIdleCallback' in window) {
       window.requestIdleCallback(() => audioEngine.warmUp(), { timeout: 2000 });
     } else {
@@ -507,7 +515,10 @@ function onWindowBlur() {
     <AppSearch />
     <ContextMenu />
     <ToastNotification />
-    <FirstRunWizard v-if="ui.setupWizardVisible" @close="ui.closeSetupWizard()" />
+    <FirstRunWizard
+      v-if="!standaloneShell && ui.setupWizardVisible"
+      @close="ui.closeSetupWizard()"
+    />
 
     <!-- Overlay tylko wizualny; przechwytywanie dropu jest na `window`. -->
     <div

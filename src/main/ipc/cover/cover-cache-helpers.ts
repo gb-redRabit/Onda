@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { statSync } from 'fs';
+import { stat } from 'fs/promises';
 import { basename, dirname, extname, join } from 'path';
 import { AUDIO_EXTS, VIDEO_EXTS } from '../../../shared/constants';
 
@@ -46,15 +46,22 @@ export function isEnoent(e: unknown): boolean {
   );
 }
 
-export function findSiblingVideo(filePath: string): string | null {
+export async function findSiblingVideo(filePath: string): Promise<string | null> {
   const ext = extname(filePath).toLowerCase();
   if (!AUDIO_EXTS.includes(ext)) return null;
   const dir = dirname(filePath);
   const name = basename(filePath, ext);
-  for (const vExt of VIDEO_EXTS) {
-    const videoPath = join(dir, name + vExt);
-    const stats = statSync(videoPath, { throwIfNoEntry: false });
-    if (stats) return videoPath;
-  }
-  return null;
+  // Równoległe `stat` zamiast 11 synchronicznych wywołań blokujących main,
+  // szczególnie dotkliwych na udziałach sieciowych (NAS/SMB).
+  const candidates = VIDEO_EXTS.map((vExt) => join(dir, name + vExt));
+  const found = await Promise.all(
+    candidates.map(async (candidate) => {
+      try {
+        return (await stat(candidate)).isFile() ? candidate : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return found.find((candidate): candidate is string => candidate !== null) ?? null;
 }

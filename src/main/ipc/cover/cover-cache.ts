@@ -319,7 +319,7 @@ export async function extractAndCacheCover(
   try {
     const cached = await getCachedCover(filePath);
     if (cached) return cached;
-    const siblingVideo = findSiblingVideo(filePath);
+    const siblingVideo = await findSiblingVideo(filePath);
     const ext = extname(filePath).toLowerCase();
     let result: { type: 'video' | 'image' | null; data: string | null } = {
       type: null,

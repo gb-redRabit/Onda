@@ -11,3 +11,19 @@ export function setCoreShellMode(value: boolean): void {
 export function isCoreShell(): boolean {
   return coreShell;
 }
+
+/**
+ * Okno pomocnicze (Eksplorator, podgląd obrazu, narzędzia) ładuje ten sam SPA,
+ * ale nie potrzebuje globalnego bootu aplikacji: pluginów, biblioteki, scrobbling,
+ * Discorda ani rozgrzewania audio. Sprawdzamy `location.hash` synchronicznie,
+ * bo trasa może nie być jeszcze rozwiązana w chwili startu `main.ts`.
+ */
+export function isStandaloneWindowRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash;
+  return (
+    hash.startsWith('#/tools/') ||
+    hash.startsWith('#/explorer/window') ||
+    hash.startsWith('#/image-viewer')
+  );
+}

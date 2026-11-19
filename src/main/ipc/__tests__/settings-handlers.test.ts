@@ -362,8 +362,10 @@ describe('import', () => {
     expect(state.sanitize).toHaveBeenCalledWith({ general: {} });
     expect(state.stripProxy).toHaveBeenCalledWith({ proxy: {} });
     expect(state.encryptApiKeys).toHaveBeenCalledWith({ a: 'k' });
-    expect(state.store.set).toHaveBeenCalledWith('general', {});
-    expect(state.store.set).toHaveBeenCalledWith('apiKeys', { encrypted: { a: 'k' } });
+    expect(state.store.store).toMatchObject({
+      general: {},
+      apiKeys: { encrypted: { a: 'k' } }
+    });
     expect(state.setCloseToTray).toHaveBeenCalledWith(true);
     expect(result).toEqual({
       success: true,
@@ -402,7 +404,7 @@ describe('import', () => {
 
     expect(result).toMatchObject({ success: false });
     expect(String(result.error)).toContain('API keys were skipped');
-    expect(state.store.set).toHaveBeenCalledWith('general', {});
+    expect(state.store.store).toMatchObject({ general: {} });
   });
 
   it('reports parse and read errors', async () => {
