@@ -2,7 +2,6 @@ import { app } from 'electron';
 import { appendFile, mkdir, readFile, truncate, copyFile, rm } from 'fs/promises';
 import { join } from 'path';
 import os from 'os';
-import { logger } from '../shared/logger';
 import { redactSecrets } from '../shared/redact';
 import { recordWarning, clearWarnings } from './warnings';
 import { rotateLogIfNeeded } from './log-rotate';
@@ -55,6 +54,13 @@ function ts(): string {
 
 const writeQueue = new WriteQueue();
 
+// Oryginalny `console.warn` sprzed podmiany. Wywołania diagnostyczne z wnętrza
+// kolejki muszą omijać `writeText`, inaczej nieudany zapis dokłada kolejne
+// nieudane zadanie i kolejka nigdy się nie opróżnia.
+let rawWarn: (...args: unknown[]) => void = console.warn.bind(console);
+let lastWriteErrorAt = 0;
+const WRITE_ERROR_THROTTLE_MS = 10_000;
+
 function writeText(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', text: string): void {
   if (LEVEL_WEIGHT[level.toLowerCase() as LogLevel] < LEVEL_WEIGHT[minLevel]) return;
   const dir = getLogDir();
@@ -69,7 +75,11 @@ function writeText(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', text: string): vo
       await rotateLogIfNeeded(file, maxFileBytes);
       await appendFile(file, line, 'utf-8');
     } catch (e) {
-      logger.warn('logfile', 'write failed', e);
+      const now = Date.now();
+      if (now - lastWriteErrorAt >= WRITE_ERROR_THROTTLE_MS) {
+        lastWriteErrorAt = now;
+        rawWarn('[logfile] write failed', e);
+      }
     }
   });
 }
@@ -83,6 +93,7 @@ export function setupFileLogging(): void {
     warn: console.warn,
     debug: console.debug
   };
+  rawWarn = original.warn;
   // Jedno sformatowane i ZREDAGOWANE źródło prawdy dla obu ujść: konsola nie może
   // wyciekać sekretów, które plik już maskuje (wcześniej `original.log` szedł z
   // surowymi argumentami, a redakcja dotyczyła tylko zapisu na dysk).
@@ -140,7 +151,7 @@ export async function clearLogFile(): Promise<boolean> {
     clearWarnings();
     return true;
   } catch (e) {
-    logger.warn('logfile', 'clear failed', e);
+    rawWarn('[logfile] clear failed', e);
     return false;
   }
 }
