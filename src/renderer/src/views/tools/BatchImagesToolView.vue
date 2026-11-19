@@ -22,6 +22,7 @@ import Slider from '@renderer/components/ui/Slider.vue';
 import ToolWindowShell, { type ToolStatus } from '@renderer/components/tools/ToolWindowShell.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
+import { formatBytesCompact as formatBytes } from '@renderer/utils/formatters';
 import { filesForTool, toolContextPaths } from '@shared/tool-input';
 import {
   BATCH_IMAGES_MAX_FILES,
@@ -74,18 +75,6 @@ function extensionOf(path: string): string {
   const name = fileName(path);
   const index = name.lastIndexOf('.');
   return index >= 0 ? name.slice(index + 1).toLowerCase() : '';
-}
-
-function formatBytes(bytes?: number): string {
-  if (!bytes || bytes <= 0) return '';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let value = bytes;
-  let index = 0;
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
 function statusLabel(status: RowStatus): string {

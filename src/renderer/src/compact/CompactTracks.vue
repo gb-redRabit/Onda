@@ -5,6 +5,7 @@ import { useLibraryStore } from '@renderer/stores/library';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useVirtualList } from '@renderer/composables/useVirtualList';
 import { playTrackList } from '@renderer/utils/playTracks';
+import { formatDuration as formatDurationBase } from '@renderer/utils/formatters';
 import Input from '@renderer/components/ui/Input.vue';
 import MediaCover from '@renderer/components/MediaCover.vue';
 import type { MediaFile } from '@renderer/types/media';
@@ -46,9 +47,7 @@ function trackArtist(track: MediaFile | undefined): string {
 }
 
 function formatDuration(value: number | undefined): string {
-  if (!value || !Number.isFinite(value)) return '';
-  const total = Math.floor(value);
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+  return formatDurationBase(value, '');
 }
 
 function playAt(index: number): void {

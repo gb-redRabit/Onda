@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDuration, formatFileSize, formatNumber } from '../formatters';
+import { formatBytesCompact, formatDuration, formatFileSize, formatNumber } from '../formatters';
 
 describe('formatDuration', () => {
   it('returns 0:00 for null/NaN/undefined', () => {
@@ -122,5 +122,21 @@ describe('formatNumber edge cases', () => {
 
   it('handles empty string', () => {
     expect(formatNumber('')).toBe('0');
+  });
+});
+
+describe('formatBytesCompact', () => {
+  it('formats bytes with at most one decimal', () => {
+    expect(formatBytesCompact(512)).toBe('512 B');
+    expect(formatBytesCompact(2048)).toBe('2.0 KB');
+    expect(formatBytesCompact(15 * 1024)).toBe('15 KB');
+    expect(formatBytesCompact(3 * 1024 * 1024)).toBe('3.0 MB');
+  });
+
+  it('returns the placeholder for missing, zero and non-finite values', () => {
+    expect(formatBytesCompact(undefined)).toBe('');
+    expect(formatBytesCompact(null, '—')).toBe('—');
+    expect(formatBytesCompact(0, '—')).toBe('—');
+    expect(formatBytesCompact(Number.NaN)).toBe('');
   });
 });

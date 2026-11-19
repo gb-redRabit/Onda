@@ -1,4 +1,5 @@
 import { logger } from '../../shared/logger';
+import { errMsg } from '../../shared/helpers';
 import type { DiscordStatus, PresenceState } from '../../shared/types/discord';
 import { connectDiscord, type DiscordConnection } from './discord-ipc';
 import { buildActivity, type DiscordActivity } from './presence-activity';
@@ -19,10 +20,6 @@ let lastSentAt = 0;
 let lastFingerprint = '';
 let lastError: string | null = null;
 let shuttingDown = false;
-
-function errMsg(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function disconnect(): void {
   if (reconnectTimer) {

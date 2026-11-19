@@ -11,11 +11,8 @@ import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { isProtectedAppDataPath } from '../utils/app-data';
 import { logger } from '../../shared/logger';
+import { errMsg } from '../../shared/helpers';
 import { buildHistoryRows, serializeHistory } from './history-format';
-
-function errMsg(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function defaultFileName(format: HistoryExportFormat): string {
   return `onda-history-${new Date().toISOString().slice(0, 10)}.${format}`;

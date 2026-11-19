@@ -7,6 +7,7 @@ import { isSafeAbsolutePath } from '../utils/validate';
 import { isProtectedAppDataPath } from '../utils/app-data';
 import { replaceFileAtomic, safeRm } from '../utils/fs-atomic';
 import { logger } from '../../shared/logger';
+import { errMsg } from '../../shared/helpers';
 import {
   BATCH_IMAGES_MAX_FILES,
   IMAGE_OUTPUT_FORMATS,
@@ -25,10 +26,6 @@ interface ActiveJob {
 }
 
 const activeJobs = new Map<string, ActiveJob>();
-
-function errMsg(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function isOutputFormat(value: unknown): value is ImageOutputFormat {
   return typeof value === 'string' && (IMAGE_OUTPUT_FORMATS as readonly string[]).includes(value);

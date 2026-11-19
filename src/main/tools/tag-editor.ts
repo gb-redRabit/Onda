@@ -9,6 +9,7 @@ import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { replaceFileAtomic, safeRm } from '../utils/fs-atomic';
 import { logger } from '../../shared/logger';
+import { errMsg } from '../../shared/helpers';
 import {
   AUDIO_TAG_FIELDS,
   TAG_EDITOR_MAX_FILES,
@@ -44,10 +45,6 @@ const MAX_FIELD_LENGTH = 1024;
 function fieldOf(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   return value.trim().slice(0, MAX_FIELD_LENGTH);
-}
-
-function errMsg(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 /** True, gdy dla danego formatu potrafimy bezpiecznie zapisać tagi. */

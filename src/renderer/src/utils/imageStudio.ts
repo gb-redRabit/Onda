@@ -1,4 +1,5 @@
 import type { ImageOutputFormat } from '@shared/types/tools';
+import { formatBytesCompact } from '@renderer/utils/formatters';
 
 // Czysta geometria i formatowanie Image Studio. Wydzielone z widoku, żeby
 // obrysy adnotacji, uchwyty kadru i ścieżki wyjściowe dały się testować bez DOM.
@@ -40,15 +41,7 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || bytes <= 0) return '—';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let value = bytes;
-  let index = 0;
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+  return formatBytesCompact(bytes, '—');
 }
 
 export function fileNameOf(path: string): string {

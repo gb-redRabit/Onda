@@ -6,6 +6,7 @@ import { isSafeAbsolutePath } from '../utils/validate';
 import { isProtectedAppDataPath } from '../utils/app-data';
 import { replaceFileAtomic, safeRm } from '../utils/fs-atomic';
 import { logger } from '../../shared/logger';
+import { errMsg } from '../../shared/helpers';
 import {
   IMAGE_OUTPUT_FORMATS,
   type ImageOutputFormat,
@@ -35,10 +36,6 @@ export const IMAGE_EXTENSIONS = new Set([
   '.heic',
   '.heif'
 ]);
-
-function errMsg(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function isOutputFormat(value: unknown): value is ImageOutputFormat {
   return typeof value === 'string' && (IMAGE_OUTPUT_FORMATS as readonly string[]).includes(value);
