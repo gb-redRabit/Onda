@@ -46,6 +46,18 @@ function sendProgress(sender: WebContents, payload: MediaConvertProgress): void 
 
 export async function runFfmpegJob(options: FfmpegJobOptions): Promise<MediaConvertResult> {
   const ffmpeg = options.ffmpeg ?? ((await resolveBin('ffmpeg')) || 'ffmpeg');
+  // Ten sam `jobId` nie może mieć dwóch procesów: drugi nadpisałby wpis w mapie,
+  // a pierwszy stałby się nieosiągalny dla anulowania i shutdownu.
+  const previous = activeFfmpegJobs.get(options.jobId);
+  if (previous) {
+    previous.canceled = true;
+    try {
+      previous.child.kill();
+    } catch {
+      /* już nie istnieje */
+    }
+    activeFfmpegJobs.delete(options.jobId);
+  }
   return new Promise<MediaConvertResult>((resolve) => {
     let child: ChildProcessWithoutNullStreams;
     try {

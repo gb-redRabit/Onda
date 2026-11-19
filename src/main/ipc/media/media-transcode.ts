@@ -14,7 +14,30 @@ const videoTempDir = join(os.tmpdir(), 'onda', 'video-transcodes');
 // Stempel size+mtime jest współdzielony z cache miniatur (`utils/source-stamp`);
 // zastąpiony plik nigdy nie użyje nieaktualnego transkodowania.
 
-export async function transcodeAudioChunk(
+// Dwa równoległe żądania tego samego transkodowania odpalały dwa procesy ffmpeg
+// piszące do jednego `outPath` (`-y`), więc wynik bywał uszkodzony.
+const transcodeInFlight = new Map<string, Promise<string | null>>();
+
+function dedupeTranscode(key: string, run: () => Promise<string | null>): Promise<string | null> {
+  const existing = transcodeInFlight.get(key);
+  if (existing) return existing;
+  const job = run();
+  transcodeInFlight.set(key, job);
+  void job.finally(() => transcodeInFlight.delete(key));
+  return job;
+}
+
+export function transcodeAudioChunk(
+  filePath: string,
+  startTime: number,
+  duration: number
+): Promise<string | null> {
+  return dedupeTranscode(`${filePath}\0${startTime}\0${duration}`, () =>
+    doTranscodeAudioChunk(filePath, startTime, duration)
+  );
+}
+
+async function doTranscodeAudioChunk(
   filePath: string,
   startTime: number,
   duration: number
@@ -68,7 +91,11 @@ export async function transcodeAudioChunk(
   }
 }
 
-export async function transcodeAudio(filePath: string): Promise<string | null> {
+export function transcodeAudio(filePath: string): Promise<string | null> {
+  return dedupeTranscode(`audio:${filePath}`, () => doTranscodeAudio(filePath));
+}
+
+async function doTranscodeAudio(filePath: string): Promise<string | null> {
   await mkdir(tempDir, { recursive: true });
   const stamp = await sourceStamp(filePath);
   const hash = createHash('md5')
@@ -110,7 +137,11 @@ export async function transcodeAudio(filePath: string): Promise<string | null> {
   }
 }
 
-export async function transcodeVideo(filePath: string): Promise<string | null> {
+export function transcodeVideo(filePath: string): Promise<string | null> {
+  return dedupeTranscode(`video:${filePath}`, () => doTranscodeVideo(filePath));
+}
+
+async function doTranscodeVideo(filePath: string): Promise<string | null> {
   await mkdir(videoTempDir, { recursive: true });
   const stamp = await sourceStamp(filePath);
   const hash = createHash('md5')

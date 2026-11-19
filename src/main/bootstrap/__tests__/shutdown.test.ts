@@ -24,6 +24,8 @@ const state = vi.hoisted(() => ({
   cancelConvert: vi.fn(),
   cancelJobs: vi.fn(),
   cancelBatch: vi.fn(),
+  cancelWaveforms: vi.fn(),
+  abortDeps: vi.fn(),
   kill: vi.fn(),
   shutdownDiscord: vi.fn(),
   getStore: vi.fn(),
@@ -76,6 +78,12 @@ vi.mock('../../ipc/library/library-handlers', () => ({
 vi.mock('../../tools/media-convert', () => ({ cancelAllMediaConvert: state.cancelConvert }));
 vi.mock('../../tools/video-clip-job', () => ({ cancelAllMediaJobs: state.cancelJobs }));
 vi.mock('../../tools/batch-images', () => ({ cancelAllBatchImages: state.cancelBatch }));
+vi.mock('../../ipc/media/waveform', () => ({
+  cancelAllWaveformDecodes: state.cancelWaveforms
+}));
+vi.mock('../../ipc/dependency/dependency-download', () => ({
+  abortAllDependencies: state.abortDeps
+}));
 vi.mock('../../downloads/download-state', () => ({
   jobs: state.jobs,
   jobAbortControllers: state.aborts
@@ -128,6 +136,8 @@ beforeEach(() => {
   state.cancelConvert.mockReset();
   state.cancelJobs.mockReset();
   state.cancelBatch.mockReset();
+  state.cancelWaveforms.mockReset();
+  state.abortDeps.mockReset();
   state.kill.mockReset();
   state.shutdownDiscord.mockReset();
   state.extraRoots.mockReset();
@@ -160,6 +170,8 @@ describe('first quit', () => {
     expect(state.cancelConvert).toHaveBeenCalledTimes(1);
     expect(state.cancelJobs).toHaveBeenCalledTimes(1);
     expect(state.cancelBatch).toHaveBeenCalledTimes(1);
+    expect(state.cancelWaveforms).toHaveBeenCalledTimes(1);
+    expect(state.abortDeps).toHaveBeenCalledTimes(1);
     expect(state.flushStream).toHaveBeenCalledTimes(1);
     expect(state.getMediaServer).toHaveBeenCalledTimes(1);
     expect(state.closeLogin).toHaveBeenCalledTimes(1);

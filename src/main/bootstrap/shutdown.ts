@@ -18,6 +18,8 @@ import { cancelLibraryLoudness } from '../ipc/library/library-handlers';
 import { cancelAllMediaConvert } from '../tools/media-convert';
 import { cancelAllMediaJobs } from '../tools/video-clip-job';
 import { cancelAllBatchImages } from '../tools/batch-images';
+import { cancelAllWaveformDecodes } from '../ipc/media/waveform';
+import { abortAllDependencies } from '../ipc/dependency/dependency-download';
 import { jobs, jobAbortControllers } from '../downloads/download-state';
 import { killDownloadProcess } from '../downloads/kill-download-process';
 import { shutdownDiscord } from '../discord/rich-presence';
@@ -59,6 +61,8 @@ export function installGracefulShutdown(deps: ShutdownDeps): void {
         cancelAllMediaConvert();
         cancelAllMediaJobs();
         cancelAllBatchImages();
+        cancelAllWaveformDecodes();
+        abortAllDependencies();
         // Cache strumieni jest zapisywany synchronicznie; mapa okładek ma
         // debounce, więc trafia do `flushes` niżej.
         flushStreamCache();

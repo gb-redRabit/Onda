@@ -292,3 +292,25 @@ describe('cleanupOldTranscodes', () => {
     });
   });
 });
+
+describe('transcode deduplication', () => {
+  it('shares one ffmpeg run between concurrent transcodes of the same file', async () => {
+    let release!: () => void;
+    state.runCommand.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        })
+    );
+    const { transcodeAudio } = await load();
+
+    const first = transcodeAudio('/music/a.flac');
+    const second = transcodeAudio('/music/a.flac');
+
+    expect(second).toBe(first);
+    await vi.waitFor(() => expect(state.runCommand).toHaveBeenCalledTimes(1));
+
+    release();
+    await expect(first).resolves.toBe('/tmp/onda/audio-transcodes/hash123.m4a');
+  });
+});

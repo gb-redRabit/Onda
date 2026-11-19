@@ -14,6 +14,7 @@ const SAMPLE_RATE = 8000;
 const WAVEFORM_POINTS = 2000;
 const CACHE_VERSION = 1;
 const MAX_DECODE_MS = 10 * 60 * 1000;
+const activeWaveformChildren = new Set<ReturnType<typeof spawn>>();
 
 interface WaveformCacheFile {
   version: number;
@@ -176,6 +177,12 @@ function decodePeaks(
     let carry: Buffer | null = null;
     let settled = false;
 
+    // Niekonsumowany stderr potrafi zapchać rurę OS (64 KiB) i zawiesić ffmpeg
+    // aż do timeoutu; waveform i tak nie potrzebuje jego treści.
+    child.stderr?.resume();
+    activeWaveformChildren.add(child);
+    child.on('close', () => activeWaveformChildren.delete(child));
+
     const settle = (fn: () => void): void => {
       if (settled) return;
       settled = true;
@@ -229,6 +236,18 @@ function decodePeaks(
 }
 
 const inFlight = new Map<string, Promise<number[]>>();
+
+/** Ubija wszystkie dekodowania waveformów przy zamykaniu aplikacji. */
+export function cancelAllWaveformDecodes(): void {
+  for (const child of activeWaveformChildren) {
+    try {
+      child.kill();
+    } catch {
+      /* proces mógł już zakończyć się */
+    }
+  }
+  activeWaveformChildren.clear();
+}
 
 /** Zwraca 2000 peaków (0..1) dla lokalnego pliku audio; [] gdy brak FFmpeg/duration. */
 export async function getWaveform(

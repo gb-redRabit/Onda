@@ -386,4 +386,17 @@ describe('shared FFmpeg job runner', () => {
     });
     return { child, promise };
   }
+
+  it('replaces a previous job with the same id instead of orphaning it', async () => {
+    const sender = makeSender();
+    const first = start('same-id', sender);
+    const second = start('same-id', sender);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+    expect(first.child.kill).toHaveBeenCalled();
+
+    cancelFfmpegJob('same-id');
+    expect(second.child.kill).toHaveBeenCalledTimes(1);
+  });
 });
