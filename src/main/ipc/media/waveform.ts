@@ -6,6 +6,7 @@ import os from 'os';
 import { logger } from '../../../shared/logger';
 import { resolveBin } from '../../binaries';
 import { safeUserDataPath } from '../../utils/profile-state';
+import { createLimiter } from '../../utils/limiter';
 
 // Wizualizacja fali: dekodujemy tylko pierwszy strumień audio do mono 8 kHz i
 // liczymy peak per kubełek. Cache trzyma gotowe 2000 punktów, więc kolejne
@@ -15,6 +16,9 @@ const WAVEFORM_POINTS = 2000;
 const CACHE_VERSION = 1;
 const MAX_DECODE_MS = 10 * 60 * 1000;
 const activeWaveformChildren = new Set<ReturnType<typeof spawn>>();
+// Dekodowanie waveformu to proces ffmpeg + odczyt całego pliku; bez globalnego
+// limitu kilka równoległych okładek/utworów potrafiło uruchomić kilkanaście.
+const waveformLimit = createLimiter(2);
 
 interface WaveformCacheFile {
   version: number;
@@ -272,7 +276,9 @@ export async function getWaveform(
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) controller.abort();
     try {
-      const peaks = await decodePeaks(ffmpeg, filePath, durationSec, controller.signal);
+      const peaks = await waveformLimit(() =>
+        decodePeaks(ffmpeg, filePath, durationSec, controller.signal)
+      );
       if (peaks.length > 0) await writeCache(filePath, s.size, Math.round(s.mtimeMs), peaks);
       return peaks;
     } catch (e) {

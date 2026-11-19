@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 
 const state = vi.hoisted(() => ({
   api: null as any,
@@ -137,7 +137,7 @@ beforeAll(async () => {
     load: vi.fn(async () => undefined),
     playback: { defaultVolume: 0.7 }
   };
-  state.player = {
+  state.player = reactive({
     currentTrack: null,
     queue: [],
     pendingQueue: [],
@@ -163,7 +163,7 @@ beforeAll(async () => {
     prevTrack: vi.fn(),
     playFromHistory: vi.fn(),
     clearTrack: vi.fn()
-  };
+  });
   state.audio = {
     currentTime: ref(0),
     duration: ref(0),

@@ -7,6 +7,7 @@ import { VIDEO_EXTS, AUDIO_EXTS, IMAGE_EXTS } from '../../../shared/constants';
 import { MIME_TYPES } from '../../../shared/mime';
 import { logger } from '../../../shared/logger';
 import { mapLimit } from '../../utils/map-limit';
+import { createLimiter } from '../../utils/limiter';
 import { getDuration } from '../media/media-handlers';
 import {
   classifyFolderType,
@@ -28,6 +29,12 @@ const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
 const IMAGE_EXT_SET = new Set(IMAGE_EXTS);
 
 const SUBDIR_CONCURRENCY = 16;
+
+// Globalne limity wspólne dla wszystkich poziomów rekurencji. Wcześniej limit
+// dotyczył tylko jednego katalogu, więc 16 podkatalogów × 50 plików na każdym
+// poziomie mogło otworzyć setki deskryptorów i uruchomić dziesiątki ffprobe.
+const dirReadLimit = createLimiter(SUBDIR_CONCURRENCY);
+const fileTaskLimit = createLimiter(16);
 
 async function getAudioMetadata(
   filePath: string,
@@ -269,7 +276,7 @@ export async function scanDir(
   }
 
   try {
-    const entries = await readdir(dirPath, { withFileTypes: true });
+    const entries = await dirReadLimit(() => readdir(dirPath, { withFileTypes: true }));
     const subDirTasks: Array<
       () => Promise<{
         files: MediaFile[];
@@ -348,7 +355,7 @@ export async function scanDir(
           chunk.push(videoTasks[vi++]);
         }
       }
-      const results = await Promise.all(chunk.map((fn) => fn()));
+      const results = await Promise.all(chunk.map((fn) => fileTaskLimit(fn)));
       fileResults.push(...results);
     }
 

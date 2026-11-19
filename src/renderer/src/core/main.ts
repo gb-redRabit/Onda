@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia';
+import { computed, watch } from 'vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import { usePlayerStore } from '@renderer/stores/player';
 import { useAudioPlayer } from '@renderer/composables/useAudioPlayer';
@@ -52,8 +53,11 @@ async function boot(): Promise<void> {
 
   let revision = 0;
   let lastError: string | null = null;
-  let lastStructuralKey = '';
+  let lastTickKey = '';
+  let structureDirty = true;
   let vizTimer: ReturnType<typeof setInterval> | null = null;
+  let vizRaw: Uint8Array<ArrayBuffer> | null = null;
+  const vizBins: number[] = new Array<number>(256).fill(0);
 
   function setVizActive(active: boolean): void {
     if (active && !vizTimer) {
@@ -61,19 +65,22 @@ async function boot(): Promise<void> {
         if (!audio.isPlaying.value) return;
         const analyser = audio.getAnalyserNode();
         if (!analyser) return;
-        const raw = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(raw);
         const count = 256;
-        const step = Math.max(1, Math.floor(raw.length / count));
-        const bins: number[] = new Array<number>(count).fill(0);
+        if (!vizRaw || vizRaw.length !== analyser.frequencyBinCount) {
+          vizRaw = new Uint8Array(analyser.frequencyBinCount);
+        }
+        analyser.getByteFrequencyData(vizRaw);
+        const step = Math.max(1, Math.floor(vizRaw.length / count));
         for (let i = 0; i < count; i += 1) {
           let sum = 0;
           const start = i * step;
-          const end = Math.min(start + step, raw.length);
-          for (let j = start; j < end; j += 1) sum += raw[j];
-          bins[i] = Math.round(sum / Math.max(1, end - start));
+          const end = Math.min(start + step, vizRaw.length);
+          for (let j = start; j < end; j += 1) sum += vizRaw[j];
+          vizBins[i] = Math.round(sum / Math.max(1, end - start));
         }
-        api.send('core:viz', bins);
+        // Reużycie buforów: wcześniej 30 razy/s powstawały nowa tablica i 256
+        // elementów tylko po to, by IPC skopiowało je i wyrzuciło.
+        api.send('core:viz', vizBins);
       }, 33);
     } else if (!active && vizTimer) {
       clearInterval(vizTimer);
@@ -127,18 +134,42 @@ async function boot(): Promise<void> {
   }
 
   function sendTick(): void {
-    api.send('core:tick', tick());
+    const next = tick();
+    // Tick leci 4×/s; w bezczynności (pauza) wszystkie pola są identyczne.
+    // Odrzucamy duplikaty, żeby nie budzić shella i nie serializować IPC bez powodu.
+    const key = [
+      next.currentTime,
+      next.duration,
+      next.buffered,
+      next.isPlaying ? 1 : 0,
+      next.enginePlaying ? 1 : 0,
+      next.isLoading ? 1 : 0,
+      next.error ?? ''
+    ].join('|');
+    if (key === lastTickKey) return;
+    lastTickKey = key;
+    api.send('core:tick', next);
   }
 
   function pushState(): void {
-    const key = structuralKey();
-    if (key !== lastStructuralKey) {
-      lastStructuralKey = key;
+    // Zmianę struktury wykrywa watch poniżej (raz na realną zmianę), zamiast
+    // mapować całą kolejkę i historię 4×/s w pętli.
+    if (structureDirty) {
+      structureDirty = false;
       sendFull();
-    } else {
-      sendTick();
+      return;
     }
+    sendTick();
   }
+
+  const structureSignature = computed(() => structuralKey());
+  watch(
+    structureSignature,
+    () => {
+      structureDirty = true;
+    },
+    { flush: 'sync' }
+  );
 
   function handleCommand(raw: unknown): void {
     if (!raw || typeof raw !== 'object') return;
@@ -235,12 +266,11 @@ async function boot(): Promise<void> {
         break;
     }
     // Natychmiast po komendzie wyślij stan — nie czekaj do ticku.
-    lastStructuralKey = structuralKey();
+    structureDirty = false;
     sendFull();
   }
 
   setInterval(pushState, TICK_INTERVAL_MS);
-  lastStructuralKey = structuralKey();
   sendFull();
 
   api.on('core:command', (raw) => {

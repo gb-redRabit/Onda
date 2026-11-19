@@ -23,6 +23,7 @@ const RATE_LIMITED_CHANNELS = new Set<string>([
   // instalacje zależności pobierają i uruchamiają narzędzia — przejęty renderer
   // nie może zalewać nimi systemu.
   'media:transcodeAudio',
+  'media:getWaveform',
   'media:transcodeAudioChunk',
   'media:transcodeVideo',
   'tools:convert',
