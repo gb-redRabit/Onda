@@ -10,6 +10,7 @@ import { getDrives, getDriveUsage, getFileItem } from './fs-utils';
 import { visibleEntries } from './fs-visible';
 import { getFileProperties } from './fs-properties';
 import { isSafeAbsolutePath } from '../../utils/validate';
+import { isProtectedAppDataPath } from '../../utils/app-data';
 import { readTextFileWithinBounds, TEXT_EXTS, TEXT_MAX_BYTES } from '../../utils/read-text-file';
 import { isProtectedPath, isProtectedDestructivePath, parentOf } from '../../path-policy';
 import { getStore } from '../cover/cover-cache';
@@ -72,10 +73,12 @@ function destructiveRoots(): string[] {
  * samego linku nadal jest bezpieczne (link rozwiązuje się do celu).
  */
 async function isBlockedDestructivePath(filePath: string): Promise<boolean> {
+  if (isProtectedAppDataPath(filePath)) return true;
   const roots = destructiveRoots();
   if (isProtectedDestructivePath(filePath, process.platform, roots)) return true;
   try {
     const real = await realpath(filePath);
+    if (isProtectedAppDataPath(real)) return true;
     if (real !== filePath && isProtectedDestructivePath(real, process.platform, roots)) {
       return true;
     }
@@ -83,6 +86,12 @@ async function isBlockedDestructivePath(filePath: string): Promise<boolean> {
     // ścieżka nie istnieje / brak dostępu — sam handler zgłosi błąd operacji
   }
   return false;
+}
+
+/** True, gdy którykolwiek argument dotyka katalogu danych aplikacji. */
+function touchesAppData(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some((entry) => isProtectedAppDataPath(entry));
+  return isProtectedAppDataPath(value);
 }
 
 export function registerFsHandlers(): void {
@@ -176,7 +185,7 @@ export function registerFsHandlers(): void {
     // `recursive: true` tworzy każdy brakujący segment, więc samo `/etc/x`
     // odtwarza ścieżkę systemową. Odrzucamy, gdy dowolny *istniejący* przodek jest
     // chroniony, nie tylko liść.
-    if (await touchesProtectedAncestor(dirPath)) {
+    if (isProtectedAppDataPath(dirPath) || (await touchesProtectedAncestor(dirPath))) {
       logger.warn('fs', `mkdir rejected under protected path: ${dirPath}`);
       return false;
     }
@@ -226,10 +235,18 @@ export function registerFsHandlers(): void {
   });
 
   ipcMain.handle('fs:move', async (_event, paths: unknown, destination: unknown) => {
+    if (touchesAppData(paths) || touchesAppData(destination)) {
+      logger.warn('fs', 'move rejected app data target');
+      return;
+    }
     await moveItems(paths, destination, destructiveRoots());
   });
 
   ipcMain.handle('fs:copy', async (_event, paths: unknown, destination: unknown) => {
+    if (touchesAppData(paths) || touchesAppData(destination)) {
+      logger.warn('fs', 'copy rejected app data target');
+      return;
+    }
     await copyItems(paths, destination, destructiveRoots());
   });
 
@@ -269,6 +286,7 @@ export function registerFsHandlers(): void {
   // rozszerzeń i rozmiaru są w jednym miejscu współdzielonym z czytnikiem napisów, więc żaden
   // kanał nie może zostać rozszerzony w ogólną prymitywę odczytu plików.
   ipcMain.handle('fs:readTextFile', async (_event, filePath: string): Promise<string | null> => {
+    if (isProtectedAppDataPath(filePath)) return null;
     const result = await readTextFileWithinBounds(filePath, TEXT_EXTS, TEXT_MAX_BYTES, 'fs');
     return result.ok ? result.text : null;
   });

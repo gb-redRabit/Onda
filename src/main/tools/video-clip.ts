@@ -5,6 +5,7 @@ import type { WebContents } from 'electron';
 import { logger } from '../../shared/logger';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { isProtectedAppDataPath } from '../utils/app-data';
 import type {
   MediaConvertResult,
   VideoClipAudio,
@@ -44,7 +45,12 @@ export { clipThumbnails } from './video-clip-thumbnails';
 
 function resolveOutputDir(outputDir: string | undefined): string | undefined | null {
   const trimmed = outputDir?.trim() || undefined;
-  if (trimmed && (!isSafeAbsolutePath(trimmed) || isProtectedPath(trimmed))) return null;
+  if (
+    trimmed &&
+    (!isSafeAbsolutePath(trimmed) || isProtectedPath(trimmed) || isProtectedAppDataPath(trimmed))
+  ) {
+    return null;
+  }
   return trimmed;
 }
 

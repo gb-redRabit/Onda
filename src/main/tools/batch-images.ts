@@ -4,6 +4,7 @@ import { mkdir, readFile, stat, writeFile } from 'fs/promises';
 import type { WebContents } from 'electron';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { isProtectedAppDataPath } from '../utils/app-data';
 import { replaceFileAtomic, safeRm } from '../utils/fs-atomic';
 import { logger } from '../../shared/logger';
 import {
@@ -123,7 +124,12 @@ export async function batchConvertImages(
     return { success: false, results: [], error: 'Invalid format' };
   }
   const outputDir = typeof req.outputDir === 'string' ? req.outputDir.trim() : '';
-  if (outputDir && (!isSafeAbsolutePath(outputDir) || isProtectedPath(outputDir))) {
+  if (
+    outputDir &&
+    (!isSafeAbsolutePath(outputDir) ||
+      isProtectedPath(outputDir) ||
+      isProtectedAppDataPath(outputDir))
+  ) {
     return { success: false, results: [], error: 'Invalid output folder' };
   }
 

@@ -8,7 +8,13 @@ import type { IpcDownloadJobInput } from '../../../shared/types/ipc';
 vi.mock('../download-runner', () => ({ pump: vi.fn(async () => {}) }));
 vi.mock('electron', () => ({
   app: {
-    getPath: (name: string) => (name === 'downloads' ? 'C:/Users/test/Downloads' : 'C:/Users/test')
+    getPath: (name: string) => {
+      if (name === 'downloads') return 'C:/Users/test/Downloads';
+      if (name === 'userData') return 'C:/Users/test/AppData/Roaming/Onda';
+      if (name === 'appData') return 'C:/Users/test/AppData/Roaming';
+      if (name === 'home') return 'C:/Users/test';
+      return `C:/Users/test/${name}`;
+    }
   }
 }));
 vi.mock('../download-queue-store', () => ({

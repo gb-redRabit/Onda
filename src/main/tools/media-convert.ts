@@ -6,6 +6,7 @@ import { resolveBin } from '../binaries';
 import { runCommand } from '../utils/exec';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { isProtectedAppDataPath } from '../utils/app-data';
 import { cancelAllFfmpegJobs, cancelFfmpegJob, runFfmpegJob } from './ffmpeg-job';
 import type {
   MediaConvertRequest,
@@ -210,7 +211,12 @@ export async function convertMedia(
   }
 
   const outputDir = request.outputDir?.trim() || undefined;
-  if (outputDir && (!isSafeAbsolutePath(outputDir) || isProtectedPath(outputDir))) {
+  if (
+    outputDir &&
+    (!isSafeAbsolutePath(outputDir) ||
+      isProtectedPath(outputDir) ||
+      isProtectedAppDataPath(outputDir))
+  ) {
     return { success: false, error: 'Invalid output folder' };
   }
 

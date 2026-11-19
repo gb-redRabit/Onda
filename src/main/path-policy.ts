@@ -158,6 +158,25 @@ export function isProtectedPath(
 }
 
 /**
+ * True, gdy `target` leży w `root` lub jest mu równy. Separatory są normalizowane,
+ * a na Windows porównanie ignoruje wielkość liter. Wymagane są dwie ścieżki
+ * absolutne w tej samej gramatyce.
+ */
+export function isWithinRoot(
+  target: unknown,
+  root: unknown,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (typeof target !== 'string' || typeof root !== 'string' || !target || !root) return false;
+  if (!isAbsoluteFor(target, platform) || !isAbsoluteFor(root, platform)) return false;
+  const normalized = normalizeFor(target, platform).replace(/[\\/]+$/, '');
+  const normalizedRoot = normalizeFor(root, platform).replace(/[\\/]+$/, '');
+  if (!normalizedRoot) return false;
+  const separator = platform === 'win32' ? '\\' : '/';
+  return normalized === normalizedRoot || normalized.startsWith(`${normalizedRoot}${separator}`);
+}
+
+/**
  * Sam katalog domowy użytkownika (`C:\Users\<user>`, `/home/<user>`,
  * `/Users/<user>`), bez jego zawartości. `protectedPathReason` blokuje tylko
  * korzenie systemowe, więc mutacje fs muszą sprawdzić ten przypadek osobno.

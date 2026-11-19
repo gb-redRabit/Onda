@@ -4,14 +4,16 @@ const h = vi.hoisted(() => ({
   getPath: vi.fn(),
   resolveFolderTokens: vi.fn(),
   isSafeAbsolutePath: vi.fn(),
-  isProtectedDestructivePath: vi.fn()
+  isProtectedDestructivePath: vi.fn(),
+  isWithinRoot: vi.fn()
 }));
 
 vi.mock('electron', () => ({ app: { getPath: h.getPath } }));
 vi.mock('../cover-spec', () => ({ resolveFolderTokens: h.resolveFolderTokens }));
 vi.mock('../../utils/validate', () => ({ isSafeAbsolutePath: h.isSafeAbsolutePath }));
 vi.mock('../../path-policy', () => ({
-  isProtectedDestructivePath: h.isProtectedDestructivePath
+  isProtectedDestructivePath: h.isProtectedDestructivePath,
+  isWithinRoot: h.isWithinRoot
 }));
 
 import {
@@ -44,6 +46,7 @@ beforeEach(() => {
   h.resolveFolderTokens.mockReset().mockImplementation((value: string) => value);
   h.isSafeAbsolutePath.mockReset().mockReturnValue(true);
   h.isProtectedDestructivePath.mockReset().mockReturnValue(false);
+  h.isWithinRoot.mockReset().mockReturnValue(false);
 });
 
 describe('mapFilenameTemplate', () => {
@@ -140,6 +143,13 @@ describe('isAllowedDownloadDir', () => {
       'D:/appData',
       'D:/userData'
     ]);
+  });
+
+  it('rejects any directory inside userData', () => {
+    h.isWithinRoot.mockReturnValueOnce(true);
+
+    expect(isAllowedDownloadDir('D:/userData/bin')).toBe(false);
+    expect(h.isWithinRoot).toHaveBeenCalledWith('D:/userData/bin', 'D:/userData');
   });
 
   it('rejects when the policy check throws', () => {

@@ -6,7 +6,7 @@ import { AUDIO_EXTS } from '../../shared/constants';
 import { resolveFolderTokens } from './cover-spec';
 import { sanitizeFilenameSpaced } from '../../shared/text';
 import { isSafeAbsolutePath } from '../utils/validate';
-import { isProtectedDestructivePath } from '../path-policy';
+import { isProtectedDestructivePath, isWithinRoot } from '../path-policy';
 
 // Czyste helpery wyodrębnione z `download-manager.ts` (plan 2.8) — bez stanu kolejki.
 
@@ -68,6 +68,9 @@ export function resolveOutputDir(job: Job): string {
 export function isAllowedDownloadDir(dir: string): boolean {
   if (!isSafeAbsolutePath(dir)) return false;
   try {
+    // Katalog danych aplikacji zawiera binarki i kod pluginów — renderer nie może
+    // wskazać go jako celu pobierania, nawet jeśli leży poza listą korzeni.
+    if (isWithinRoot(dir, app.getPath('userData'))) return false;
     return !isProtectedDestructivePath(dir, process.platform, [
       app.getPath('home'),
       app.getPath('appData'),

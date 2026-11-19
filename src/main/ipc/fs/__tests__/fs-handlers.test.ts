@@ -24,6 +24,7 @@ const state = vi.hoisted(() => ({
   readTextFile: vi.fn(),
   isProtectedPath: vi.fn(),
   isProtectedDestructivePath: vi.fn(),
+  isWithinRoot: vi.fn(),
   parentOf: vi.fn(),
   getStore: vi.fn(),
   findDuplicates: vi.fn(),
@@ -79,6 +80,7 @@ vi.mock('../../../utils/read-text-file', () => ({
 vi.mock('../../../path-policy', () => ({
   isProtectedPath: state.isProtectedPath,
   isProtectedDestructivePath: state.isProtectedDestructivePath,
+  isWithinRoot: state.isWithinRoot,
   parentOf: state.parentOf
 }));
 vi.mock('../../cover/cover-cache', () => ({ getStore: state.getStore }));
@@ -129,6 +131,7 @@ beforeEach(() => {
   state.isSafeAbsolutePath.mockReturnValue(true);
   state.isProtectedPath.mockReturnValue(false);
   state.isProtectedDestructivePath.mockReturnValue(false);
+  state.isWithinRoot.mockReset().mockReturnValue(false);
   state.parentOf.mockReturnValue('C:/parent');
   state.readdir.mockResolvedValue([]);
   state.stat.mockResolvedValue({ isFile: () => true });
@@ -275,6 +278,15 @@ describe('fs:delete', () => {
     const h = await load();
     expect(await h['fs:delete']({}, 'C:/file')).toBe(true);
     expect(state.trashItem).toHaveBeenCalledWith('C:/file');
+  });
+
+  it('rejects paths inside the app data directory', async () => {
+    const h = await load();
+    state.isWithinRoot.mockReturnValueOnce(true);
+
+    expect(await h['fs:delete']({}, 'C:/userData/bin/ffmpeg.exe')).toBe(false);
+    expect(state.trashItem).not.toHaveBeenCalled();
+    expect(state.rm).not.toHaveBeenCalled();
   });
 
   it('permanently deletes files, directories and symlinks when configured', async () => {

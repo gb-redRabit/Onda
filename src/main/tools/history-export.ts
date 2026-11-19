@@ -9,6 +9,7 @@ import type {
 import { loadLibraryScanned } from '../ipc/library/library-store';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { isProtectedAppDataPath } from '../utils/app-data';
 import { logger } from '../../shared/logger';
 import { buildHistoryRows, serializeHistory } from './history-format';
 
@@ -54,7 +55,9 @@ export async function exportHistory(
       if (!isSafeAbsolutePath(outputPath)) {
         return { success: false, error: 'Invalid output path' };
       }
-      if (isProtectedPath(outputPath)) return { success: false, error: 'Protected path' };
+      if (isProtectedPath(outputPath) || isProtectedAppDataPath(outputPath)) {
+        return { success: false, error: 'Protected path' };
+      }
     } else {
       const win = BrowserWindow.fromWebContents(event.sender);
       const result = win

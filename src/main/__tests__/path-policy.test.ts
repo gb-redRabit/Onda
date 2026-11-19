@@ -9,6 +9,7 @@ import {
   isSensitivePath,
   isSystemTempPath,
   isUserProfileRoot,
+  isWithinRoot,
   parentOf,
   protectedPathReason
 } from '../path-policy';
@@ -208,6 +209,33 @@ describe('parentOf', () => {
   it('returns null when there is no usable parent', () => {
     expect(parentOf('file.mp3')).toBeNull();
     expect(parentOf('/file.mp3')).toBeNull();
+  });
+});
+
+describe('isWithinRoot', () => {
+  it('matches the root itself and any descendant', () => {
+    expect(isWithinRoot('C:\\Users\\u\\Onda\\bin\\ffmpeg.exe', 'C:\\Users\\u\\Onda', 'win32')).toBe(
+      true
+    );
+    expect(isWithinRoot('C:\\Users\\u\\Onda', 'C:\\Users\\u\\Onda', 'win32')).toBe(true);
+    expect(isWithinRoot('C:\\Users\\u\\Onda\\bin', 'C:\\Users\\u\\Onda\\', 'win32')).toBe(true);
+    expect(isWithinRoot('/home/u/.config/onda/plugins', '/home/u/.config/onda', 'linux')).toBe(
+      true
+    );
+  });
+
+  it('does not match siblings that share a prefix', () => {
+    expect(isWithinRoot('C:\\Users\\u\\Onda2\\bin', 'C:\\Users\\u\\Onda', 'win32')).toBe(false);
+    expect(isWithinRoot('/home/u/onda2', '/home/u/onda', 'linux')).toBe(false);
+  });
+
+  it('ignores case on Windows and requires absolute paths', () => {
+    expect(isWithinRoot('c:\\users\\u\\onda\\bin', 'C:\\Users\\u\\Onda', 'win32')).toBe(true);
+    expect(isWithinRoot('relative/bin', 'C:\\Users\\u\\Onda', 'win32')).toBe(false);
+    expect(isWithinRoot('/home/u/onda/bin', 'C:\\Users\\u\\Onda', 'win32')).toBe(false);
+    expect(isWithinRoot(null, '/home/u', 'linux')).toBe(false);
+    expect(isWithinRoot('/home/u', null, 'linux')).toBe(false);
+    expect(isWithinRoot('', '', 'linux')).toBe(false);
   });
 });
 

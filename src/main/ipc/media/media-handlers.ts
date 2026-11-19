@@ -17,6 +17,7 @@ import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
 import { isReadableMediaPath } from '../../media/read-access';
+import { isProtectedAppDataPath } from '../../utils/app-data';
 import { resolveBin } from '../../binaries';
 import { getThumbnail, batchThumbnails } from './media-thumbnails';
 import { getWaveform } from './waveform';
@@ -37,7 +38,11 @@ import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
 // dotyczy przyznawania dostępu mediów (dane logowania), a nie prawa użytkownika do
 // zarządzania własnymi plikami (np. `AppData\Local\Temp`).
 function isProtectedTarget(filePath: string): boolean {
-  return isProtectedPath(filePath) || isProtectedPath(dirname(filePath));
+  return (
+    isProtectedAppDataPath(filePath) ||
+    isProtectedPath(filePath) ||
+    isProtectedPath(dirname(filePath))
+  );
 }
 
 // Tylko tekstowe ramki ID3. `node-id3` traktuje string `image` jako ścieżkę do

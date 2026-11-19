@@ -8,6 +8,7 @@ import { buildJobSource } from './download-source';
 import { resolveProvider } from '../../shared/provider';
 import { isSafeAbsolutePath } from '../utils/validate';
 import { isProtectedPath } from '../path-policy';
+import { isProtectedAppDataPath } from '../utils/app-data';
 import { privateNetworkAllowedForTarget } from '../ipc/network-target';
 import {
   jobs,
@@ -119,7 +120,8 @@ export async function addDownloadJobs(inputs: IpcDownloadJobInput[]): Promise<Ip
     const requestedOutputDir =
       typeof input.outputDir === 'string' &&
       isSafeAbsolutePath(input.outputDir) &&
-      !isProtectedPath(input.outputDir)
+      !isProtectedPath(input.outputDir) &&
+      !isProtectedAppDataPath(input.outputDir)
         ? input.outputDir
         : '';
     // Sprawdzamy także wynik rozwinięcia `{channel}`/`{playlist}` — szablon

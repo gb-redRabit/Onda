@@ -3,6 +3,7 @@ import { mkdir, readFile, stat, writeFile } from 'fs/promises';
 import { loadSharp } from '../utils/lazy-sharp';
 import { isProtectedPath } from '../path-policy';
 import { isSafeAbsolutePath } from '../utils/validate';
+import { isProtectedAppDataPath } from '../utils/app-data';
 import { replaceFileAtomic, safeRm } from '../utils/fs-atomic';
 import { logger } from '../../shared/logger';
 import {
@@ -132,7 +133,9 @@ export async function saveEditedImage(request: unknown): Promise<ImageStudioSave
   }
   const req = request as Partial<ImageStudioSaveRequest>;
   if (!isSafeAbsolutePath(req.outputPath)) return { success: false, error: 'Invalid output path' };
-  if (isProtectedPath(req.outputPath)) return { success: false, error: 'Protected path' };
+  if (isProtectedPath(req.outputPath) || isProtectedAppDataPath(req.outputPath)) {
+    return { success: false, error: 'Protected path' };
+  }
   if (!isOutputFormat(req.format)) return { success: false, error: 'Invalid format' };
   let buffer: Buffer;
   try {
