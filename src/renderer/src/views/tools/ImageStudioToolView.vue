@@ -12,7 +12,12 @@ import ImageStudioCoverPanel from '@renderer/components/tools/image/ImageStudioC
 import ImageStudioCropPanel from '@renderer/components/tools/image/ImageStudioCropPanel.vue';
 import ImageStudioOutputPanel from '@renderer/components/tools/image/ImageStudioOutputPanel.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
-import { drawAnnotations, drawCropOverlay, sharpenCanvas } from '@renderer/utils/imageStudioCanvas';
+import {
+  drawAnnotations,
+  drawCropOverlay,
+  renderBaseCanvas,
+  renderExportCanvas as renderExportCanvasIn
+} from '@renderer/utils/imageStudioCanvas';
 import { getDroppedFilePaths } from '@renderer/utils/fileDrag';
 import { filesForTool, toolContextPaths } from '@shared/tool-input';
 import {
@@ -251,38 +256,18 @@ function baseCacheKey(maxDimension?: number): string {
 function buildBaseCanvas(maxDimension?: number): HTMLCanvasElement {
   const cacheKey = maxDimension ? baseCacheKey(maxDimension) : '';
   if (maxDimension && baseCache?.key === cacheKey) return baseCache.canvas;
-  const img = image.value as HTMLImageElement;
-  const width = orientedW.value;
-  const height = orientedH.value;
-  const scale = maxDimension ? Math.min(1, maxDimension / Math.max(width, height)) : 1;
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(width * scale));
-  canvas.height = Math.max(1, Math.round(height * scale));
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return canvas;
-  ctx.save();
-  ctx.scale(scale, scale);
-  ctx.filter = `brightness(${adjust.brightness}%) contrast(${adjust.contrast}%) saturate(${adjust.saturation}%)`;
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate((rotation.value * Math.PI) / 180);
-  ctx.scale(flipH.value ? -1 : 1, flipV.value ? -1 : 1);
-  ctx.translate(-sourceWidth.value / 2, -sourceHeight.value / 2);
-  ctx.drawImage(img, 0, 0, sourceWidth.value, sourceHeight.value);
-  ctx.restore();
-
-  if (adjust.temperature !== 0) {
-    const strength = clampTag(Math.abs(adjust.temperature) / 100, 0, 1) * 0.6;
-    ctx.save();
-    ctx.globalCompositeOperation = 'soft-light';
-    ctx.fillStyle =
-      adjust.temperature > 0
-        ? `rgba(255, 170, 80, ${strength})`
-        : `rgba(80, 160, 255, ${strength})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-  }
-
-  if (adjust.sharpen > 0) sharpenCanvas(canvas, adjust.sharpen / 100);
+  const canvas = renderBaseCanvas({
+    image: image.value as HTMLImageElement,
+    sourceWidth: sourceWidth.value,
+    sourceHeight: sourceHeight.value,
+    orientedWidth: orientedW.value,
+    orientedHeight: orientedH.value,
+    rotation: rotation.value,
+    flipH: flipH.value,
+    flipV: flipV.value,
+    adjust,
+    maxDimension
+  });
   if (maxDimension) baseCache = { key: cacheKey, canvas };
   return canvas;
 }
@@ -566,43 +551,15 @@ function clearAnnotations(): void {
 
 function renderExportCanvas(): HTMLCanvasElement | null {
   if (!image.value || !crop.w || !crop.h || !outputWidth.value) return null;
-  const outW = clampTag(Math.round(outputWidth.value), 1, MAX_OUTPUT_DIMENSION);
-  const outH = Math.max(1, Math.round((outW * crop.h) / crop.w));
-  const canvas = document.createElement('canvas');
-  canvas.width = outW;
-  canvas.height = outH;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-  const base = buildBaseCanvas();
-  const baseScale = base.width / orientedW.value;
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(
-    base,
-    crop.x * baseScale,
-    crop.y * baseScale,
-    crop.w * baseScale,
-    crop.h * baseScale,
-    0,
-    0,
-    outW,
-    outH
-  );
-  const exportScale = outW / crop.w;
-  drawAnnotations(
-    ctx,
-    annotations.value,
-    selectedId.value,
-    base,
-    baseScale,
-    (annotation) => ({
-      x: (annotation.x1 - crop.x) * exportScale,
-      y: (annotation.y1 - crop.y) * exportScale,
-      w: (annotation.x2 - annotation.x1) * exportScale,
-      h: (annotation.y2 - annotation.y1) * exportScale
-    }),
-    exportScale
-  );
-  return canvas;
+  return renderExportCanvasIn({
+    base: () => buildBaseCanvas(),
+    orientedWidth: orientedW.value,
+    crop,
+    outputWidth: outputWidth.value,
+    annotations: annotations.value,
+    selectedId: selectedId.value,
+    maxDimension: MAX_OUTPUT_DIMENSION
+  });
 }
 
 async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<number[]> {

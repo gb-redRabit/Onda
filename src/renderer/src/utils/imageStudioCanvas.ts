@@ -1,5 +1,6 @@
 import {
   annotationBounds,
+  clamp,
   type Annotation,
   type CropRect,
   type TargetRect
@@ -36,6 +37,130 @@ export function sharpenCanvas(canvas: HTMLCanvasElement, amount: number): void {
     }
   }
   ctx.putImageData(data, 0, 0);
+}
+
+/**
+ * Rysuje bazowy obraz (obrót, odbicie, korekty) na nowy canvas. Opcjonalny
+ * `maxDimension` skaluje wynik w dół — podgląd nie potrzebuje pełnej rozdzielczości.
+ */
+export function renderBaseCanvas(input: {
+  image: CanvasImageSource;
+  sourceWidth: number;
+  sourceHeight: number;
+  orientedWidth: number;
+  orientedHeight: number;
+  rotation: number;
+  flipH: boolean;
+  flipV: boolean;
+  adjust: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    temperature: number;
+    sharpen: number;
+  };
+  maxDimension?: number;
+}): HTMLCanvasElement {
+  const {
+    image,
+    sourceWidth,
+    sourceHeight,
+    orientedWidth,
+    orientedHeight,
+    rotation,
+    flipH,
+    flipV,
+    adjust,
+    maxDimension
+  } = input;
+  const scale = maxDimension
+    ? Math.min(1, maxDimension / Math.max(orientedWidth, orientedHeight))
+    : 1;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(orientedWidth * scale));
+  canvas.height = Math.max(1, Math.round(orientedHeight * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
+  ctx.save();
+  ctx.scale(scale, scale);
+  ctx.filter = `brightness(${adjust.brightness}%) contrast(${adjust.contrast}%) saturate(${adjust.saturation}%)`;
+  ctx.translate(orientedWidth / 2, orientedHeight / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+  ctx.translate(-sourceWidth / 2, -sourceHeight / 2);
+  ctx.drawImage(image, 0, 0, sourceWidth, sourceHeight);
+  ctx.restore();
+
+  if (adjust.temperature !== 0) {
+    const strength = clamp(Math.abs(adjust.temperature) / 100, 0, 1) * 0.6;
+    ctx.save();
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle =
+      adjust.temperature > 0
+        ? `rgba(255, 170, 80, ${strength})`
+        : `rgba(80, 160, 255, ${strength})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+
+  if (adjust.sharpen > 0) sharpenCanvas(canvas, adjust.sharpen / 100);
+  return canvas;
+}
+
+/**
+ * Rysuje finalny obraz do eksportu: kadr `crop` z bazowego canvasu + adnotacje
+ * przeskalowane do rozmiaru wyjścia. `base` jest wołany leniwie, dopiero gdy
+ * istnieje kontekst 2D — bez niego nie ma sensu liczyć całego obrazu bazowego.
+ * Zwraca `null`, gdy kontekstu brak.
+ */
+export function renderExportCanvas(input: {
+  base: () => HTMLCanvasElement;
+  orientedWidth: number;
+  crop: CropRect;
+  outputWidth: number;
+  annotations: Annotation[];
+  selectedId: string | null;
+  maxDimension: number;
+}): HTMLCanvasElement | null {
+  const { orientedWidth, crop, outputWidth, annotations, selectedId, maxDimension } = input;
+  if (crop.w <= 0 || crop.h <= 0) return null;
+  const outW = clamp(Math.round(outputWidth), 1, maxDimension);
+  const outH = Math.max(1, Math.round((outW * crop.h) / crop.w));
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  const base = input.base();
+  const baseScale = base.width / orientedWidth;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(
+    base,
+    crop.x * baseScale,
+    crop.y * baseScale,
+    crop.w * baseScale,
+    crop.h * baseScale,
+    0,
+    0,
+    outW,
+    outH
+  );
+  const exportScale = outW / crop.w;
+  drawAnnotations(
+    ctx,
+    annotations,
+    selectedId,
+    base,
+    baseScale,
+    (annotation) => ({
+      x: (annotation.x1 - crop.x) * exportScale,
+      y: (annotation.y1 - crop.y) * exportScale,
+      w: (annotation.x2 - annotation.x1) * exportScale,
+      h: (annotation.y2 - annotation.y1) * exportScale
+    }),
+    exportScale
+  );
+  return canvas;
 }
 
 function drawEffectRegion(
