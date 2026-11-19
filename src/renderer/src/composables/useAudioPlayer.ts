@@ -25,10 +25,21 @@ const error = ref<string | null>(null);
 // Prawda między momentem zlecenia ładowania a momentem, gdy element staje się odtwarzalny
 // (używane dla wskaźnika "buforowania"; strumienie również się na tym opierają).
 const isLoading = ref(false);
+let resumeTimer: ReturnType<typeof setTimeout> | null = null;
 
 function resumeAndPlay() {
   audioEngine.resume();
-  setTimeout(() => audioEngine.play(), 50);
+  if (resumeTimer) clearTimeout(resumeTimer);
+  resumeTimer = setTimeout(() => {
+    resumeTimer = null;
+    audioEngine.play();
+  }, 50);
+}
+
+function cancelPendingResume(): void {
+  if (!resumeTimer) return;
+  clearTimeout(resumeTimer);
+  resumeTimer = null;
 }
 
 let moduleInitialized = false;
@@ -360,6 +371,7 @@ function ensureModule() {
         if (playing) {
           resumeAndPlay();
         } else {
+          cancelPendingResume();
           audioEngine.pause();
         }
       }

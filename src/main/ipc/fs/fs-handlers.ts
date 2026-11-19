@@ -129,16 +129,22 @@ export function registerFsHandlers(): void {
       // sprawdzenie musi być przed walidacją, inaczej widok dysków po cichu wraca
       // pusty zamiast je wylistować.
       if (dirPath === '' || dirPath === undefined || dirPath === null || dirPath === '/') {
-        event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+        if (event.sender.isDestroyed?.() !== true) {
+          event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+        }
         return;
       }
       if (!isSafeAbsolutePath(dirPath)) {
         logger.warn('fs', 'readdir rejected invalid path');
-        event.sender.send('fs:readdir:batch', { done: true, items: [] });
+        if (event.sender.isDestroyed?.() !== true) {
+          event.sender.send('fs:readdir:batch', { done: true, items: [] });
+        }
         return;
       }
       if (/^[A-Z]:$/i.test(dirPath)) {
-        event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+        if (event.sender.isDestroyed?.() !== true) {
+          event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
+        }
         return;
       }
       const resolvedPath = dirPath;
@@ -149,11 +155,13 @@ export function registerFsHandlers(): void {
           FS_OP_TIMEOUT_MS
         );
       } catch (err) {
-        event.sender.send('fs:readdir:batch', {
-          done: true,
-          items: [],
-          error: errMsg(err)
-        });
+        if (event.sender.isDestroyed?.() !== true) {
+          event.sender.send('fs:readdir:batch', {
+            done: true,
+            items: [],
+            error: errMsg(err)
+          });
+        }
         return;
       }
       const filtered = visibleEntries(entries, options?.showHidden === true);
@@ -171,9 +179,13 @@ export function registerFsHandlers(): void {
         for (const r of results) {
           if (r.status === 'fulfilled') items.push(r.value);
         }
-        event.sender.send('fs:readdir:batch', { done: false, items });
+        if (event.sender.isDestroyed?.() !== true) {
+          event.sender.send('fs:readdir:batch', { done: false, items });
+        }
       }
-      event.sender.send('fs:readdir:batch', { done: true, items: [] });
+      if (event.sender.isDestroyed?.() !== true) {
+        event.sender.send('fs:readdir:batch', { done: true, items: [] });
+      }
     }
   );
 

@@ -78,6 +78,23 @@ describe('embed creation', () => {
 
     expect(invoke).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps one webview when the source changes while preparation is pending', async () => {
+    let release!: () => void;
+    invoke.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        release = () => resolve();
+      }) as never
+    );
+
+    mountEmbed({ src: 'https://player.example/embed/a' });
+    await wrapper!.setProps({ src: 'https://player.example/embed/b' });
+    release();
+    await flushPromises();
+
+    expect(webviews()).toHaveLength(1);
+    expect(webviews()[0].getAttribute('src')).toBe('https://player.example/embed/b');
+  });
 });
 
 describe('source changes', () => {

@@ -11,11 +11,20 @@ const props = defineProps<{ src: string; title?: string }>();
 
 const host = ref<HTMLElement | null>(null);
 let el: WebviewEl | null = null;
-let prepared = false;
+let preparePromise: Promise<void> | null = null;
+
+function destroy(): void {
+  el?.remove();
+  el = null;
+  if (host.value) host.value.innerHTML = '';
+}
 
 function create(): void {
   const container = host.value;
   if (!container || !props.src) return;
+  // Zawsze jeden element: równoległe `setup()`/zmiana `src` nie mogą dołożyć
+  // drugiego <webview>, którego nikt już nie usunie.
+  destroy();
   const w = document.createElement('webview') as WebviewEl;
   w.setAttribute('src', props.src);
   w.setAttribute('partition', 'persist:onda-preview');
@@ -33,17 +42,18 @@ function create(): void {
   el = w;
 }
 
-async function setup(): Promise<void> {
-  // Skonfiguruj sesję podglądu (spoof/UA) i upewnij się, że bloker jest gotowy,
-  // ZANIM załadujemy player — inaczej pierwsze żądania idą bez filtrów.
-  if (!prepared) {
-    prepared = true;
-    try {
-      await window.api?.invoke('preview:prepare');
-    } catch {
-      // best-effort — osadzenie i tak się utworzy
-    }
+function prepare(): Promise<void> {
+  if (!preparePromise) {
+    preparePromise = Promise.resolve(window.api?.invoke('preview:prepare'))
+      .then(() => undefined)
+      .catch(() => undefined);
   }
+  return preparePromise;
+}
+
+async function setup(): Promise<void> {
+  // Sesja podglądu (spoof/UA, bloker) musi być gotowa przed pierwszym żądaniem.
+  await prepare();
   create();
 }
 
@@ -52,16 +62,15 @@ onMounted(() => void setup());
 watch(
   () => props.src,
   () => {
-    el?.remove();
-    el = null;
-    if (host.value) host.value.innerHTML = '';
-    create();
+    // `setup()` czeka na `prepare`; element powstaje dopiero po nim, więc zmiana
+    // `src` w trakcie przygotowania nie tworzy dwóch webviewów.
+    destroy();
+    void setup();
   }
 );
 
 onBeforeUnmount(() => {
-  el?.remove();
-  el = null;
+  destroy();
 });
 </script>
 

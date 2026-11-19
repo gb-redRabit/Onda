@@ -111,7 +111,7 @@ function fileItem(path: string): FileItem {
 }
 
 function sender() {
-  return { sender: { send: vi.fn() } };
+  return { sender: { send: vi.fn(), isDestroyed: () => false } };
 }
 
 beforeEach(() => {
@@ -181,6 +181,16 @@ describe('basic fs handlers', () => {
 });
 
 describe('fs:readdir', () => {
+  it('does not send batches to a destroyed renderer', async () => {
+    const h = await load();
+    state.getDrives.mockResolvedValue([fileItem('C:/')]);
+    const ev = { sender: { send: vi.fn(), isDestroyed: () => true } };
+
+    await h['fs:readdir'](ev, '');
+
+    expect(ev.sender.send).not.toHaveBeenCalled();
+  });
+
   it('lists drives for empty and drive paths', async () => {
     const h = await load();
     const ev = sender();

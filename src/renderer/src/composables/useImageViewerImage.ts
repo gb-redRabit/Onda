@@ -108,7 +108,11 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
       startHighRes();
     } else if (usingHighRes.value) {
       usingHighRes.value = false;
+      const epoch = currentLoadEpoch;
       loadDisplayImage(file, 1920).then((url) => {
+        // Spóźniony load po przełączeniu pliku nie może wyczyścić ani podmienić
+        // obrazu nowego pliku.
+        if (epoch !== currentLoadEpoch) return;
         displaySrc.value = url;
       });
     }
@@ -134,7 +138,9 @@ export function useImageViewerImage(deps: ImageViewerImageDeps) {
       usingHighRes.value = false;
       const file = deps.files.value[deps.currentIndex.value];
       if (file) {
+        const epoch = currentLoadEpoch;
         loadDisplayImage(file, 1920).then((url) => {
+          if (epoch !== currentLoadEpoch) return;
           displaySrc.value = url;
         });
       }

@@ -196,7 +196,9 @@ export function registerLibraryHandlers(): void {
           currentLibraryFolders,
           controller.signal,
           (current, total) => {
-            event.sender.send('library:scan:progress', { current, total });
+            if (event.sender.isDestroyed?.() !== true) {
+              event.sender.send('library:scan:progress', { current, total });
+            }
           },
           false,
           fastScan
