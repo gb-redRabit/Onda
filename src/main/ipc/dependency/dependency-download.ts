@@ -5,6 +5,7 @@ import { createWriteStream } from 'fs';
 import type { WebContents } from 'electron';
 import { getBinDir } from '../../binaries';
 import { hashFile } from '../../utils/hash';
+import { createPinnedLookup, resolveNetworkTarget } from '../../ipc/network-target';
 import { YTDLP_CHANNEL, type BinTool } from './dependency-utils';
 
 export interface InstallResult {
@@ -42,6 +43,12 @@ export function abortTool(tool: string): void {
   activeControllers.get(tool)?.abort();
 }
 
+/** Anuluje wszystkie pobrania instalatorów (używane przy zamykaniu aplikacji). */
+export function abortAllDependencies(): void {
+  for (const controller of activeControllers.values()) controller.abort();
+  activeControllers.clear();
+}
+
 const MAX_REDIRECTS = 5;
 const MAX_DOWNLOAD_BYTES = 512 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
@@ -56,7 +63,7 @@ export function downloadFile(
   return downloadFileInternal(url, dest, signal, onProgress, 0, maxBytes);
 }
 
-function downloadFileInternal(
+async function downloadFileInternal(
   url: string,
   dest: string,
   signal: AbortSignal,
@@ -64,33 +71,30 @@ function downloadFileInternal(
   redirectCount: number,
   maxBytes: number
 ): Promise<void> {
+  if (signal.aborted) throw new Error('cancelled');
+  if (redirectCount > MAX_REDIRECTS) throw new Error('too many redirects');
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('invalid URL');
+  }
+  if (parsed.protocol !== 'https:') throw new Error('only HTTPS downloads are allowed');
+  // Instalator i przekierowania nie mogą trafić w loopback, LAN ani endpoint metadanych.
+  const target = await resolveNetworkTarget(url, { allowPrivateNetwork: false });
+
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(new Error('cancelled'));
       return;
     }
-    if (redirectCount > MAX_REDIRECTS) {
-      reject(new Error('too many redirects'));
-      return;
-    }
-    let parsed: URL;
-    try {
-      parsed = new URL(url);
-    } catch {
-      reject(new Error('invalid URL'));
-      return;
-    }
-    if (parsed.protocol !== 'https:') {
-      reject(new Error('only HTTPS downloads are allowed'));
-      return;
-    }
-
     const tempDest = `${dest}.part`;
     let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
     const fail = (err: Error): void => {
       if (settled) return;
       settled = true;
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       signal.removeEventListener('abort', onAbort);
       void unlink(tempDest).catch(() => {
         /* best-effort */
@@ -99,62 +103,80 @@ function downloadFileInternal(
     };
     const onAbort = (): void => fail(new Error('cancelled'));
 
-    const req = https.get(url, { headers: { 'User-Agent': 'Onda/1.0' } }, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        res.resume();
-        const next = new URL(res.headers.location, url).toString();
-        clearTimeout(timeout);
-        signal.removeEventListener('abort', onAbort);
-        downloadFileInternal(next, dest, signal, onProgress, redirectCount + 1, maxBytes)
-          .then(resolve)
-          .catch(reject);
-        return;
-      }
-      if (res.statusCode !== 200) {
-        res.resume();
-        fail(new Error(`HTTP ${res.statusCode}`));
-        return;
-      }
-      const total = Number(res.headers['content-length'] || 0);
-      if (total > maxBytes) {
-        res.destroy();
-        fail(new Error('download exceeds size limit'));
-        return;
-      }
-
-      let received = 0;
-      const file = createWriteStream(tempDest);
-      res.on('data', (chunk: Buffer) => {
-        received += chunk.length;
-        if (received > maxBytes) {
-          res.destroy(new Error('download exceeds size limit'));
+    const req = https.get(
+      target.url.toString(),
+      {
+        headers: { 'User-Agent': 'Onda/1.0' },
+        lookup: createPinnedLookup(target.addresses)
+      },
+      (res) => {
+        if (
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          res.resume();
+          let next: string;
+          try {
+            next = new URL(res.headers.location, target.url).toString();
+          } catch {
+            fail(new Error('invalid redirect location'));
+            return;
+          }
+          if (timeout) clearTimeout(timeout);
+          signal.removeEventListener('abort', onAbort);
+          downloadFileInternal(next, dest, signal, onProgress, redirectCount + 1, maxBytes)
+            .then(resolve)
+            .catch(reject);
           return;
         }
-        onProgress?.(received, total);
-      });
-      res.on('error', (err) => {
-        file.destroy();
-        fail(err);
-      });
-      res.pipe(file);
-      file.on('finish', () => {
-        clearTimeout(timeout);
-        signal.removeEventListener('abort', onAbort);
-        file.close(async () => {
-          try {
-            await rename(tempDest, dest);
-            settled = true;
-            resolve();
-          } catch (err) {
-            settled = true;
-            reject(err);
-          }
-        });
-      });
-      file.on('error', (err) => fail(err));
-    });
+        if (res.statusCode !== 200) {
+          res.resume();
+          fail(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+        const total = Number(res.headers['content-length'] || 0);
+        if (total > maxBytes) {
+          res.destroy();
+          fail(new Error('download exceeds size limit'));
+          return;
+        }
 
-    const timeout = setTimeout(() => {
+        let received = 0;
+        const file = createWriteStream(tempDest);
+        res.on('data', (chunk: Buffer) => {
+          received += chunk.length;
+          if (received > maxBytes) {
+            res.destroy(new Error('download exceeds size limit'));
+            return;
+          }
+          onProgress?.(received, total);
+        });
+        res.on('error', (err) => {
+          file.destroy();
+          fail(err);
+        });
+        res.pipe(file);
+        file.on('finish', () => {
+          if (timeout) clearTimeout(timeout);
+          signal.removeEventListener('abort', onAbort);
+          file.close(async () => {
+            try {
+              await rename(tempDest, dest);
+              settled = true;
+              resolve();
+            } catch (err) {
+              settled = true;
+              reject(err);
+            }
+          });
+        });
+        file.on('error', (err) => fail(err));
+      }
+    );
+
+    timeout = setTimeout(() => {
       req.destroy(new Error('download timed out'));
     }, DOWNLOAD_TIMEOUT_MS);
 

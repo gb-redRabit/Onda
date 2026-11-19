@@ -104,12 +104,19 @@ function request(
                 reject(new Error('Too many redirects'));
                 return;
               }
-              const next = new URL(res.headers.location, target.url).toString();
+              let nextUrl: URL;
+              try {
+                nextUrl = new URL(res.headers.location, target.url);
+              } catch {
+                reject(new Error('Invalid redirect location'));
+                return;
+              }
+              const next = nextUrl.toString();
               if (options.onRedirect && !options.onRedirect(next)) {
                 reject(new Error('Redirect not allowed'));
                 return;
               }
-              const sameOrigin = new URL(next).origin === target.url.origin;
+              const sameOrigin = nextUrl.origin === target.url.origin;
               if (!sameOrigin && method !== 'GET') {
                 reject(new Error('Cross-origin redirect refused'));
                 return;

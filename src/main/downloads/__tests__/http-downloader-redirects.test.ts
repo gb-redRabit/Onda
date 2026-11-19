@@ -65,6 +65,18 @@ describe('redirects', () => {
       downloadHttpFile({ url: `${origin}/loop`, destPath: dest, ...TRUST })
     ).rejects.toThrow(/Too many redirects/i);
   });
+
+  it('rejects a malformed Location header instead of crashing', async () => {
+    const origin = await startServer((_req, res) => {
+      res.writeHead(302, { location: 'https://[::1' });
+      res.end();
+    });
+    const dest = await scratch('bad-location');
+
+    await expect(
+      downloadHttpFile({ url: `${origin}/start`, destPath: dest, ...TRUST })
+    ).rejects.toThrow(/Invalid redirect location/i);
+  });
 });
 
 describe('resume edge cases', () => {

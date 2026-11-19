@@ -168,8 +168,16 @@ async function doDownload(
             reject(new Error('Too many redirects'));
             return;
           }
-          const next = new URL(res.headers.location, target.url).toString();
-          const nextHeaders = new URL(next).origin === target.url.origin ? opts.headers : undefined;
+          let nextUrl: URL;
+          try {
+            nextUrl = new URL(res.headers.location, target.url);
+          } catch {
+            cleanup();
+            reject(new Error('Invalid redirect location'));
+            return;
+          }
+          const next = nextUrl.toString();
+          const nextHeaders = nextUrl.origin === target.url.origin ? opts.headers : undefined;
           doDownload({ ...opts, url: next, headers: nextHeaders }, redirectsLeft - 1, origin).then(
             resolve,
             reject
@@ -307,6 +315,11 @@ async function doDownload(
     req.on('error', (err) => {
       opts.signal?.removeEventListener('abort', onAbortListener);
       teardown(err);
+    });
+    // `close` odpala się także po sukcesie i przekierowaniu, więc listener nie
+    // zostaje na sygnale do końca życia zadania.
+    req.on('close', () => {
+      opts.signal?.removeEventListener('abort', onAbortListener);
     });
   });
 }

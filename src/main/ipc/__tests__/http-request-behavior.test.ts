@@ -208,6 +208,14 @@ describe('httpRequest redirects', () => {
     );
   });
 
+  it('rejects a malformed redirect location without leaving the promise pending', async () => {
+    install([new FakeResponse(302, { location: 'https://[::1' })]);
+
+    await expect(httpRequest('https://example.com/start')).rejects.toThrow(
+      'Invalid redirect location'
+    );
+  });
+
   it('honours the onRedirect guard', async () => {
     install([new FakeResponse(302, { location: 'https://evil.example/' })]);
 

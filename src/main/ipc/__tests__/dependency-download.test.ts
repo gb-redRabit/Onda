@@ -46,6 +46,16 @@ vi.mock('https', () => ({
   }
 }));
 vi.mock('../../binaries', () => ({ getBinDir: () => state.binDir }));
+vi.mock('../network-target', () => ({
+  resolveNetworkTarget: async (url: string) => {
+    const parsed = new URL(url);
+    if (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost') {
+      throw new Error('Private network address is not allowed');
+    }
+    return { url: parsed, addresses: [{ address: '93.184.216.34', family: 4 }] };
+  },
+  createPinnedLookup: () => () => undefined
+}));
 vi.mock('../dependency/dependency-utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../dependency/dependency-utils')>();
   return {
@@ -157,6 +167,27 @@ describe('downloadFile', () => {
       'only HTTPS downloads are allowed'
     );
     expect(calls).toHaveLength(0);
+  });
+
+  it('rejects private targets before opening a connection', async () => {
+    const { calls } = mockTransport([]);
+
+    await expect(
+      downloadFile('https://127.0.0.1/x', join(root, 'private.bin'), new AbortController().signal)
+    ).rejects.toThrow('Private network address is not allowed');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('rejects a malformed redirect location', async () => {
+    mockTransport([{ statusCode: 302, headers: { location: 'https://[::1' } }]);
+
+    await expect(
+      downloadFile(
+        'https://example.com/x',
+        join(root, 'bad-redirect.bin'),
+        new AbortController().signal
+      )
+    ).rejects.toThrow('invalid redirect location');
   });
 
   it('rejects an already aborted signal', async () => {
