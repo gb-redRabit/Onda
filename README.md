@@ -125,7 +125,7 @@
 | Images         | sharp (libvips)                                             |
 | Subtitles      | jassub (WASM)                                               |
 | File watching  | chokidar                                                    |
-| Testing        | Vitest 5 + jsdom 30, Playwright 1.63 (E2E)                  |
+| Testing        | Vitest 5 + jsdom 30, Playwright 1.65 (E2E)                  |
 | Packaging      | electron-builder (NSIS / DMG / AppImage / deb / rpm)        |
 
 ### External dependencies (not bundled)
@@ -177,7 +177,7 @@ npm run dev
 Quality gates:
 
 ```bash
-npm test           # 3199 unit tests (Vitest)
+npm test           # 12,765 unit tests (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (run `npm run build` first)
@@ -192,7 +192,7 @@ npm run build:mac    # DMG (macOS)
 npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-> **Signing:** macOS builds are ad-hoc signed (an unsigned bundle is rejected as "damaged" on Apple Silicon), Windows builds are unsigned, so SmartScreen and Gatekeeper still warn. A real Authenticode certificate and an Apple Developer ID remove the warnings. Until then, keep `verifyUpdateCodeSignature: false` so `electron-updater` accepts its own unsigned updates.
+> **Signing:** without secrets, macOS builds are ad-hoc signed (an unsigned bundle is rejected as "damaged" on Apple Silicon) and Windows builds are unsigned, so SmartScreen and Gatekeeper warn. Adding `WIN_CSC_LINK` (base64 PFX), `WIN_CSC_KEY_PASSWORD` and `CODE_SIGN_PUBLISHER` signs Windows and turns on `verifyUpdateCodeSignature`; `MAC_CSC_LINK` (base64 P12 with Developer ID Application), `MAC_CSC_KEY_PASSWORD`, `MAC_IDENTITY`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` sign and notarize macOS. Without them the build stays unsigned and update verification stays off.
 >
 > **macOS says "Onda is damaged" or "unidentified developer":** right-click the app and choose **Open**, or clear the quarantine flag with `xattr -dr com.apple.quarantine /Applications/Onda.app`. Builds are not notarized yet.
 
@@ -212,7 +212,7 @@ Onda is built to stay smooth on large libraries and slow disks.
 | **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                                                                                |
 | **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence, spawn semaphore for subtitle extraction, LRU eviction for cover/thumbnail caches. |
 | **Race-free selection & search** | Request-id/token guards make stale async responses (search pagination, cover loads, module switches, library scans) no-ops.                                                                                                 |
-| **Quality gates**                | 3199 unit tests + 61 Playwright E2E specs + lint + typecheck + IPC codegen check run on every change.                                                                                                                       |
+| **Quality gates**                | 12,765 unit tests + 68 Playwright E2E specs + lint + typecheck + IPC codegen + a11y check run on every change.                                                                                                              |
 
 ### Security
 
@@ -349,7 +349,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 | Obrazy         | sharp (libvips)                                               |
 | Napisy         | jassub (WASM)                                                 |
 | Watcher plików | chokidar                                                      |
-| Testy          | Vitest 5 + jsdom 30, Playwright 1.63 (E2E)                    |
+| Testy          | Vitest 5 + jsdom 30, Playwright 1.65 (E2E)                    |
 | Pakiety        | electron-builder (NSIS / DMG / AppImage / deb / rpm)          |
 
 ### Zależności zewnętrzne (nie-NPM)
@@ -401,7 +401,7 @@ npm run dev
 Bramki jakości:
 
 ```bash
-npm test           # 3199 testy jednostkowe (Vitest)
+npm test           # 12 765 testów jednostkowych (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (najpierw `npm run build`)
@@ -416,7 +416,7 @@ npm run build:mac    # DMG (macOS)
 npm run build:linux  # AppImage / deb / rpm (Linux)
 ```
 
-> **Podpisywanie:** buildy na macOS są podpisane ad-hoc (niepodpisany bundle jest odrzucany jako „uszkodzony” na Apple Silicon), a buildy na Windows są niepodpisane — SmartScreen i Gatekeeper nadal ostrzegają. Prawdziwy certyfikat Authenticode i Apple Developer ID usuwają ostrzeżenia. Do tego czasu trzymaj `verifyUpdateCodeSignature: false`, aby `electron-updater` przyjmował własne niepodpisane aktualizacje.
+> **Podpisywanie:** bez sekretów buildy na macOS są podpisane ad-hoc (niepodpisany bundle jest odrzucany jako "uszkodzony" na Apple Silicon), a buildy na Windows są niepodpisane — SmartScreen i Gatekeeper ostrzegają. Dodanie `WIN_CSC_LINK` (base64 PFX), `WIN_CSC_KEY_PASSWORD` i `CODE_SIGN_PUBLISHER` podpisuje Windows i włącza `verifyUpdateCodeSignature`; `MAC_CSC_LINK` (base64 P12 z Developer ID Application), `MAC_CSC_KEY_PASSWORD`, `MAC_IDENTITY`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` i `APPLE_TEAM_ID` podpisują i notaryzują macOS. Bez nich build zostaje niepodpisany, a weryfikacja aktualizacji wyłączona.
 >
 > **macOS pokazuje „Onda jest uszkodzona” albo „niezidentyfikowany deweloper”:** kliknij aplikację prawym przyciskiem i wybierz **Otwórz**, albo zdejmij flagę kwarantanny: `xattr -dr com.apple.quarantine /Applications/Onda.app`. Buildy nie są jeszcze notaryzowane.
 
@@ -436,7 +436,7 @@ Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i w
 | **Praca poza wątkiem głównym**                   | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                                                               |
 | **Bezpieczeństwo zasobów**                       | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki, semafor spawnu przy ekstrakcji napisów, ewiction LRU cache okładek/miniatur. |
 | **Wolne od wyścigów zaznaczanie i wyszukiwanie** | Tokeny/request-id sprawiają, że przedawnione odpowiedzi (paginacja wyszukiwania, ładowanie okładek, przełączenia modułów, skany biblioteki) są no-opami.                                                             |
-| **Bramki jakości**                               | 3199 testów jednostkowych + 61 specyfikacji E2E + lint + typecheck + check codegenu IPC przy każdej zmianie.                                                                                                         |
+| **Bramki jakości**                               | 12 765 testów jednostkowych + 68 specyfikacji E2E + lint + typecheck + check codegenu IPC + check a11y przy każdej zmianie.                                                                                          |
 
 ### Bezpieczeństwo
 
