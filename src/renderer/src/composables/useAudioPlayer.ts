@@ -373,6 +373,9 @@ function ensureModule() {
         } else {
           cancelPendingResume();
           audioEngine.pause();
+          // Element mógł jeszcze nie wystartować (pauza w trakcie ładowania) —
+          // wtedy `pause()` nie emituje zdarzenia i ref zostałby z wartością true.
+          isPlaying.value = false;
         }
       }
     );

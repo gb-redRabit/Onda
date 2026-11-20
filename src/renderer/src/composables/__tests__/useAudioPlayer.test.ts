@@ -183,6 +183,25 @@ describe('local engine bootstrap', () => {
     expect(state.engine.play).toHaveBeenCalled();
   });
 
+  it('does not start playback when pause lands during the resume delay', async () => {
+    state.player.currentTrack = track('audio');
+    state.player.isPlaying = true;
+    const mod = await loadModule();
+    mod.useAudioPlayer();
+
+    // Bootstrap planuje `play()` za 50 ms. Pauza przed odpaleniem timera musi
+    // wygrać: element jeszcze nie wystartował, więc `pause()` nie emituje
+    // zdarzenia, a mimo to stan odtwarzania ma zostać wyzerowany.
+    await nextTick();
+    state.player.isPlaying = false;
+    await nextTick();
+    vi.advanceTimersByTime(50);
+
+    expect(state.engine.pause).toHaveBeenCalled();
+    expect(state.engine.play).not.toHaveBeenCalled();
+    expect(mod.isPlaying.value).toBe(false);
+  });
+
   it('loads an existing stream and enriches the queue', async () => {
     state.player.currentTrack = track('stream', '/live');
     state.player.isPlaying = false;
