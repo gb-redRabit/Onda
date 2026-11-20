@@ -73,6 +73,7 @@ function commitRadioRename(id: string) {
               : 'bg-base-100 text-base-content/70 hover:text-base-content hover:bg-base-content/10'
           "
           :title="t('saved.playRadio')"
+          :aria-label="t('saved.playRadio')"
           @click="radio.playingStationId === s.id ? player.togglePlay() : radio.playStation(s)"
         >
           <Pause

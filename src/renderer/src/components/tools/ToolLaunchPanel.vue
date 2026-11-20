@@ -253,6 +253,7 @@ onUnmounted(() => {
               type="button"
               class="max-w-40 truncate rounded-field px-1.5 py-0.5 text-base-content/70 hover:bg-base-content/10"
               :title="crumb.path"
+              :aria-label="crumb.path"
               @click="navigateTo(crumb.path)"
             >
               {{ crumb.label }}

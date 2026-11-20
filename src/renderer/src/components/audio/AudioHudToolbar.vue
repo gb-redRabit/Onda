@@ -70,6 +70,7 @@ const vizModeLabel = computed(() => {
         data-testid="audio-layout-editor"
         class="pointer-events-auto fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition"
         :title="$t('audioView.layoutEditor')"
+        :aria-label="$t('audioView.layoutEditor')"
         @click.stop="emit('update:layoutEditorOpen', !props.layoutEditorOpen)"
       >
         <LayoutGrid :size="13" />
@@ -85,6 +86,7 @@ const vizModeLabel = computed(() => {
         type="button"
         class="fx-noise p-1.5 fx-depth rounded-field bg-base-300/80 backdrop-blur-sm text-base-content/70 hover:text-base-content hover:bg-base-content/10 transition"
         :title="cmd.label"
+        :aria-label="cmd.label"
         @click.stop="emit('run-command', cmd.id)"
       >
         <component :is="pluginIcon(cmd.icon)" :size="13" />
@@ -115,6 +117,7 @@ const vizModeLabel = computed(() => {
             : 'text-base-content/50 hover:text-base-content hover:bg-base-content/10 bg-base-300/80'
         "
         :title="$t('settings.audioViz')"
+        :aria-label="$t('settings.audioViz')"
         @click.stop="emit('update:vizSettingsOpen', !props.vizSettingsOpen)"
       >
         <Settings2 :size="12" />

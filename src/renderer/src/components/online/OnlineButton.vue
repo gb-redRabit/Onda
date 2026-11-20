@@ -47,6 +47,7 @@ const cls = computed(() => `${base} ${variants[props.variant]} ${sizes[props.siz
     :class="cls"
     :disabled="disabled"
     :title="title"
+    :aria-label="title"
     @click="emit('click', $event)"
   >
     <slot />

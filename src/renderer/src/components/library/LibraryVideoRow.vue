@@ -94,6 +94,7 @@ function onDragStart(e: DragEvent) {
         type="button"
         class="fx-noise p-1.5 fx-depth rounded-field text-base-content/50 hover:text-base-content hover:bg-base-100 transition-colors"
         :title="$t('common.addToQueue')"
+        :aria-label="$t('common.addToQueue')"
         @click.stop="player.addToQueue(props.track)"
       >
         <Plus :size="14" />

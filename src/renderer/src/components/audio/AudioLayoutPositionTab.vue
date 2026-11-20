@@ -139,6 +139,7 @@ const { t } = useI18n();
           element.bg ? 'bg-primary border-primary/50' : 'bg-base-content/10 border-base-content/30'
         "
         :title="element.bg ? t('audioView.showElement') : t('audioView.hideElement')"
+        :aria-label="element.bg ? t('audioView.showElement') : t('audioView.hideElement')"
         @click="emit('update', { bg: !element.bg })"
       >
         <span

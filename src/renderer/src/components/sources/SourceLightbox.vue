@@ -76,6 +76,7 @@ function onKeydown(event: KeyboardEvent): void {
             type="button"
             class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 rounded-field hover:bg-scrim-contrast/10 transition-colors text-xs"
             :title="$t('sources.playNow')"
+            :aria-label="$t('sources.playNow')"
             @click="emit('play', current)"
           >
             <Play :size="14" />
@@ -87,6 +88,7 @@ function onKeydown(event: KeyboardEvent): void {
             :class="isDownloaded ? 'text-success' : 'hover:bg-scrim-contrast/10'"
             :disabled="isDownloaded || downloadingItem === current"
             :title="isDownloaded ? $t('sources.downloaded') : $t('sources.download')"
+            :aria-label="isDownloaded ? $t('sources.downloaded') : $t('sources.download')"
             @click="current && emit('download', current)"
           >
             <Download :size="14" />
@@ -173,6 +175,7 @@ function onKeydown(event: KeyboardEvent): void {
               i === index ? 'border-primary' : 'border-transparent hover:border-scrim-contrast/40'
             "
             :title="item.title"
+            :aria-label="item.title"
             @click="select(i)"
           >
             <img

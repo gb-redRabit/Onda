@@ -209,6 +209,7 @@ const noMatch = computed(
             type="button"
             class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center hover:bg-primary/90 transition-colors fx-depth fx-noise"
             :title="$t('library.folderPlay')"
+            :aria-label="$t('library.folderPlay')"
             @click.stop="emit('playFolder', meta.path)"
           >
             <Play :size="14" class="ml-0.5 fill-current" />
@@ -217,6 +218,7 @@ const noMatch = computed(
             type="button"
             class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-hairline text-base-content/60 hover:text-primary-text hover:border-primary/30 items-center justify-center transition-colors"
             :title="$t('library.folderShuffle')"
+            :aria-label="$t('library.folderShuffle')"
             @click.stop="shuffleFolder(meta.path)"
           >
             <Shuffle :size="12" />
@@ -225,6 +227,7 @@ const noMatch = computed(
             type="button"
             class="hidden sm:flex w-8 h-8 rounded-full bg-base-200 border border-hairline text-base-content/60 hover:text-base-content items-center justify-center transition-colors"
             :title="$t('library.folderShowInExplorer')"
+            :aria-label="$t('library.folderShowInExplorer')"
             @click.stop="showInExplorer(meta.path)"
           >
             <ExternalLink :size="12" />

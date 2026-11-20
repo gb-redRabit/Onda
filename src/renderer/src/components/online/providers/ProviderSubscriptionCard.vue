@@ -71,6 +71,7 @@ function saveReplace(): void {
         type="button"
         class="shrink-0"
         :title="providerLabel(sub.providerId, sub.providerId, t)"
+        :aria-label="providerLabel(sub.providerId, sub.providerId, t)"
         @click="emit('open')"
       >
         <ProviderIcon :provider-id="sub.providerId" :label="sub.providerId" :size="44" />
@@ -81,6 +82,7 @@ function saveReplace(): void {
             type="button"
             class="text-sm font-semibold text-base-content truncate hover:text-primary-text transition-colors"
             :title="sub.title"
+            :aria-label="sub.title"
             @click="emit('open')"
           >
             {{ sub.title }}

@@ -33,6 +33,7 @@ const { fileCount } = useCountLabel();
         type="button"
         class="hidden sm:inline-flex h-8 items-center gap-1.5 px-2.5 rounded-field bg-base-200/60 border border-hairline/80 text-xs font-medium text-base-content/75 hover:border-primary/40 hover:text-base-content hover:bg-base-content/8 transition-colors"
         :title="t('library.shuffleAll')"
+        :aria-label="t('library.shuffleAll')"
         @click="emit('shuffle')"
       >
         <Shuffle :size="13" class="text-primary-text" />

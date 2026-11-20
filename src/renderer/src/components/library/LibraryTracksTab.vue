@@ -194,6 +194,7 @@ onUnmounted(() => {
           type="button"
           class="p-2 rounded-full bg-base-100 border border-hairline text-base-content/60 hover:text-primary-text hover:border-primary/30 transition-colors"
           :title="$t('library.shuffle')"
+          :aria-label="$t('library.shuffle')"
           @click="emit('shuffleAll')"
         >
           <svg

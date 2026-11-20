@@ -87,6 +87,9 @@ const typeIcon = {
         :title="
           item.id && downloadedIds?.has(item.id) ? $t('sources.downloaded') : $t('sources.download')
         "
+        :aria-label="
+          item.id && downloadedIds?.has(item.id) ? $t('sources.downloaded') : $t('sources.download')
+        "
         @click.stop="emit('download', item)"
       >
         <Check v-if="item.id && downloadedIds?.has(item.id)" :size="11" />

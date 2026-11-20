@@ -109,6 +109,7 @@ function browserUrl(item: SourceItem | null): string {
           type="button"
           class="fx-noise flex items-center gap-1.5 px-3 py-1.5 fx-depth rounded-field bg-base-200 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.openInModal')"
+          :aria-label="$t('sources.openInModal')"
           @click="emit('activate', current)"
         >
           <Maximize2 :size="13" />
@@ -148,6 +149,7 @@ function browserUrl(item: SourceItem | null): string {
               : 'hover:bg-base-content/5'
         "
         :title="item.title"
+        :aria-label="item.title"
         @click="selectable ? emit('select', item, $event) : (selected = item)"
       >
         <span

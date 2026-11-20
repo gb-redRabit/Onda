@@ -215,6 +215,7 @@ async function onTabDrop(e: DragEvent, idx: number) {
       type="button"
       class="fx-noise shrink-0 p-1 rounded-field text-base-content/50 hover:text-base-content hover:bg-base-content/10 transition-colors"
       :title="$t('nav.newTab')"
+      :aria-label="$t('nav.newTab')"
       @click="explorer.addTab(explorer.currentPath || '')"
     >
       <Plus :size="12" />

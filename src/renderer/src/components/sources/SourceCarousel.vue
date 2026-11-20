@@ -140,6 +140,11 @@ const cells = computed(() =>
                 ? $t('sources.downloaded')
                 : $t('sources.download')
             "
+            :aria-label="
+              cell.item.id && downloadedIds?.has(cell.item.id)
+                ? $t('sources.downloaded')
+                : $t('sources.download')
+            "
             @click.stop="emit('download', cell.item)"
           >
             <Check v-if="cell.item.id && downloadedIds?.has(cell.item.id)" :size="11" />

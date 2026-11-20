@@ -33,6 +33,7 @@ const emit = defineEmits<{ (e: 'open', tab: TabId): void }>();
       :data-testid="'home-counter-' + items[0].tab"
       class="group mb-2.5 flex w-full items-center justify-between gap-2 rounded-field px-1.5 py-1 text-left transition-colors hover:bg-base-content/5"
       :title="$t('home.openInLibrary')"
+      :aria-label="$t('home.openInLibrary')"
       @click="emit('open', items[0].tab)"
     >
       <span class="text-2xs font-semibold uppercase tracking-wider text-base-content/55">
@@ -70,6 +71,7 @@ const emit = defineEmits<{ (e: 'open', tab: TabId): void }>();
         :data-testid="'home-counter-' + item.tab"
         class="group flex min-w-0 items-center gap-2.5 rounded-field border border-transparent bg-base-200/45 px-2.5 py-2 text-left transition-colors hover:border-hairline/80 hover:bg-base-content/6"
         :title="$t('home.openInLibrary')"
+        :aria-label="$t('home.openInLibrary')"
         @click="emit('open', item.tab)"
       >
         <span

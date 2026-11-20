@@ -97,6 +97,7 @@ onUnmounted(() => grid.destroy());
               : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeList')"
+          :aria-label="$t('library.viewModeList')"
           @click="emit('update:viewMode', 'list')"
         >
           <LayoutList :size="14" />
@@ -110,6 +111,7 @@ onUnmounted(() => grid.destroy());
               : 'bg-base-100 border border-hairline text-base-content/50 hover:text-base-content hover:border-primary/30'
           "
           :title="$t('library.viewModeGrid')"
+          :aria-label="$t('library.viewModeGrid')"
           @click="emit('update:viewMode', 'grid')"
         >
           <LayoutGrid :size="14" />

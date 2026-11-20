@@ -135,6 +135,7 @@ onUnmounted(() => {
             class="group fx-depth rounded-box fx-noise overflow-hidden bg-base-100 border border-hairline hover:border-primary transition-colors text-left flex flex-col shrink-0"
             :style="{ width: imageCellSize + 'px' }"
             :title="item.img.name"
+            :aria-label="item.img.name"
             @dblclick="emit('open', item.index)"
             @contextmenu.prevent="onImageContext($event, item.img)"
           >

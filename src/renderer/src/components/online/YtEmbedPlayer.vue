@@ -45,6 +45,7 @@ function openInWindow() {
         type="button"
         class="fx-noise p-1.5 fx-depth rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
         :title="$t('youtube.openInWindow')"
+        :aria-label="$t('youtube.openInWindow')"
         @click="openInWindow"
       >
         <ExternalLink :size="13" />
@@ -53,6 +54,7 @@ function openInWindow() {
         type="button"
         class="fx-noise p-1.5 fx-depth rounded-field border border-hairline text-base-content/70 hover:bg-base-content/10 hover:text-base-content transition-colors shrink-0"
         :title="$t('nav.collapse')"
+        :aria-label="$t('nav.collapse')"
         @click="emit('close')"
       >
         <X :size="13" />

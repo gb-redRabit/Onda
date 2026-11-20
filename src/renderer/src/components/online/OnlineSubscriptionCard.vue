@@ -116,6 +116,7 @@ const autoDownload = computed({
         type="button"
         class="shrink-0 w-12 h-12 rounded-full overflow-hidden bg-base-100"
         :title="sub.channelTitle"
+        :aria-label="sub.channelTitle"
         @click="emit('openChannel', sub.channelId)"
       >
         <img

@@ -154,6 +154,7 @@ function browserUrl(item: SourceItem): string {
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs font-medium bg-primary text-primary-content hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5"
               data-testid="source-play-now"
               :title="$t('sources.playNow')"
+              :aria-label="$t('sources.playNow')"
               @click="emit('play', props.item)"
             >
               <Play :size="13" />
@@ -164,6 +165,7 @@ function browserUrl(item: SourceItem): string {
               type="button"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors flex items-center justify-center gap-1.5"
               :title="$t('sources.addToQueue')"
+              :aria-label="$t('sources.addToQueue')"
               @click="emit('queue', props.item)"
             >
               <ListPlus :size="13" />
@@ -190,6 +192,7 @@ function browserUrl(item: SourceItem): string {
               type="button"
               class="fx-noise px-3 py-2 fx-depth rounded-field text-xs text-base-content/70 hover:bg-base-content/10 transition-colors flex items-center justify-center gap-1.5"
               :title="$t('sources.unmarkDownloaded')"
+              :aria-label="$t('sources.unmarkDownloaded')"
               @click="emit('unmark', props.item)"
             >
               <Undo2 :size="13" />

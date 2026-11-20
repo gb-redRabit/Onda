@@ -21,6 +21,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!count"
       :title="$t('sources.downloadAll')"
+      :aria-label="$t('sources.downloadAll')"
       @click="emit('download')"
     >
       <Download :size="12" />
@@ -31,6 +32,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!playableCount"
       :title="$t('sources.addToQueue')"
+      :aria-label="$t('sources.addToQueue')"
       @click="emit('queue')"
     >
       <ListPlus :size="12" />
@@ -41,6 +43,7 @@ const emit = defineEmits<{ download: []; queue: []; play: []; clear: [] }>();
       class="fx-noise shrink-0 flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/80 hover:bg-base-content/10 transition-colors disabled:opacity-50"
       :disabled="!playableCount"
       :title="$t('sources.playNow')"
+      :aria-label="$t('sources.playNow')"
       @click="emit('play')"
     >
       <Play :size="12" />

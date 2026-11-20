@@ -65,6 +65,7 @@ const tableViews = [
         class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content/70 hover:bg-base-content/10 transition-colors disabled:opacity-50"
         :disabled="tableTesting"
         :title="t('sources.testTableHint')"
+        :aria-label="t('sources.testTableHint')"
         @click="emit('test-table')"
       >
         <Loader2 v-if="tableTesting" :size="11" class="animate-spin" />

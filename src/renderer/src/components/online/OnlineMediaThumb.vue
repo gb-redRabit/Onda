@@ -133,6 +133,7 @@ function onExpand(e?: MouseEvent) {
         <button
           type="button"
           :title="$t('youtube.playStream')"
+          :aria-label="$t('youtube.playStream')"
           class="flex items-center justify-center text-base-content hover:scale-115 active:scale-95 shadow-scrim/30 transition duration-150 cursor-pointer"
           @click.stop="onPlay"
         >
@@ -143,6 +144,7 @@ function onExpand(e?: MouseEvent) {
           v-if="!isSc && !isGeneric"
           type="button"
           :title="$t('youtube.playOnYoutube')"
+          :aria-label="$t('youtube.playOnYoutube')"
           class="flex items-center justify-center text-base-content hover:scale-115 active:scale-95 shadow-scrim/30 transition duration-150 cursor-pointer"
           @click.stop="onExpand"
         >

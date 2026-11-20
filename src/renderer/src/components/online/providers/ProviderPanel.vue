@@ -329,6 +329,7 @@ async function confirmDownloadFolder(): Promise<void> {
               class="absolute bottom-2 right-2 rounded-field border border-hairline p-1 text-base-content/70 transition-colors hover:border-primary hover:text-primary-text"
               data-testid="providers-download-folder"
               :title="t('providers.downloadFolder')"
+              :aria-label="t('providers.downloadFolder')"
               @click.stop="pendingFolder = item"
             >
               <Download :size="14" />
@@ -380,6 +381,7 @@ async function confirmDownloadFolder(): Promise<void> {
                 data-testid="providers-download"
                 class="flex shrink-0 items-center gap-1 rounded-field border border-hairline px-2 py-1 text-xs text-base-content/80 transition-colors hover:border-primary hover:text-primary-text"
                 :title="t('providers.download')"
+                :aria-label="t('providers.download')"
                 @click="store.download(item)"
               >
                 <Download :size="13" /> {{ t('providers.download') }}

@@ -45,6 +45,7 @@ function insertToken(token: string): void {
           type="button"
           class="rounded-field border border-hairline/70 bg-base-200/50 px-1.5 py-0.5 font-mono text-2xs text-base-content/65 transition-colors hover:border-primary/40 hover:text-base-content"
           :title="t('youtube.templateTokenHint', { token })"
+          :aria-label="t('youtube.templateTokenHint', { token })"
           @click="insertToken(token)"
         >
           {{ token }}

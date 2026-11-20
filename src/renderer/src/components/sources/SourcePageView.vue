@@ -68,6 +68,7 @@ function isRowSelected(item: SourceItem): boolean {
             "
             :disabled="downloaded"
             :title="downloaded ? $t('sources.downloaded') : $t('sources.download')"
+            :aria-label="downloaded ? $t('sources.downloaded') : $t('sources.download')"
             @click="emit('download', item)"
           >
             <Check v-if="downloaded" :size="13" />
@@ -91,6 +92,7 @@ function isRowSelected(item: SourceItem): boolean {
           type="button"
           class="fx-noise flex items-center gap-1 px-2 py-1 fx-depth rounded-field bg-base-100 border border-hairline text-2xs text-base-content/70 hover:bg-base-content/10 transition-colors"
           :title="$t('sources.downloadAllRows')"
+          :aria-label="$t('sources.downloadAllRows')"
           @click="emit('download-all', rows)"
         >
           <Download :size="11" />
@@ -157,6 +159,7 @@ function isRowSelected(item: SourceItem): boolean {
           "
           :disabled="!rowClickable && !selectable"
           :title="row.title"
+          :aria-label="row.title"
           @click="selectable ? emit('select', row, $event) : emit('row-click', row)"
         >
           <div class="relative aspect-video bg-neutral">

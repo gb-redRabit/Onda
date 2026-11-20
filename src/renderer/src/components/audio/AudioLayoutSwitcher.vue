@@ -32,6 +32,7 @@ function apply(preset: AudioLayoutPreset) {
         'text-primary-text bg-primary/10': current === key
       }"
       :title="preset.label"
+      :aria-label="preset.label"
       @click="apply(key as AudioLayoutPreset)"
     >
       <component :is="icons[key as AudioLayoutPreset]" :size="14" />

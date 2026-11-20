@@ -64,6 +64,7 @@ const decorationOptions = computed(() =>
               : 'bg-base-300/60 text-base-content/60 border-transparent hover:bg-base-content/10 hover:text-base-content'
           "
           :title="t(`audioView.preset${key.charAt(0).toUpperCase() + key.slice(1)}`)"
+          :aria-label="t(`audioView.preset${key.charAt(0).toUpperCase() + key.slice(1)}`)"
           :aria-pressed="props.currentPreset === key"
           @click="emit('applyPreset', key)"
         >
@@ -122,6 +123,7 @@ const decorationOptions = computed(() =>
             type="button"
             class="p-0.5 rounded hover:bg-base-content/10 transition-colors"
             :title="el.visible ? t('audioView.hideElement') : t('audioView.showElement')"
+            :aria-label="el.visible ? t('audioView.hideElement') : t('audioView.showElement')"
             :aria-pressed="!el.visible"
             @click.stop="emit('update', el.id, { visible: !el.visible })"
           >

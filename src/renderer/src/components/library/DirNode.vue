@@ -239,6 +239,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           type="button"
           class="w-6 h-6 rounded-full bg-base-100 border border-hairline text-base-content/50 hover:text-primary-text hover:border-primary/30 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0"
           :title="$t('library.folderPlay')"
+          :aria-label="$t('library.folderPlay')"
           @click.stop="playDir(childOriginal(sub))"
         >
           <Play :size="10" class="ml-px fill-current" />
@@ -247,6 +248,7 @@ function openImageViewerForChild(childName: string, imagePath: string) {
           type="button"
           class="w-6 h-6 rounded-full bg-base-100 border border-hairline text-base-content/60 hover:text-base-content flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition shrink-0 hidden sm:flex"
           :title="$t('common.showInFolder')"
+          :aria-label="$t('common.showInFolder')"
           @click.stop="openExplorer(childOriginal(sub))"
         >
           <ExternalLink :size="10" />

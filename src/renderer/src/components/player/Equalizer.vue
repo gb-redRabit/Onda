@@ -270,6 +270,7 @@ const {
         class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-save-preset"
         :title="$t('equalizer.savePreset')"
+        :aria-label="$t('equalizer.savePreset')"
         @click="savePreset"
       >
         <Save :size="12" />
@@ -279,6 +280,7 @@ const {
         class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-export"
         :title="$t('equalizer.export')"
+        :aria-label="$t('equalizer.export')"
         @click="exportEq"
       >
         <Download :size="12" />
@@ -288,6 +290,7 @@ const {
         class="fx-noise px-2 py-1 fx-depth rounded-field text-2xs text-base-content/60 hover:text-base-content transition-colors"
         data-testid="eq-import"
         :title="$t('equalizer.import')"
+        :aria-label="$t('equalizer.import')"
         @click="importEq"
       >
         <Upload :size="12" />

@@ -81,6 +81,7 @@ const activeSectionId = computed(
         type="button"
         class="flex items-center gap-2 px-2 h-8 w-full rounded-field text-xs text-base-content/50 hover:text-error hover:bg-error/10 transition-colors"
         :title="$t('settings.reset')"
+        :aria-label="$t('settings.reset')"
         data-testid="settings-reset"
         @click="emit('reset')"
       >

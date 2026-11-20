@@ -124,6 +124,9 @@ jobs:
       - name: Check empty catch blocks
         run: npm run check:catch
 
+      - name: Check accessible names on icon-only buttons
+        run: npm run check:a11y
+
       - name: Check generated IPC files are up to date
         run: npm run ipc:gen:check
 
