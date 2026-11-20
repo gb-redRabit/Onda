@@ -97,7 +97,7 @@ jobs:
                 line="${line//$'\r'/}"
                 line="${line//%/%25}"
                 echo "::error::$line"
-              done
+              done || true
           echo "--- last 40 lines of the test log ---"
           tail -40 "$log"
 
