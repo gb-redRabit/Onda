@@ -56,8 +56,6 @@ export default defineConfig(
         }
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
-      // IPC and third-party media APIs expose dynamic payloads; validate them at use sites.
-      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-unused-vars': [
@@ -95,6 +93,13 @@ export default defineConfig(
     files: ['scripts/**/*.mjs'],
     rules: {
       '@typescript-eslint/explicit-function-return-type': 'off'
+    }
+  },
+  {
+    // Vite plugin hooks expose untyped `req`/`res`; this config is not app code.
+    files: ['electron.vite.config.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off'
     }
   }
 );
