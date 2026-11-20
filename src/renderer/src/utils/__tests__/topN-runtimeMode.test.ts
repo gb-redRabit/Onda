@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { topN } from '../topN';
-import { isCoreShell, setCoreShellMode } from '../runtimeMode';
+import { isCoreShell, isStandaloneWindowRoute, setCoreShellMode } from '../runtimeMode';
 
 describe('topN', () => {
   const items = [
@@ -49,5 +49,30 @@ describe('runtime mode', () => {
 
     setCoreShellMode(false);
     expect(isCoreShell()).toBe(false);
+  });
+});
+
+describe('isStandaloneWindowRoute', () => {
+  const withHash = (hash: string, check: () => void): void => {
+    const previous = window.location.hash;
+    window.location.hash = hash;
+    try {
+      check();
+    } finally {
+      window.location.hash = previous;
+    }
+  };
+
+  it('recognises tool, explorer and image viewer windows', () => {
+    withHash('#/tools/image-studio', () => expect(isStandaloneWindowRoute()).toBe(true));
+    withHash('#/explorer/window/42', () => expect(isStandaloneWindowRoute()).toBe(true));
+    withHash('#/image-viewer', () => expect(isStandaloneWindowRoute()).toBe(true));
+  });
+
+  it('keeps the main shell and ordinary routes booted normally', () => {
+    withHash('', () => expect(isStandaloneWindowRoute()).toBe(false));
+    withHash('#/library', () => expect(isStandaloneWindowRoute()).toBe(false));
+    withHash('#/tools', () => expect(isStandaloneWindowRoute()).toBe(false));
+    withHash('#/explorer', () => expect(isStandaloneWindowRoute()).toBe(false));
   });
 });

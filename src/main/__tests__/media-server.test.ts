@@ -373,9 +373,18 @@ describe('media-server path guard (plan 7.4)', () => {
     expect(isWithinRoot(root, root)).toBe(true);
   });
 
-  it.skipIf(process.platform !== 'win32')('matches Windows paths case-insensitively', () => {
-    expect(isWithinRoot('C:\\Media\\Clip.mp4', 'c:\\media')).toBe(true);
-    expect(isWithinRoot('c:\\media', 'C:\\MEDIA')).toBe(true);
+  it('matches Windows paths case-insensitively on every platform', () => {
+    // `platform` jest parametrem, żeby reguły Windows były pokryte także na
+    // Linuksie (CI liczy gałęzie per platforma).
+    expect(isWithinRoot('C:\\Media\\Clip.mp4', 'c:\\media', 'win32')).toBe(true);
+    expect(isWithinRoot('c:\\media', 'C:\\MEDIA', 'win32')).toBe(true);
+    expect(isWithinRoot('C:\\mediax\\a.mp4', 'C:\\media', 'win32')).toBe(false);
+  });
+
+  it('treats POSIX paths case-sensitively', () => {
+    expect(isWithinRoot('/media/a.mp4', '/media', 'linux')).toBe(true);
+    expect(isWithinRoot('/media', '/media', 'linux')).toBe(true);
+    expect(isWithinRoot('/Media/a.mp4', '/media', 'linux')).toBe(false);
   });
 
   it('rejects a symlink inside an allowed root that points outside it', async (ctx) => {

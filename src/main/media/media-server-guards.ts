@@ -19,8 +19,12 @@ export function isAllowedRadioHost(hostname: string): boolean {
   return allowedRadioHostPredicate(hostname);
 }
 
-export function isWithinRoot(filePath: string, root: string): boolean {
-  if (process.platform === 'win32') {
+export function isWithinRoot(
+  filePath: string,
+  root: string,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (platform === 'win32') {
     const f = filePath.toLowerCase();
     const r = root.toLowerCase();
     if (f === r) return true;
