@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 
 // Czyta raport JSON Playwrighta i wypisuje testy, które przeszły dopiero po
 // retry. GitHub Actions pokaże je jako ostrzeżenia w adnotacjach runu, więc
@@ -57,4 +57,17 @@ for (const flake of flakes) {
   console.log(`  ${flake.file}:${flake.line} — ${flake.title} (prób: ${flake.attempts})`);
   const location = flake.file && flake.line ? `,file=${flake.file},line=${flake.line}` : '';
   console.log(`::warning title=Flaky E2E${location}::${flake.title} (attempts: ${flake.attempts})`);
+}
+
+// Podsumowanie w zakładce Summary runu — tam flake jest najłatwiejszy do przejrzenia.
+const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+if (summaryFile) {
+  const rows = flakes
+    .map((f) => `| \`${f.file}:${f.line}\` | ${f.title} | ${f.attempts} |`)
+    .join('\n');
+  appendFileSync(
+    summaryFile,
+    `\n### Flaky E2E (${flakes.length})\n\n| Plik | Test | Próby |\n|---|---|---:|\n${rows}\n`,
+    'utf8'
+  );
 }
