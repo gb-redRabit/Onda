@@ -183,8 +183,19 @@ export async function launchOnda(options: LaunchOptions = {}): Promise<OndaApp> 
     // Nigdy nie zostawiaj procesu Electron trzymającego blokadę instancji.
     await app.close().catch(() => {});
     if (!proc.killed) proc.kill('SIGKILL');
+    // Adnotacja w CI pokazuje tylko message, a bez faz startu nie da się
+    // odróżnić „runner był wolny” od „proces padł przed utworzeniem okna”.
+    const phases = await readBootPhasesFromLog(userDataDir, 500).catch(() => []);
+    const output = (stderr.length > 0 ? stderr : stdout).slice(-20);
+    const detail = [
+      phases.length > 0
+        ? `boot phases: ${phases.map((phase) => `${phase.label}:${phase.ms}ms`).join(', ')}`
+        : 'boot phases: none',
+      output.length > 0 ? `process output:\n${output.join('\n')}` : 'process output: empty'
+    ].join('\n');
     rmSync(userDataDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
-    throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${message}\n${detail}`, { cause: error });
   }
 }
 
