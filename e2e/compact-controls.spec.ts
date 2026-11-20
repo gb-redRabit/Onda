@@ -138,6 +138,9 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
         const api = (window as unknown as { api: CompactControlsApi }).api;
         return api.invoke('app:getCompactPinned');
       });
+    // Okno może być jeszcze ukryte przez splash; `setAlwaysOnTop` na ukrytym
+    // BrowserWindow jest no-opem, więc pokaż je przed testem pinu.
+    await page.bringToFront();
     await page.getByTestId('compact-pin').click();
     await expect.poll(getPinned).toBe(true);
     await expect.poll(() => readPinned(userDataDir)).toBe(true);
