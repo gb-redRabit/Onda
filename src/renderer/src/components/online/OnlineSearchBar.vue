@@ -178,6 +178,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
           data-testid="online-search-input"
           :value="modelValue"
           :placeholder="t('youtube.pasteOrSearch')"
+          :aria-label="t('youtube.search')"
           class="w-full pl-12 pr-3 h-field-lg fx-depth rounded-field bg-base-100 border border-hairline text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 transition-shadow"
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.enter="emit('submit')"
@@ -255,6 +256,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioFormat"
+          :aria-label="t('settings.defaultAudioFormat')"
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
@@ -270,6 +272,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-else
           :value="settings.download.defaultVideoQuality"
+          :aria-label="t('settings.defaultVideoQuality')"
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
@@ -283,6 +286,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'video'"
           :value="settings.download.defaultVideoContainer"
+          :aria-label="t('settings.defaultVideoContainer')"
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
@@ -296,6 +300,7 @@ const quickOpen = defineModel<boolean>('quickOpen', { default: false });
         <select
           v-if="settings.download.defaultKind === 'audio'"
           :value="settings.download.defaultAudioQuality"
+          :aria-label="t('settings.defaultAudioQuality')"
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
           @change="
             settings.updateDownload({
