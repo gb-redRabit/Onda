@@ -124,7 +124,8 @@ jobs:
       - name: Check empty catch blocks
         run: npm run check:catch
 
-      - name: Check accessible names on icon-only buttons
+      - name: Check accessibility invariants
+        # Nazwy przycisków i kontrolek, `type` przycisków, `alt` obrazów, nazwy dialogów.
         run: npm run check:a11y
 
       - name: Check generated IPC files are up to date
