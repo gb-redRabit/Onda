@@ -11,6 +11,19 @@ export const PLUGIN_MAX_PENDING_API_REQUESTS = 16;
 export const PLUGIN_MAX_MESSAGES_PER_SECOND = 300;
 export const PLUGIN_HEARTBEAT_INTERVAL_MS = 15_000;
 export const PLUGIN_HEARTBEAT_TIMEOUT_MS = 10_000;
+export const PLUGIN_MAX_MESSAGE_CHARS = 100_000;
+
+function serializedSize(value: unknown): number {
+  try {
+    return JSON.stringify(value)?.length ?? 0;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+function capped(value: unknown, max = 2000): string {
+  return String(value ?? '').slice(0, max);
+}
 
 export interface PluginWorkerOptions {
   id: string;
@@ -117,18 +130,46 @@ export function createPluginWorker(opts: PluginWorkerOptions): PluginWorkerHandl
         heartbeatTimer = null;
         return Promise.resolve();
       case 'register-command':
-        o.onCommand(msg.command);
+        o.onCommand({
+          ...msg.command,
+          id: capped(msg.command?.id, 128),
+          label: capped(msg.command?.label, 200),
+          icon: typeof msg.command?.icon === 'string' ? capped(msg.command.icon, 200) : undefined,
+          location:
+            typeof msg.command?.location === 'string'
+              ? capped(msg.command.location, 64)
+              : undefined,
+          shortcut:
+            typeof msg.command?.shortcut === 'string' ? capped(msg.command.shortcut, 32) : undefined
+        });
         return Promise.resolve();
       case 'unregister-command':
-        o.onCommandRemoved(msg.commandId);
+        o.onCommandRemoved(capped(msg.commandId, 128));
         return Promise.resolve();
       case 'log':
-        o.onLog(msg.level, msg.message);
+        o.onLog(msg.level, capped(msg.message, PLUGIN_MAX_MESSAGE_CHARS));
         return Promise.resolve();
       case 'error':
-        o.onError(msg.message);
+        o.onError(capped(msg.message, PLUGIN_MAX_MESSAGE_CHARS));
         return Promise.resolve();
-      case 'api-request':
+      case 'api-request': {
+        // Shim sprawdza rozmiar tylko w `api.call`; plugin może wywołać
+        // `self.postMessage` bezpośrednio, więc host musi powtórzyć limit.
+        if (!Array.isArray(msg.args) || serializedSize(msg.args) > PLUGIN_MAX_MESSAGE_CHARS) {
+          try {
+            worker.postMessage(
+              wrapIntoWorker({
+                type: 'api-response',
+                id: msg.id,
+                ok: false,
+                error: 'plugin-api-args-too-large'
+              })
+            );
+          } catch (e) {
+            o.onError(e instanceof Error ? e.message : 'api-limit-response-failed');
+          }
+          return Promise.resolve();
+        }
         if (pendingApiRequests.size >= PLUGIN_MAX_PENDING_API_REQUESTS) {
           try {
             worker.postMessage(
@@ -148,6 +189,7 @@ export function createPluginWorker(opts: PluginWorkerOptions): PluginWorkerHandl
         return routeApiRequest(worker, msg.id, msg.op, msg.args, o).finally(() =>
           pendingApiRequests.delete(msg.id)
         );
+      }
       default:
         return Promise.resolve();
     }

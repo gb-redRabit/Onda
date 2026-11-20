@@ -207,6 +207,20 @@ describe('message handling', () => {
     expect(opts.onError).toHaveBeenCalledWith('boom');
   });
 
+  it('caps oversized logs and rejects oversized API arguments', () => {
+    const opts = options();
+    const { instance } = create(opts);
+    const huge = 'x'.repeat(100_001);
+
+    instance.emit({ __onda: { type: 'log', level: 'info', message: huge } });
+    expect(opts.onLog).toHaveBeenCalledWith('info', expect.stringMatching(/^x{100000}$/));
+
+    instance.emit({ __onda: { type: 'api-request', id: 9, op: 'query', args: [huge] } });
+    expect(instance.messages.at(-1)).toMatchObject({
+      __onda: { type: 'api-response', id: 9, ok: false, error: 'plugin-api-args-too-large' }
+    });
+  });
+
   it('ignores unknown message types', () => {
     const opts = options();
     const { instance } = create(opts);
