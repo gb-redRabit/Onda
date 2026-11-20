@@ -26,7 +26,14 @@ const selected = ref<SourceItem | null>(null);
 watch(
   () => props.items,
   (list) => {
-    if (!selected.value || !list.includes(selected.value)) selected.value = list[0] ?? null;
+    const previous = selected.value;
+    // Porównujemy też po `id`: lista może przyjść jako nowe obiekty o tych
+    // samych identyfikatorach (odświeżenie, proksy w testach), a wtedy wybór
+    // użytkownika ma zostać.
+    const keep =
+      !!previous &&
+      list.some((entry) => entry === previous || (!!previous.id && entry.id === previous.id));
+    if (!keep) selected.value = list[0] ?? null;
   },
   { immediate: true }
 );
@@ -39,6 +46,17 @@ const typeIcon = {
 } as const;
 
 const current = computed(() => selected.value);
+const isCurrent = (entry: SourceItem): boolean => {
+  const currentItem = current.value;
+  if (!currentItem) return false;
+  return entry === currentItem || (!!currentItem.id && entry.id === currentItem.id);
+};
+const isDownloadingCurrent = computed(() => {
+  const downloading = props.downloadingItem;
+  const currentItem = current.value;
+  if (!downloading || !currentItem) return false;
+  return downloading === currentItem || (!!currentItem.id && downloading.id === currentItem.id);
+});
 const isDownloaded = computed(
   () => !!current.value?.id && (props.downloadedIds?.has(current.value.id) ?? false)
 );
@@ -124,7 +142,7 @@ function browserUrl(item: SourceItem | null): string {
               ? 'bg-success text-success-content'
               : 'bg-primary text-primary-content hover:bg-primary/90'
           "
-          :disabled="isDownloaded || props.downloadingItem === current"
+          :disabled="isDownloaded || isDownloadingCurrent"
           @click="emit('download', current)"
         >
           <Check v-if="isDownloaded" :size="13" />
@@ -144,7 +162,7 @@ function browserUrl(item: SourceItem | null): string {
         :class="
           selectable && item.id && selectedIds?.has(item.id)
             ? 'ring-1 ring-primary bg-primary/10'
-            : item === current
+            : isCurrent(item)
               ? 'bg-primary/15'
               : 'hover:bg-base-content/5'
         "
