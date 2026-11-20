@@ -262,6 +262,20 @@ describe('registration and downloaded marks', () => {
     );
   });
 
+  it('allows private network in the E2E build without a modal', async () => {
+    const h = await load();
+    vi.stubEnv('ONDA_E2E_ALLOW_PRIVATE_NETWORK', '1');
+
+    await h['sources:save']({ sender: {} }, source({ id: 's3', allowPrivateNetwork: true }));
+
+    expect(state.showMessageBox).not.toHaveBeenCalled();
+    expect(state.saveSource).toHaveBeenCalledWith(
+      'C:/userData/sources.json',
+      expect.objectContaining({ allowPrivateNetwork: true })
+    );
+    vi.unstubAllEnvs();
+  });
+
   it('keeps an existing private-network approval for the same origin', async () => {
     const h = await load();
     state.loadSources.mockResolvedValue([source({ allowPrivateNetwork: true })]);

@@ -3,6 +3,7 @@ import { handleIpc } from '../typed-handle';
 import { readdir, stat, mkdir, lstat, unlink, rm, realpath } from 'fs/promises';
 import { join } from 'path';
 import { withTimeout } from '../../utils/with-timeout';
+import { mapLimit } from '../../utils/map-limit';
 import { mainMessages } from '../../i18n-main';
 import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
@@ -318,16 +319,14 @@ export function registerFsHandlers(): void {
     const list = paths
       .filter((p): p is string => typeof p === 'string' && isSafeAbsolutePath(p))
       .slice(0, 2000);
-    const results = await Promise.all(
-      list.map(async (p) => {
-        try {
-          await withTimeout(stat(p), FS_OP_TIMEOUT_MS);
-          return p;
-        } catch {
-          return null;
-        }
-      })
-    );
+    const results = await mapLimit(list, 32, async (p) => {
+      try {
+        await withTimeout(stat(p), FS_OP_TIMEOUT_MS);
+        return p;
+      } catch {
+        return null;
+      }
+    });
     return results.filter((p): p is string => !!p);
   });
 }

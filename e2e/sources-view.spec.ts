@@ -74,7 +74,7 @@ async function openSource(
   run: (page: Page) => Promise<void>
 ): Promise<void> {
   const fixture = await startFixture();
-  const onda = await launchOnda();
+  const onda = await launchOnda({ env: { ONDA_E2E_ALLOW_PRIVATE_NETWORK: '1' } });
   const { page } = onda;
   try {
     await dismissWizard(page);
@@ -193,7 +193,7 @@ test.describe('sources view', () => {
   });
 
   test('editor opens as a phased wizard and adds an endpoint phase', async () => {
-    const onda = await launchOnda();
+    const onda = await launchOnda({ env: { ONDA_E2E_ALLOW_PRIVATE_NETWORK: '1' } });
     const { page } = onda;
     try {
       await dismissWizard(page);
@@ -276,7 +276,7 @@ test.describe('sources view', () => {
 
   test('does not auto-select a source when entering the view', async () => {
     const fixture = await startFixture();
-    const onda = await launchOnda();
+    const onda = await launchOnda({ env: { ONDA_E2E_ALLOW_PRIVATE_NETWORK: '1' } });
     const { page } = onda;
     try {
       await dismissWizard(page);

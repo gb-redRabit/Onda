@@ -277,6 +277,14 @@ describe('fs:mkdir', () => {
     expect(await h['fs:mkdir']({}, 'C:/project/link/sub')).toBe(false);
     expect(state.isProtectedPath).toHaveBeenCalledWith('C:/Windows');
   });
+
+  it('creates a directory when the resolved ancestor is not protected', async () => {
+    const h = await load();
+    state.realpath.mockResolvedValueOnce('C:/project');
+
+    expect(await h['fs:mkdir']({}, 'C:/project/sub')).toBe(true);
+    expect(state.mkdir).toHaveBeenCalledWith('C:/project/sub', { recursive: true });
+  });
 });
 
 describe('fs:delete', () => {

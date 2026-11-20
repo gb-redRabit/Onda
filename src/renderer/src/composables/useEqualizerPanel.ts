@@ -63,7 +63,12 @@ export function useEqualizerPanel(refs: EqualizerPanelRefs) {
   // wtedy, gdy jakiś konsument zgłosi `viz: active`. Wizualizator robi to sam;
   // equalizer otwierany z paska odtwarzacza musi zrobić to samo.
   onMounted(() => audio.setVizActive(true));
-  onUnmounted(() => audio.setVizActive(false));
+  onUnmounted(() => {
+    // Solo zmienia tylko graf; bez przywrócenia pełnych pasm zamknięcie panelu
+    // zostawiłoby korektor zablokowany na jednym paśmie.
+    audio.applyEqGraph(bands.value);
+    audio.setVizActive(false);
+  });
 
   const bandTypes: EqBandType[] = ['lowshelf', 'peaking', 'highshelf'];
   const limits = EQ_LIMITS;

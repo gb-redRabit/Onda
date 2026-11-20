@@ -40,7 +40,7 @@ async function startFixture(): Promise<{ url: string; close: () => Promise<void>
 
 test.describe('sources', () => {
   test('creates, opens, opens the editor for and removes a source', async () => {
-    const onda = await launchOnda();
+    const onda = await launchOnda({ env: { ONDA_E2E_ALLOW_PRIVATE_NETWORK: '1' } });
     const { page } = onda;
     try {
       await dismissWizard(page);
@@ -109,7 +109,7 @@ test.describe('sources', () => {
   });
 
   test('reorders sources and persists the order', async () => {
-    const onda = await launchOnda();
+    const onda = await launchOnda({ env: { ONDA_E2E_ALLOW_PRIVATE_NETWORK: '1' } });
     const { page } = onda;
     try {
       await dismissWizard(page);
@@ -156,7 +156,7 @@ test.describe('sources', () => {
 
   test('renders a carousel-configured source from a local fixture and opens the item modal', async () => {
     const fixture = await startFixture();
-    const onda = await launchOnda();
+    const onda = await launchOnda({ env: { ONDA_E2E_ALLOW_PRIVATE_NETWORK: '1' } });
     const { page } = onda;
     try {
       await dismissWizard(page);

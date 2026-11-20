@@ -1,6 +1,6 @@
 import { dialog, BrowserWindow } from 'electron';
 import { handleIpc } from '../typed-handle';
-import { writeFile, readFile } from 'fs/promises';
+import { stat, writeFile, readFile } from 'fs/promises';
 import { getStore, applyCoverCacheSettings } from '../cover/cover-cache';
 import { isResetting } from '../factory-reset';
 import { configureAutoCheck } from '../../updater-scheduler';
@@ -27,6 +27,8 @@ import { refreshTray } from '../../windows/tray';
 import { setMainLocale } from '../../i18n-main';
 import type { AppSettings } from '../../../shared/types/settings';
 import { logger } from '../../../shared/logger';
+
+const MAX_SETTINGS_IMPORT_BYTES = 5 * 1024 * 1024;
 
 /**
  * Szyfruje klucze API w miejscu albo usuwa je z ładunku.
@@ -179,6 +181,10 @@ export function registerSettingsHandlers(): void {
           filters: [{ name: 'JSON', extensions: ['json'] }]
         });
         if (result.canceled || !result.filePaths[0]) return { success: false, canceled: true };
+        const info = await stat(result.filePaths[0]);
+        if (!info.isFile() || info.size > MAX_SETTINGS_IMPORT_BYTES) {
+          return { success: false, error: 'Settings file is too large or not a file' };
+        }
         const raw = await readFile(result.filePaths[0], 'utf-8');
         const parsed = JSON.parse(raw) as Partial<AppSettings>;
         const { sanitized, droppedKeys } = sanitizeSettings(parsed);

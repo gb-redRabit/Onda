@@ -216,7 +216,12 @@ export function registerSourcesHandlers(): void {
       } else if (source.allowPrivateNetwork === true) {
         // Renderer nie może sam przyznać dostępu do loopback/LAN. Nowy origin
         // (albo pierwsze włączenie) wymaga zgody użytkownika w oknie main.
-        if (!(await confirmPrivateNetwork(event))) source.allowPrivateNetwork = false;
+        // Zestaw E2E używa lokalnego serwera fixture; jawna zmienna środowiskowa
+        // (tylko w rozpakowanym buildzie) pomija modal, bo nie ma go kto kliknąć.
+        const e2eBypass = !app.isPackaged && process.env['ONDA_E2E_ALLOW_PRIVATE_NETWORK'] === '1';
+        if (!e2eBypass && !(await confirmPrivateNetwork(event))) {
+          source.allowPrivateNetwork = false;
+        }
       }
       return saveSource(getSourcesFile(), source);
     }

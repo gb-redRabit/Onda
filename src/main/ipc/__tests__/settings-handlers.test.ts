@@ -35,6 +35,7 @@ const state = vi.hoisted(() => {
     setMainLocale: vi.fn(),
     writeFile: vi.fn(),
     readFile: vi.fn(),
+    stat: vi.fn(),
     saveDialog: vi.fn(),
     openDialog: vi.fn(),
     fromWebContents: vi.fn(),
@@ -55,7 +56,11 @@ vi.mock('electron', () => ({
     getAllWindows: () => state.allWindows
   }
 }));
-vi.mock('fs/promises', () => ({ writeFile: state.writeFile, readFile: state.readFile }));
+vi.mock('fs/promises', () => ({
+  writeFile: state.writeFile,
+  readFile: state.readFile,
+  stat: state.stat
+}));
 vi.mock('../cover/cover-cache', () => ({
   getStore: state.getStore,
   applyCoverCacheSettings: state.applyCoverCache
@@ -118,6 +123,8 @@ beforeEach(() => {
   state.dropped = [];
   state.getStore.mockReset();
   state.getStore.mockResolvedValue(state.store);
+  state.stat.mockReset();
+  state.stat.mockResolvedValue({ isFile: () => true, size: 1 });
   state.sanitize.mockReset();
   state.sanitize.mockImplementation((input: unknown) => {
     if (input === state.stored) return { sanitized: state.storedSanitized, droppedKeys: [] };
