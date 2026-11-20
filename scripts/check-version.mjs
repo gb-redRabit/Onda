@@ -66,8 +66,18 @@ if (version && latestTagVersion) {
     // (a) czysto: drzewo to dokładnie ostatni opublikowany release.
   } else {
     // (b) albo naruszenie. Tylko commit release-please może nieść wersję
-    //     nowszą niż najnowszy tag.
-    const subject = git(['log', '-1', '--format=%s', '--', 'package.json']);
+    //     nowszą niż najnowszy tag. Patrzymy na commit, który zmienił SAMĄ
+    //     wartość wersji — zwykłe zmiany w package.json (skrypty, zależności)
+    //     ani merge z mainem nie mogą tego zapisu przewrócić.
+    const subject = git([
+      'log',
+      '-1',
+      '--format=%s',
+      '-S',
+      `"version": "${version}"`,
+      '--',
+      'package.json'
+    ]);
     const isReleaseCommit =
       subject !== null && /^chore\(main\): release \d+\.\d+\.\d+/.test(subject);
     if (!isReleaseCommit) {
