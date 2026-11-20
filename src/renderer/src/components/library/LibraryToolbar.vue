@@ -44,6 +44,7 @@ const { t } = useI18n();
       <div class="relative">
         <select
           v-model="sortKey"
+          :aria-label="t('library.sortBy')"
           class="appearance-none h-9 pl-2.5 pr-8 rounded-field bg-base-200/70 border border-hairline/80 text-xs font-medium focus-visible:border-primary/50 focus-visible:outline-hidden cursor-pointer"
         >
           <option value="added">{{ t('library.sortAdded') }}</option>

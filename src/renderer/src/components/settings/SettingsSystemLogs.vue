@@ -18,6 +18,7 @@ const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
     >
       <select
         :value="settings.general.logLevel || 'info'"
+        :aria-label="$t('settings.logLevel')"
         class="px-2 py-1.5 rounded-field bg-base-100 border border-hairline text-sm"
         @change="settings.updateGeneral({ logLevel: readSelect($event, LOG_LEVELS) })"
       >

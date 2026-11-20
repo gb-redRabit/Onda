@@ -126,6 +126,7 @@ watch(
     >
       <input
         v-model="clientId"
+        :aria-label="$t('settings.discordClientId')"
         data-testid="settings-discord-client-id"
         type="text"
         inputmode="numeric"

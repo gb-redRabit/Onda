@@ -119,6 +119,7 @@ export default {
     sortDuration: 'Duration',
     sortAdded: 'Added',
     sortPlays: 'Plays',
+    sortBy: 'Sort by',
     chipAll: 'All',
     chipLiked: 'Liked',
     chipRecent: 'Recently added',

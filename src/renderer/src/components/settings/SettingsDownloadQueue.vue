@@ -96,6 +96,7 @@ const settings = useSettingsStore();
         min="0"
         max="23"
         :value="settings.download.nightScheduleStart"
+        :aria-label="$t('settings.nightScheduleStart')"
         class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm w-20"
         @change="
           settings.updateDownload({
@@ -109,6 +110,7 @@ const settings = useSettingsStore();
         min="0"
         max="23"
         :value="settings.download.nightScheduleEnd"
+        :aria-label="$t('settings.nightScheduleEnd')"
         class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm w-20"
         @change="
           settings.updateDownload({

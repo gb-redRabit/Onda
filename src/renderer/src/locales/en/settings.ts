@@ -152,6 +152,8 @@ export default {
     nightSchedule: 'Night schedule',
     nightScheduleDesc: 'Only start downloads during the selected hours',
     nightScheduleHours: 'h',
+    nightScheduleStart: 'From',
+    nightScheduleEnd: 'To',
     autoAddDownloadFolder: 'Auto-add download folder to library',
     autoAddDownloadFolderDesc:
       'After the first download to a folder outside the library, add it automatically so the file is playable right away',

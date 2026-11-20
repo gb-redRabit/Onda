@@ -153,6 +153,8 @@ export default {
     nightSchedule: 'Harmonogram nocny',
     nightScheduleDesc: 'Rozpoczynaj pobieranie tylko w wybranych godzinach',
     nightScheduleHours: 'godz.',
+    nightScheduleStart: 'Od',
+    nightScheduleEnd: 'Do',
     autoAddDownloadFolder: 'Automatycznie dodawaj folder pobierania do biblioteki',
     autoAddDownloadFolderDesc:
       'Po pierwszym pobraniu do folderu spoza biblioteki dodaj go automatycznie, aby plik był od razu odtwarzalny',

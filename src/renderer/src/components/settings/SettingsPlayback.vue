@@ -82,6 +82,7 @@ const toggles = [
     >
       <select
         :value="settings.playback.replayGainMode"
+        :aria-label="$t('settings.replayGainMode')"
         class="w-full px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         @change="settings.updatePlayback({ replayGainMode: readSelect($event, REPLAY_GAIN_MODES) })"
       >
@@ -247,6 +248,7 @@ const toggles = [
     >
       <select
         :value="settings.playback.videoFilter"
+        :aria-label="$t('settings.videoFilter')"
         class="w-full px-3 py-2 rounded-field bg-base-100 border border-hairline text-sm"
         @change="
           settings.updatePlayback({ videoFilter: ($event.target as HTMLSelectElement).value })
