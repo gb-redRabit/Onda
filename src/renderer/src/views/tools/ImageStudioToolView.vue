@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Check, Image as ImageIcon, Save } from '@lucide/vue';
 import EmptyState from '@renderer/components/ui/EmptyState.vue';
@@ -12,6 +12,7 @@ import ImageStudioCoverPanel from '@renderer/components/tools/image/ImageStudioC
 import ImageStudioCropPanel from '@renderer/components/tools/image/ImageStudioCropPanel.vue';
 import ImageStudioOutputPanel from '@renderer/components/tools/image/ImageStudioOutputPanel.vue';
 import { useToolBridge } from '@renderer/composables/useToolBridge';
+import { useImageStudioOutput } from '@renderer/composables/useImageStudioOutput';
 import {
   useImageStudioInteraction,
   type StudioTool
@@ -35,7 +36,7 @@ import {
   type Aspect,
   type CropRect
 } from '@renderer/utils/imageStudio';
-import type { ImageOutputFormat, ImageStudioLoadResult } from '@shared/types/tools';
+import type { ImageStudioLoadResult } from '@shared/types/tools';
 
 type Tool = StudioTool;
 const MAX_PREVIEW_W = 720;
@@ -79,19 +80,26 @@ const color = ref('#ff3b30');
 const strokeWidth = ref(8);
 const textValue = ref('');
 
-const outputFormat = ref<ImageOutputFormat>('webp');
-const quality = ref(85);
 const outputWidth = ref(0);
-const outputPath = ref('');
-const estimatedBytes = ref<number | null>(null);
-const savedBytes = ref<number | null>(null);
-const savedPath = ref('');
-const saving = ref(false);
-const estimating = ref(false);
-
-const coverAudioPath = ref('');
-const coverStatus = ref('');
-const coverOk = ref(false);
+const {
+  outputFormat,
+  quality,
+  outputPath,
+  estimatedBytes,
+  savedBytes,
+  savedPath,
+  saving,
+  estimating,
+  coverAudioPath,
+  coverStatus,
+  coverOk,
+  estimateSize,
+  scheduleEstimate,
+  save,
+  pickOutputDir,
+  pickCoverAudio,
+  setAsCover
+} = useImageStudioOutput({ renderCanvas: () => renderExportCanvas(), errorMsg, t });
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const selectedId = ref<string | null>(null);
@@ -116,8 +124,6 @@ const hasImage = computed(() => !!image.value);
 const selectedWidth = computed(
   () => annotations.value.find((annotation) => annotation.id === selectedId.value)?.width ?? null
 );
-
-let estimateTimer: ReturnType<typeof setTimeout> | null = null;
 
 const {
   cropCursor,
@@ -335,103 +341,6 @@ function renderExportCanvas(): HTMLCanvasElement | null {
   });
 }
 
-async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<number[]> {
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob((value) => resolve(value), 'image/png')
-  );
-  if (!blob) throw new Error('PNG export failed');
-  const buffer = await blob.arrayBuffer();
-  return Array.from(new Uint8Array(buffer));
-}
-
-function scheduleEstimate(): void {
-  if (estimateTimer) clearTimeout(estimateTimer);
-  estimateTimer = setTimeout(() => {
-    estimateTimer = null;
-    void estimateSize();
-  }, 600);
-}
-
-async function estimateSize(): Promise<void> {
-  const canvas = renderExportCanvas();
-  if (!canvas) return;
-  estimating.value = true;
-  try {
-    const png = await canvasToPngBytes(canvas);
-    const result = await window.api.imageEstimate({
-      png,
-      format: outputFormat.value,
-      quality: quality.value
-    });
-    estimatedBytes.value = result.success ? (result.bytes ?? null) : null;
-  } catch {
-    estimatedBytes.value = null;
-  } finally {
-    estimating.value = false;
-  }
-}
-
-async function save(): Promise<void> {
-  const canvas = renderExportCanvas();
-  if (!canvas || !outputPath.value.trim()) return;
-  saving.value = true;
-  errorMsg.value = '';
-  coverStatus.value = '';
-  try {
-    const png = await canvasToPngBytes(canvas);
-    const result = await window.api.imageSave({
-      png,
-      outputPath: outputPath.value.trim(),
-      format: outputFormat.value,
-      quality: quality.value
-    });
-    if (!result.success) {
-      errorMsg.value = result.error || t('tools.imageStudioSaveFailed');
-      return;
-    }
-    savedBytes.value = result.bytes ?? null;
-    savedPath.value = result.outputPath ?? '';
-  } catch (error) {
-    errorMsg.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    saving.value = false;
-  }
-}
-
-async function pickOutputDir(): Promise<void> {
-  const paths = (await window.api.invoke('dialog:openFolder')) as string[];
-  if (paths.length === 0) return;
-  const name =
-    outputPath.value.split(/[\\/]/).pop() || `edited.${extensionForFormat(outputFormat.value)}`;
-  outputPath.value = `${paths[0].replace(/\\/g, '/')}/${name}`;
-}
-
-async function pickCoverAudio(): Promise<void> {
-  const result = (await window.api.invoke('dialog:openFile', {
-    properties: ['openFile'],
-    filters: [
-      {
-        name: t('tools.audio'),
-        extensions: ['mp3', 'flac', 'm4a', 'm4b', 'ogg', 'oga', 'opus', 'wav']
-      }
-    ]
-  })) as { canceled: boolean; filePaths: string[] };
-  const path = result.filePaths?.[0];
-  if (!result.canceled && path) {
-    coverAudioPath.value = path;
-    coverStatus.value = '';
-  }
-}
-
-async function setAsCover(): Promise<void> {
-  if (!savedPath.value || !coverAudioPath.value) return;
-  const result = await window.api.writeCover(coverAudioPath.value, savedPath.value);
-  coverOk.value = result.success;
-  coverStatus.value = result.success
-    ? t('tools.imageStudioCoverSet')
-    : result.error || t('tools.imageStudioCoverFailed');
-}
-
 watch(
   () => context.value,
   (ctx) => {
@@ -467,10 +376,6 @@ watch([outputFormat, quality, outputWidth], () => {
     );
   }
   scheduleEstimate();
-});
-
-onBeforeUnmount(() => {
-  if (estimateTimer) clearTimeout(estimateTimer);
 });
 </script>
 
