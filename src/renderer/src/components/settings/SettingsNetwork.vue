@@ -45,6 +45,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <SettingsSectionTitle :title="$t('settings.proxyHost')" />
           <input
             :value="settings.network.proxy.host"
+            :aria-label="$t('settings.proxyHost')"
             class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
             @input="updateProxy({ host: ($event.target as HTMLInputElement).value })"
           />
@@ -54,6 +55,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <input
             type="number"
             :value="settings.network.proxy.port"
+            :aria-label="$t('settings.proxyPort')"
             class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
             @input="updateProxy({ port: parseInt(($event.target as HTMLInputElement).value) || 0 })"
           />
@@ -62,6 +64,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <SettingsSectionTitle :title="$t('settings.proxyUsername')" />
           <input
             :value="settings.network.proxy.username"
+            :aria-label="$t('settings.proxyUsername')"
             class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
             @input="updateProxy({ username: ($event.target as HTMLInputElement).value })"
           />
@@ -71,6 +74,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
           <input
             type="password"
             :value="settings.network.proxy.password"
+            :aria-label="$t('settings.proxyPassword')"
             class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
             @input="updateProxy({ password: ($event.target as HTMLInputElement).value })"
           />
@@ -111,6 +115,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
     <input
       :value="settings.network.userAgent"
       placeholder="Mozilla/5.0 ..."
+      :aria-label="$t('settings.userAgent')"
       class="w-full px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary/15 transition"
       @input="settings.updateNetwork({ userAgent: ($event.target as HTMLInputElement).value })"
     />

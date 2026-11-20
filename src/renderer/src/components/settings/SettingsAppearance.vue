@@ -61,6 +61,7 @@ const sidebarPositionOptions = computed(() =>
         <input
           type="checkbox"
           :checked="settings.appearance.showPlaylists"
+          :aria-label="$t('library.playlists')"
           @change="
             settings.updateAppearance({
               showPlaylists: ($event.target as HTMLInputElement).checked
@@ -72,6 +73,7 @@ const sidebarPositionOptions = computed(() =>
         <input
           type="checkbox"
           :checked="settings.appearance.showAlbums"
+          :aria-label="$t('library.albums')"
           @change="
             settings.updateAppearance({ showAlbums: ($event.target as HTMLInputElement).checked })
           "
@@ -81,6 +83,7 @@ const sidebarPositionOptions = computed(() =>
         <input
           type="checkbox"
           :checked="settings.appearance.sidebarCollapsed"
+          :aria-label="$t('settings.sidebarCollapsed')"
           @change="
             settings.updateAppearance({
               sidebarCollapsed: ($event.target as HTMLInputElement).checked
@@ -97,6 +100,7 @@ const sidebarPositionOptions = computed(() =>
         <input
           type="checkbox"
           :checked="settings.appearance.animations"
+          :aria-label="$t('settings.animations')"
           class="w-4 h-4 rounded accent-accent-base"
           @change="
             settings.updateAppearance({
