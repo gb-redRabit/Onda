@@ -8,6 +8,50 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 `chore(main): release X.Y.Z` z PR-a release-please. Ręczne `npm version` na `main`
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI.
 
+## [1.1.0](https://github.com/gb-redRabit/Onda/compare/v1.0.1...v1.1.0) (2026-11-20)
+
+
+### Features
+
+* **main:** type shell IPC handlers against the contract ([487256e](https://github.com/gb-redRabit/Onda/commit/487256e48b907acbb323a09b5eb8551e7e447a35))
+* **main:** type tools, discord and window IPC handlers ([7c3c41d](https://github.com/gb-redRabit/Onda/commit/7c3c41da988b0d0c49285abe4a6e04401d9f1899))
+* **sources:** center the gallery download action next to play ([2291b09](https://github.com/gb-redRabit/Onda/commit/2291b091dc4b4a13eb9606aa3efc542b55ac5477))
+
+
+### Bug Fixes
+
+* **a11y:** parse template tags by quotes, not by the first &gt; ([9c01922](https://github.com/gb-redRabit/Onda/commit/9c0192201b5bb9d6cad76873f62412fd2d9806ae))
+* **explorer:** scan duplicates when the panel mounts open ([f2b91c4](https://github.com/gb-redRabit/Onda/commit/f2b91c4d2f82145f82fdf7a573f65648cb631db2))
+* **library:** keep budgeted files when the scan stops ([563f614](https://github.com/gb-redRabit/Onda/commit/563f614945dde16182bf27e2dba529f36a4dde86))
+* **main:** do not mistake an encrypted IV for a JSON config ([c212f36](https://github.com/gb-redRabit/Onda/commit/c212f36b394d59fd536c563cca25069b862c423f))
+* **main:** handle malformed redirects and pin dependency downloads ([a102676](https://github.com/gb-redRabit/Onda/commit/a10267651f1b2dad297a9ed9626afd68fa5a96e4))
+* **main:** reject a legacy config that decrypts to non-JSON ([d1bc940](https://github.com/gb-redRabit/Onda/commit/d1bc9402f7f0ee3cc6d4958d346c90b7e9d26e14))
+* **main:** serialize window mode changes and flush before restart ([65ca521](https://github.com/gb-redRabit/Onda/commit/65ca521a48be041562ebb6bc3413c7e157ea7acf))
+* **main:** stop child processes and dedupe ffmpeg work ([192ad24](https://github.com/gb-redRabit/Onda/commit/192ad2467c3aea404377440ff4defbefa43b5a57))
+* **main:** stop log write failures from re-queueing forever ([e671ad6](https://github.com/gb-redRabit/Onda/commit/e671ad6f525d688b4efd1a75db29163f47771279))
+* **nav:** align sidebar icons with the view menu ([191f5df](https://github.com/gb-redRabit/Onda/commit/191f5dfb703c6e6b67c79ce11306b524bd873125))
+* **player:** keep a pause that lands while the track is loading ([030a0eb](https://github.com/gb-redRabit/Onda/commit/030a0eba15a9eaa5520422be08108cccc3b7c82e))
+* **renderer:** settle preview and playback races ([e312732](https://github.com/gb-redRabit/Onda/commit/e312732b5a21502fbc9ecfbb625cbbcb2055c432))
+* **scripts:** ignore merge commits when tracing the release version ([282cbd5](https://github.com/gb-redRabit/Onda/commit/282cbd5293c4bfe31cd33ed50c50b02e04523deb))
+* **scripts:** recognise handler wrappers in the IPC inventory ([c7984e4](https://github.com/gb-redRabit/Onda/commit/c7984e4109ead97742c1ebaf92a1697235776928))
+* **security:** block file reads through media tags and covers ([1333c55](https://github.com/gb-redRabit/Onda/commit/1333c55eee7463ce22915bae674406df141e7352))
+* **security:** block renderer access to app data subtrees ([af5902c](https://github.com/gb-redRabit/Onda/commit/af5902c2178abf8d765cb17dd5680ba4b08926e2))
+* **security:** harden preview, zip and plugin allowlists ([b2b2e21](https://github.com/gb-redRabit/Onda/commit/b2b2e2124b14ca6be557414a166ddf01458ce7e6))
+* **security:** harden the plugin worker sandbox chain ([3f58d0a](https://github.com/gb-redRabit/Onda/commit/3f58d0af49e839bf4502b2b9dad88c51ff7f1df4))
+* **security:** validate yt-dlp targets and reject CR/LF paths ([0c475f5](https://github.com/gb-redRabit/Onda/commit/0c475f52e7104d4f2e4e9e22f3aaeb01fbd9b369))
+* **sources:** match the selected entry by id, not only by reference ([95748a5](https://github.com/gb-redRabit/Onda/commit/95748a5c69d23ebaa8e358928f5c328c8582671d))
+* **sources:** seed query params draft on lazy mount ([267905d](https://github.com/gb-redRabit/Onda/commit/267905de11b168664e3208018e0ccdb2eca16838))
+* **ui:** center play overlay on media cards ([cc4a08f](https://github.com/gb-redRabit/Onda/commit/cc4a08fad40089e51f9a3c7906ed40550d6aa50a))
+
+
+### Performance Improvements
+
+* **app:** trim standalone window boot and hot-path sync I/O ([0fdcb98](https://github.com/gb-redRabit/Onda/commit/0fdcb98800e316321cf9f1ad45e277885b7f8ecb))
+* **main:** bound scan and waveform concurrency, quiet idle core ticks ([5a4c7b7](https://github.com/gb-redRabit/Onda/commit/5a4c7b7f861c966a43e4894145fa6bb885b93550))
+* **main:** inflate subtitle archives off the synchronous path ([4bb6d56](https://github.com/gb-redRabit/Onda/commit/4bb6d5664b91b08bd99f934564ed708584260d90))
+* **player:** shallow track arrays and cache encoder detection ([ad6248b](https://github.com/gb-redRabit/Onda/commit/ad6248bb1749aab89c705f9dfdfa22f1cdf6b8d9))
+* **views:** lazily load explorer, sources and online panels ([16953ee](https://github.com/gb-redRabit/Onda/commit/16953ee52f9d9f3d4118064d9cebf15f1181e57b))
+
 ## [1.0.1](https://github.com/gb-redRabit/Onda/compare/v1.0.0...v1.0.1) (2026-11-18)
 
 
