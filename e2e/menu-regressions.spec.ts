@@ -65,7 +65,9 @@ test.describe('app menu — view keyboard', () => {
 
       await page.keyboard.press('ArrowLeft');
       await expect(page.locator('[data-menu="view"]')).toBeVisible();
-      for (const label of ['Widok audio', 'Odtwarzacz', 'Źródła', 'Webcast']) {
+      // Widok nie oferuje już pozycji audio/odtwarzacza; zostają ekrany
+      // nawigacyjne bez skrótów (te z hintem mają dłuższą nazwę dostępną).
+      for (const label of ['Online', 'Źródła', 'Webcast', 'Narzędzia']) {
         await expect(page.getByRole('menuitem', { name: label })).toBeVisible();
       }
 
