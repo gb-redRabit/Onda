@@ -73,13 +73,21 @@ export async function getVideoFps(filePath: string): Promise<number> {
   }
 }
 
-/** Zapisuje bajty PNG obok wideo jako `<base>.frame-<HH-MM-SS>.png`. */
+const MAX_SCREENSHOT_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Zapisuje bajty PNG obok wideo jako `<base>.frame-<HH-MM-SS>.png`.
+ * Rozmiar jest ograniczony, żeby przejęty renderer nie zapełnił dysku jednym
+ * wywołaniem, a bajty nie trafiają do dowolnego katalogu bez sprawdzenia wideo.
+ */
 export async function saveVideoScreenshot(
   videoPath: string,
   data: number[],
   timeSec: number
 ): Promise<string | null> {
   if (!isSafeAbsolutePath(videoPath) || !Array.isArray(data) || data.length === 0) return null;
+  if (data.length > MAX_SCREENSHOT_BYTES) return null;
+  if (!isReadableMediaPath(videoPath)) return null;
   const buf = Buffer.from(data);
   const base = basename(videoPath, extname(videoPath));
   const outPath = join(dirname(videoPath), `${base}.frame-${timecode(timeSec)}.png`);

@@ -263,10 +263,19 @@ describe('fs:mkdir', () => {
   it('rejects paths whose existing ancestor is protected', async () => {
     const h = await load();
     state.isProtectedPath.mockReturnValueOnce(false).mockReturnValueOnce(true);
-    state.stat.mockRejectedValueOnce(new Error('missing'));
+    state.realpath.mockRejectedValueOnce(new Error('missing'));
 
     expect(await h['fs:mkdir']({}, 'C:/project/sub')).toBe(false);
     expect(state.isProtectedPath).toHaveBeenCalledWith('C:/parent');
+  });
+
+  it('rejects a symlinked ancestor that resolves into a protected directory', async () => {
+    const h = await load();
+    state.isProtectedPath.mockReturnValueOnce(false).mockReturnValueOnce(true);
+    state.realpath.mockResolvedValueOnce('C:/Windows');
+
+    expect(await h['fs:mkdir']({}, 'C:/project/link/sub')).toBe(false);
+    expect(state.isProtectedPath).toHaveBeenCalledWith('C:/Windows');
   });
 });
 

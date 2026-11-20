@@ -17,6 +17,16 @@ export interface MainMessages {
   openExecDetail: string;
   openExecCancel: string;
   openExecOpen: string;
+  sourcesPrivateTitle: string;
+  sourcesPrivateMessage: string;
+  sourcesPrivateDetail: string;
+  sourcesPrivateCancel: string;
+  sourcesPrivateAllow: string;
+  factoryResetTitle: string;
+  factoryResetMessage: string;
+  factoryResetDetail: string;
+  factoryResetCancel: string;
+  factoryResetConfirm: string;
   depYtDlp: string;
   depFfmpeg: string;
   depRemove: string;
@@ -46,6 +56,19 @@ const EN: MainMessages = {
   openExecDetail: 'Running unknown executables can be dangerous.',
   openExecCancel: 'Cancel',
   openExecOpen: 'Open',
+  sourcesPrivateTitle: 'Private network access',
+  sourcesPrivateMessage:
+    'This source will be allowed to connect to addresses on your local network.',
+  sourcesPrivateDetail:
+    'Enable it only for sources you configured yourself. It can reach routers, NAS devices and other local services.',
+  sourcesPrivateCancel: 'Cancel',
+  sourcesPrivateAllow: 'Allow',
+  factoryResetTitle: 'Reset Onda',
+  factoryResetMessage: 'Remove all local data and restart Onda?',
+  factoryResetDetail:
+    'Settings, library, downloads, playlists and sign-ins are deleted. Files on disk are not touched.',
+  factoryResetCancel: 'Cancel',
+  factoryResetConfirm: 'Reset and restart',
   depYtDlp: 'Failed to download yt-dlp',
   depFfmpeg: 'Failed to install FFmpeg',
   depRemove: 'Failed to remove the file',
@@ -75,6 +98,18 @@ const PL: MainMessages = {
   openExecDetail: 'Uruchamianie nieznanych plików wykonywalnych może być niebezpieczne.',
   openExecCancel: 'Anuluj',
   openExecOpen: 'Otwórz',
+  sourcesPrivateTitle: 'Dostęp do sieci lokalnej',
+  sourcesPrivateMessage: 'To źródło będzie mogło łączyć się z adresami w Twojej sieci lokalnej.',
+  sourcesPrivateDetail:
+    'Włączaj tylko dla źródeł, które sam skonfigurowałeś. Może sięgnąć do routera, NAS-a i innych lokalnych usług.',
+  sourcesPrivateCancel: 'Anuluj',
+  sourcesPrivateAllow: 'Zezwól',
+  factoryResetTitle: 'Reset Ondy',
+  factoryResetMessage: 'Usunąć wszystkie lokalne dane i uruchomić Ondę ponownie?',
+  factoryResetDetail:
+    'Ustawienia, biblioteka, pobrania, playlisty i logowania zostaną usunięte. Pliki na dysku pozostaną nietknięte.',
+  factoryResetCancel: 'Anuluj',
+  factoryResetConfirm: 'Resetuj i uruchom ponownie',
   depYtDlp: 'Nie udało się pobrać yt-dlp',
   depFfmpeg: 'Nie udało się zainstalować FFmpeg',
   depRemove: 'Nie udało się usunąć pliku',

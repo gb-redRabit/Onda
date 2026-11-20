@@ -67,12 +67,27 @@ const POSIX_PROTECTED = [
 
 /** Niepuste segmenty ścieżki, z usuniętym wolumenem lub korzeniem. */
 function segmentsOf(target: string, platform: NodeJS.Platform): string[] {
-  const normalized = platform === 'win32' ? win32.normalize(target) : posix.normalize(target);
+  let normalized = platform === 'win32' ? win32.normalize(target) : posix.normalize(target);
+  if (platform === 'win32') {
+    // Zdejmij prefiks ścieżki rozszerzonej (`\\?\C:\Windows`,
+    // `\\?\UNC\server\share`). Sam `\\?\Volume{GUID}\Windows` traktujemy jak
+    // wolumen: pierwszy segment to identyfikator, reszta to ścieżka.
+    if (/^\\\\\?\\unc\\/i.test(normalized)) {
+      normalized = `\\\\${normalized.slice(8)}`;
+    } else if (normalized.startsWith('\\\\?\\')) {
+      normalized = normalized.slice(4);
+    }
+  }
   const parts = normalized.split(/[\\/]+/).filter(Boolean);
   if (platform === 'win32') {
-    // Usuwa dysk (`C:`) lub dwa komponenty UNC (`server`, `share`).
+    // Usuwa dysk (`C:`).
     if (parts.length && /^[a-z]:$/i.test(parts[0])) return parts.slice(1);
-    if (parts.length > 2) return parts.slice(2);
+    // Dwa komponenty UNC usuwamy WYŁĄCZNIE dla prawdziwych ścieżek UNC
+    // (`\\server\share`). Ścieżka root-relative (`\Windows\System32`) jest
+    // absolutna w gramatyce Win32, ale nie ma serwera/udziału — wcześniej
+    // traktowanie jej jak UNC ucinało `Windows` i omijało ochronę systemową.
+    if (/^volume\{[^}]+\}$/i.test(parts[0] ?? '')) return parts.slice(1);
+    if (normalized.startsWith('\\\\') && parts.length >= 2) return parts.slice(2);
     return parts;
   }
   return parts;

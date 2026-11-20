@@ -25,7 +25,7 @@ function isTrustedAppOrigin(origin: string): boolean {
   try {
     const url = new URL(origin);
     if (url.protocol === 'file:') return isPathInside(app.getAppPath(), fileURLToPath(url));
-    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    const devUrl = app.isPackaged ? undefined : process.env['ELECTRON_RENDERER_URL'];
     if (devUrl) return url.origin === new URL(devUrl).origin;
   } catch {
     return false;

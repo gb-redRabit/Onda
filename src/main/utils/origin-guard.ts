@@ -14,10 +14,12 @@ export function allowedAppOrigin(origin: string | null | undefined): string | nu
     return null;
   }
   if (parsed.protocol === 'file:') return origin;
-  // W produkcji renderer jest ładowany z pliku, więc origin http://localhost
-  // nie ma legalnego zastosowania. W dev dopuszczamy wyłącznie dokładny origin
-  // serwera Vite, a nie dowolny port na localhost.
-  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  // W buildzie produkcyjnym renderer jest ładowany z pliku, więc origin
+  // dev-servera nie ma legalnego zastosowania. `NODE_ENV` jest wstawiane przez
+  // Vite (`production` dla builda, `development` w dev), więc zmienna środowiskowa
+  // nie może otworzyć CORS w spakowanej aplikacji.
+  const devUrl =
+    process.env.NODE_ENV === 'production' ? undefined : process.env['ELECTRON_RENDERER_URL'];
   if (!devUrl) return null;
   try {
     return new URL(devUrl).origin === origin ? origin : null;

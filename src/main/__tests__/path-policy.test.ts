@@ -76,6 +76,20 @@ describe('protectedPathReason', () => {
     expect(protectedPathReason('/etc/ssh/sshd_config', 'linux')).toBe('system');
   });
 
+  it('treats root-relative Windows paths as absolute, not UNC shares', () => {
+    // `\Windows\System32\...` jest absolutna w gramatyce Win32, ale nie ma
+    // serwera/udziału. Wcześniej segmenty były obcinane jak dla UNC, przez co
+    // ochrona systemowa widziała tylko `drivers/etc/hosts`.
+    expect(protectedPathReason('\\Windows\\System32\\drivers\\etc\\hosts', 'win32')).toBe('system');
+    expect(protectedPathReason('\\Windows', 'win32')).toBe('system');
+    expect(protectedPathReason('\\Program Files\\Onda\\x.exe', 'win32')).toBe('system');
+  });
+
+  it('unwraps extended-length Windows paths before checking protection', () => {
+    expect(protectedPathReason('\\\\?\\C:\\Windows\\System32', 'win32')).toBe('system');
+    expect(protectedPathReason('\\\\?\\UNC\\server\\share\\Windows', 'win32')).toBe('system');
+  });
+
   it('allows ordinary user content', () => {
     expect(protectedPathReason('C:\\Users\\u\\Music', 'win32')).toBeNull();
     expect(protectedPathReason('C:\\Users\\u\\Windows.old', 'win32')).toBeNull();

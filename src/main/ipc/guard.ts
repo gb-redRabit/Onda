@@ -60,7 +60,7 @@ function isTrustedSenderFrame(frame: WebFrameMain | null | undefined): boolean {
     // Zaufana jest tylko własna strona aplikacji (build produkcyjny), a nie dowolny
     // file: URL, do którego można nawigować z przejętego renderera.
     if (url.protocol === 'file:') return isTrustedAppFile(url);
-    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    const devUrl = app.isPackaged ? undefined : process.env['ELECTRON_RENDERER_URL'];
     if (devUrl) {
       return url.origin === new URL(devUrl).origin;
     }
@@ -74,10 +74,30 @@ function blockLog(kind: string, channel: string): void {
   logger.warn('ipc', `Blocked ${kind} '${channel}' from untrusted sender frame`);
 }
 
+let guardsInstalled = false;
+
 export function installIpcGuards(): void {
+  if (guardsInstalled) return;
+  guardsInstalled = true;
+
   const originalHandle = ipcMain.handle.bind(ipcMain);
   const originalOn = ipcMain.on.bind(ipcMain);
   const originalOnce = ipcMain.once.bind(ipcMain);
+  const originalRemoveListener = ipcMain.removeListener.bind(ipcMain);
+
+  // Oryginalny listener → wrapper per kanał. Bez tego `removeListener(listener)`
+  // nie znajdował wrappera i listener zostawał w `ipcMain` (np. timeout
+  // `app:session-handoff-ready` w prepareSessionHandoff).
+  type GuardedListener = (event: Electron.IpcMainEvent, ...args: unknown[]) => void;
+  const wrappers = new WeakMap<object, Map<string, GuardedListener>>();
+  const remember = (channel: string, listener: GuardedListener, wrapper: GuardedListener): void => {
+    let byChannel = wrappers.get(listener);
+    if (!byChannel) {
+      byChannel = new Map();
+      wrappers.set(listener, byChannel);
+    }
+    byChannel.set(channel, wrapper);
+  };
 
   // Typy parametrów pochodzą z samego Electrona (`typeof ipcMain.handle`), więc
   // nie trzeba przepisywać `any[]` z jego sygnatury ani rzutować całej lambdy.
@@ -101,7 +121,7 @@ export function installIpcGuards(): void {
   ipcMain.handle = handle;
 
   const on: typeof ipcMain.on = (channel, listener) => {
-    originalOn(channel, (event, ...args) => {
+    const wrapped = (event: Electron.IpcMainEvent, ...args: unknown[]): void => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('event', channel);
         // `ipcRenderer.sendSync` czeka na `event.returnValue`; bez tego zablokowany
@@ -111,21 +131,33 @@ export function installIpcGuards(): void {
         return;
       }
       listener(event, ...args);
-    });
+    };
+    remember(channel, listener as GuardedListener, wrapped);
+    originalOn(channel, wrapped);
     return ipcMain;
   };
   ipcMain.on = on;
 
   const once: typeof ipcMain.once = (channel, listener) => {
-    originalOnce(channel, (event, ...args) => {
+    const wrapped = (event: Electron.IpcMainEvent, ...args: unknown[]): void => {
       if (!isTrustedSenderFrame(event.senderFrame)) {
         blockLog('once event', channel);
         event.returnValue = undefined;
         return;
       }
       listener(event, ...args);
-    });
+    };
+    remember(channel, listener as GuardedListener, wrapped);
+    originalOnce(channel, wrapped);
     return ipcMain;
   };
   ipcMain.once = once;
+
+  const removeListener: typeof ipcMain.removeListener = (channel, listener) => {
+    const wrapper = wrappers.get(listener as GuardedListener)?.get(channel);
+    originalRemoveListener(channel, (wrapper ?? listener) as GuardedListener);
+    return ipcMain;
+  };
+  ipcMain.removeListener = removeListener;
+  ipcMain.off = removeListener;
 }

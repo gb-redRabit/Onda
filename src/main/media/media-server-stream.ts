@@ -198,12 +198,19 @@ export async function handleStreamProxy(
           return;
         }
         let body = '';
+        let bodyBytes = 0;
         upRes.on('data', (chunk: Buffer) => {
+          bodyBytes += chunk.length;
           if (body.length < 400) body += chunk.toString('utf8');
+          // Nie pobieraj megabajtów ciała błędu tylko po to, żeby zalogować 400
+          // znaków. Po przekroczeniu limitu zamykamy upstream.
+          if (bodyBytes > 64 * 1024) upRes.destroy();
         });
         await new Promise<void>((r) => {
           upRes.on('end', () => r());
           upRes.on('error', () => r());
+          upRes.on('aborted', () => r());
+          upRes.on('close', () => r());
         });
         logger.warn(
           'media-server',

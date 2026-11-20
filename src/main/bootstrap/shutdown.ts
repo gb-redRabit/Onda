@@ -96,7 +96,7 @@ export async function performShutdownTasks(deps: ShutdownDeps): Promise<void> {
       // Cache providerów (foldery) jest debounce'owany — opróżnij przy wyjściu.
       flushProviderCache(),
       flushCoverMapWrite(),
-      getStore().then((s) => s.set('mediaRoots', getExtraRoots().slice(0, 50)))
+      getStore().then((s) => s.set('mediaRoots', getExtraRoots()))
     ]);
     const shutdownTimeout = new Promise<'timeout'>((r) =>
       setTimeout(() => r('timeout'), SHUTDOWN_FLUSH_TIMEOUT_MS)

@@ -48,7 +48,9 @@ async function touchesProtectedAncestor(target: string): Promise<boolean> {
   for (let depth = 0; depth < 64; depth++) {
     if (isProtectedPath(current)) return true;
     try {
-      await stat(current);
+      const real = await realpath(current);
+      // Symlink do katalogu systemowego: sprawdzamy cel, nie tylko nazwę linku.
+      if (real !== current && isProtectedPath(real)) return true;
       return false; // istnieje i nie jest chroniona — nic powyżej nie ma znaczenia
     } catch {
       const parent = parentOf(current);
@@ -129,7 +131,12 @@ export function registerFsHandlers(): void {
       // explorera i breadcrumb wywołują navigateTo('') w znaczeniu "pokaż dyski". To
       // sprawdzenie musi być przed walidacją, inaczej widok dysków po cichu wraca
       // pusty zamiast je wylistować.
-      if (dirPath === '' || dirPath === undefined || dirPath === null || dirPath === '/') {
+      if (
+        dirPath === '' ||
+        dirPath === undefined ||
+        dirPath === null ||
+        (process.platform === 'win32' && dirPath === '/')
+      ) {
         if (event.sender.isDestroyed?.() !== true) {
           event.sender.send('fs:readdir:batch', { done: true, items: await getDrives() });
         }

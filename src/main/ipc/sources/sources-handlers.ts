@@ -34,6 +34,7 @@ import type { IpcDownloadJobInput, IpcDownloadTask } from '../../../shared/types
 import type { MediaSource, SourceEndpoint, SourceItem } from '../../../shared/types/sources';
 import { logger } from '../../../shared/logger';
 import { mapLimit } from '../../utils/map-limit';
+import { mainMessages } from '../../i18n-main';
 
 // Współbieżność walidacji/kolejkowania elementów źródła (DNS + scrape per element).
 const ENQUEUE_CONCURRENCY = 6;
@@ -58,6 +59,37 @@ async function resolveTrustedSource(raw: unknown): Promise<MediaSource | null> {
   if (!source) return null;
   const stored = (await loadSources(getSourcesFile())).find((s) => s.id === source.id);
   return applySourceTrust(source, stored);
+}
+
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Dostęp do sieci prywatnej nie może pochodzić z samego ładunku renderera.
+ * Nowy origin lub włączenie flagi wymaga potwierdzenia w procesie głównym;
+ * zapisany wcześniej origin zachowuje zgodę bez ponownego pytania.
+ */
+async function confirmPrivateNetwork(event: Electron.IpcMainInvokeEvent): Promise<boolean> {
+  const m = mainMessages();
+  const options: Electron.MessageBoxOptions = {
+    type: 'warning',
+    buttons: [m.sourcesPrivateCancel, m.sourcesPrivateAllow],
+    defaultId: 0,
+    cancelId: 0,
+    title: m.sourcesPrivateTitle,
+    message: m.sourcesPrivateMessage,
+    detail: m.sourcesPrivateDetail
+  };
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const { response } = win
+    ? await dialog.showMessageBox(win, options)
+    : await dialog.showMessageBox(options);
+  return response === 1;
 }
 
 export function registerSourcesHandlers(): void {
@@ -171,10 +203,23 @@ export function registerSourcesHandlers(): void {
   handleIpc(
     'sources:save',
     async (
-      _event,
+      event,
       raw: unknown
-    ): Promise<{ list: MediaSource[]; saved: MediaSource | null; error?: string }> =>
-      saveSource(getSourcesFile(), raw)
+    ): Promise<{ list: MediaSource[]; saved: MediaSource | null; error?: string }> => {
+      const source = sanitizeSource(raw);
+      if (!source) return saveSource(getSourcesFile(), raw);
+      const stored = (await loadSources(getSourcesFile())).find((s) => s.id === source.id);
+      const storedAllowsPrivate =
+        stored?.allowPrivateNetwork === true && sameOrigin(stored.baseUrl, source.baseUrl);
+      if (storedAllowsPrivate) {
+        source.allowPrivateNetwork = true;
+      } else if (source.allowPrivateNetwork === true) {
+        // Renderer nie może sam przyznać dostępu do loopback/LAN. Nowy origin
+        // (albo pierwsze włączenie) wymaga zgody użytkownika w oknie main.
+        if (!(await confirmPrivateNetwork(event))) source.allowPrivateNetwork = false;
+      }
+      return saveSource(getSourcesFile(), source);
+    }
   );
 
   handleIpc('sources:delete', async (_event, id: string): Promise<MediaSource[]> => {

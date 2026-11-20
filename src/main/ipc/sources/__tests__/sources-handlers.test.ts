@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   fromWebContents: vi.fn(),
   showSaveDialog: vi.fn(),
   showOpenDialog: vi.fn(),
+  showMessageBox: vi.fn(),
   writeFile: vi.fn(),
   readFile: vi.fn(),
   loadSources: vi.fn(),
@@ -40,7 +41,8 @@ vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: state.fromWebContents },
   dialog: {
     showSaveDialog: state.showSaveDialog,
-    showOpenDialog: state.showOpenDialog
+    showOpenDialog: state.showOpenDialog,
+    showMessageBox: state.showMessageBox
   },
   ipcMain: {
     handle: (channel: string, fn: (...args: any[]) => any) => {
@@ -145,6 +147,7 @@ beforeEach(() => {
   );
   state.showSaveDialog.mockResolvedValue({ canceled: false, filePath: 'C:/export.json' });
   state.showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['C:/import.json'] });
+  state.showMessageBox.mockResolvedValue({ response: 1 });
   state.writeFile.mockResolvedValue(undefined);
   state.readFile.mockResolvedValue('{"version":1,"sources":[]}');
   state.fromWebContents.mockReturnValue({ id: 1 });
@@ -232,6 +235,61 @@ describe('registration and downloaded marks', () => {
 
     await h['sources:reorder']({}, null);
     expect(state.reorderSources).toHaveBeenLastCalledWith('C:/userData/sources.json', []);
+  });
+
+  it('asks before granting private network access to a new source', async () => {
+    const h = await load();
+    state.showMessageBox.mockResolvedValueOnce({ response: 1 });
+
+    await h['sources:save']({ sender: {} }, source({ id: 's2', allowPrivateNetwork: true }));
+
+    expect(state.showMessageBox).toHaveBeenCalled();
+    expect(state.saveSource).toHaveBeenCalledWith(
+      'C:/userData/sources.json',
+      expect.objectContaining({ id: 's2', allowPrivateNetwork: true })
+    );
+  });
+
+  it('strips private network access when the user declines', async () => {
+    const h = await load();
+    state.showMessageBox.mockResolvedValueOnce({ response: 0 });
+
+    await h['sources:save']({ sender: {} }, source({ id: 's2', allowPrivateNetwork: true }));
+
+    expect(state.saveSource).toHaveBeenCalledWith(
+      'C:/userData/sources.json',
+      expect.objectContaining({ allowPrivateNetwork: false })
+    );
+  });
+
+  it('keeps an existing private-network approval for the same origin', async () => {
+    const h = await load();
+    state.loadSources.mockResolvedValue([source({ allowPrivateNetwork: true })]);
+
+    await h['sources:save']({ sender: {} }, source({ allowPrivateNetwork: true }));
+
+    expect(state.showMessageBox).not.toHaveBeenCalled();
+    expect(state.saveSource).toHaveBeenCalledWith(
+      'C:/userData/sources.json',
+      expect.objectContaining({ allowPrivateNetwork: true })
+    );
+  });
+
+  it('asks again when the source origin changes', async () => {
+    const h = await load();
+    state.loadSources.mockResolvedValue([source({ allowPrivateNetwork: true })]);
+    state.showMessageBox.mockResolvedValueOnce({ response: 0 });
+
+    await h['sources:save'](
+      { sender: {} },
+      source({ baseUrl: 'http://192.168.1.10', allowPrivateNetwork: true })
+    );
+
+    expect(state.showMessageBox).toHaveBeenCalled();
+    expect(state.saveSource).toHaveBeenCalledWith(
+      'C:/userData/sources.json',
+      expect.objectContaining({ allowPrivateNetwork: false })
+    );
   });
 });
 

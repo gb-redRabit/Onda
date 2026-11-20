@@ -12,7 +12,9 @@ const h = vi.hoisted(() => ({
   providerPartitions: ['persist:provider'] as string[],
   logger: { info: vi.fn(), warn: vi.fn() },
   isPackaged: true,
-  userData: 'C:/user'
+  userData: 'C:/user',
+  showMessageBox: vi.fn(),
+  fromWebContents: vi.fn(() => null)
 }));
 
 vi.mock('electron', () => ({
@@ -23,6 +25,8 @@ vi.mock('electron', () => ({
     }
   },
   ipcMain: { handle: h.handle },
+  BrowserWindow: { fromWebContents: h.fromWebContents },
+  dialog: { showMessageBox: h.showMessageBox },
   session: {
     get defaultSession() {
       return h.defaultSession;
@@ -66,6 +70,10 @@ function store() {
 
 beforeEach(() => {
   h.handle.mockReset();
+  h.showMessageBox.mockReset();
+  h.showMessageBox.mockResolvedValue({ response: 1 });
+  h.fromWebContents.mockReset();
+  h.fromWebContents.mockReturnValue(null);
   h.getStore.mockReset();
   h.getStore.mockResolvedValue(store());
   h.clearAppCaches.mockReset();
@@ -189,6 +197,28 @@ describe('factoryReset', () => {
     expect(h.handle).toHaveBeenCalledWith('app:factoryReset', expect.any(Function));
     const handler = h.handle.mock.calls[0][1] as () => Promise<unknown>;
     await expect(handler()).resolves.toEqual({ success: true });
+  });
+
+  it('does not reset when the main-side confirmation is declined', async () => {
+    const reset = await load();
+    reset.registerFactoryResetHandler();
+    h.showMessageBox.mockResolvedValueOnce({ response: 0 });
+    const handler = h.handle.mock.calls[0][1] as () => Promise<unknown>;
+
+    await expect(handler()).resolves.toEqual({ success: false, error: 'canceled' });
+    expect(h.getStore).not.toHaveBeenCalled();
+    expect(h.relaunchApp).not.toHaveBeenCalled();
+  });
+
+  it('attaches the confirmation to the sender window when available', async () => {
+    const reset = await load();
+    reset.registerFactoryResetHandler();
+    const win = { id: 1 };
+    h.fromWebContents.mockReturnValueOnce(win as never);
+    const handler = h.handle.mock.calls[0][1] as (event: unknown) => Promise<unknown>;
+
+    await expect(handler({ sender: { id: 1 } })).resolves.toEqual({ success: true });
+    expect(h.showMessageBox).toHaveBeenCalledWith(win, expect.any(Object));
   });
 
   it('coerces non-error failures to text', async () => {

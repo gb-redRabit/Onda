@@ -95,6 +95,7 @@ export async function readImageForEditing(rawPath: unknown): Promise<ImageStudio
   try {
     const info = await stat(rawPath);
     if (!info.isFile()) throw new Error('Not a file');
+    if (info.size > MAX_PNG_BYTES) throw new Error('Image source too large');
     const buffer = await readFile(rawPath);
     const sharp = await loadSharp();
     const meta = await sharp(buffer).metadata();

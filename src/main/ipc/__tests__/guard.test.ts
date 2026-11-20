@@ -9,7 +9,7 @@ const { handlers, eventHandlers, onceHandlers } = vi.hoisted(() => ({
 }));
 
 vi.mock('electron', () => ({
-  app: { getAppPath: () => process.cwd() },
+  app: { getAppPath: () => process.cwd(), isPackaged: false },
   ipcMain: {
     handle: (channel: string, listener: (event: unknown, ...args: unknown[]) => unknown) => {
       handlers.set(channel, listener);
@@ -19,6 +19,10 @@ vi.mock('electron', () => ({
     },
     once: (channel: string, listener: (event: unknown, ...args: unknown[]) => void) => {
       onceHandlers.set(channel, listener);
+    },
+    removeListener: (channel: string) => {
+      eventHandlers.delete(channel);
+      onceHandlers.delete(channel);
     }
   }
 }));

@@ -9,7 +9,7 @@ const { handlers, eventHandlers, onceHandlers } = vi.hoisted(() => ({
 }));
 
 vi.mock('electron', () => ({
-  app: { getAppPath: () => process.cwd() },
+  app: { getAppPath: () => process.cwd(), isPackaged: false },
   ipcMain: {
     handle: (channel: string, listener: (event: unknown, ...args: unknown[]) => unknown) => {
       handlers.set(channel, listener);
@@ -19,6 +19,10 @@ vi.mock('electron', () => ({
     },
     once: (channel: string, listener: (event: unknown, ...args: unknown[]) => void) => {
       onceHandlers.set(channel, listener);
+    },
+    removeListener: (channel: string) => {
+      eventHandlers.delete(channel);
+      onceHandlers.delete(channel);
     }
   }
 }));
@@ -85,6 +89,22 @@ describe('IPC guard edge cases', () => {
     ).toThrow('untrusted sender');
   });
 
+  it('ignores the dev-server origin in a packaged build', async () => {
+    vi.stubEnv('ELECTRON_RENDERER_URL', 'http://localhost:5173/');
+    const { app, ipcMain } = await import('electron');
+    (app as unknown as { isPackaged: boolean }).isPackaged = true;
+    const listener = vi.fn(() => 'packaged');
+    ipcMain.handle('edge:packaged', listener);
+
+    expect(() =>
+      handlers.get('edge:packaged')?.({
+        senderFrame: { url: 'http://localhost:5173/index.html' }
+      })
+    ).toThrow('untrusted sender');
+
+    (app as unknown as { isPackaged: boolean }).isPackaged = false;
+  });
+
   it('rejects http frames without a dev-server configuration', async () => {
     const { ipcMain } = await import('electron');
     const listener = vi.fn();
@@ -93,6 +113,23 @@ describe('IPC guard edge cases', () => {
     expect(() =>
       handlers.get('edge:http')?.({ senderFrame: { url: 'http://localhost:5173/' } })
     ).toThrow('untrusted sender');
+  });
+
+  it('removeListener removes the guarded wrapper it registered', async () => {
+    const { ipcMain } = await import('electron');
+    const listener = vi.fn();
+    ipcMain.on('edge:remove', listener);
+    expect(eventHandlers.has('edge:remove')).toBe(true);
+
+    ipcMain.removeListener('edge:remove', listener);
+
+    expect(eventHandlers.has('edge:remove')).toBe(false);
+  });
+
+  it('removeListener tolerates a listener that was never guarded', async () => {
+    const { ipcMain } = await import('electron');
+
+    expect(() => ipcMain.removeListener('edge:none', vi.fn())).not.toThrow();
   });
 
   it('runs trusted event and once listeners', async () => {

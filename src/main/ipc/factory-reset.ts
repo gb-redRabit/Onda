@@ -1,4 +1,4 @@
-import { app, session } from 'electron';
+import { app, session, dialog, BrowserWindow } from 'electron';
 import { handleIpc } from './typed-handle';
 import type { AppFactoryResetResult } from '../../shared/types/ipc';
 import { logger } from '../../shared/logger';
@@ -11,6 +11,7 @@ import { PREVIEW_PARTITION } from '../preview/preview-session';
 import { removeProfileState } from '../utils/profile-state';
 import { CURRENT_STORE_VERSION, MAX_STORE_BACKUPS, STORE_VERSION_KEY } from '../state-migrations';
 import { relaunchApp } from '../bootstrap/relaunch';
+import { mainMessages } from '../i18n-main';
 
 // Factory reset: usuwa cały stan użytkownika/aplikacji i restartuje aplikację. Zachowane
 // celowo: `bin/` (zarządzane ffmpeg/yt-dlp — narzędzia do ponownego pobrania, decyzja
@@ -100,5 +101,24 @@ export async function factoryReset(): Promise<AppFactoryResetResult> {
 }
 
 export function registerFactoryResetHandler(): void {
-  handleIpc('app:factoryReset', () => factoryReset());
+  handleIpc('app:factoryReset', async (event: Electron.IpcMainInvokeEvent | undefined) => {
+    // Zniszczenie profilu musi wymagać gestu użytkownika także w procesie
+    // głównym: przejęty renderer nie może wywołać resetu jednym IPC.
+    const m = mainMessages();
+    const options: Electron.MessageBoxOptions = {
+      type: 'warning',
+      buttons: [m.factoryResetCancel, m.factoryResetConfirm],
+      defaultId: 0,
+      cancelId: 0,
+      title: m.factoryResetTitle,
+      message: m.factoryResetMessage,
+      detail: m.factoryResetDetail
+    };
+    const win = event?.sender ? BrowserWindow.fromWebContents(event.sender) : null;
+    const { response } = win
+      ? await dialog.showMessageBox(win, options)
+      : await dialog.showMessageBox(options);
+    if (response !== 1) return { success: false, error: 'canceled' };
+    return factoryReset();
+  });
 }

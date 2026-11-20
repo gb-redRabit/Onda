@@ -126,9 +126,14 @@ export function registerWindowHandlers(context: {
   handleIpc('imageViewer:open', (_event, files: unknown[], index: unknown) => {
     // Renderer może wysłać cokolwiek; indeks NaN / ujemny zostałby zapisany i
     // później użyty do pocięcia listy plików. Znormalizuj go tutaj, na granicy.
+    const list = Array.isArray(files)
+      ? files.filter((file): file is string => typeof file === 'string').slice(0, 2000)
+      : [];
     const safeIndex =
-      typeof index === 'number' && Number.isFinite(index) && index >= 0 ? Math.floor(index) : 0;
-    return openImageViewer(files, safeIndex, getMainWindow());
+      typeof index === 'number' && Number.isFinite(index) && index >= 0
+        ? Math.min(Math.floor(index), Math.max(0, list.length - 1))
+        : 0;
+    return openImageViewer(list, safeIndex, getMainWindow());
   });
 
   handleIpc('imageViewer:getData', () => {

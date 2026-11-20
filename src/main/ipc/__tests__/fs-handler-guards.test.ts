@@ -171,10 +171,16 @@ describe('exploratory fs channels validate their arguments', () => {
   });
 
   it(
-    'fs:readdir still lists drives for the root',
+    'fs:readdir lists the POSIX root contents instead of the drive shortcut',
     async () => {
       await invoke('fs:readdir', '/');
-      expect(batchedItems().batches).toBe(1);
+      if (process.platform === 'win32') {
+        // Na Windows `/` oznacza korzeń bieżącego dysku i nadal jest widokiem dysków.
+        expect(batchedItems().batches).toBe(1);
+        return;
+      }
+      // `getDrives()` na POSIX zwraca jeden wpis; prawdziwy root ma wiele dzieci.
+      expect(batchedItems().items.length).toBeGreaterThan(1);
     },
     DRIVE_ENUMERATION_TIMEOUT_MS
   );
