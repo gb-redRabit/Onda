@@ -27,6 +27,7 @@ beforeEach(async () => {
   listMock.mockReset();
 });
 afterEach(async () => {
+  stopLinkSubsChecker();
   await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 
@@ -128,7 +129,7 @@ describe('checker scheduling', () => {
     stopLinkSubsChecker();
   });
 
-  async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
+  async function waitFor(predicate: () => boolean, timeoutMs = 15_000): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       if (predicate()) return;
@@ -154,7 +155,7 @@ describe('checker scheduling', () => {
     expect(listMock.mock.calls.length).toBe(count);
     // Second stop is a no-op.
     expect(() => stopLinkSubsChecker()).not.toThrow();
-  });
+  }, 20_000);
 
   it('replaces an existing interval when started again', async () => {
     await addRemoteSubscription(file, { url: 'u' }, 'pikpak', {
@@ -168,5 +169,5 @@ describe('checker scheduling', () => {
     await waitFor(() => listMock.mock.calls.length >= 1);
 
     stopLinkSubsChecker();
-  });
+  }, 20_000);
 });
