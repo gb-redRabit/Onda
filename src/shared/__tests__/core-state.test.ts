@@ -28,6 +28,11 @@ describe('stripTrackPictures', () => {
     expect(stripTrackPictures(source)).toBe(source);
   });
 
+  it('returns the same object when metadata is missing', () => {
+    const source = track();
+    expect(stripTrackPictures(source)).toBe(source);
+  });
+
   it('removes pictures without mutating the original track', () => {
     const source = track({
       metadata: {
@@ -45,6 +50,10 @@ describe('stripTrackPictures', () => {
 });
 
 describe('toPlainTrack', () => {
+  it('returns null for no track', () => {
+    expect(toPlainTrack(null)).toBeNull();
+  });
+
   it('turns a reactive proxy into a structured-cloneable object', () => {
     const source = reactive(
       track({
