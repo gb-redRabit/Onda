@@ -84,6 +84,22 @@ describe('version:check', () => {
     expect(result.code).toBe(0);
   }, 20000);
 
+  it('passes when a merge from main sits on top of the release commit', () => {
+    // `git log -- package.json` pokazuje wtedy merge, który nie zmienił wersji;
+    // guard musi patrzeć na commit, który faktycznie zmienił wartość wersji.
+    const dir = repo('0.5.0', '0.5.0', 'v0.4.3', 'chore(main): release 0.5.0');
+    git(dir, 'checkout', '-q', '-b', 'side');
+    writeFileSync(join(dir, 'CHANGELOG.md'), 'notes\n');
+    git(dir, 'add', '-A');
+    git(dir, 'commit', '-q', '-m', 'docs: changelog');
+    git(dir, 'checkout', '-q', '-');
+    git(dir, 'merge', '--no-ff', '-q', '-m', 'Merge branch side', 'side');
+
+    const result = runCheck(dir);
+
+    expect(result.code).toBe(0);
+  }, 20000);
+
   it('fails on a hand-edited version that is ahead of the tag', () => {
     // Dokładna regresja: ktoś uruchomił `npm version` na main, podczas gdy
     // release-please wyliczył inną liczbę.
