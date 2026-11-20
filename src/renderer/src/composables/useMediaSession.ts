@@ -3,6 +3,7 @@ import { usePlayerStore } from '@renderer/stores/player';
 import { audioEngine } from '@renderer/modules/audioEngine';
 import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { currentTime, duration } from '@renderer/composables/useAudioPlayer';
+import { getPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 // Media Session: metadane, kontrolki systemowe i pozycja dla ekranu blokady,
 // klawiszy mediów i Bluetooth. W trybie Core-shell oba shelle żyją równolegle,
@@ -51,7 +52,7 @@ export function useMediaSession(): MediaSessionControls {
           const media = audioEngine.getMediaElement();
           if (media) media.currentTime = time;
         }
-        const video = document.querySelector('video');
+        const video = getPlayerVideoElement();
         if (video) video.currentTime = time;
       });
     } catch {

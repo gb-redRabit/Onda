@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import type { MkvFont } from '@renderer/types/subtitles';
 import { getLastSubtitleData } from '@renderer/composables/useSubtitleRenderer';
+import { getPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 interface PiPSubtitleData {
   subContent: string;
@@ -73,7 +74,7 @@ export function usePiP(callbacks?: {
   }
 
   function loadTrackFromCurrent(): void {
-    const videoEl = document.querySelector('video') as HTMLVideoElement | null;
+    const videoEl = getPlayerVideoElement();
     if (!videoEl) return;
     const src = videoEl.src || '';
     if (!src) return;

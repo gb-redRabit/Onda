@@ -54,7 +54,7 @@ class FakeAudioContext {
   );
   createDelay = vi.fn(() => this.track(makeNode({ delayTime: { value: 0 } })));
   createIIRFilter = vi.fn(() => this.track(makeNode()));
-  createMediaElementSource = vi.fn(() => this.track(makeNode()));
+  createMediaElementSource = vi.fn(() => this.track(makeNode({ context: this })));
   resume = vi.fn(async () => undefined);
   suspend = vi.fn(async () => undefined);
   close = vi.fn(async () => undefined);
@@ -237,6 +237,16 @@ describe('video routing', () => {
     expect(h.ctx.createMediaElementSource).toHaveBeenCalledTimes(1);
   });
 
+  it('reuses the media element source after a disconnect', () => {
+    const video = videoElement();
+    graph.connectVideoElement(video, 0.5);
+    graph.disconnectVideoElement();
+
+    graph.connectVideoElement(video, 0.5);
+
+    expect(h.ctx.createMediaElementSource).toHaveBeenCalledTimes(1);
+  });
+
   it('replaces a different video element', () => {
     const first = videoElement();
     graph.connectVideoElement(first, 0.5);
@@ -267,14 +277,15 @@ describe('video routing', () => {
     expect(graph.videoSourceEl).toBeNull();
   });
 
-  it('sets the video volume on both gain and element', () => {
+  it('sets the video volume only on the gain node to avoid double attenuation', () => {
     const video = videoElement();
     graph.connectVideoElement(video);
 
+    expect(video.volume).toBe(1);
     graph.setVideoVolume(0.3);
 
     expect(graph.videoGainNode!.gain.value).toBe(0.3);
-    expect(video.volume).toBe(0.3);
+    expect(video.volume).toBe(1);
   });
 
   it('tolerates setting volume without a video node', () => {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { defineComponent } from 'vue';
+import { setPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 const h = vi.hoisted(() => ({
   getLastSubtitle: vi.fn(),
@@ -69,6 +70,7 @@ afterEach(() => {
   wrapper = null;
   api = null;
   delete (window as unknown as { api?: unknown }).api;
+  setPlayerVideoElement(null);
 });
 
 describe('listeners', () => {
@@ -184,7 +186,7 @@ describe('actions', () => {
     expect(h.pipLoadTrack).not.toHaveBeenCalled();
 
     const video = document.createElement('video');
-    document.body.append(video);
+    setPlayerVideoElement(video);
     pip.loadTrackFromCurrent();
     expect(h.pipLoadTrack).not.toHaveBeenCalled();
 

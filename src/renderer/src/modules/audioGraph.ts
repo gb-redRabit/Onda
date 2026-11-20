@@ -39,6 +39,9 @@ export class AudioGraph {
   videoSourceNode: MediaElementAudioSourceNode | null = null;
   videoGainNode: GainNode | null = null;
   videoSourceEl: HTMLVideoElement | null = null;
+  /** WebAudio pozwala utworzyć tylko jedno źródło na element; cache pozwala je
+   * odpiąć i podpiąć ponownie bez `InvalidStateError`. */
+  private videoSourceCache = new WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>();
   eqChainBuilt = false;
   /** Sygnatura ostatnio zbudowanego łańcucha — patrz `computeEqSignature`. */
   private eqSignature = '';
@@ -263,6 +266,9 @@ export class AudioGraph {
         if (this.videoGainNode) {
           this.videoGainNode.gain.value = initialVolume;
         }
+        // Element jest podpięty do grafu, więc jego własne `volume` mnożyłoby
+        // gain (v²). Głośność ustawiamy wyłącznie na GainNode.
+        videoEl.volume = 1;
         return;
       }
       this.disconnectVideoElement();
@@ -270,9 +276,13 @@ export class AudioGraph {
 
     // ensureContext() na wejściu gwarantuje kontekst.
     const ctx = this.audioCtx!;
-    this.videoSourceNode = ctx.createMediaElementSource(videoEl);
+    const cached = this.videoSourceCache.get(videoEl);
+    this.videoSourceNode =
+      cached && cached.context === ctx ? cached : ctx.createMediaElementSource(videoEl);
+    this.videoSourceCache.set(videoEl, this.videoSourceNode);
     this.videoGainNode = ctx.createGain();
     this.videoSourceEl = videoEl;
+    videoEl.volume = 1;
 
     this.ensureEqChain();
     if (this.videoSourceNode) this.videoSourceNode.connect(this.videoGainNode!);
@@ -307,11 +317,10 @@ export class AudioGraph {
   }
 
   setVideoVolume(v: number): void {
+    // Element jest podpięty do grafu, więc `videoEl.volume` mnożyłby gain
+    // (v²). Jedynym źródłem prawdy jest GainNode.
     if (this.videoGainNode) {
       this.videoGainNode.gain.value = v;
-    }
-    if (this.videoSourceEl) {
-      this.videoSourceEl.volume = v;
     }
   }
 

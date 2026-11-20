@@ -140,10 +140,12 @@ beforeEach(() => {
   (window as { api?: unknown }).api = { on: state.apiOn };
 });
 
-afterEach(() => {
+afterEach(async () => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   delete (window as { api?: unknown }).api;
+  const registry = await import('@renderer/utils/playerVideoElement');
+  registry.setPlayerVideoElement(null);
 });
 
 describe('local engine bootstrap', () => {
@@ -555,7 +557,8 @@ describe('Core shell remote player', () => {
     state.player.currentTrack = track('video', '/v.mp4');
     const mod = await loadModule();
     const api = mod.useAudioPlayer();
-    vi.spyOn(document, 'querySelector').mockReturnValue(null);
+    const registry = await import('@renderer/utils/playerVideoElement');
+    registry.setPlayerVideoElement(null);
 
     api.seek(5);
 
@@ -797,7 +800,8 @@ describe('Core shell remote player', () => {
     const mod = await loadModule();
     const api = mod.useAudioPlayer();
     const video = { currentTime: 0 };
-    vi.spyOn(document, 'querySelector').mockReturnValue(video as never);
+    const registry = await import('@renderer/utils/playerVideoElement');
+    registry.setPlayerVideoElement(video as never);
 
     api.play();
     api.pause();

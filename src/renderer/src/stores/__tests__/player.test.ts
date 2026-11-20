@@ -5,6 +5,7 @@ import { useSettingsStore } from '../settings';
 import { useLibraryStore } from '../library';
 import type { MediaFile } from '@renderer/types/media';
 import { logger } from '@shared/logger';
+import { setPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 const core = vi.hoisted(() => ({
   enabled: false,
@@ -703,11 +704,13 @@ describe('core shell bridge', () => {
     const store = usePlayerStore();
     const video = document.createElement('video');
     document.body.append(video);
+    setPlayerVideoElement(video);
     store.currentTrack = { ...makeTrack('v'), type: 'video' };
 
     store.seek(33);
 
     expect(video.currentTime).toBe(33);
+    setPlayerVideoElement(null);
     document.body.innerHTML = '';
   });
 

@@ -11,6 +11,7 @@ import { usePlayerAb } from './player-ab';
 import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { dirname } from '@renderer/utils/path';
 import { sendCoreCommand } from '@renderer/core/coreClient';
+import { getPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 import { toPlainTrack } from '@shared/core-state';
 import { logger } from '@shared/logger';
 
@@ -213,7 +214,7 @@ export const usePlayerStore = defineStore('player', () => {
     if (isCoreShell()) {
       // Wideo nie ma elementu w Core — przewijamy lokalny <video> w main shellu.
       if (currentTrack.value?.type === 'video') {
-        const video = document.querySelector('video');
+        const video = getPlayerVideoElement();
         if (video) video.currentTime = time;
       }
       sendCoreCommand({ type: 'seek', time });

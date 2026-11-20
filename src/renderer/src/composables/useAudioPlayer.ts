@@ -10,6 +10,7 @@ import { wireAudioEvents } from './audioPlayerEvents';
 import { isCoreShell } from '@renderer/utils/runtimeMode';
 import { coreState, initCoreClient, sendCoreCommand } from '@renderer/core/coreClient';
 import { createVizShim } from '@renderer/utils/vizShim';
+import { getPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 export const currentTime = ref(0);
 export const duration = ref(0);
@@ -177,7 +178,7 @@ function useRemoteAudioPlayer() {
       const value = Math.max(0, time);
       currentTime.value = value;
       if (isVideoMode()) {
-        const video = document.querySelector('video');
+        const video = getPlayerVideoElement();
         if (video) video.currentTime = value;
         usePlayerStore().currentTime = value;
         return;

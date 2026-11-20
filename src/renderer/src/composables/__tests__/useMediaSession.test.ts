@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { reactive, ref } from 'vue';
+import { setPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 // Media Session: navigator/session są podstawione, podobnie jak store i IPC.
 const state = vi.hoisted(() => ({
@@ -122,6 +123,7 @@ afterEach(() => {
   delete (window as { api?: unknown }).api;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  setPlayerVideoElement(null);
 });
 
 describe('activation', () => {
@@ -228,7 +230,7 @@ describe('action handlers', () => {
   it('seeks the store, audio element and video element', async () => {
     state.audioElement = { currentTime: 0 };
     const video = { currentTime: 0 };
-    vi.spyOn(document, 'querySelector').mockReturnValue(video as never);
+    setPlayerVideoElement(video as never);
     const controls = await activate();
 
     state.handlers.get('seekto')!({ seekTime: 42 });
@@ -243,7 +245,7 @@ describe('action handlers', () => {
     state.isCoreShell.mockReturnValue(true);
     state.audioElement = { currentTime: 0 };
     const video = { currentTime: 0 };
-    vi.spyOn(document, 'querySelector').mockReturnValue(video as never);
+    setPlayerVideoElement(video as never);
     const controls = await activate();
 
     state.handlers.get('seekto')!({ seekTime: 10 });
@@ -256,7 +258,7 @@ describe('action handlers', () => {
   it('ignores a seek without a time or while inactive', async () => {
     const controls = await activate();
     const video = { currentTime: 0 };
-    vi.spyOn(document, 'querySelector').mockReturnValue(video as never);
+    setPlayerVideoElement(video as never);
     const seek = state.handlers.get('seekto')!;
 
     seek({ seekTime: null });
@@ -409,7 +411,7 @@ describe('position and lifecycle', () => {
 describe('media session edge branches', () => {
   it('seeks without media elements', async () => {
     state.audioElement = null;
-    vi.spyOn(document, 'querySelector').mockReturnValue(null);
+    setPlayerVideoElement(null);
     const controls = useMediaSession();
     await flush();
 

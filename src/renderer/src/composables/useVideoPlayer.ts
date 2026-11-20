@@ -6,6 +6,7 @@ import { logger } from '@shared/logger';
 import { useVideoSource, type VideoPlayerContext } from './useVideoSource';
 import { useVideoSubtitles } from './useVideoSubtitles';
 import { useVideoPiP } from './useVideoPiP';
+import { setPlayerVideoElement } from '@renderer/utils/playerVideoElement';
 
 export function useVideoPlayer(ctx: VideoPlayerContext) {
   const { player, settings, pip, notify } = ctx;
@@ -13,6 +14,9 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
   const subtitles = useVideoSubtitles(player);
   const source = useVideoSource(ctx, subtitles.onVideoReady);
   const { videoRef } = source;
+  // Rejestr dla seeka z Core/`useAudioPlayer`: tylko ten element jest
+  // odtwarzaczem, a nie przypadkowa animowana okładka.
+  watch(videoRef, (element) => setPlayerVideoElement(element), { immediate: true });
   const pipCtrl = useVideoPiP(
     player,
     settings,
@@ -40,6 +44,7 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
   function destroy() {
     audioEngine.disconnectVideoElement();
     audioEngine.disconnectSecondaryAudio();
+    setPlayerVideoElement(null);
     if (videoRef.value) {
       videoRef.value.pause();
       videoRef.value.removeAttribute('src');
