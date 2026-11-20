@@ -3,10 +3,16 @@ import { join, normalize, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const h = vi.hoisted(() => ({
-  isSensitivePath: vi.fn()
+  isSensitivePath: vi.fn(),
+  isProtectedPath: vi.fn(),
+  isUserProfileRoot: vi.fn()
 }));
 
-vi.mock('../../path-policy', () => ({ isSensitivePath: h.isSensitivePath }));
+vi.mock('../../../path-policy', () => ({
+  isSensitivePath: h.isSensitivePath,
+  isProtectedPath: h.isProtectedPath,
+  isUserProfileRoot: h.isUserProfileRoot
+}));
 
 import {
   MAX_ADDED_FILES,
@@ -19,6 +25,8 @@ import {
 
 beforeEach(() => {
   h.isSensitivePath.mockReset().mockReturnValue(false);
+  h.isProtectedPath.mockReset().mockReturnValue(false);
+  h.isUserProfileRoot.mockReset().mockReturnValue(false);
 });
 
 describe('sanitizeFilePaths', () => {
@@ -107,5 +115,22 @@ describe('withoutSensitivePaths', () => {
     h.isSensitivePath.mockReturnValue(true);
 
     expect(withoutSensitivePaths([join('/', 'home', '.ssh')])).toEqual([]);
+  });
+
+  it('drops system roots and the bare user profile even when not sensitive', () => {
+    const root = join('/', 'music');
+    h.isProtectedPath.mockImplementation((p: string) => p === root);
+    h.isUserProfileRoot.mockImplementation((p: string) => p === join('/', 'home', 'u'));
+
+    expect(
+      withoutSensitivePaths([root, join('/', 'home', 'u'), join('/', 'music', 'album')])
+    ).toEqual([join('/', 'music', 'album')]);
+  });
+
+  it('never lets the temp exemption override system protection', () => {
+    const temp = join(normalize(tmpdir()), 'nested');
+    h.isProtectedPath.mockReturnValue(true);
+
+    expect(withoutSensitivePaths([temp])).toEqual([]);
   });
 });

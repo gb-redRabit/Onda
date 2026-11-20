@@ -59,9 +59,9 @@ async function libraryFastScanEnabled(): Promise<boolean> {
 // aby pobranie trafiające poza bibliotekę było nadal przeglądalne/odtwarzalne.
 export async function addLibraryFolder(folder: string): Promise<string[]> {
   const store = await getStore();
-  const current = sanitizeFolderPaths(store.get('libraryFolders', []));
+  const current = withoutSensitivePaths(sanitizeFolderPaths(store.get('libraryFolders', [])));
   if (!current.includes(folder)) current.push(folder);
-  const clean = sanitizeFolderPaths(current);
+  const clean = withoutSensitivePaths(sanitizeFolderPaths(current));
   store.set('libraryFolders', clean);
   currentLibraryFolders = clean;
   await setAllowedRoots(clean);
@@ -188,7 +188,7 @@ export function registerLibraryHandlers(): void {
     activeScanController = controller;
     previous?.abort();
     try {
-      currentLibraryFolders = sanitizeFolderPaths(folderPaths);
+      currentLibraryFolders = withoutSensitivePaths(sanitizeFolderPaths(folderPaths));
       const fastScan = await libraryFastScanEnabled();
       return await runLibraryScan(
         currentLibraryFolders,

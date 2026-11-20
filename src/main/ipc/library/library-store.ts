@@ -1,6 +1,7 @@
 import { app } from 'electron';
-import { mkdir, readFile, rename, writeFile } from 'fs/promises';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
+import { replaceFileAtomic } from '../../utils/fs-atomic';
 import type { MediaFile } from '../../../shared/types/media';
 import { logger } from '../../../shared/logger';
 import { getStore } from '../cover/cover-cache';
@@ -33,10 +34,10 @@ type StatsMap = Record<string, { playCount: number; lastPlayed: number }>;
 let cache: LibraryScannedData | null = null;
 let loadingPromise: Promise<LibraryScannedData | null> | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
-let writing = false;
+let writeInFlight: Promise<void> | null = null;
 let dirty = false;
 let statsTimer: ReturnType<typeof setTimeout> | null = null;
-let statsWriting = false;
+let statsWriteInFlight: Promise<void> | null = null;
 let statsDirty = false;
 let stats: StatsMap = {};
 
@@ -132,12 +133,17 @@ export function setLibraryScanned(data: LibraryScannedData): void {
   // rośnie przez całe życie profilu, a przeniesiony plik zachowuje starą historię.
   const next: StatsMap = {};
   for (const file of data.files) {
-    if (typeof file.playCount === 'number' && file.playCount > 0) {
-      next[file.path] = {
-        playCount: file.playCount,
-        lastPlayed: typeof file.lastPlayed === 'number' ? file.lastPlayed : 0
-      };
-    }
+    const previous = stats[file.path];
+    const playCount =
+      typeof file.playCount === 'number' && file.playCount > 0
+        ? file.playCount
+        : previous?.playCount;
+    if (typeof playCount !== 'number' || playCount <= 0) continue;
+    next[file.path] = {
+      playCount,
+      lastPlayed:
+        typeof file.lastPlayed === 'number' ? file.lastPlayed : (previous?.lastPlayed ?? 0)
+    };
   }
   stats = next;
   scheduleStatsSave();
@@ -215,30 +221,35 @@ function scheduleStatsSave(delay = 400): void {
   }, delay);
 }
 
-export async function flushStats(): Promise<void> {
+export function flushStats(): Promise<void> {
   if (statsTimer) {
     clearTimeout(statsTimer);
     statsTimer = null;
   }
-  if (statsWriting) {
+  if (statsWriteInFlight) {
     statsDirty = true;
-    return;
+    // Zwracamy trwającą obietnicę: shutdown musi poczekać na zapis, a nie
+    // tylko oznaczyć `dirty` i wyjść w połowie I/O.
+    return statsWriteInFlight;
   }
-  statsWriting = true;
-  try {
-    do {
-      statsDirty = false;
-      const target = statsPath();
-      const tmp = `${target}.tmp`;
-      await mkdir(dirname(target), { recursive: true });
-      await writeFile(tmp, JSON.stringify(stats), 'utf-8');
-      await rename(tmp, target);
-    } while (statsDirty);
-  } catch (e) {
-    logger.warn('library', 'failed to persist library-stats.json', e);
-  } finally {
-    statsWriting = false;
-  }
+  const run = (async () => {
+    try {
+      do {
+        statsDirty = false;
+        const target = statsPath();
+        const tmp = `${target}.tmp`;
+        await mkdir(dirname(target), { recursive: true });
+        await writeFile(tmp, JSON.stringify(stats), 'utf-8');
+        await replaceFileAtomic(tmp, target);
+      } while (statsDirty);
+    } catch (e) {
+      logger.warn('library', 'failed to persist library-stats.json', e);
+    } finally {
+      statsWriteInFlight = null;
+    }
+  })();
+  statsWriteInFlight = run;
+  return run;
 }
 
 async function writeNow(): Promise<void> {
@@ -248,27 +259,32 @@ async function writeNow(): Promise<void> {
   const tmp = `${target}.tmp`;
   await mkdir(dirname(target), { recursive: true });
   await writeFile(tmp, JSON.stringify(data), 'utf-8');
-  await rename(tmp, target);
+  await replaceFileAtomic(tmp, target);
 }
 
-export async function flushLibraryScanned(): Promise<void> {
+export function flushLibraryScanned(): Promise<void> {
   if (saveTimer) {
     clearTimeout(saveTimer);
     saveTimer = null;
   }
-  if (writing) {
+  if (writeInFlight) {
     dirty = true;
-    return;
+    // Współdzielona obietnica, aby shutdown zaczekał na oba zapisy (bieżący
+    // i dociągnięty w pętli `do ... while (dirty)`).
+    return writeInFlight;
   }
-  writing = true;
-  try {
-    do {
-      dirty = false;
-      await writeNow();
-    } while (dirty);
-  } catch (e) {
-    logger.warn('library', 'failed to persist library-scanned.json', e);
-  } finally {
-    writing = false;
-  }
+  const run = (async () => {
+    try {
+      do {
+        dirty = false;
+        await writeNow();
+      } while (dirty);
+    } catch (e) {
+      logger.warn('library', 'failed to persist library-scanned.json', e);
+    } finally {
+      writeInFlight = null;
+    }
+  })();
+  writeInFlight = run;
+  return run;
 }

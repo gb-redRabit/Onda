@@ -135,6 +135,31 @@ describe('scanFilePaths', () => {
     });
   });
 
+  it('preserves play history and addedAt when a file is re-scanned', async () => {
+    const path = 'D:/music/a.mp3';
+    state.stat.mockResolvedValueOnce(stats(10, 6, 1));
+    const previous = {
+      id: path,
+      path,
+      name: 'a.mp3',
+      extension: '.mp3',
+      mimeType: 'audio/mpeg',
+      size: 10,
+      type: 'audio' as const,
+      duration: 100,
+      addedAt: 3,
+      playCount: 7,
+      lastPlayed: 9,
+      mtime: 5,
+      hasCover: true,
+      metadata: { title: 'Old', replayGainScanned: true }
+    };
+
+    const files = await scanFiles([path], new Map([[path, previous]]));
+
+    expect(files[0]).toMatchObject({ addedAt: 3, playCount: 7, lastPlayed: 9 });
+  });
+
   it('falls back for missing metadata fields', async () => {
     state.parseFile.mockResolvedValueOnce({
       common: { track: { no: null } },

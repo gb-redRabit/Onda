@@ -149,8 +149,9 @@ async function processAudioFile(
         : undefined,
       duration: meta?.duration || 0,
       hasCover: meta?.hasCover ?? prev?.hasCover,
-      addedAt: s.birthtimeMs ?? Date.now(),
-      playCount: 0,
+      addedAt: prev?.addedAt ?? s.birthtimeMs ?? Date.now(),
+      playCount: prev?.playCount ?? 0,
+      lastPlayed: prev?.lastPlayed,
       mtime: s.mtimeMs
     }
   };
@@ -178,8 +179,9 @@ async function processVideoFile(
       size: s.size,
       type: 'video',
       duration,
-      addedAt: s.birthtimeMs ?? Date.now(),
-      playCount: 0,
+      addedAt: prev?.addedAt ?? s.birthtimeMs ?? Date.now(),
+      playCount: prev?.playCount ?? 0,
+      lastPlayed: prev?.lastPlayed,
       mtime: s.mtimeMs
     }
   };
@@ -205,8 +207,9 @@ async function processImageFile(
       mimeType: MIME_TYPES[ext],
       size: s.size,
       type: 'image',
-      addedAt: s.birthtimeMs ?? Date.now(),
-      playCount: 0,
+      addedAt: prev?.addedAt ?? s.birthtimeMs ?? Date.now(),
+      playCount: prev?.playCount ?? 0,
+      lastPlayed: prev?.lastPlayed,
       mtime: s.mtimeMs
     }
   };
