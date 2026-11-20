@@ -7,16 +7,11 @@
 // `eslint-plugin-import`; trzymamy się wzorca lekkich skryptów-guardów (check-catch).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { duplicateSpecifiers } from './lib/duplicate-imports.mjs';
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, 'src');
 const EXTENSIONS = ['.ts', '.tsx', '.vue'];
-
-// `^\s*import` łapie początek instrukcji importu; `(type\s+)?` rozróżnia import typu
-// od wartości (osobne kategorie — nie łączymy ich w jeden import); `[^'"]*?\bfrom`
-// przeskakuje (także przez nowe linie) do `from`, a gdy go brak — dopasowuje import
-// z efektem ubocznym (`import 'x'`).
-const IMPORT_RE = /^[ \t]*import\s+(type\s+)?(?:[^'"]*?\bfrom\s*)?['"]([^'"]+)['"]/gm;
 
 function walk(dir) {
   const out = [];
@@ -26,16 +21,6 @@ function walk(dir) {
     else if (EXTENSIONS.some((ext) => entry.endsWith(ext))) out.push(full);
   }
   return out;
-}
-
-function duplicateSpecifiers(source) {
-  const counts = new Map();
-  for (const match of source.matchAll(IMPORT_RE)) {
-    const kind = match[1] ? 'type' : 'value';
-    const key = `${kind} ${match[2]}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return [...counts.entries()].filter(([, n]) => n > 1).map(([key]) => key);
 }
 
 const problems = [];
