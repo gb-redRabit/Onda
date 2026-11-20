@@ -62,7 +62,10 @@ jobs:
 
       - name: Test (with coverage gate)
         if: runner.os != 'macOS'
-        run: npm run test:coverage
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:coverage 2>&1 | tee "$RUNNER_TEMP/vitest.log"
 
       # macOS runners have 3 cores / 7 GB. Coverage instrumentation plus jsdom
       # vmThreads runs the worker out of memory before Vitest can report a
@@ -71,7 +74,32 @@ jobs:
       # coverage ratchet already runs on Linux and Windows.
       - name: Test (macOS)
         if: runner.os == 'macOS'
-        run: npm test -- --maxWorkers=2
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test -- --maxWorkers=2 2>&1 | tee "$RUNNER_TEMP/vitest.log"
+
+      # Unit failures have no check-run annotation: the step only reports
+      # "exit code 1" and the raw log needs auth to read. Turn the captured
+      # output into annotations (and keep the tail for worker crashes/OOM).
+      - name: Report unit test failures
+        if: failure()
+        shell: bash
+        run: |
+          log="$RUNNER_TEMP/vitest.log"
+          if [ ! -f "$log" ]; then
+            echo "::error::Test step failed before writing its log"
+            exit 0
+          fi
+          grep -E '^[[:space:]]*(FAIL|×|✕)|Unhandled|heap out of memory|Worker exited' "$log" \
+            | head -60 \
+            | while IFS= read -r line; do
+                line="${line//$'\r'/}"
+                line="${line//%/%25}"
+                echo "::error::$line"
+              done
+          echo "--- last 40 lines of the test log ---"
+          tail -40 "$log"
 
       - name: Audit production dependencies
         # Tylko zależności produkcyjne (dev-only advisories z toolchainu nie
