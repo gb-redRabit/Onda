@@ -371,6 +371,7 @@ async function downloadResult(result: PanelResult): Promise<void> {
         <input
           v-model="searchQuery"
           :placeholder="$t('subtitles.onlineQuery')"
+          :aria-label="$t('subtitles.onlineQuery')"
           class="w-full px-3 py-2 rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
           @keydown.enter="runSearch"
         />

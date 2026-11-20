@@ -38,16 +38,19 @@ const { t } = useI18n();
         v-model="artist"
         class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
         :placeholder="t('youtube.metaArtist')"
+        :aria-label="t('youtube.metaArtist')"
       />
       <input
         v-model="album"
         class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
         :placeholder="t('youtube.metaAlbum')"
+        :aria-label="t('youtube.metaAlbum')"
       />
       <input
         v-model="year"
         class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus:border-primary focus:outline-hidden"
         :placeholder="t('youtube.metaYear')"
+        :aria-label="t('youtube.metaYear')"
       />
     </div>
     <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-hairline">

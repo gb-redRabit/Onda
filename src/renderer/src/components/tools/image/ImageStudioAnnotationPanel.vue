@@ -54,6 +54,7 @@ const TOOLS: Array<{ id: Tool; key: string; icon: Component }> = [
         v-model="textValue"
         type="text"
         :placeholder="t('tools.imageStudioTextPlaceholder')"
+        :aria-label="t('tools.imageStudioTextPlaceholder')"
         class="w-full rounded-field border border-hairline bg-base-100 px-2 py-1.5 text-xs"
       />
       <p class="text-3xs text-base-content/50">{{ t('tools.imageStudioTextHint') }}</p>

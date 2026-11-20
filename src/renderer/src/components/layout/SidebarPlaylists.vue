@@ -103,6 +103,7 @@ function playPlaylist(playlistId: string) {
         <input
           v-model="newPlaylistName"
           :placeholder="$t('library.playlistName')"
+          :aria-label="$t('library.playlistName')"
           class="w-full px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content placeholder:text-base-content/50 focus:outline-hidden focus:ring-1 focus:ring-primary"
           autofocus
           @keydown.enter="createPlaylist"

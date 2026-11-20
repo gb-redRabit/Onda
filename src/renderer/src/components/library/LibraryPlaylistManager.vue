@@ -179,6 +179,7 @@ const playlistVirtualizer = useVirtualList({
           v-model="newName"
           class="flex-1 px-2 py-1 text-xs fx-depth rounded-field bg-base-100 border border-hairline outline-hidden focus:border-primary"
           :placeholder="$t('library.playlistName')"
+          :aria-label="$t('library.playlistName')"
           @keyup.enter="createPlaylist"
         />
         <button
