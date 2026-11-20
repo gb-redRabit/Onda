@@ -94,8 +94,7 @@ function pick(playlistId: string) {
           @click="pick(p.id)"
         >
           <ListMusic :size="12" class="shrink-0" />
-          <template v-if="mode === 'toggle'">{{ isIn(p.id) ? '✓ ' : '+ ' }}</template
-          >{{ p.name }}
+          <template v-if="mode === 'toggle'">{{ isIn(p.id) ? '✓ ' : '+ ' }}</template>{{ p.name }}
         </button>
         <div
           v-if="library.playlists.length === 0"

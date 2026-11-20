@@ -106,8 +106,7 @@ function updateProxy(patch: Partial<typeof settings.network.proxy>) {
       "
     />
     <div class="flex justify-between text-2xs text-base-content/60 mt-1">
-      <span>{{ $t('settings.speedUnlimited') }}</span
-      ><span>50 MB/s</span>
+      <span>{{ $t('settings.speedUnlimited') }}</span><span>50 MB/s</span>
     </div>
   </SettingsGroup>
 

@@ -187,8 +187,11 @@ onUnmounted(() => {
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-content text-xs font-medium hover:bg-primary/90 transition-colors fx-depth fx-noise"
           @click="emit('playAll')"
         >
-          <Music2 :size="12" /> <span class="hidden sm:inline">{{ $t('library.playAll') }}</span
-          ><span class="sm:hidden">{{ $t('common.play') }}</span>
+          <Music2 :size="12" />
+          <span class="hidden sm:inline">{{ $t('library.playAll') }}</span><span
+            class="sm:hidden"
+            >{{ $t('common.play') }}</span
+          >
         </button>
         <button
           type="button"

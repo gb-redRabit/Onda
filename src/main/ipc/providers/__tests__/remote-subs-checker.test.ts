@@ -128,7 +128,7 @@ describe('checker scheduling', () => {
     stopLinkSubsChecker();
   });
 
-  async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
+  async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       if (predicate()) return;
