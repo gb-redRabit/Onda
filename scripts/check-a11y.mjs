@@ -20,17 +20,20 @@ function walk(dir, out = []) {
   return out;
 }
 
-/** Tekst widoczny w przycisku (bez tagów i interpolacji). */
+/** Tekst widoczny w przycisku (bez tagów; interpolacje to zwykle etykiety). */
 function visibleText(inner) {
   return inner
     .replace(/<[^>]+>/g, ' ')
-    .replace(/\{\{[\s\S]*?\}\}/g, ' ')
+    .replace(/\{\{[\s\S]*?\}\}/g, ' x ')
     .replace(/&[a-z]+;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 function hasAccessibleName(attrs, inner) {
+  // `aria-hidden` + tabindex -1 to celowo ukryte nakładki (np. play na hover) —
+  // karta ma własny przycisk z nazwą, więc nie są częścią drzewa dostępności.
+  if (/aria-hidden="true"/.test(attrs)) return true;
   if (/aria-label=|aria-labelledby=/.test(attrs)) return true;
   if (visibleText(inner)) return true;
   return /\s(?::|v-bind:)?title=/.test(attrs);
