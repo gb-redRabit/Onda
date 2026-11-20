@@ -20,4 +20,12 @@ describe('createVizShim', () => {
     shim.node.getByteFrequencyData(out);
     expect(Array.from(out)).toEqual([7, 8, 0, 0]);
   });
+
+  it('treats non-numeric bins as zero', () => {
+    const shim = createVizShim(3);
+    shim.setBins([0, Number.NaN, undefined as unknown as number]);
+    const out = new Uint8Array(3).fill(99);
+    shim.node.getByteFrequencyData(out);
+    expect(Array.from(out)).toEqual([0, 0, 0]);
+  });
 });

@@ -33,4 +33,37 @@ describe('readZip', () => {
     ]);
     await expect(readZip(zip)).resolves.toEqual([]);
   });
+
+  it('skips a stored entry above the in-memory limit without inflating', async () => {
+    const zip = buildZip([
+      { name: 'big.txt', content: Buffer.alloc(17 * 1024 * 1024), deflate: false }
+    ]);
+    await expect(readZip(zip)).resolves.toEqual([]);
+  });
+
+  it('stops at a corrupt central directory signature', async () => {
+    const zip = buildZip([{ name: 'a.srt', content: Buffer.from('x'), deflate: false }]);
+    const eocd = zip.length - 22;
+    // Offset centralnego katalogu wskazuje na lokalny nagłówek, więc sygnatura się nie zgadza.
+    zip.writeUInt32LE(0, eocd + 16);
+
+    await expect(readZip(zip)).resolves.toEqual([]);
+  });
+
+  it('skips an entry whose local header lies outside the buffer', async () => {
+    const zip = buildZip([{ name: 'a.srt', content: Buffer.from('x'), deflate: false }]);
+    const central = zip.readUInt32LE(zip.length - 22 + 16);
+    zip.writeUInt32LE(zip.length - 4, central + 42);
+
+    await expect(readZip(zip)).resolves.toEqual([]);
+  });
+
+  it('skips an entry whose local header signature is wrong', async () => {
+    const zip = buildZip([{ name: 'a.srt', content: Buffer.from('x'), deflate: false }]);
+    const central = zip.readUInt32LE(zip.length - 22 + 16);
+    const local = zip.readUInt32LE(central + 42);
+    zip.writeUInt32LE(0, local);
+
+    await expect(readZip(zip)).resolves.toEqual([]);
+  });
 });

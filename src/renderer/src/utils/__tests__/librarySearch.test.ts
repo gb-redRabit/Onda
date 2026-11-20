@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildSearchIndex, filterSearchIndex } from '../librarySearch';
+import {
+  buildSearchIndex,
+  filterSearchIndex,
+  searchableTerms,
+  trackMatchesQuery
+} from '../librarySearch';
 
 interface Track {
   title: string;
@@ -79,5 +84,34 @@ describe('library search index', () => {
     console.info(
       `[library-search-bench] 50k rows, 5 queries: baseline=${oldMs.toFixed(1)}ms, index=${buildMs.toFixed(1)}ms, indexed-search=${indexedMs.toFixed(1)}ms`
     );
+  });
+});
+
+describe('trackMatchesQuery', () => {
+  const track = {
+    name: 'Song',
+    path: '/music/song.mp3',
+    metadata: { title: 'Blue Monday', artist: 'New Order', album: 'Power' }
+  };
+
+  it('matches any searchable field case-insensitively', () => {
+    expect(trackMatchesQuery(track, '  BLUE ')).toBe(true);
+    expect(trackMatchesQuery(track, 'order')).toBe(true);
+    expect(trackMatchesQuery(track, 'power')).toBe(true);
+    expect(trackMatchesQuery(track, 'song.mp3')).toBe(true);
+    expect(trackMatchesQuery(track, 'missing')).toBe(false);
+  });
+
+  it('matches everything for an empty query and skips missing terms', () => {
+    expect(trackMatchesQuery({ name: 'Song', path: '/song.mp3' }, '   ')).toBe(true);
+    expect(trackMatchesQuery({ name: 'Song', path: '/song.mp3' }, 'blue')).toBe(false);
+  });
+});
+
+describe('searchableTerms', () => {
+  it('lists the name, path and available metadata fields', () => {
+    expect(
+      searchableTerms({ name: 'Song', path: '/song.mp3', metadata: { title: 'Title' } })
+    ).toEqual(['Song', '/song.mp3', 'Title', undefined, undefined]);
   });
 });
