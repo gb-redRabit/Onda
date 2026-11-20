@@ -1,5 +1,7 @@
 {
   "iconOnlyButtonsWithoutName": 0,
   "unlabelledFormControls": 0,
-  "buttonsWithoutType": 0
+  "buttonsWithoutType": 0,
+  "imagesWithoutAlt": 0,
+  "unnamedDialogs": 0
 }

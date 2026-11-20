@@ -44,6 +44,18 @@ function findTags(source, names) {
   return out;
 }
 
+/** Tylko szablon SFC: w skrypcie stringi i komentarze mogą zawierać `<img>` itp. */
+function templateOf(source) {
+  const start = source.search(/^<template>\s*$/m);
+  if (start < 0) return '';
+  const end = source.lastIndexOf('</template>');
+  if (end < start) return '';
+  return source
+    .slice(start, end)
+    .replace(/^<template>\s*$/m, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+}
+
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -94,8 +106,10 @@ function controlHasName(source, attrs, start, file) {
 const buttons = [];
 const controls = [];
 const withoutType = [];
+const images = [];
+const dialogs = [];
 for (const file of walk(ROOT)) {
-  const source = readFileSync(file, 'utf8');
+  const source = templateOf(readFileSync(file, 'utf8'));
   for (const tag of findTags(source, ['button'])) {
     const line = source.slice(0, tag.start).split('\n').length;
     if (!/(^|\s):?type=/.test(tag.attrs)) withoutType.push({ file, line });
@@ -107,6 +121,15 @@ for (const file of walk(ROOT)) {
   for (const tag of findTags(source, ['input', 'select', 'textarea'])) {
     if (controlHasName(source, tag.attrs, tag.start, file)) continue;
     controls.push({ file, line: source.slice(0, tag.start).split('\n').length });
+  }
+  for (const tag of findTags(source, ['img'])) {
+    if (/\s(?::|v-bind:)?alt=/.test(tag.attrs)) continue;
+    images.push({ file, line: source.slice(0, tag.start).split('\n').length });
+  }
+  for (const tag of findTags(source, ['div', 'section', 'aside', 'form'])) {
+    if (!/role="dialog"/.test(tag.attrs)) continue;
+    if (/aria-label=|aria-labelledby=/.test(tag.attrs)) continue;
+    dialogs.push({ file, line: source.slice(0, tag.start).split('\n').length });
   }
 }
 
@@ -155,5 +178,17 @@ const okTypes = report(
   baseline.buttonsWithoutType,
   'Dodaj `type="button"` (w formularzu domyślnie byłby submitem).'
 );
+const okImages = report(
+  'obrazy bez alt',
+  images,
+  baseline.imagesWithoutAlt,
+  'Dodaj `alt="..."`; dla ozdobnych `alt=""`.'
+);
+const okDialogs = report(
+  'dialogi bez nazwy',
+  dialogs,
+  baseline.unnamedDialogs,
+  'Dodaj `aria-label`/`aria-labelledby` do `role="dialog"`.'
+);
 
-if (!okButtons || !okControls || !okTypes) process.exit(1);
+if (!okButtons || !okControls || !okTypes || !okImages || !okDialogs) process.exit(1);
