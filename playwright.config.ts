@@ -11,8 +11,17 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 2 : 0,
   // The github reporter turns failures into check-run annotations, which are
-  // readable without repo auth — the raw Actions log is not.
-  reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : 'list',
+  // readable without repo auth — the raw Actions log is not. The JSON report
+  // feeds `scripts/report-e2e-flakes.mjs`, which surfaces tests that passed
+  // only after a retry (retries hide flakes from the check summary).
+  reporter: process.env.CI
+    ? [
+        ['github'],
+        ['list'],
+        ['json', { outputFile: 'test-results/results.json' }],
+        ['html', { open: 'never' }]
+      ]
+    : 'list',
   use: {
     trace: 'retain-on-failure'
   }
