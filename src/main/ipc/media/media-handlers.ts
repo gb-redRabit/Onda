@@ -31,6 +31,8 @@ import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
 import { isProtectedPath, isSensitivePath, isSystemTempPath } from '../../path-policy';
 import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-server';
 import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
+import { isWritableTagFile, writeAudioTags } from '../../tools/tag-editor';
+import type { AudioTagField, AudioTagFields } from '../../../shared/types/tools';
 
 // Mutujące operacje plikowe (zmiana nazwy, tagi, okładka) muszą przejść tę samą
 // politykę co destrukcyjne kanały `fs:*`: odrzucamy wyłącznie korzenie wolumenów i
@@ -66,6 +68,22 @@ const ALLOWED_ID3_TEXT_TAGS = new Set([
   'comment',
   'copyright'
 ]);
+
+// `writeAudioTags` (ffmpeg) obsługuje tylko te pola; reszta ramek ID3 jest
+// bezpieczna wyłącznie w MP3. Mapowanie trzyma zgodność z `buildId3Tags`.
+const ID3_TO_AUDIO_TAG_FIELD: Readonly<Record<string, AudioTagField>> = {
+  title: 'title',
+  artist: 'artist',
+  album: 'album',
+  albumArtist: 'albumArtist',
+  performerInfo: 'albumArtist',
+  genre: 'genre',
+  year: 'year',
+  track: 'track',
+  trackNumber: 'track',
+  partOfSet: 'disc',
+  discNumber: 'disc'
+};
 
 const ALLOWED_COVER_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp']);
 export const MAX_COVER_BYTES = 20 * 1024 * 1024;
@@ -233,13 +251,46 @@ export function registerMediaHandlers(): void {
         return { success: false, error: 'Invalid tags' };
       }
       try {
+        // Symlink może wskazywać na plik systemowy; polityka musi dotyczyć
+        // celu, a nie samej ścieżki z renderera.
+        const real = await realpath(filePath);
+        if (isProtectedTarget(real)) return { success: false, error: 'Protected path' };
         const toWrite: Record<string, string> = {};
         for (const [key, val] of Object.entries(tags)) {
           if (typeof val !== 'string' || !ALLOWED_ID3_TEXT_TAGS.has(key)) continue;
           toWrite[key] = val;
         }
-        await NodeID3.Promise.update(toWrite, filePath);
-        return { success: true };
+        const extension = extname(real).toLowerCase();
+        // `node-id3` dokleja ID3v2 na początek pliku. Dla MP3 to poprawny tag;
+        // dla FLAC/M4A/OGG/OPUS/WAV niszczy kontener (nagłówek nie zaczyna się
+        // już od `fLaC`/`ftyp`), więc te formaty idą przez ffmpeg `-c copy`.
+        if (extension === '.mp3') {
+          await NodeID3.Promise.update(toWrite, real);
+          return { success: true };
+        }
+        if (!isWritableTagFile(real)) {
+          return { success: false, error: `Unsupported audio format: ${extension || 'unknown'}` };
+        }
+        const fields: AudioTagFields = {};
+        const unsupported: string[] = [];
+        for (const [key, value] of Object.entries(toWrite)) {
+          const field = ID3_TO_AUDIO_TAG_FIELD[key];
+          if (!field) {
+            unsupported.push(key);
+            continue;
+          }
+          fields[field] = value;
+        }
+        if (unsupported.length > 0) {
+          return {
+            success: false,
+            error: `Unsupported tag(s) for ${extension}: ${unsupported.join(', ')}`
+          };
+        }
+        const [result] = await writeAudioTags([{ path: real, tags: fields }]);
+        return result?.success
+          ? { success: true }
+          : { success: false, error: result?.error || 'Tag write failed' };
       } catch (e: unknown) {
         return { success: false, error: errMsg(e) };
       }
@@ -283,15 +334,31 @@ export function registerMediaHandlers(): void {
     ): Promise<{ success: boolean; error?: string }> => {
       if (!isSafeAbsolutePath(filePath)) return { success: false, error: 'Invalid path' };
       if (isProtectedTarget(filePath)) return { success: false, error: 'Protected path' };
+      let realTarget: string;
+      try {
+        realTarget = await realpath(filePath);
+      } catch {
+        return { success: false, error: 'File inaccessible' };
+      }
+      if (isProtectedTarget(realTarget)) return { success: false, error: 'Protected path' };
       if (typeof imageSource === 'string') {
-        if (!isSafeAbsolutePath(imageSource) || isSensitivePath(imageSource)) {
+        if (!isSafeAbsolutePath(imageSource)) {
           return { success: false, error: 'Invalid image path' };
         }
-        if (!ALLOWED_COVER_EXTS.has(extname(imageSource).toLowerCase())) {
+        let realImage: string;
+        try {
+          realImage = await realpath(imageSource);
+        } catch {
+          return { success: false, error: 'Image file inaccessible' };
+        }
+        if (isSensitivePath(realImage) || isProtectedTarget(realImage)) {
+          return { success: false, error: 'Invalid image path' };
+        }
+        if (!ALLOWED_COVER_EXTS.has(extname(realImage).toLowerCase())) {
           return { success: false, error: 'Invalid image path' };
         }
         try {
-          const info = await stat(imageSource);
+          const info = await stat(realImage);
           if (!info.isFile()) return { success: false, error: 'Invalid image path' };
           if (info.size > MAX_COVER_BYTES) {
             return { success: false, error: 'Image file too large' };
@@ -299,14 +366,16 @@ export function registerMediaHandlers(): void {
         } catch {
           return { success: false, error: 'Image file inaccessible' };
         }
-      } else if (
+        return writeCoverToAudioFile(realTarget, realImage);
+      }
+      if (
         !Array.isArray(imageSource) ||
         imageSource.length === 0 ||
         imageSource.length > MAX_COVER_BYTES
       ) {
         return { success: false, error: 'Invalid image data' };
       }
-      return writeCoverToAudioFile(filePath, imageSource);
+      return writeCoverToAudioFile(realTarget, imageSource);
     }
   );
 
@@ -423,40 +492,47 @@ export function registerMediaHandlers(): void {
   // dzieli wywołującego od dostępu do odczytu tego, co może otworzyć proces main.
   handleIpc('media:grantAccess', async (_event, filePath: unknown): Promise<boolean> => {
     if (!isSafeAbsolutePath(filePath)) return false;
+    let real: string;
+    try {
+      // Symlink może wskazywać do profilu/`.ssh`; polityka musi dotyczyć celu.
+      real = await realpath(filePath);
+    } catch {
+      logger.warn('media', `media:grantAccess rejected missing path: ${filePath}`);
+      return false;
+    }
     if (
-      !isSystemTempPath(filePath) &&
-      (isProtectedPath(filePath) || isProtectedPath(dirname(filePath)) || isSensitivePath(filePath))
+      !isSystemTempPath(real) &&
+      (isProtectedPath(real) || isProtectedPath(dirname(real)) || isSensitivePath(real))
     ) {
-      logger.warn('media', `media:grantAccess rejected protected path: ${filePath}`);
+      logger.warn('media', `media:grantAccess rejected protected path: ${real}`);
       return false;
     }
     // Plik z biblioteki jest już objęty rootem; dopisywanie jego katalogu do
     // `extraRoots` zużywałoby limit 200 bez potrzeby.
-    if (isReadableMediaPath(filePath)) return true;
+    if (isReadableMediaPath(real)) return true;
     // Nadanie dla czegoś, czego nie ma, może tylko rozdąć allowlistę, więc
     // jest odrzucane od razu. Istnienie to także jedyny dowód, jaki ma
     // proces main, że to prawdziwy plik mediów, a nie zgadywanie.
     let isFile: boolean;
     try {
-      isFile = (await stat(filePath)).isFile();
+      isFile = (await stat(real)).isFile();
     } catch {
-      logger.warn('media', `media:grantAccess rejected missing path: ${filePath}`);
+      logger.warn('media', `media:grantAccess rejected missing path: ${real}`);
       return false;
     }
 
     // Katalog zawierający to, czego odtwarzanie faktycznie potrzebuje. Dodawanie samego
     // pliku jako rootu jest przydatne tylko, gdy nic innego go nie obejmuje, a dodawanie
     // obu podwajało listę w typowym przypadku jednego utworu w folderze.
-    const parent = dirname(filePath);
+    const parent = dirname(real);
     if (!isFile) {
-      const ok = await addAllowedRoot(filePath);
-      return ok;
+      return addAllowedRoot(real, { external: true });
     }
-    const parentAdded = await addAllowedRoot(parent);
+    const parentAdded = await addAllowedRoot(parent, { external: true });
     if (parentAdded) return true;
     // Rodzic jest już nadany lub lista jest pełna — sam plik wciąż
     // wystarczy, aby odtworzyć ten jeden utwór.
-    return addAllowedRoot(filePath);
+    return addAllowedRoot(real, { external: true });
   });
 
   handleIpc('media:getDuration', async (_event, filePath: string): Promise<number> => {

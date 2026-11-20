@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   temp: new Set<string>(),
   withinRoots: new Set<string>(),
   realpathThrows: false,
+  realpathMap: new Map<string, string>(),
   id3Update: vi.fn(async () => undefined),
   id3Read: vi.fn(async () => ({}) as unknown),
   parseFile: vi.fn(async () => ({ format: { duration: 0 } })),
@@ -49,6 +50,11 @@ const mocks = vi.hoisted(() => ({
   addAllowedRoot: vi.fn(async (_path: string) => true),
   coverEmbedSupported: vi.fn(() => true),
   embedCover: vi.fn(async () => undefined),
+  writeAudioTags: vi.fn(
+    async (
+      _entries: Array<{ path: string; tags: Record<string, string> }>
+    ): Promise<Array<{ path: string; success: boolean; error?: string }>> => []
+  ),
   loggerWarn: vi.fn(),
   loggerInfo: vi.fn()
 }));
@@ -71,7 +77,7 @@ vi.mock('fs/promises', async (importOriginal) => {
     // canonicalised at all (deleted or inaccessible files).
     realpath: async (path: string) => {
       if (mocks.realpathThrows) throw new Error(`ENOENT: ${path}`);
-      return path;
+      return mocks.realpathMap.get(path) ?? path;
     }
   };
 });
@@ -126,6 +132,13 @@ vi.mock('../../media/cover-embed', () => ({
   coverEmbedSupported: mocks.coverEmbedSupported,
   embedCover: mocks.embedCover
 }));
+vi.mock('../../tools/tag-editor', () => ({
+  isWritableTagFile: (filePath: string) =>
+    ['.mp3', '.flac', '.m4a', '.m4b', '.ogg', '.oga', '.opus', '.wav'].some((ext) =>
+      filePath.toLowerCase().endsWith(ext)
+    ),
+  writeAudioTags: mocks.writeAudioTags
+}));
 
 const { registerMediaHandlers, getDuration, writeCoverToAudioFile, MAX_COVER_BYTES } =
   await import('../media/media-handlers');
@@ -169,7 +182,10 @@ beforeEach(() => {
   mocks.temp.clear();
   mocks.withinRoots.clear();
   mocks.realpathThrows = false;
+  mocks.realpathMap.clear();
   mocks.id3Update.mockClear();
+  mocks.writeAudioTags.mockReset();
+  mocks.writeAudioTags.mockResolvedValue([]);
   mocks.id3Read.mockReset();
   mocks.id3Read.mockResolvedValue({});
   mocks.parseFile.mockReset();
@@ -324,6 +340,65 @@ describe('media:writeTags', () => {
       success: false,
       error: 'bad tag'
     });
+  });
+
+  it('writes non-MP3 containers through ffmpeg instead of node-id3', async () => {
+    const file = tempFile('song.flac');
+    mocks.writeAudioTags.mockResolvedValueOnce([{ path: file, success: true }]);
+
+    const result = await handler('media:writeTags')({}, file, {
+      title: 'Song',
+      trackNumber: '3',
+      partOfSet: '1'
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mocks.id3Update).not.toHaveBeenCalled();
+    expect(mocks.writeAudioTags).toHaveBeenCalledWith([
+      { path: file, tags: { title: 'Song', track: '3', disc: '1' } }
+    ]);
+  });
+
+  it('rejects containers with no safe tag writer', async () => {
+    const file = tempFile('song.aac');
+
+    const result = await handler('media:writeTags')({}, file, { title: 'Song' });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Unsupported audio format');
+    expect(mocks.id3Update).not.toHaveBeenCalled();
+    expect(mocks.writeAudioTags).not.toHaveBeenCalled();
+  });
+
+  it('rejects ID3-only frames for non-MP3 instead of dropping them silently', async () => {
+    const file = tempFile('song.flac');
+
+    const result = await handler('media:writeTags')({}, file, {
+      title: 'Song',
+      composer: 'Composer'
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('composer');
+    expect(mocks.writeAudioTags).not.toHaveBeenCalled();
+  });
+
+  it('checks the realpath target and reports unresolvable paths', async () => {
+    const file = tempFile('link.mp3');
+    const protectedReal = join(root, 'real-protected.mp3');
+    mocks.realpathMap.set(file, protectedReal);
+    mocks.protectedPaths.add(protectedReal);
+    expect(await handler('media:writeTags')({}, file, { title: 'x' })).toEqual({
+      success: false,
+      error: 'Protected path'
+    });
+    expect(mocks.id3Update).not.toHaveBeenCalled();
+
+    mocks.realpathThrows = true;
+    const missing = tempFile('missing.mp3');
+    const result = await handler('media:writeTags')({}, missing, { title: 'x' });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('ENOENT');
   });
 });
 
@@ -619,7 +694,7 @@ describe('media:grantAccess', () => {
     const dir = join(root, 'folder');
     mkdirSync(dir);
     expect(await handler('media:grantAccess')({}, dir)).toBe(true);
-    expect(mocks.addAllowedRoot).toHaveBeenCalledWith(dir);
+    expect(mocks.addAllowedRoot).toHaveBeenCalledWith(dir, { external: true });
   });
 
   it('adds the parent for a file and falls back to the file itself', async () => {
@@ -627,8 +702,8 @@ describe('media:grantAccess', () => {
     mocks.addAllowedRoot.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 
     expect(await handler('media:grantAccess')({}, file)).toBe(true);
-    expect(mocks.addAllowedRoot).toHaveBeenNthCalledWith(1, root);
-    expect(mocks.addAllowedRoot).toHaveBeenNthCalledWith(2, file);
+    expect(mocks.addAllowedRoot).toHaveBeenNthCalledWith(1, root, { external: true });
+    expect(mocks.addAllowedRoot).toHaveBeenNthCalledWith(2, file, { external: true });
   });
 
   it('allows a protected path inside the system temp directory', async () => {
@@ -637,7 +712,18 @@ describe('media:grantAccess', () => {
     mocks.temp.add(file);
 
     expect(await handler('media:grantAccess')({}, file)).toBe(true);
-    expect(mocks.addAllowedRoot).toHaveBeenCalledWith(root);
+    expect(mocks.addAllowedRoot).toHaveBeenCalledWith(root, { external: true });
+  });
+
+  it('rejects a symlink target that is protected or missing', async () => {
+    const link = tempFile('link.mp4');
+    const real = join(root, 'protected-real.mp4');
+    mocks.realpathMap.set(link, real);
+    mocks.protectedPaths.add(real);
+    expect(await handler('media:grantAccess')({}, link)).toBe(false);
+
+    mocks.realpathThrows = true;
+    expect(await handler('media:grantAccess')({}, tempFile('gone.mp4'))).toBe(false);
   });
 });
 
