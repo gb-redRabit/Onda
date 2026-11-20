@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import TimeInput from '../TimeInput.vue';
 
@@ -59,7 +59,9 @@ describe('TimeInput', () => {
     await input.setValue('5');
     await input.trigger('blur');
 
-    expect(input.element.value).toBe('00:05');
+    // `trigger` czeka na najbliższy flush; na obciążonym runnerze Windows
+    // aktualizacja DOM potrafiła wylądować później (flake w runie `b2b4fc4`).
+    await vi.waitFor(() => expect(input.element.value).toBe('00:05'));
   });
 
   it('rejects invalid text and restores the model on blur', async () => {
@@ -74,7 +76,7 @@ describe('TimeInput', () => {
 
     await input.trigger('blur');
 
-    expect(input.element.value).toBe('01:05');
+    await vi.waitFor(() => expect(input.element.value).toBe('01:05'));
     expect(input.attributes('aria-invalid')).toBeUndefined();
   });
 
