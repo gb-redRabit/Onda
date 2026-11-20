@@ -34,6 +34,7 @@ const { t } = useI18n();
       <textarea
         v-model="text"
         :placeholder="t('youtube.batchPlaceholder')"
+        :aria-label="t('youtube.batch')"
         rows="4"
         class="w-full px-3 py-2.5 fx-depth rounded-field bg-base-100 border border-hairline text-sm text-base-content placeholder:text-base-content/50 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary/30 resize-y"
       />
@@ -47,6 +48,7 @@ const { t } = useI18n();
         <select
           v-if="profiles.length && !hasSc"
           v-model="profileId"
+          :aria-label="t('youtube.profilesSection')"
           class="px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus-visible:border-primary focus-visible:outline-hidden"
         >
           <option value="">{{ t('youtube.profileNone') }}</option>

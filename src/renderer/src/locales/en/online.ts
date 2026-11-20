@@ -110,6 +110,8 @@ export default {
     addSelected: 'Add selected ({count})',
     range: 'Range',
     rangeSelect: 'Select range',
+    rangeFrom: 'From',
+    rangeTo: 'To',
     added: 'Added to queue',
     kindVideo: 'Video',
     kindPlaylist: 'Playlist',

@@ -104,6 +104,7 @@ async function applyProperties() {
         }}</label>
         <input
           v-model="propertiesName"
+          :aria-label="$t('explorer.name')"
           type="text"
           class="w-full mt-1 px-3 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-sm text-base-content outline-hidden focus:ring-1 focus:ring-primary"
           @keydown.enter="applyProperties"

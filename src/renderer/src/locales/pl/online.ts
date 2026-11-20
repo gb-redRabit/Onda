@@ -112,6 +112,8 @@ export default {
     addSelected: 'Dodaj zaznaczone ({count})',
     range: 'Zakres',
     rangeSelect: 'Zaznacz zakres',
+    rangeFrom: 'Od',
+    rangeTo: 'Do',
     added: 'Dodano do kolejki',
     kindVideo: 'Wideo',
     kindPlaylist: 'Playlista',

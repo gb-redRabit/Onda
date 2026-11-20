@@ -56,6 +56,7 @@ function onKeydown(e: KeyboardEvent) {
       v-if="!isConfirm"
       ref="inputRef"
       :value="value"
+      :aria-label="message"
       type="text"
       class="w-full px-3 py-2 fx-depth rounded-field bg-base-100 border border-hairline text-sm text-base-content outline-hidden focus:ring-1 focus:ring-primary"
       @input="emit('update:value', ($event.target as HTMLInputElement).value)"

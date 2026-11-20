@@ -182,6 +182,7 @@ function revealDupFile(path: string) {
               data-testid="explorer-duplicate-check"
               class="accent-primary shrink-0"
               :checked="dupSelected.has(dup)"
+              :aria-label="dup"
               @click.stop="toggleDupSelection(dup)"
             />
             <span class="text-xs text-base-content truncate flex-1">{{ dupName(group, di) }}</span>

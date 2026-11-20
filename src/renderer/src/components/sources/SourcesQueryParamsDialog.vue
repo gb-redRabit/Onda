@@ -63,6 +63,7 @@ function clear(): void {
           <textarea
             :id="id"
             v-model="draft"
+            :aria-label="t('sources.queryParams')"
             rows="7"
             spellcheck="false"
             data-testid="sources-params-input"

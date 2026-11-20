@@ -184,6 +184,7 @@ function updateProxySc(patch: Partial<typeof settings.network.proxySoundcloud>) 
         <select
           class="px-3 py-2 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/15 transition"
           :value="settings.youtube.cookiesBrowser"
+          :aria-label="$t('settings.authBrowser')"
           @change="onBrowserChange"
         >
           <option v-for="b in browsers" :key="b.value" :value="b.value">{{ b.label }}</option>

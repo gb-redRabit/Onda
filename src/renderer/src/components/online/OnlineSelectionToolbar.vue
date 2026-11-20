@@ -37,6 +37,7 @@ const allSelected = computed(
       <span>{{ t('youtube.range') }}</span>
       <input
         :value="rangeStart"
+        :aria-label="t('youtube.rangeFrom')"
         type="number"
         min="1"
         class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"
@@ -45,6 +46,7 @@ const allSelected = computed(
       <span>-</span>
       <input
         :value="rangeEnd"
+        :aria-label="t('youtube.rangeTo')"
         type="number"
         min="1"
         class="w-14 px-2 py-1.5 fx-depth rounded-field bg-base-100 border border-hairline text-xs text-base-content focus:border-primary focus:outline-hidden"

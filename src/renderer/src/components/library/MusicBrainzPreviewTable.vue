@@ -24,6 +24,7 @@ const includeFields = defineModel<Record<string, boolean>>('includeFields', { re
       <input
         type="checkbox"
         :checked="includeFields[row.key]"
+        :aria-label="row.label"
         class="checkbox checkbox-xs"
         @change="includeFields[row.key] = ($event.target as HTMLInputElement).checked"
       />

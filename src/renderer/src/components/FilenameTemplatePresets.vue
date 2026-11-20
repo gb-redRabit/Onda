@@ -18,6 +18,7 @@ function onSelect(e: Event) {
 <template>
   <select
     :value="selected"
+    :aria-label="$t('settings.filenameTemplate')"
     class="px-2 py-1.5 fx-depth rounded-field bg-base-200/(--glass-alpha) border border-hairline text-sm text-base-content/70 focus-visible:border-primary focus-visible:outline-hidden"
     @change="onSelect"
   >

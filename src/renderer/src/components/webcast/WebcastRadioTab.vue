@@ -87,6 +87,7 @@ function commitRadioRename(id: string) {
           <template v-if="editingRadioId === s.id">
             <input
               v-model="editingRadioName"
+              :aria-label="s.name"
               type="text"
               class="w-full bg-base-100 border border-hairline fx-depth rounded-field px-2 py-1 text-sm text-base-content focus:outline-hidden focus:border-primary"
               @keyup.enter="commitRadioRename(s.id)"
