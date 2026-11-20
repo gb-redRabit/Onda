@@ -99,6 +99,21 @@ describe('shared FFmpeg job runner', () => {
     expect(existsSync(output)).toBe(false);
   });
 
+  it('does not let a stale close delete a newer job with the same id', async () => {
+    const sender = makeSender();
+    const first = start('same-id', sender);
+    const second = start('same-id', sender);
+
+    // Spóźnione zamknięcie pierwszego procesu nie może usunąć drugiego wpisu,
+    // inaczej anulowanie nowego zadania przestaje działać.
+    first.child.emit('close', 0);
+    expect(cancelFfmpegJob('same-id')).toBe(true);
+    second.child.emit('close', 1);
+
+    await first.promise;
+    await second.promise;
+  });
+
   it('times out with the tool-specific message and kills FFmpeg', async () => {
     const sender = makeSender();
     const { child, promise } = start('timeout', sender);

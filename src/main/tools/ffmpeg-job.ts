@@ -78,7 +78,11 @@ export async function runFfmpegJob(options: FfmpegJobOptions): Promise<MediaConv
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      activeFfmpegJobs.delete(options.jobId);
+      // Nowe zadanie o tym samym `jobId` mogło już zastąpić to wpisem w mapie;
+      // spóźniony `close` starego procesu nie może usunąć nowego zadania.
+      if (activeFfmpegJobs.get(options.jobId) === active) {
+        activeFfmpegJobs.delete(options.jobId);
+      }
       options.onFinish?.();
       if (!result.success) {
         void rm(options.outputPath, { force: true }).catch(() => undefined);
