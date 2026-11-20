@@ -1,4 +1,4 @@
-import { computed, nextTick, ref, type Ref } from 'vue';
+import { computed, nextTick, ref, type InjectionKey, type Ref } from 'vue';
 import { useVideoThumbnails } from '@renderer/composables/useVideoThumbnails';
 import {
   FRAME_STRIP_MIN_PX,
@@ -524,3 +524,14 @@ export function useClipTimeline(options: ClipTimelineOptions) {
     generateThumbnails
   };
 }
+
+export type ClipTimelineApi = ReturnType<typeof useClipTimeline>;
+
+/** Stan osi czasu udostępniany komponentowi `ClipTimeline` przez `provide`. */
+export interface ClipTimelineContext extends ClipTimelineApi {
+  duration: Ref<number>;
+  timelineEl: Ref<HTMLElement | null>;
+  timelineScrollEl: Ref<HTMLElement | null>;
+}
+
+export const CLIP_TIMELINE_KEY: InjectionKey<ClipTimelineContext> = Symbol('clipTimeline');
