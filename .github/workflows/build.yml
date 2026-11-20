@@ -275,9 +275,11 @@ jobs:
           # gdzie pusta tablica z `set -u` jest traktowana jak nieustawiona zmienna.
           npx electron-builder ${{ matrix.args }} --publish never ${extra[@]+"${extra[@]}"}
         env:
-          # Puste wartości są czyszczone w run; nie usuwaj tego warunku.
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # Windows i macOS potrzebują RÓŻNYCH certyfikatów, a electron-builder
+          # czyta je z tego samego `CSC_LINK`. Wybieramy sekret po systemie
+          # runnera; stary, wspólny `CSC_LINK` zostaje jako fallback.
+          CSC_LINK: ${{ runner.os == 'macOS' && (secrets.MAC_CSC_LINK || secrets.CSC_LINK) || (secrets.WIN_CSC_LINK || secrets.CSC_LINK) }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && (secrets.MAC_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD) || (secrets.WIN_CSC_KEY_PASSWORD || secrets.CSC_KEY_PASSWORD) }}
           # Windows: subject certyfikatu; włącza publisherName + weryfikację podpisu
           # aktualizacji (electron-updater).
           CODE_SIGN_PUBLISHER: ${{ secrets.CODE_SIGN_PUBLISHER }}
