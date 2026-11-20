@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { scanSource } from './lib/a11y-scan.mjs';
 
 // Strażnik a11y i poprawności formularzy:
 //  - przycisk z samą ikoną musi mieć nazwę dostępną,
@@ -10,52 +11,6 @@ import { join, relative } from 'node:path';
 const BASELINE_FILE = join(process.cwd(), 'scripts/a11y-baseline.json');
 const ROOT = join(process.cwd(), 'src/renderer/src');
 
-/**
- * Znaczniki wraz z atrybutami. Skanujemy cudzysłowy, bo prosty `[^>]*` ucina
- * atrybuty zawierające `>` (np. `:ref="(el) => ..."`) i gubi ich treść.
- */
-function findTags(source, names) {
-  const out = [];
-  const pattern = new RegExp(`<(${names.join('|')})\\b`, 'g');
-  let match;
-  while ((match = pattern.exec(source))) {
-    let index = match.index + match[0].length;
-    let quote = null;
-    for (; index < source.length; index += 1) {
-      const char = source[index];
-      if (quote) {
-        if (char === quote) quote = null;
-        continue;
-      }
-      if (char === '"' || char === "'") {
-        quote = char;
-        continue;
-      }
-      if (char === '>') break;
-    }
-    out.push({
-      tag: match[1],
-      attrs: source.slice(match.index + match[0].length, index),
-      start: match.index,
-      end: index + 1,
-      selfClosing: /\/\s*$/.test(source.slice(match.index, index))
-    });
-  }
-  return out;
-}
-
-/** Tylko szablon SFC: w skrypcie stringi i komentarze mogą zawierać `<img>` itp. */
-function templateOf(source) {
-  const start = source.search(/^<template>\s*$/m);
-  if (start < 0) return '';
-  const end = source.lastIndexOf('</template>');
-  if (end < start) return '';
-  return source
-    .slice(start, end)
-    .replace(/^<template>\s*$/m, '')
-    .replace(/<!--[\s\S]*?-->/g, '');
-}
-
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -65,72 +20,19 @@ function walk(dir, out = []) {
   return out;
 }
 
-/** Tekst widoczny w przycisku (bez tagów; interpolacje to zwykle etykiety). */
-function visibleText(inner) {
-  return inner
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\{\{[\s\S]*?\}\}/g, ' x ')
-    .replace(/&[a-z]+;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/** Obrazek z niepustym `alt` wewnątrz przycisku daje mu nazwę. */
-function hasNamedImage(inner) {
-  return findTags(inner, ['img']).some((tag) => /\s(?::|v-bind:)?alt="[^"]+"/.test(tag.attrs));
-}
-
-function buttonHasName(attrs, inner) {
-  // `aria-hidden` + tabindex -1 to celowo ukryte nakładki (np. play na hover).
-  if (/aria-hidden="true"/.test(attrs)) return true;
-  if (/aria-label=|aria-labelledby=/.test(attrs)) return true;
-  if (visibleText(inner)) return true;
-  if (hasNamedImage(inner)) return true;
-  return /\s(?::|v-bind:)?title=/.test(attrs);
-}
-
-function controlHasName(source, attrs, start, file) {
-  // Wrappery `ui/*` i kontrolki z `v-bind="..."` dostają atrybuty (w tym
-  // `aria-label`) od wywołującego — skan źródła tego nie zobaczy.
-  if (/v-bind=/.test(attrs)) return true;
-  if (file.replaceAll('\\', '/').includes('/components/ui/')) return true;
-  if (/aria-hidden="true"/.test(attrs) || /type="hidden"/.test(attrs)) return true;
-  if (/aria-label=|aria-labelledby=/.test(attrs)) return true;
-  const id = /(?:^|\s)id="([^"]+)"/.exec(attrs)?.[1];
-  if (id && new RegExp(`<label[^>]*\\bfor="${id}"`).test(source)) return true;
-  const before = source.slice(0, start);
-  if (before.lastIndexOf('<label') > before.lastIndexOf('</label>')) return true;
-  return /\s(?::|v-bind:)?title=/.test(attrs);
-}
-
 const buttons = [];
 const controls = [];
 const withoutType = [];
 const images = [];
 const dialogs = [];
 for (const file of walk(ROOT)) {
-  const source = templateOf(readFileSync(file, 'utf8'));
-  for (const tag of findTags(source, ['button'])) {
-    const line = source.slice(0, tag.start).split('\n').length;
-    if (!/(^|\s):?type=/.test(tag.attrs)) withoutType.push({ file, line });
-    const close = tag.selfClosing ? tag.end : source.indexOf('</button>', tag.end);
-    const inner = close < 0 ? '' : source.slice(tag.end, close);
-    if (buttonHasName(tag.attrs, inner)) continue;
-    buttons.push({ file, line });
-  }
-  for (const tag of findTags(source, ['input', 'select', 'textarea'])) {
-    if (controlHasName(source, tag.attrs, tag.start, file)) continue;
-    controls.push({ file, line: source.slice(0, tag.start).split('\n').length });
-  }
-  for (const tag of findTags(source, ['img'])) {
-    if (/\s(?::|v-bind:)?alt=/.test(tag.attrs)) continue;
-    images.push({ file, line: source.slice(0, tag.start).split('\n').length });
-  }
-  for (const tag of findTags(source, ['div', 'section', 'aside', 'form'])) {
-    if (!/role="dialog"/.test(tag.attrs)) continue;
-    if (/aria-label=|aria-labelledby=/.test(tag.attrs)) continue;
-    dialogs.push({ file, line: source.slice(0, tag.start).split('\n').length });
-  }
+  const source = readFileSync(file, 'utf8');
+  const rows = scanSource(source, file);
+  buttons.push(...rows.buttons);
+  controls.push(...rows.controls);
+  withoutType.push(...rows.withoutType);
+  images.push(...rows.images);
+  dialogs.push(...rows.dialogs);
 }
 
 let baseline = {};
