@@ -4,13 +4,11 @@
 // przestaje pasować do wzorca `{ }`.
 import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
+import { findEmptyCatches } from './lib/empty-catch.mjs';
 
 const ROOT = 'src';
 const CHECKED_EXT = ['.ts', '.vue'];
 const IGNORED_DIRS = new Set(['node_modules', 'dist', 'out', '__tests__']);
-
-const EMPTY_BLOCK_CATCH = /catch\s*(\([^)]*\))?\s*\{\s*\}/g;
-const EMPTY_PROMISE_CATCH = /\.catch\(\s*(\([^)]*\))?\s*=>\s*\{\s*\}\s*\)/g;
 
 /** @type {{ file: string, line: number, kind: string }[]} */
 const offenders = [];
@@ -28,12 +26,13 @@ async function walk(dir) {
 
     const path = join(dir, entry.name);
     const content = await readFile(path, 'utf-8');
-    const report = (match, kind) => {
-      const line = content.slice(0, match.index ?? 0).split('\n').length;
-      offenders.push({ file: path.replace(/\\/g, '/'), line, kind });
-    };
-    for (const match of content.matchAll(EMPTY_BLOCK_CATCH)) report(match, 'catch {}');
-    for (const match of content.matchAll(EMPTY_PROMISE_CATCH)) report(match, '.catch(() => {})');
+    for (const { kind, index } of findEmptyCatches(content)) {
+      offenders.push({
+        file: path.replace(/\\/g, '/'),
+        line: content.slice(0, index).split('\n').length,
+        kind
+      });
+    }
   }
 }
 
