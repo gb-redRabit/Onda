@@ -117,6 +117,39 @@ describe('core window role', () => {
   });
 });
 
+describe('compact window role', () => {
+  it('allows shell/library/media reads but blocks fs, tools and foreign sends', async () => {
+    process.argv.push('--onda-window-role=compact');
+    try {
+      vi.resetModules();
+      await import('../index');
+      const compactApi = state.expose.mock.calls.at(-1)![1] as Record<
+        string,
+        (...args: any[]) => any
+      >;
+      state.invoke.mockResolvedValue('ok');
+
+      await expect(compactApi.invoke('library:loadFolders')).resolves.toBe('ok');
+      await expect(compactApi.invoke('media:getThumbnail', '/a')).resolves.toBe('ok');
+      await expect(compactApi.invoke('fs:delete', '/a')).rejects.toThrow('compact');
+      await expect(compactApi.invoke('tools:convert', {})).rejects.toThrow('compact');
+
+      compactApi.send('core:command', { type: 'play' });
+      expect(state.send).toHaveBeenCalledWith('core:command', { type: 'play' });
+      compactApi.send('core:state', {});
+      expect(state.send).not.toHaveBeenCalledWith('core:state', {});
+
+      const handler = vi.fn();
+      compactApi.on('library:updated', handler);
+      expect(state.on).toHaveBeenCalledWith('library:updated', expect.any(Function));
+      compactApi.on('fs:readdir:batch', handler);
+      expect(state.on).not.toHaveBeenCalledWith('fs:readdir:batch', expect.any(Function));
+    } finally {
+      process.argv.pop();
+    }
+  });
+});
+
 describe('invoke guard', () => {
   it('forwards an allowed channel and returns the result', async () => {
     state.invoke.mockResolvedValue(7);

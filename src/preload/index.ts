@@ -107,16 +107,69 @@ const CORE_INVOKE_CHANNELS = new Set([
   'discord:resolveLocalCover'
 ]);
 
+// Compact to shell audio/wizualizacji, biblioteki i ustawień — nie potrzebuje
+// eksploratora, narzędzi, pobierania, pluginów ani mutacji fs/media.
+const COMPACT_INVOKE_PREFIXES = [
+  'app:',
+  'library:',
+  'playlist:',
+  'settings:',
+  'playback:',
+  'core:',
+  'window:',
+  'audio-pip:'
+];
+const COMPACT_MEDIA_INVOKE_CHANNELS = new Set([
+  'media:getServerUrl',
+  'media:getCover',
+  'media:getCoverStill',
+  'media:getThumbnail',
+  'media:batchThumbnails',
+  'media:getDuration',
+  'media:batchDurations',
+  'media:getWaveform',
+  'media:checkAudioCodec',
+  'media:grantAccess'
+]);
+const COMPACT_SEND_CHANNELS = new Set(['core:command']);
+const COMPACT_RECEIVE_CHANNELS = new Set([
+  'core:state',
+  'core:tick',
+  'core:viz',
+  'core:ready',
+  'core:error',
+  'compact:hidden',
+  'compact:shown',
+  'settings:appearance',
+  'library:updated',
+  'library:fileMissing',
+  'library:scan:progress',
+  'library:loudness:progress',
+  'media:playPause',
+  'media:next',
+  'media:previous',
+  'media:stop',
+  'media:volumeUp',
+  'media:volumeDown',
+  'media:toggleMute',
+  'open-files'
+]);
+
+function compactInvokeAllowed(channel: string): boolean {
+  if (channel.startsWith('media:')) return COMPACT_MEDIA_INVOKE_CHANNELS.has(channel);
+  return COMPACT_INVOKE_PREFIXES.some((prefix) => channel.startsWith(prefix));
+}
+
 function canSend(channel: string): boolean {
-  return WINDOW_ROLE === 'core'
-    ? CORE_SEND_CHANNELS.has(channel)
-    : ALLOWED_SEND_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'core') return CORE_SEND_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'compact') return COMPACT_SEND_CHANNELS.has(channel);
+  return ALLOWED_SEND_CHANNELS.has(channel);
 }
 
 function canReceive(channel: string): boolean {
-  return WINDOW_ROLE === 'core'
-    ? CORE_RECEIVE_CHANNELS.has(channel)
-    : ALLOWED_RECEIVE_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'core') return CORE_RECEIVE_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'compact') return COMPACT_RECEIVE_CHANNELS.has(channel);
+  return ALLOWED_RECEIVE_CHANNELS.has(channel);
 }
 
 function trySend(channel: string, ...args: unknown[]): void {
@@ -143,6 +196,11 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   if (WINDOW_ROLE === 'core' && !CORE_INVOKE_CHANNELS.has(channel)) {
     const message = `IPC invoke is blocked in the Core window: '${channel}'`;
+    logger.warn('preload', message);
+    return Promise.reject(new Error(message));
+  }
+  if (WINDOW_ROLE === 'compact' && !compactInvokeAllowed(channel)) {
+    const message = `IPC invoke is blocked in the compact window: '${channel}'`;
     logger.warn('preload', message);
     return Promise.reject(new Error(message));
   }

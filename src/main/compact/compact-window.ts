@@ -46,7 +46,8 @@ export function createCompactWindow(options: CompactWindowOptions = {}): Browser
     htmlFile: 'compact.html',
     autoShow: options.showOnReady === true,
     webPreferences: {
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      additionalArguments: ['--onda-window-role=compact']
     }
   });
 
