@@ -11,6 +11,8 @@ interface RunCommandOptions {
   maxBuffer?: number;
   /** Anulowanie zabija proces (np. ffmpeg podczas analizy głośności). */
   signal?: AbortSignal;
+  /** Strumień stdout na żywo — np. `ffmpeg -progress pipe:1` bez buforowania całości. */
+  onStdout?: (chunk: string) => void;
 }
 
 export interface CommandResult {
@@ -67,8 +69,13 @@ export function runCommandResult(
         fail(new Error(`Command output exceeded ${maxBuffer} bytes and was killed`));
         return;
       }
-      if (target === 'out') stdout += chunk.toString('utf-8');
-      else stderr += chunk.toString('utf-8');
+      if (target === 'out') {
+        const text = chunk.toString('utf-8');
+        stdout += text;
+        options.onStdout?.(text);
+      } else {
+        stderr += chunk.toString('utf-8');
+      }
     };
 
     child.stdout?.on('data', (d: Buffer) => append(d, 'out'));

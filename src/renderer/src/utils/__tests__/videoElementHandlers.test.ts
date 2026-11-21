@@ -14,6 +14,8 @@ const state = vi.hoisted(() => ({
   setPlaybackPosition: vi.fn(),
   clearPlaybackPosition: vi.fn(),
   transcodeVideo: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn(),
   warn: vi.fn(),
   info: vi.fn(),
   error: vi.fn(),
@@ -93,12 +95,16 @@ beforeEach(() => {
   state.clearPlaybackPosition.mockReset();
   state.transcodeVideo.mockReset();
   state.transcodeVideo.mockResolvedValue('C:/media/out.mp4');
+  state.on.mockReset();
+  state.on.mockReturnValue(state.off);
+  state.off.mockReset();
   state.warn.mockReset();
   state.t.mockClear();
   (window as { api?: unknown }).api = {
     setPlaybackPosition: state.setPlaybackPosition,
     clearPlaybackPosition: state.clearPlaybackPosition,
-    transcodeVideo: state.transcodeVideo
+    transcodeVideo: state.transcodeVideo,
+    on: state.on
   };
   vi.stubGlobal('MediaError', {
     MEDIA_ERR_SRC_NOT_SUPPORTED: 4,
@@ -424,6 +430,40 @@ describe('attachVideoTranscodeFallback', () => {
     expect(el.src).not.toContain('media://');
   });
 
+  it('cancels the progress toast when the track changed during transcoding', async () => {
+    const { attachVideoTranscodeFallback } = await load();
+    let resolveTranscode: (value: string) => void = () => {};
+    state.transcodeVideo.mockImplementation(
+      () => new Promise((resolve) => (resolveTranscode = resolve))
+    );
+    const reporter = {
+      start: vi.fn(),
+      progress: vi.fn(),
+      finish: vi.fn(),
+      cancel: vi.fn()
+    };
+    const el = errorEl(4);
+    const p = player();
+    attachVideoTranscodeFallback(
+      el,
+      sourceTrack(),
+      p,
+      vi.fn(),
+      { attempted: '' },
+      undefined,
+      reporter
+    );
+    el.dispatchEvent(event('error'));
+
+    p.currentTrack = track('b');
+    resolveTranscode('C:/media/out.mp4');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(reporter.cancel).toHaveBeenCalled();
+    expect(reporter.finish).not.toHaveBeenCalled();
+  });
+
   it('notifies on rejection and logs resume failures', async () => {
     const { attachVideoTranscodeFallback } = await load();
     state.transcodeVideo.mockRejectedValueOnce(new Error('ffmpeg'));
@@ -445,6 +485,122 @@ describe('attachVideoTranscodeFallback', () => {
     el2.dispatchEvent(event('canplay'));
     await Promise.resolve();
     expect(state.warn).toHaveBeenCalledWith('video', 'transcoded play rejected', expect.any(Error));
+  });
+
+  it('reports progress through the provided reporter', async () => {
+    const { attachVideoTranscodeFallback } = await load();
+    const reporter = {
+      start: vi.fn(),
+      progress: vi.fn(),
+      finish: vi.fn(),
+      cancel: vi.fn()
+    };
+    const handlers: Array<(payload: unknown) => void> = [];
+    state.on.mockImplementation((channel: string, callback: (payload: unknown) => void) => {
+      expect(channel).toBe('media:transcodeVideo:progress');
+      handlers.push(callback);
+      return state.off;
+    });
+    const el = errorEl(4);
+    attachVideoTranscodeFallback(
+      el,
+      sourceTrack(),
+      player(),
+      vi.fn(),
+      { attempted: '' },
+      undefined,
+      reporter
+    );
+
+    el.dispatchEvent(event('error'));
+    expect(reporter.start).toHaveBeenCalled();
+
+    handlers[0]({ path: 'C:/media/other.mp4', percent: 10 });
+    handlers[0]({ path: 'C:/media/a.mp4', percent: 'nope' });
+    handlers[0]({ path: 'C:/media/a.mp4', percent: 50 });
+    expect(reporter.progress).toHaveBeenCalledTimes(1);
+    expect(reporter.progress).toHaveBeenCalledWith(50);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(reporter.finish).toHaveBeenCalledWith(true);
+    expect(state.off).toHaveBeenCalled();
+  });
+
+  it('closes the reporter with failure and unsubscribes after abort', async () => {
+    const { attachVideoTranscodeFallback } = await load();
+    const reporter = {
+      start: vi.fn(),
+      progress: vi.fn(),
+      finish: vi.fn(),
+      cancel: vi.fn()
+    };
+    state.transcodeVideo.mockResolvedValueOnce(null);
+    let el = errorEl(4);
+    attachVideoTranscodeFallback(
+      el,
+      sourceTrack(),
+      player(),
+      vi.fn(),
+      { attempted: '' },
+      undefined,
+      reporter
+    );
+    el.dispatchEvent(event('error'));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(reporter.finish).toHaveBeenCalledWith(false);
+
+    state.transcodeVideo.mockImplementationOnce(
+      () => new Promise<string>((resolve) => setTimeout(() => resolve('C:/media/out.mp4'), 0))
+    );
+    const controller = new AbortController();
+    el = errorEl(4);
+    attachVideoTranscodeFallback(
+      el,
+      sourceTrack(),
+      player(),
+      vi.fn(),
+      { attempted: '' },
+      controller.signal,
+      reporter
+    );
+    el.dispatchEvent(event('error'));
+    controller.abort();
+    expect(state.off).toHaveBeenCalled();
+    expect(reporter.cancel).toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(reporter.finish).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a transcode rejection that arrives after abort', async () => {
+    const { attachVideoTranscodeFallback } = await load();
+    const reporter = {
+      start: vi.fn(),
+      progress: vi.fn(),
+      finish: vi.fn(),
+      cancel: vi.fn()
+    };
+    state.transcodeVideo.mockImplementationOnce(
+      () => new Promise<string>((_, reject) => setTimeout(() => reject(new Error('ffmpeg')), 0))
+    );
+    const controller = new AbortController();
+    const el = errorEl(4);
+    attachVideoTranscodeFallback(
+      el,
+      sourceTrack(),
+      player(),
+      vi.fn(),
+      { attempted: '' },
+      controller.signal,
+      reporter
+    );
+
+    el.dispatchEvent(event('error'));
+    controller.abort();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(reporter.finish).not.toHaveBeenCalled();
   });
 
   it('passes the abort signal to both listeners', async () => {

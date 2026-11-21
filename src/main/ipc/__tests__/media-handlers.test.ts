@@ -44,7 +44,9 @@ const mocks = vi.hoisted(() => ({
   getWaveform: vi.fn(async () => [1, 2, 3]),
   transcodeAudioChunk: vi.fn(async () => 'chunk.mp3'),
   transcodeAudio: vi.fn(async () => 'audio.m4a'),
-  transcodeVideo: vi.fn(async () => 'video.mp4'),
+  transcodeVideo: vi.fn(
+    async (_path: string, _options?: { onProgress?: (progress: unknown) => void }) => 'video.mp4'
+  ),
   cleanupOldTranscodes: vi.fn(),
   isPathWithinAllowedRoots: vi.fn((path: string) => mocks.withinRoots.has(path)),
   addAllowedRoot: vi.fn(async (_path: string) => true),
@@ -672,6 +674,50 @@ describe('transcoding handlers', () => {
     expect(mocks.transcodeAudioChunk).toHaveBeenCalledWith(file, 1, 2);
     expect(mocks.transcodeAudio).toHaveBeenCalledWith(file);
     expect(mocks.transcodeVideo).toHaveBeenCalledWith(file);
+  });
+
+  it('forwards transcode progress and duration to the requesting renderer', async () => {
+    const file = tempFile('progress.mkv');
+    mocks.readable.add(file);
+    mocks.getCachedDuration.mockReturnValue({ duration: 20, mtimeMs: Number.MAX_VALUE });
+    mocks.transcodeVideo.mockImplementationOnce(
+      async (_path: string, options?: { onProgress?: (progress: unknown) => void }) => {
+        options?.onProgress?.({ percent: 50, timeSec: 10 });
+        return 'video.mp4';
+      }
+    );
+    const send = vi.fn();
+    const event = { sender: { isDestroyed: () => false, send } };
+
+    expect(await handler('media:transcodeVideo')(event, file)).toBe('video.mp4');
+
+    expect(mocks.transcodeVideo).toHaveBeenCalledWith(file, {
+      durationSec: 20,
+      onProgress: expect.any(Function)
+    });
+    expect(send).toHaveBeenCalledWith('media:transcodeVideo:progress', {
+      path: file,
+      percent: 50,
+      timeSec: 10
+    });
+  });
+
+  it('does not send progress to a destroyed renderer', async () => {
+    const file = tempFile('gone.mkv');
+    mocks.readable.add(file);
+    mocks.getCachedDuration.mockReturnValue({ duration: 20, mtimeMs: Number.MAX_VALUE });
+    mocks.transcodeVideo.mockImplementationOnce(
+      async (_path: string, options?: { onProgress?: (progress: unknown) => void }) => {
+        options?.onProgress?.({ percent: 5, timeSec: 1 });
+        return 'video.mp4';
+      }
+    );
+    const send = vi.fn();
+    const event = { sender: { isDestroyed: () => true, send } };
+
+    expect(await handler('media:transcodeVideo')(event, file)).toBe('video.mp4');
+
+    expect(send).not.toHaveBeenCalled();
   });
 });
 

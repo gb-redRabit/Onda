@@ -34,6 +34,7 @@ import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-serv
 import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
 import { isWritableTagFile, writeAudioTags } from '../../tools/tag-editor';
 import type { AudioTagField, AudioTagFields } from '../../../shared/types/tools';
+import type { IpcTranscodeProgress } from '../../../shared/types/ipc/media';
 
 // Mutujące operacje plikowe (zmiana nazwy, tagi, okładka) muszą przejść tę samą
 // politykę co destrukcyjne kanały `fs:*`: odrzucamy wyłącznie korzenie wolumenów i
@@ -493,10 +494,21 @@ export function registerMediaHandlers(): void {
     return transcodeAudio(filePath);
   });
 
-  handleIpc('media:transcodeVideo', async (_event, filePath: string): Promise<string | null> => {
+  handleIpc('media:transcodeVideo', async (event, filePath: string): Promise<string | null> => {
     if (!isSafeAbsolutePath(filePath)) return null;
     if (!isReadableMediaPath(filePath)) return null;
-    return transcodeVideo(filePath);
+    const sender = event.sender;
+    if (typeof sender?.send !== 'function') return transcodeVideo(filePath);
+    // Czas trwania jest potrzebny tylko do procentów; ffprobe i tak jest cache'owany.
+    const durationSec = await getDuration(filePath);
+    return transcodeVideo(filePath, {
+      durationSec,
+      onProgress: (progress) => {
+        if (sender.isDestroyed()) return;
+        const payload: IpcTranscodeProgress = { path: filePath, ...progress };
+        sender.send('media:transcodeVideo:progress', payload);
+      }
+    });
   });
 
   // posprzątaj stare transkodowane pliki przy starcie

@@ -355,6 +355,7 @@ export type IpcReceiveChannel =
   | 'library:loudness:progress'
   | 'library:updated'
   | 'library:fileMissing'
+  | 'media:transcodeVideo:progress'
   | 'media:playPause'
   | 'media:next'
   | 'media:previous'

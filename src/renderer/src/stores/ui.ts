@@ -21,9 +21,15 @@ export interface Notification {
   title: string;
   message?: string;
   duration?: number;
+  /** Postęp 0–100; `undefined` ukrywa pasek (toasty bez postępu). */
+  progress?: number;
   /** Akcja w toaście (np. „Cofnij”); toast znika po jej uruchomieniu. */
   action?: { label: string; run: () => void };
 }
+
+type NotificationPatch = Partial<
+  Pick<Notification, 'type' | 'title' | 'message' | 'duration' | 'progress'>
+>;
 
 export const useUIStore = defineStore('ui', () => {
   const searchMode = ref<'closed' | 'view' | 'global'>('closed');
@@ -68,24 +74,36 @@ export const useUIStore = defineStore('ui', () => {
     contextMenu.value = null;
   }
 
+  function scheduleRemoval(id: string, duration: number): void {
+    if (duration <= 0) return;
+    setTimeout(() => {
+      try {
+        removeNotification(id);
+      } catch {
+        /* zignoruj */
+      }
+    }, duration);
+  }
+
   function notify(
     type: Notification['type'],
     title: string,
     message?: string,
     duration = 5000,
     action?: Notification['action']
-  ) {
+  ): string {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     notifications.value.push({ id, type, title, message, duration, action });
-    if (duration > 0) {
-      setTimeout(() => {
-        try {
-          removeNotification(id);
-        } catch {
-          /* zignoruj */
-        }
-      }, duration);
-    }
+    scheduleRemoval(id, duration);
+    return id;
+  }
+
+  /** Aktualizuje istniejący toast (np. postęp transkodowania) zamiast tworzyć nowy. */
+  function updateNotification(id: string, patch: NotificationPatch): void {
+    const notification = notifications.value.find((n) => n.id === id);
+    if (!notification) return;
+    Object.assign(notification, patch);
+    if (patch.duration !== undefined) scheduleRemoval(id, patch.duration);
   }
 
   function removeNotification(id: string) {
@@ -98,6 +116,7 @@ export const useUIStore = defineStore('ui', () => {
     setupWizardVisible,
     contextMenu,
     notifications,
+    updateNotification,
     toggleGlobalSearch,
     toggleViewSearch,
     openSearch,

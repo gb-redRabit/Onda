@@ -138,11 +138,46 @@ async function doTranscodeAudio(filePath: string): Promise<string | null> {
   }
 }
 
-export function transcodeVideo(filePath: string): Promise<string | null> {
-  return dedupeTranscode(`video:${filePath}`, () => doTranscodeVideo(filePath));
+export interface VideoTranscodeProgress {
+  percent: number;
+  timeSec: number;
+  speed?: string;
 }
 
-async function doTranscodeVideo(filePath: string): Promise<string | null> {
+export interface VideoTranscodeOptions {
+  durationSec?: number;
+  onProgress?: (progress: VideoTranscodeProgress) => void;
+}
+
+export function transcodeVideo(
+  filePath: string,
+  options: VideoTranscodeOptions = {}
+): Promise<string | null> {
+  return dedupeTranscode(`video:${filePath}`, () => doTranscodeVideo(filePath, options));
+}
+
+/** Rozbija strumień `-progress` na pary klucz=wartość, zachowując niepełny ogon. */
+function parseProgressLines(buffer: string, onEntry: (key: string, value: string) => void): string {
+  const lines = buffer.split(/\r?\n/);
+  // `split` zawsze zwraca co najmniej jeden element — ostatni to niepełna linia.
+  const rest = lines.pop() as string;
+  for (const line of lines) {
+    const eq = line.indexOf('=');
+    if (eq > 0) onEntry(line.slice(0, eq), line.slice(eq + 1));
+  }
+  return rest;
+}
+
+function parseFfmpegTime(value: string): number {
+  const match = /^(\d+):(\d{2}):(\d{2}(?:\.\d+)?)$/.exec(value.trim());
+  if (!match) return 0;
+  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+}
+
+async function doTranscodeVideo(
+  filePath: string,
+  options: VideoTranscodeOptions = {}
+): Promise<string | null> {
   await mkdir(videoTempDir, { recursive: true });
   const stamp = await sourceStamp(filePath);
   const hash = createHash('md5')
@@ -169,6 +204,33 @@ async function doTranscodeVideo(filePath: string): Promise<string | null> {
         : encoder === 'mpeg4'
           ? ['-c:v', 'mpeg4', '-q:v', '4']
           : ['-c:v', encoder, '-b:v', '2M'];
+    const progress = options.onProgress;
+    let progressBuffer = '';
+    let lastTimeSec = 0;
+    let lastPercent = -1;
+    const progressHandler = progress
+      ? (chunk: string): void => {
+          const emit = (timeSec: number): void => {
+            lastTimeSec = timeSec;
+            lastPercent =
+              options.durationSec && options.durationSec > 0
+                ? Math.min(100, Math.max(0, (timeSec / options.durationSec) * 100))
+                : -1;
+            progress({ percent: lastPercent, timeSec });
+          };
+          progressBuffer += chunk;
+          progressBuffer = parseProgressLines(progressBuffer, (key, raw) => {
+            if (key === 'out_time_us' || key === 'out_time_ms') {
+              const micros = Number(raw);
+              if (Number.isFinite(micros)) emit(micros / 1_000_000);
+            } else if (key === 'out_time') {
+              emit(parseFfmpegTime(raw));
+            } else if (key === 'speed') {
+              progress({ percent: lastPercent, timeSec: lastTimeSec, speed: raw.trim() });
+            }
+          });
+        }
+      : undefined;
     await runCommand(
       ffmpeg,
       [
@@ -189,10 +251,14 @@ async function doTranscodeVideo(filePath: string): Promise<string | null> {
         '192k',
         '-movflags',
         '+faststart',
+        ...(progress ? ['-progress', 'pipe:1', '-nostats'] : []),
         outPath,
         '-y'
       ],
-      { timeout: 30 * 60 * 1000 }
+      {
+        timeout: 30 * 60 * 1000,
+        ...(progressHandler ? { onStdout: progressHandler } : {})
+      }
     );
     return outPath;
   } catch (err) {

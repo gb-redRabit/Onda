@@ -82,6 +82,15 @@ export interface VideoTranscodeState {
   attempted: string;
 }
 
+/** UI postępu transkodowania; `finish` zamyka jeden toast zamiast tworzyć kolejne. */
+export interface VideoTranscodeReporter {
+  start(): void;
+  progress(percent: number): void;
+  finish(ok: boolean): void;
+  /** Usuwa toast bez wyniku (zmiana utworu, zamknięcie widoku, abort). */
+  cancel(): void;
+}
+
 /**
  * Fallback dla plików, których Chromium nie potrafi zdekodować (HEVC w MKV/MP4,
  * WMV, FLV, MPEG-4 Part 2 itd.) — bez tego wideo po prostu nie startuje.
@@ -94,7 +103,8 @@ export function attachVideoTranscodeFallback(
   player: Player,
   notify: (text: string, duration?: number) => void,
   state: VideoTranscodeState,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  reporter?: VideoTranscodeReporter
 ): void {
   el.addEventListener(
     'error',
@@ -110,15 +120,46 @@ export function attachVideoTranscodeFallback(
       state.attempted = track.path;
       if (player.currentTrack?.path !== track.path) return;
       el.pause();
-      notify(i18n.global.t('player.transcodingVideo'), 8000);
+      if (reporter) reporter.start();
+      else notify(i18n.global.t('player.transcodingVideo'), 8000);
+
+      let offProgress: (() => void) | undefined;
+      const finish = (ok: boolean): void => {
+        offProgress?.();
+        offProgress = undefined;
+        if (reporter) reporter.finish(ok);
+        else if (!ok) notify(i18n.global.t('player.videoUnsupported'), 4000);
+      };
+      if (reporter) {
+        offProgress = window.api?.on('media:transcodeVideo:progress', (payload) => {
+          const progress = payload as { path?: string; percent?: number };
+          if (progress?.path !== track.path || typeof progress.percent !== 'number') return;
+          reporter.progress(progress.percent);
+        });
+      }
+      signal?.addEventListener(
+        'abort',
+        () => {
+          offProgress?.();
+          offProgress = undefined;
+          reporter?.cancel();
+        },
+        { once: true }
+      );
+
       window.api
         ?.transcodeVideo(track.path)
         .then((outPath) => {
+          if (signal?.aborted) return;
           if (!outPath) {
-            notify(i18n.global.t('player.videoUnsupported'), 4000);
+            finish(false);
             return;
           }
-          if (player.currentTrack?.path !== track.path) return;
+          if (player.currentTrack?.path !== track.path) {
+            reporter?.cancel();
+            return;
+          }
+          finish(true);
           el.src = toMediaServerUrl(outPath);
           el.load();
           const resume = () => {
@@ -126,7 +167,9 @@ export function attachVideoTranscodeFallback(
           };
           el.addEventListener('canplay', resume, { once: true, signal });
         })
-        .catch(() => notify(i18n.global.t('player.videoUnsupported'), 4000));
+        .catch(() => {
+          if (!signal?.aborted) finish(false);
+        });
     },
     { once: true, signal }
   );

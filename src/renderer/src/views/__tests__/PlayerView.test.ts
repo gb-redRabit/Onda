@@ -65,6 +65,14 @@ vi.mock('@renderer/composables/usePlayerContextMenu', () => ({
     showAudioMenu: state.showAudioMenu
   })
 }));
+vi.mock('@renderer/composables/useTranscodeNotice', () => ({
+  useTranscodeNotice: () => ({
+    start: vi.fn(),
+    progress: vi.fn(),
+    finish: vi.fn(),
+    cancel: vi.fn()
+  })
+}));
 
 const TopBarStub = defineComponent({
   props: ['showControls', 'track', 'pinned'],

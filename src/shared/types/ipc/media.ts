@@ -5,6 +5,15 @@ import type { MediaFile } from '../media';
 // żeby pole dodane do `MediaFile` nie mogło po cichu zniknąć w kontrakcie IPC.
 export type IpcMediaFile = Omit<MediaFile, 'metadata' | 'thumbnail' | 'mtime'>;
 
+/** Postęp transkodowania wideo wysyłany z main do renderera. */
+export interface IpcTranscodeProgress {
+  path: string;
+  /** 0–100 albo -1, gdy czas trwania nie jest znany. */
+  percent: number;
+  timeSec: number;
+  speed?: string;
+}
+
 export interface IpcPlaylist {
   id: string;
   name: string;

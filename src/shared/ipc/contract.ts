@@ -376,6 +376,7 @@ export const RECEIVE_CHANNELS = [
   'library:loudness:progress',
   'library:updated',
   'library:fileMissing',
+  'media:transcodeVideo:progress',
   'media:playPause',
   'media:next',
   'media:previous',

@@ -19,6 +19,7 @@ import { setPlayerPiPHandler } from '@renderer/composables/playerPiPHandler';
 import { usePlayerControls } from '@renderer/composables/usePlayerControls';
 import { usePlayerContextMenu } from '@renderer/composables/usePlayerContextMenu';
 import { useAlwaysOnTop } from '@renderer/composables/useAlwaysOnTop';
+import { useTranscodeNotice } from '@renderer/composables/useTranscodeNotice';
 
 const { t } = useI18n();
 const player = usePlayerStore();
@@ -72,11 +73,14 @@ const skipZones = [
   { side: 'right', seconds: 10 }
 ] as const;
 
+const transcodeNotice = useTranscodeNotice();
+
 const vp = useVideoPlayer({
   player,
   settings,
   pip,
-  notify: (text: string, duration?: number) => ctl.showToast(text, duration)
+  notify: (text: string, duration?: number) => ctl.showToast(text, duration),
+  transcodeNotice
 });
 
 const ctl = usePlayerControls({ player, settings, ui, t, vp, playerContainerRef });

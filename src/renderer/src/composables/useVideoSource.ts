@@ -11,6 +11,7 @@ import { toMediaServerUrl, toMediaStreamUrl } from '@renderer/utils/mediaUrl';
 import {
   attachVideoTranscodeFallback,
   connectVideoEvents,
+  type VideoTranscodeReporter,
   type VideoTranscodeState
 } from '@renderer/utils/videoElementHandlers';
 
@@ -19,6 +20,8 @@ export interface VideoPlayerContext {
   settings: ReturnType<typeof useSettingsStore>;
   pip: ReturnType<typeof usePiP>;
   notify: (text: string, duration?: number) => void;
+  /** Toast z postępem transkodowania; brak = pojedynczy komunikat tekstowy. */
+  transcodeNotice?: VideoTranscodeReporter;
 }
 
 export function useVideoSource(
@@ -127,7 +130,15 @@ export function useVideoSource(
       el.load();
       if (!/^https?:\/\//i.test(track.path)) {
         checkVideoAudioCodec(track, el);
-        attachVideoTranscodeFallback(el, track, player, notify, transcodeState, signal);
+        attachVideoTranscodeFallback(
+          el,
+          track,
+          player,
+          notify,
+          transcodeState,
+          signal,
+          ctx.transcodeNotice
+        );
       }
 
       // Ostatnia linia obrony: plik uszkodzony, brak kodeka albo zerwany strumień.
@@ -146,7 +157,10 @@ export function useVideoSource(
 
     audioEngine.setVideoVolume(player.isMuted ? 0 : player.volume);
     el.playbackRate = settings.playback.playbackSpeed;
-    if (player.isPlaying && !player.pipActive)
+    // Źródło już odrzucone przez Chromium (np. AVI) — fallback transkodowania
+    // przejmie odtwarzanie po `canplay`; bez tego każde odświeżenie widoku
+    // logowało NotSupportedError.
+    if (player.isPlaying && !player.pipActive && !el.error)
       el.play().catch((e) => logger.warn('video', 'resume play rejected', e));
 
     if (el.readyState >= 1) {

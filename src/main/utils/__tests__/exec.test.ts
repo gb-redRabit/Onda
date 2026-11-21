@@ -43,6 +43,33 @@ describe('runCommandResult', () => {
     await expect(promise).resolves.toEqual({ stdout: 'out', stderr: 'err' });
   });
 
+  it('streams stdout chunks to onStdout as they arrive', async () => {
+    const child = spawnChild();
+    const seen: string[] = [];
+    const promise = runCommandResult('ffmpeg', [], {
+      onStdout: (chunk) => seen.push(chunk)
+    });
+
+    child.stdout.emit('data', Buffer.from('a\n'));
+    child.stdout.emit('data', Buffer.from('b\n'));
+    child.emit('close', 0, null);
+
+    await expect(promise).resolves.toEqual({ stdout: 'a\nb\n', stderr: '' });
+    expect(seen).toEqual(['a\n', 'b\n']);
+  });
+
+  it('does not stream stdout after the process settled', async () => {
+    const child = spawnChild();
+    const onStdout = vi.fn();
+    const promise = runCommandResult('ffmpeg', [], { onStdout });
+
+    child.emit('close', 0, null);
+    child.stdout.emit('data', Buffer.from('late'));
+
+    await expect(promise).resolves.toEqual({ stdout: '', stderr: '' });
+    expect(onStdout).not.toHaveBeenCalled();
+  });
+
   it('resolves with empty output for a child without stdio streams', async () => {
     const child = new FakeChild();
     child.stdout = undefined as never;

@@ -292,6 +292,23 @@ describe('useVideoSource subtitle initialization', () => {
     expect(audioEngine.setVideoVolume).toHaveBeenLastCalledWith(0);
   });
 
+  it('does not replay a source Chromium already rejected', async () => {
+    const source = createSource();
+    const video = createVideoElement();
+    const track = videoTrack('D:/media/a.mp4');
+    player.currentTrack = track;
+
+    source.onVideoRef(video);
+    await flushSetup();
+    markMetadataReady(video);
+    player.isPlaying = true;
+    Object.defineProperty(video, 'error', { configurable: true, value: { code: 4 } });
+
+    await source.setupVideo(track);
+
+    expect(video.play).not.toHaveBeenCalled();
+  });
+
   it('waits for metadata when reusing a source that is still loading', async () => {
     const source = createSource();
     const video = createVideoElement();

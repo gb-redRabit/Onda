@@ -293,6 +293,60 @@ describe('transcodeVideo', () => {
     );
   });
 
+  it('streams ffmpeg progress to the listener', async () => {
+    const onProgress = vi.fn();
+    state.runCommand.mockImplementationOnce(
+      async (_bin: string, _args: string[], options: { onStdout?: (chunk: string) => void }) => {
+        options.onStdout?.('out_time_');
+        options.onStdout?.('us=2500000\n');
+        options.onStdout?.('speed=1.5x\n');
+        options.onStdout?.('out_time=00:00:05.00\n');
+        options.onStdout?.('out_time_ms=7500000\n');
+        options.onStdout?.('garbage\nframe=1\n');
+        options.onStdout?.('out_time=not-a-time\n');
+        options.onStdout?.('out_time_us=nope\n');
+        return '';
+      }
+    );
+    const { transcodeVideo } = await load();
+
+    expect(await transcodeVideo('C:/a.mkv', { durationSec: 10, onProgress })).toBe(
+      '/tmp/onda/video-transcodes/hash123.mp4'
+    );
+    expect(state.runCommand).toHaveBeenCalledWith(
+      '/bin/ffmpeg',
+      expect.arrayContaining(['-progress', 'pipe:1', '-nostats']),
+      expect.objectContaining({ onStdout: expect.any(Function) })
+    );
+    expect(onProgress).toHaveBeenCalledWith({ percent: 25, timeSec: 2.5 });
+    expect(onProgress).toHaveBeenCalledWith({ percent: 25, timeSec: 2.5, speed: '1.5x' });
+    expect(onProgress).toHaveBeenCalledWith({ percent: 50, timeSec: 5 });
+    expect(onProgress).toHaveBeenCalledWith({ percent: 75, timeSec: 7.5 });
+  });
+
+  it('reports an unknown percentage when the duration is missing', async () => {
+    const onProgress = vi.fn();
+    state.runCommand.mockImplementationOnce(
+      async (_bin: string, _args: string[], options: { onStdout?: (chunk: string) => void }) => {
+        options.onStdout?.('out_time_us=2000000\n');
+        return '';
+      }
+    );
+    const { transcodeVideo } = await load();
+
+    await transcodeVideo('C:/a.mkv', { durationSec: -1, onProgress });
+    expect(onProgress).toHaveBeenCalledWith({ percent: -1, timeSec: 2 });
+  });
+
+  it('falls back to the PATH ffmpeg for video transcodes', async () => {
+    state.resolveBin.mockResolvedValueOnce(null);
+    const { transcodeVideo } = await load();
+
+    await transcodeVideo('C:/fallback.mkv');
+
+    expect(state.runCommand.mock.calls[0][0]).toBe('ffmpeg');
+  });
+
   it('logs and returns null on failure', async () => {
     state.runCommand.mockRejectedValueOnce(new Error('ffmpeg failed'));
     const { transcodeVideo } = await load();

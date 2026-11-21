@@ -357,6 +357,7 @@ export const ALLOWED_RECEIVE_CHANNELS: ReadonlySet<string> = new Set([
   'library:loudness:progress',
   'library:updated',
   'library:fileMissing',
+  'media:transcodeVideo:progress',
   'media:playPause',
   'media:next',
   'media:previous',
