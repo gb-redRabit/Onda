@@ -73,6 +73,9 @@ async function assertViewFits(page: Page, view: ViewSpec, tag: string): Promise<
     window.location.hash = `#${p}`;
   }, view.path);
   await expect(page.locator('main[data-route]')).toHaveAttribute('data-route', view.route);
+  // Widoki są ładowane leniwie — sam atrybut trasy pojawia się przed mountem
+  // komponentu. Bez tej asercji pomiar mógł trafić w pusty slot (rootBox = null).
+  await expect(page.getByTestId(view.root)).toBeVisible({ timeout: 10_000 });
   await page.waitForTimeout(150);
 
   const m = await measure(page);
