@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Spike ukrytego Core: sprawdzamy routing IPC, odtwarzanie stanu po crashu,
+// Ukryty Core: sprawdzamy routing IPC, odtwarzanie stanu po crashu,
 // limit restartów i watchdog gotowości. Okna i fs są podstawione.
 const state = vi.hoisted(() => ({
   created: [] as any[],
@@ -65,7 +65,7 @@ vi.mock('../../windows/window-factory', () => ({
   }
 }));
 
-const { startCoreService, stopCoreService } = await import('../core-spike');
+const { startCoreService, stopCoreService } = await import('../core-service');
 
 function listener(channel: string): (...args: any[]) => any {
   const found = state.listeners.get(channel);
@@ -108,7 +108,7 @@ function fullState(overrides: Record<string, unknown> = {}): Record<string, unkn
 }
 
 function start(options: Record<string, unknown> = {}): void {
-  startCoreService({ testShell: false, ...options } as never);
+  startCoreService(options as never);
 }
 
 beforeEach(() => {
@@ -128,8 +128,7 @@ beforeEach(() => {
   state.nextWindowId = 1;
   state.shell = null;
   stopCoreService();
-  delete process.env.ONDA_CORE_SPIKE;
-  delete process.env.ONDA_CORE_SPIKE_AUTOPLAY;
+  delete process.env.ONDA_CORE_VERBOSE;
   delete process.env.ONDA_CORE_SHELL_AUTOPLAY;
 });
 
@@ -172,22 +171,6 @@ describe('start and stop', () => {
     const first = state.created.length;
     start();
     expect(state.created).toHaveLength(first);
-  });
-
-  it('creates a test shell when requested and prefers it for state', () => {
-    start({ testShell: true });
-
-    expect(state.created).toHaveLength(2);
-    expect(state.created[1].options).toMatchObject({
-      htmlFile: 'core-test.html',
-      autoShow: true
-    });
-
-    listener('core:state')(eventFor(coreWindow()), fullState());
-    expect(state.created[1].webContents.send).toHaveBeenCalledWith(
-      'core:state',
-      expect.objectContaining({ revision: 1 })
-    );
   });
 
   it('stops timers, IPC and windows, then can start again', () => {
@@ -295,7 +278,7 @@ describe('IPC routing', () => {
   it('prepares and sends an autoplay tone once when enabled', async () => {
     stopCoreService();
     state.created = [];
-    process.env.ONDA_CORE_SPIKE_AUTOPLAY = '1';
+    process.env.ONDA_CORE_SHELL_AUTOPLAY = '1';
     start();
 
     listener('core:ready')(eventFor(coreWindow()));
@@ -431,10 +414,15 @@ describe('crash recovery', () => {
 });
 
 describe('verbose mode and shutdown timers', () => {
-  it('logs verbose traffic and tears down the test shell', () => {
-    start({ testShell: true });
+  it('logs verbose traffic', () => {
+    process.env.ONDA_CORE_VERBOSE = '1';
+    state.shell = {
+      isDestroyed: () => false,
+      webContents: { id: 99, send: vi.fn() }
+    };
+    start({ getShellWindow: () => state.shell });
     const core = coreWindow();
-    const shell = state.created[1];
+    const shell = state.shell;
 
     core.webContents.emit('did-finish-load');
     core.webContents.emit('console-message', {}, 'warn', 'hello');
@@ -457,7 +445,6 @@ describe('verbose mode and shutdown timers', () => {
       enginePlaying: true,
       error: 'boom'
     });
-    shell.emit('closed');
 
     expect(state.logger.info).toHaveBeenCalledWith('core-service', 'core console [warn]: hello');
     expect(state.logger.info).toHaveBeenCalledWith(
@@ -468,7 +455,6 @@ describe('verbose mode and shutdown timers', () => {
       'core-service',
       expect.stringContaining('tick rev=1')
     );
-    expect(state.logger.info).toHaveBeenCalledWith('core-service', 'test shell closed');
   });
 
   it('clears a scheduled restart on shutdown', () => {
@@ -483,9 +469,10 @@ describe('verbose mode and shutdown timers', () => {
   });
 });
 
-describe('core spike edge paths', () => {
+describe('core service edge paths', () => {
   it('logs the full state and periodic ticks in verbose mode', () => {
-    start({ testShell: true });
+    process.env.ONDA_CORE_VERBOSE = '1';
+    start();
     const core = coreWindow();
 
     listener('core:state')(eventFor(core), fullState());
@@ -521,7 +508,7 @@ describe('core spike edge paths', () => {
   });
 
   it('reports a failed autoplay tone and skips duplicate restarts', async () => {
-    process.env.ONDA_CORE_SPIKE_AUTOPLAY = '1';
+    process.env.ONDA_CORE_SHELL_AUTOPLAY = '1';
     state.writeFile.mockRejectedValueOnce(new Error('disk full'));
     start();
     const core = coreWindow();
@@ -589,7 +576,8 @@ describe('core state restore variants', () => {
   });
 
   it('logs a missing current track in verbose state updates', () => {
-    start({ testShell: true });
+    process.env.ONDA_CORE_VERBOSE = '1';
+    start();
     const core = coreWindow();
 
     listener('core:state')(eventFor(core), fullState({ current: null }));

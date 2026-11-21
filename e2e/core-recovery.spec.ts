@@ -29,7 +29,7 @@ test('hidden core recovers from a renderer crash', async () => {
     const page = onda.page;
     await dismissWizard(page);
     const bar = page.getByTestId('player-bar').first();
-    await expect(bar).toContainText('core-spike-tone', { timeout: 20_000 });
+    await expect(bar).toContainText('core-autoplay-tone', { timeout: 20_000 });
     await expect(bar).toHaveAttribute('data-playing', 'true', { timeout: 10_000 });
 
     const before = await page.evaluate(async () => {
@@ -66,7 +66,7 @@ test('hidden core recovers from a renderer crash', async () => {
         },
         { timeout: 20_000 }
       )
-      .toMatchObject({ name: 'core-spike-tone.wav', playing: true, engine: true });
+      .toMatchObject({ name: 'core-autoplay-tone.wav', playing: true, engine: true });
     const after = await page.evaluate(async () => {
       const api = (window as unknown as { api: CoreApi }).api;
       return api.invoke('core:getState');
@@ -74,7 +74,7 @@ test('hidden core recovers from a renderer crash', async () => {
     expect(Number(after?.currentTime ?? 0)).toBeGreaterThan(beforeTime - 1);
 
     // Shell przyjął nowy, niższy revision po restarcie Core i dalej gra.
-    await expect(bar).toContainText('core-spike-tone');
+    await expect(bar).toContainText('core-autoplay-tone');
     await expect(bar).toHaveAttribute('data-playing', 'true');
 
     expect(onda.pageErrors).toEqual([]);

@@ -18,7 +18,7 @@ import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-ha
 import { syncLinkSubsScheduler } from './ipc/providers/providers-handlers';
 import { destroyTray, setupTray } from './windows/tray';
 import { setWindowAlwaysOnTop } from './windows/always-on-top';
-import { startCoreService } from './core/core-spike';
+import { startCoreService } from './core/core-service';
 import { createCompactWindow } from './compact/compact-window';
 import { loadCompactState, saveCompactState, type WindowMode } from './compact/compact-state';
 import { registerGlobalShortcuts } from './bootstrap/global-shortcuts';
@@ -287,13 +287,10 @@ app.whenReady().then(async () => {
   registerOndaProtocolHandler();
 
   splash.send(mainMessages().bootCreatingWindow, 60);
-  if (shell.coreShellEnabled || process.env.ONDA_CORE_SPIKE === '1') {
+  if (shell.coreShellEnabled) {
     // Core startuje przed shellem, żeby pierwsze komendy (np. przywrócenie sesji)
     // nie przepadły. Stan jest cache'owany do momentu, gdy shell się podłączy.
-    startCoreService({
-      testShell: process.env.ONDA_CORE_SPIKE === '1',
-      getShellWindow: () => activeShell()
-    });
+    startCoreService({ getShellWindow: () => activeShell() });
   }
 
   if (shell.mode === 'compact') {

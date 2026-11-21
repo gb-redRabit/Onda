@@ -48,7 +48,7 @@ test('compact starts from saved mode and switches to full window', async () => {
     await page.reload();
     await expect(page.getByTestId('compact-root')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId('compact-track-0')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByTestId('compact-title')).toContainText('core-spike-tone', {
+    await expect(page.getByTestId('compact-title')).toContainText('core-autoplay-tone', {
       timeout: 20_000
     });
     await page.screenshot({ path: join(tmpdir(), 'onda-compact-tracks.png') });
@@ -109,7 +109,7 @@ test('compact starts from saved mode and switches to full window', async () => {
       .toBe(true);
 
     await dismissWizard(mainPage!);
-    await expect(mainPage!.getByTestId('player-bar')).toContainText('core-spike-tone', {
+    await expect(mainPage!.getByTestId('player-bar')).toContainText('core-autoplay-tone', {
       timeout: 20_000
     });
 

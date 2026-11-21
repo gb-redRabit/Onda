@@ -21,7 +21,7 @@ test('core shell mirrors hidden playback and accepts commands', async () => {
     await dismissWizard(page);
 
     const bar = page.getByTestId('player-bar').first();
-    await expect(bar).toContainText('core-spike-tone', { timeout: 20_000 });
+    await expect(bar).toContainText('core-autoplay-tone', { timeout: 20_000 });
     await expect(bar).toHaveAttribute('data-playing', 'true', { timeout: 10_000 });
 
     const before = await page.evaluate(() => {

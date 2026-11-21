@@ -11,17 +11,14 @@ import type { MediaFile } from '../../shared/types/media';
 
 // Faza 2 (#23). Ukryty renderer jest właścicielem audio, kolejki i historii.
 // `ONDA_CORE_SHELL=1` podłącza do niego główne okno (shell), a
-// `ONDA_CORE_SPIKE=1` dodatkowo otwiera testowy shell z podglądem stanu.
+// `ONDA_CORE_VERBOSE=1` włącza szczegółowe logi ruchu IPC.
 
 interface CoreServiceOptions {
-  /** Otwórz `core-test.html` (spike) oprócz Core. */
-  testShell: boolean;
   /** Aktywny shell (main lub compact), do którego router wysyła stan. */
   getShellWindow?: () => BrowserWindow | null;
 }
 
 let core: BrowserWindow | null = null;
-let testShell: BrowserWindow | null = null;
 let getShellWindow: (() => BrowserWindow | null) | null = null;
 let lastFull: CoreStateDto | null = null;
 let lastTick: CoreTickDto | null = null;
@@ -42,7 +39,6 @@ const CRASH_WINDOW_MS = 60_000;
 const RESTART_DELAY_MS = 400;
 
 function shellTarget(): BrowserWindow | null {
-  if (testShell && !testShell.isDestroyed()) return testShell;
   return getShellWindow?.() ?? null;
 }
 
@@ -68,7 +64,7 @@ function mergedState(): CoreStateDto | null {
 
 function createToneWav(): Promise<{ path: string; size: number }> {
   return (async () => {
-    const dir = join(os.tmpdir(), 'onda-core-spike');
+    const dir = join(os.tmpdir(), 'onda-core-autoplay');
     await mkdir(dir, { recursive: true });
     const path = join(dir, 'tone.wav');
     const sampleRate = 44100;
@@ -103,15 +99,14 @@ function createToneWav(): Promise<{ path: string; size: number }> {
 }
 
 async function runAutoPlay(): Promise<void> {
-  const enabled =
-    process.env.ONDA_CORE_SPIKE_AUTOPLAY === '1' || process.env.ONDA_CORE_SHELL_AUTOPLAY === '1';
+  const enabled = process.env.ONDA_CORE_SHELL_AUTOPLAY === '1';
   if (!enabled) return;
   try {
     const tone = await createToneWav();
-    await addAllowedRoot(join(os.tmpdir(), 'onda-core-spike'));
+    await addAllowedRoot(join(os.tmpdir(), 'onda-core-autoplay'));
     const track: MediaFile = {
       id: tone.path,
-      name: 'core-spike-tone.wav',
+      name: 'core-autoplay-tone.wav',
       path: tone.path,
       extension: 'wav',
       mimeType: 'audio/wav',
@@ -328,7 +323,7 @@ export function startCoreService(options: CoreServiceOptions): void {
   crashWindowStartedAt = 0;
   hasStartedOnce = false;
   pendingRestore = null;
-  verbose = options.testShell || process.env.ONDA_CORE_SPIKE === '1';
+  verbose = process.env.ONDA_CORE_VERBOSE === '1';
   getShellWindow = options.getShellWindow ?? null;
   lastFull = null;
   lastTick = null;
@@ -337,28 +332,8 @@ export function startCoreService(options: CoreServiceOptions): void {
   registerIpc();
   core = createCoreWindow();
 
-  if (options.testShell) {
-    testShell = createWindow({
-      width: 760,
-      height: 700,
-      minWidth: 560,
-      minHeight: 520,
-      title: 'Onda — Core Spike',
-      htmlFile: 'core-test.html',
-      autoShow: true,
-      webPreferences: { backgroundThrottling: false }
-    });
-    testShell.on('closed', () => {
-      testShell = null;
-      logger.info('core-service', 'test shell closed');
-    });
-  }
-
   app.once('before-quit', stopCoreService);
-  logger.info(
-    'core-service',
-    `started (testShell=${options.testShell}, shell=${!!options.getShellWindow})`
-  );
+  logger.info('core-service', `started (shell=${!!options.getShellWindow}, verbose=${verbose})`);
 }
 
 export function stopCoreService(): void {
@@ -381,9 +356,7 @@ export function stopCoreService(): void {
   ipcMain.removeAllListeners('core:tick');
   ipcMain.removeAllListeners('core:viz');
   if (core && !core.isDestroyed()) core.destroy();
-  if (testShell && !testShell.isDestroyed()) testShell.destroy();
   core = null;
-  testShell = null;
   getShellWindow = null;
   lastFull = null;
   lastTick = null;

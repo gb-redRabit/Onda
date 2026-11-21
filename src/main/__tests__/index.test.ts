@@ -224,7 +224,7 @@ vi.mock('../windows/splash', () => ({
     onMinTimerDone = state.splash.onMinTimerDone;
   }
 }));
-vi.mock('../core/core-spike', () => ({ startCoreService: state.startCore }));
+vi.mock('../core/core-service', () => ({ startCoreService: state.startCore }));
 vi.mock('../compact/compact-window', () => ({
   createCompactWindow: (options: any) => {
     const win = makeWindow(state.windows.length + 1);
@@ -378,7 +378,6 @@ beforeEach(() => {
   delete process.env.ONDA_USER_DATA_DIR;
   delete process.env.ONDA_COMPACT;
   delete process.env.ONDA_CORE_SHELL;
-  delete process.env.ONDA_CORE_SPIKE;
 });
 
 afterEach(() => {
@@ -387,7 +386,6 @@ afterEach(() => {
   delete process.env.ONDA_USER_DATA_DIR;
   delete process.env.ONDA_COMPACT;
   delete process.env.ONDA_CORE_SHELL;
-  delete process.env.ONDA_CORE_SPIKE;
 });
 
 describe('single instance', () => {
@@ -462,15 +460,12 @@ describe('boot', () => {
 
   it('starts compact + core shells from the environment', async () => {
     process.env.ONDA_COMPACT = '1';
-    process.env.ONDA_CORE_SPIKE = '1';
+    process.env.ONDA_CORE_SHELL = '1';
     await boot();
 
     expect(state.compactCreated).toHaveLength(1);
     expect(state.created).toHaveLength(0);
-    expect(state.startCore).toHaveBeenCalledWith({
-      testShell: true,
-      getShellWindow: expect.any(Function)
-    });
+    expect(state.startCore).toHaveBeenCalledWith({ getShellWindow: expect.any(Function) });
     expect(state.startCore.mock.calls[0][0].getShellWindow()).toBe(state.compactCreated[0]);
     expect(state.ipcHandlers['app:isCoreShell']()).toBe(true);
     expect(state.ipcHandlers['app:getWindowMode']()).toBe('compact');
