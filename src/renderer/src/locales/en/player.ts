@@ -29,7 +29,6 @@ export default {
     audioCodecUnsupported: 'Audio codec not supported, sound may be missing',
     transcodingVideo: 'Transcoding video, please wait…',
     transcodingProgress: 'Preparing the file for playback… {percent}%',
-    transcodingDone: 'Ready to play',
     videoUnsupported: 'Video format not supported',
     videoPlaybackFailed: 'Could not play the video: {name}'
   },

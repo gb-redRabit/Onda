@@ -16,7 +16,6 @@ const positionClasses: Record<string, string> = {
 
 const filtered = computed(() =>
   ui.notifications.filter((n) => {
-    if (n.alwaysShow) return true;
     if (n.type === 'error') return true;
     if (n.type === 'success' && !settings.toast.showSuccess) return false;
     if (n.type === 'warning' && !settings.toast.showWarning) return false;
@@ -71,19 +70,6 @@ function color(type: string) {
       <div class="flex-1 min-w-0">
         <div class="text-xs font-medium text-base-content">{{ n.title }}</div>
         <div v-if="n.message" class="text-2xs text-base-content/50 mt-0.5">{{ n.message }}</div>
-        <div
-          v-if="n.progress !== undefined"
-          class="mt-1.5 h-1 overflow-hidden rounded-full bg-base-content/10"
-          role="progressbar"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          :aria-valuenow="Math.round(Math.max(0, Math.min(100, n.progress)))"
-        >
-          <div
-            class="h-full rounded-full bg-primary transition-[width] duration-300"
-            :style="{ width: `${Math.max(0, Math.min(100, n.progress))}%` }"
-          />
-        </div>
         <button
           v-if="n.action"
           type="button"

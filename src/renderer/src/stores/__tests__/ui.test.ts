@@ -135,32 +135,4 @@ describe('notifications', () => {
 
     expect(ui.notifications).toHaveLength(1);
   });
-
-  it('updates a notification in place', () => {
-    const ui = useUIStore();
-    const id = ui.notify('info', 'Transcoding', undefined, 0);
-
-    ui.updateNotification(id, { message: '50%', progress: 50 });
-
-    expect(ui.notifications[0]).toMatchObject({ message: '50%', progress: 50 });
-  });
-
-  it('starts the removal timer when an update adds a duration', () => {
-    const ui = useUIStore();
-    const id = ui.notify('info', 'Done', undefined, 0);
-
-    ui.updateNotification(id, { duration: 1000 });
-    vi.advanceTimersByTime(999);
-    expect(ui.notifications).toHaveLength(1);
-    vi.advanceTimersByTime(1);
-    expect(ui.notifications).toHaveLength(0);
-  });
-
-  it('ignores updates to an unknown notification', () => {
-    const ui = useUIStore();
-
-    ui.updateNotification('missing', { title: 'Nope' });
-
-    expect(ui.notifications).toHaveLength(0);
-  });
 });

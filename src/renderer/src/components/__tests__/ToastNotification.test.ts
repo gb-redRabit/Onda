@@ -137,30 +137,6 @@ describe('rendering', () => {
     expect(toasts()[1].text()).not.toContain('Message');
   });
 
-  it('shows alwaysShow notifications even when their category is disabled', () => {
-    h.settings.toast.showInfo = false;
-    h.ui.notifications = [notification({ id: 'forced', alwaysShow: true })];
-    setup();
-
-    expect(toasts()).toHaveLength(1);
-  });
-
-  it('renders a clamped progress bar for progress notifications', () => {
-    h.ui.notifications = [
-      notification({ id: 'p', progress: 42 }),
-      notification({ id: 'over', progress: 150 }),
-      notification({ id: 'under', progress: -5 })
-    ];
-    setup();
-
-    const bars = wrapper!.findAll('[role="progressbar"]');
-    expect(bars).toHaveLength(3);
-    expect(bars[0].attributes('aria-valuenow')).toBe('42');
-    expect(bars[0].find('div').attributes('style')).toContain('width: 42%');
-    expect(bars[1].attributes('aria-valuenow')).toBe('100');
-    expect(bars[2].attributes('aria-valuenow')).toBe('0');
-  });
-
   it('marks only errors as alerts', () => {
     h.ui.notifications = [
       notification({ id: 'e', type: 'error' }),

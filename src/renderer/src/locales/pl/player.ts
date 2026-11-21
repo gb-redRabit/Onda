@@ -29,7 +29,6 @@ export default {
     audioCodecUnsupported: 'Kodek audio nieobsługiwany — dźwięk może być niesłyszalny',
     transcodingVideo: 'Transkodowanie wideo, proszę czekać…',
     transcodingProgress: 'Przygotowuję plik do odtwarzania… {percent}%',
-    transcodingDone: 'Gotowe — można odtwarzać',
     videoUnsupported: 'Format wideo nieobsługiwany',
     videoPlaybackFailed: 'Nie udało się odtworzyć wideo: {name}'
   },
