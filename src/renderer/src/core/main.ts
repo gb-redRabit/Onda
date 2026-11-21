@@ -97,7 +97,9 @@ async function boot(): Promise<void> {
       isPlaying: player.isPlaying,
       enginePlaying: audio.isPlaying.value,
       isLoading: audio.isLoading.value,
-      error: lastError ?? audio.error.value
+      error: lastError ?? audio.error.value,
+      volume: player.volume,
+      isMuted: player.isMuted
     };
   }
 
@@ -107,8 +109,6 @@ async function boot(): Promise<void> {
       player.queue.map((track) => track.path).join('|'),
       player.pendingQueue.map((track) => track.path).join('|'),
       player.history.map((track) => track.path).join('|'),
-      player.volume,
-      player.isMuted,
       player.shuffle,
       player.repeat,
       player.pipActive,
@@ -123,8 +123,6 @@ async function boot(): Promise<void> {
       queue: plainTracks(player.queue),
       pendingQueue: plainTracks(player.pendingQueue),
       history: plainTracks(player.history),
-      volume: player.volume,
-      isMuted: player.isMuted,
       shuffle: player.shuffle,
       repeat: player.repeat,
       pipActive: player.pipActive,
@@ -144,7 +142,9 @@ async function boot(): Promise<void> {
       next.isPlaying ? 1 : 0,
       next.enginePlaying ? 1 : 0,
       next.isLoading ? 1 : 0,
-      next.error ?? ''
+      next.error ?? '',
+      next.volume,
+      next.isMuted ? 1 : 0
     ].join('|');
     if (key === lastTickKey) return;
     lastTickKey = key;
@@ -170,6 +170,31 @@ async function boot(): Promise<void> {
     },
     { flush: 'sync' }
   );
+
+  // Komendy zmieniające strukturę (utwór/kolejka/historia/shuffle/repeat/pip)
+  // wymagają pełnego snapshotu. Transport i głośność mieszczą się w ticku.
+  const STRUCTURAL_COMMANDS = new Set<CoreCommand['type']>([
+    'load',
+    'setQueue',
+    'next',
+    'prev',
+    'playFromHistory',
+    'clear',
+    'toggleShuffle',
+    'cycleRepeat',
+    'setPip'
+  ]);
+  // EQ/wizualizacja nie są częścią CoreStateDto — nie ma czego wysyłać od razu.
+  const SILENT_COMMANDS = new Set<CoreCommand['type']>([
+    'viz',
+    'eqBands',
+    'eqEnabled',
+    'eqPreamp',
+    'eqMono',
+    'nightMode',
+    'audioDelay',
+    'applyEqGraph'
+  ]);
 
   function handleCommand(raw: unknown): void {
     if (!raw || typeof raw !== 'object') return;
@@ -266,8 +291,12 @@ async function boot(): Promise<void> {
         break;
     }
     // Natychmiast po komendzie wyślij stan — nie czekaj do ticku.
-    structureDirty = false;
-    sendFull();
+    if (STRUCTURAL_COMMANDS.has(command.type)) {
+      structureDirty = false;
+      sendFull();
+    } else if (!SILENT_COMMANDS.has(command.type)) {
+      sendTick();
+    }
   }
 
   setInterval(pushState, TICK_INTERVAL_MS);

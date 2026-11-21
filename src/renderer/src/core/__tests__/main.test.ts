@@ -297,7 +297,9 @@ describe('state broadcasting', () => {
 
     state.player.volume = 0.2;
     counter.cb();
-    expect(sends('core:state')).toHaveLength(2);
+    // Głośność jest teraz częścią ticku — pełny snapshot nie jest potrzebny.
+    expect(sends('core:state')).toHaveLength(1);
+    expect(sends('core:tick')).toHaveLength(2);
   });
 
   it('includes plain tracks and engine values in the full state', () => {
@@ -312,7 +314,9 @@ describe('state broadcasting', () => {
     state.audio.isLoading.value = true;
     state.player.isPlaying = true;
 
-    command({ type: 'play' });
+    // `load` zmienia strukturę, więc wysyła pełny snapshot (transport/volume
+    // idą tickiem).
+    command({ type: 'load', track: makeTrack('a'), queue: [makeTrack('b')] });
     const full = sends('core:state').at(-1) as Record<string, unknown>;
     expect(full.current).toMatchObject({ id: 'a' });
     expect(full.queue).toEqual([expect.objectContaining({ id: 'b' })]);
@@ -327,6 +331,23 @@ describe('state broadcasting', () => {
       isLoading: true
     });
     expect(state.player.play).toHaveBeenCalled();
+  });
+
+  it('sends ticks for transport/volume and a full state for structural commands', () => {
+    state.api.send.mockClear();
+    state.player.volume = 0.4;
+    command({ type: 'setVolume', value: 0.4 });
+    expect(sends('core:state')).toHaveLength(0);
+    expect(sends('core:tick')).toHaveLength(1);
+
+    state.api.send.mockClear();
+    command({ type: 'setQueue', queue: [makeTrack('a')] });
+    expect(sends('core:state')).toHaveLength(1);
+    expect(sends('core:tick')).toHaveLength(0);
+
+    state.api.send.mockClear();
+    command({ type: 'eqBands', bands: [] });
+    expect(state.api.send).not.toHaveBeenCalled();
   });
 
   it('ignores non-object commands', () => {
@@ -462,9 +483,11 @@ describe('commands', () => {
     expect(state.audio.applyEqGraph).toHaveBeenCalledWith([0, 1]);
   });
 
-  it('ignores unknown commands but still publishes state', () => {
+  it('ignores unknown commands but still publishes a tick', () => {
+    // Zmień pole ticku, żeby dedupe nie uznał go za identyczny z poprzednim.
+    state.audio.currentTime.value = 7;
     command({ type: 'unknown' });
-    expect(sends('core:state')).toHaveLength(1);
+    expect(sends('core:tick')).toHaveLength(1);
   });
 });
 

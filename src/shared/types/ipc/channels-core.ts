@@ -17,6 +17,10 @@ export interface CoreTickDto {
   enginePlaying: boolean;
   isLoading: boolean;
   error: string | null;
+  // Głośność i mute zmieniają się komendami, ale nie strukturą kolejki;
+  // tick unika pełnego snapshotu przy każdym ruchu suwaka.
+  volume: number;
+  isMuted: boolean;
 }
 
 export interface CoreStateDto extends CoreTickDto {
@@ -24,8 +28,6 @@ export interface CoreStateDto extends CoreTickDto {
   queue: MediaFile[];
   pendingQueue: MediaFile[];
   history: MediaFile[];
-  volume: number;
-  isMuted: boolean;
   shuffle: boolean;
   repeat: CoreRepeat;
   pipActive: boolean;
