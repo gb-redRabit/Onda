@@ -155,20 +155,45 @@ const COMPACT_RECEIVE_CHANNELS = new Set([
   'open-files'
 ]);
 
+const IMAGE_VIEWER_INVOKE_PREFIXES = ['app:', 'settings:', 'window:', 'imageViewer:'];
+const IMAGE_VIEWER_MEDIA_INVOKE_CHANNELS = new Set([
+  'media:getServerUrl',
+  'media:getThumbnail',
+  'media:batchThumbnails',
+  'media:getCover',
+  'media:getCoverStill',
+  'media:grantAccess'
+]);
+const IMAGE_VIEWER_SEND_CHANNELS = new Set(['core:command']);
+const IMAGE_VIEWER_RECEIVE_CHANNELS = new Set([
+  'imageViewer:files',
+  'window:fullscreenChanged',
+  'settings:appearance',
+  'tools:message'
+]);
+
 function compactInvokeAllowed(channel: string): boolean {
   if (channel.startsWith('media:')) return COMPACT_MEDIA_INVOKE_CHANNELS.has(channel);
   return COMPACT_INVOKE_PREFIXES.some((prefix) => channel.startsWith(prefix));
 }
 
+function imageViewerInvokeAllowed(channel: string): boolean {
+  if (channel === 'tools:openWindow') return true;
+  if (channel.startsWith('media:')) return IMAGE_VIEWER_MEDIA_INVOKE_CHANNELS.has(channel);
+  return IMAGE_VIEWER_INVOKE_PREFIXES.some((prefix) => channel.startsWith(prefix));
+}
+
 function canSend(channel: string): boolean {
   if (WINDOW_ROLE === 'core') return CORE_SEND_CHANNELS.has(channel);
   if (WINDOW_ROLE === 'compact') return COMPACT_SEND_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'image-viewer') return IMAGE_VIEWER_SEND_CHANNELS.has(channel);
   return ALLOWED_SEND_CHANNELS.has(channel);
 }
 
 function canReceive(channel: string): boolean {
   if (WINDOW_ROLE === 'core') return CORE_RECEIVE_CHANNELS.has(channel);
   if (WINDOW_ROLE === 'compact') return COMPACT_RECEIVE_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'image-viewer') return IMAGE_VIEWER_RECEIVE_CHANNELS.has(channel);
   return ALLOWED_RECEIVE_CHANNELS.has(channel);
 }
 
@@ -201,6 +226,11 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   }
   if (WINDOW_ROLE === 'compact' && !compactInvokeAllowed(channel)) {
     const message = `IPC invoke is blocked in the compact window: '${channel}'`;
+    logger.warn('preload', message);
+    return Promise.reject(new Error(message));
+  }
+  if (WINDOW_ROLE === 'image-viewer' && !imageViewerInvokeAllowed(channel)) {
+    const message = `IPC invoke is blocked in the image viewer: '${channel}'`;
     logger.warn('preload', message);
     return Promise.reject(new Error(message));
   }

@@ -61,7 +61,10 @@ export function openImageViewer(
     hash: '/image-viewer',
     // Lightbox ma działać także wtedy, gdy chwilowo straci fokus podczas
     // przejścia w pełny ekran — bez tego animacje/scroll bywają wstrzymane.
-    webPreferences: { backgroundThrottling: false },
+    webPreferences: {
+      backgroundThrottling: false,
+      additionalArguments: ['--onda-window-role=image-viewer']
+    },
     onReadyToShow: (win) => {
       win.show();
       win.setFullScreen(true);

@@ -150,6 +150,40 @@ describe('compact window role', () => {
   });
 });
 
+describe('image viewer role', () => {
+  it('allows viewer/media/window channels but blocks fs, library and foreign sends', async () => {
+    process.argv.push('--onda-window-role=image-viewer');
+    try {
+      vi.resetModules();
+      await import('../index');
+      const viewerApi = state.expose.mock.calls.at(-1)![1] as Record<
+        string,
+        (...args: any[]) => any
+      >;
+      state.invoke.mockResolvedValue('ok');
+
+      await expect(viewerApi.invoke('imageViewer:getData')).resolves.toBe('ok');
+      await expect(viewerApi.invoke('media:batchThumbnails', [])).resolves.toBe('ok');
+      await expect(viewerApi.invoke('tools:openWindow', 'image-studio', {})).resolves.toBe('ok');
+      await expect(viewerApi.invoke('fs:delete', '/a')).rejects.toThrow('image viewer');
+      await expect(viewerApi.invoke('library:loadFolders')).rejects.toThrow('image viewer');
+
+      viewerApi.send('core:command', { type: 'play' });
+      expect(state.send).toHaveBeenCalledWith('core:command', { type: 'play' });
+      viewerApi.send('core:state', {});
+      expect(state.send).not.toHaveBeenCalledWith('core:state', {});
+
+      const handler = vi.fn();
+      viewerApi.on('imageViewer:files', handler);
+      expect(state.on).toHaveBeenCalledWith('imageViewer:files', expect.any(Function));
+      viewerApi.on('library:updated', handler);
+      expect(state.on).not.toHaveBeenCalledWith('library:updated', expect.any(Function));
+    } finally {
+      process.argv.pop();
+    }
+  });
+});
+
 describe('invoke guard', () => {
   it('forwards an allowed channel and returns the result', async () => {
     state.invoke.mockResolvedValue(7);
