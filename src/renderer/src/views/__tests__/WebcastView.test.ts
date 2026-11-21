@@ -277,7 +277,7 @@ describe('saved tracks', () => {
     const rows = wrapper!.findAll('.absolute.top-0.left-0.grid');
     expect(rows).toHaveLength(1);
     expect(rows[0].attributes('style')).toContain('translateY(0px)');
-    expect(rows[0].attributes('style')).toContain('repeat(4, minmax(0, 1fr))');
+    expect(rows[0].attributes('style')).toMatch(/repeat\(4, minmax\(0(?:px)?, 1fr\)\)/);
   });
 
   it('slices cards per virtual row and skips thumbnails when absent', async () => {

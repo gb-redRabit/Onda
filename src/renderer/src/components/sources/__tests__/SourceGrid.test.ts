@@ -158,8 +158,8 @@ describe('rendering', () => {
     expect(rendered[1].props('downloading')).toBe(true);
     expect(rendered[2].props()).toMatchObject({ downloaded: false, selected: true });
     expect(wrapper!.get('.relative').attributes('style')).toContain('height: 520px');
-    expect(wrapper!.get('[data-index="0"]').attributes('style')).toContain(
-      'grid-template-columns: repeat(2, minmax(0, 1fr))'
+    expect(wrapper!.get('[data-index="0"]').attributes('style')).toMatch(
+      /grid-template-columns: repeat\(2, minmax\(0(?:px)?, 1fr\)\)/
     );
   });
 

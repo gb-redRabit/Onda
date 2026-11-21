@@ -103,7 +103,7 @@ describe('layout', () => {
     state.observerCallback!();
     await nextTick();
     expect(state.options.count()).toBe(Math.ceil(5 / 4));
-    expect(wrapper!.html()).toContain('repeat(4, minmax(0, 1fr))');
+    expect(wrapper!.html()).toMatch(/repeat\(4, minmax\(0(?:px)?, 1fr\)\)/);
   });
 
   it('clamps columns to the minimum', async () => {

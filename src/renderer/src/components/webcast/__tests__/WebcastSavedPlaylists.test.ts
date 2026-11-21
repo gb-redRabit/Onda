@@ -274,7 +274,7 @@ describe('virtual rows', () => {
     const rows = wrapper!.findAll('.absolute.top-0.left-0.grid');
     expect(rows).toHaveLength(2);
     expect(rows[1].attributes('style')).toContain('translateY(230px)');
-    expect(rows[0].attributes('style')).toContain('repeat(4, minmax(0, 1fr))');
+    expect(rows[0].attributes('style')).toMatch(/repeat\(4, minmax\(0(?:px)?, 1fr\)\)/);
     expect(cards[0].props()).toMatchObject({
       coverStatus: 'none',
       watchUrl: 'https://youtube.com/watch?v=i0',
