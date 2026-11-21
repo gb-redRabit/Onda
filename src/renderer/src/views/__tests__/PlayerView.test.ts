@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
   ctl: null as any,
   videoOptions: null as any,
   controlsOptions: null as any,
+  transcodeState: null as any,
   pipOptions: null as any,
   setShortcutCtx: vi.fn(),
   setPiPHandler: vi.fn(),
@@ -67,10 +68,8 @@ vi.mock('@renderer/composables/usePlayerContextMenu', () => ({
 }));
 vi.mock('@renderer/composables/useTranscodeNotice', () => ({
   useTranscodeNotice: () => ({
-    start: vi.fn(),
-    progress: vi.fn(),
-    finish: vi.fn(),
-    cancel: vi.fn()
+    reporter: { start: vi.fn(), progress: vi.fn(), finish: vi.fn(), cancel: vi.fn() },
+    state: state.transcodeState
   })
 }));
 
@@ -148,6 +147,7 @@ beforeEach(() => {
   state.settings = reactive({ playback: { playbackSpeed: 1.25 } });
   state.plugins = reactive({ decorations: { cover: { style: 'glow' } } });
   state.pinned = ref(false);
+  state.transcodeState = reactive({ active: false, percent: -1 });
   state.togglePin.mockReset();
   state.router.back.mockReset();
   state.router.push.mockReset();
@@ -242,6 +242,17 @@ describe('mount wiring', () => {
       settings: state.settings,
       ui: state.ui
     });
+  });
+
+  it('shows the transcode overlay with progress over the video', () => {
+    state.player.currentTrack = videoTrack();
+    state.transcodeState.active = true;
+    state.transcodeState.percent = 42;
+    mountView();
+
+    const overlay = wrapper!.get('[data-testid="transcode-overlay"]');
+    expect(overlay.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('42');
+    expect(overlay.attributes('class')).toContain('pointer-events-none');
   });
 
   it('toggles fullscreen after mount when requested', async () => {

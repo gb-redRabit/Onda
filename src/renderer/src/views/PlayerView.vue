@@ -73,7 +73,7 @@ const skipZones = [
   { side: 'right', seconds: 10 }
 ] as const;
 
-const transcodeNotice = useTranscodeNotice();
+const { reporter: transcodeNotice, state: transcodeState } = useTranscodeNotice();
 
 const vp = useVideoPlayer({
   player,
@@ -194,6 +194,32 @@ onUnmounted(() => {
 
     <!-- obszar wideo -->
     <div v-if="isVideo" class="relative flex-1 flex items-center justify-center overflow-hidden">
+      <div
+        v-if="transcodeState.active"
+        data-testid="transcode-overlay"
+        class="pointer-events-none absolute inset-x-0 top-6 z-20 mx-auto w-72 max-w-[80%] rounded-box border border-neutral-content/20 bg-neutral/90 px-4 py-3 shadow-xl"
+      >
+        <div class="text-xs font-medium text-base-content">
+          {{ $t('player.transcodingVideo') }}
+        </div>
+        <template v-if="transcodeState.percent >= 0">
+          <div class="mt-1 text-2xs text-base-content/60">
+            {{ $t('player.transcodingProgress', { percent: Math.round(transcodeState.percent) }) }}
+          </div>
+          <div
+            class="mt-2 h-1.5 overflow-hidden rounded-full bg-base-content/10"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :aria-valuenow="Math.round(transcodeState.percent)"
+          >
+            <div
+              class="h-full rounded-full bg-primary transition-[width] duration-300"
+              :style="{ width: `${transcodeState.percent}%` }"
+            />
+          </div>
+        </template>
+      </div>
       <video
         :ref="vp.onVideoRef"
         class="w-full h-full object-contain cursor-pointer"

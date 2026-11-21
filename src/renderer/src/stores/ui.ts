@@ -23,12 +23,14 @@ export interface Notification {
   duration?: number;
   /** Postęp 0–100; `undefined` ukrywa pasek (toasty bez postępu). */
   progress?: number;
+  /** Wyświetlaj mimo wyłączonej kategorii — np. długie transkodowanie. */
+  alwaysShow?: boolean;
   /** Akcja w toaście (np. „Cofnij”); toast znika po jej uruchomieniu. */
   action?: { label: string; run: () => void };
 }
 
 type NotificationPatch = Partial<
-  Pick<Notification, 'type' | 'title' | 'message' | 'duration' | 'progress'>
+  Pick<Notification, 'type' | 'title' | 'message' | 'duration' | 'progress' | 'alwaysShow'>
 >;
 
 export const useUIStore = defineStore('ui', () => {

@@ -137,6 +137,14 @@ describe('rendering', () => {
     expect(toasts()[1].text()).not.toContain('Message');
   });
 
+  it('shows alwaysShow notifications even when their category is disabled', () => {
+    h.settings.toast.showInfo = false;
+    h.ui.notifications = [notification({ id: 'forced', alwaysShow: true })];
+    setup();
+
+    expect(toasts()).toHaveLength(1);
+  });
+
   it('renders a clamped progress bar for progress notifications', () => {
     h.ui.notifications = [
       notification({ id: 'p', progress: 42 }),

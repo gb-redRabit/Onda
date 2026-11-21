@@ -87,7 +87,11 @@ export function useVideoPlayer(ctx: VideoPlayerContext) {
         return;
       }
       if (playing) {
-        videoRef.value.play().catch((e) => logger.warn('video', 'play rejected', e));
+        // Chromium już odrzucił źródło (np. AVI) — fallback transkodowania
+        // wznowi obraz po `canplay`; samo `play()` tylko logowało NotSupportedError.
+        if (!videoRef.value.error) {
+          videoRef.value.play().catch((e) => logger.warn('video', 'play rejected', e));
+        }
         audioEngine.playSecondaryAudio();
       } else {
         videoRef.value.pause();

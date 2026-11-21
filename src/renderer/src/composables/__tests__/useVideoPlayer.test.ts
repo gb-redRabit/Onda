@@ -238,6 +238,19 @@ describe('playback state', () => {
     expect(state.audioEngine.pauseSecondaryAudio).toHaveBeenCalled();
   });
 
+  it('does not replay a source rejected by the media stack', async () => {
+    state.player.currentTrack = track();
+    setup();
+    await nextTick();
+    Object.defineProperty(video, 'error', { configurable: true, value: { code: 4 } });
+
+    state.player.isPlaying = true;
+    await nextTick();
+
+    expect(video.play).not.toHaveBeenCalled();
+    expect(state.audioEngine.playSecondaryAudio).toHaveBeenCalled();
+  });
+
   it('pauses for picture-in-picture', async () => {
     state.player.currentTrack = track();
     setup();

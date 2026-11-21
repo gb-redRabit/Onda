@@ -29,46 +29,55 @@ beforeEach(() => {
 });
 
 describe('useTranscodeNotice', () => {
-  it('creates one sticky toast on start', () => {
-    const notice = useTranscodeNotice();
+  it('creates one sticky toast on start and marks it always visible', () => {
+    const { reporter, state } = useTranscodeNotice();
 
-    notice.start();
+    reporter.start();
 
+    expect(state.active).toBe(true);
+    expect(state.percent).toBe(-1);
     expect(h.notify).toHaveBeenCalledWith('info', 'player.transcodingVideo', undefined, 0);
+    expect(h.update).toHaveBeenCalledWith('toast-1', { alwaysShow: true });
   });
 
-  it('updates the same toast with the percentage', () => {
-    const notice = useTranscodeNotice();
-    notice.progress(42);
+  it('updates the same toast and overlay state with the percentage', () => {
+    const { reporter, state } = useTranscodeNotice();
+    reporter.progress(42);
     expect(h.update).not.toHaveBeenCalled();
 
-    notice.start();
-    notice.progress(42);
+    reporter.start();
+    reporter.progress(42);
 
-    expect(h.update).toHaveBeenCalledWith('toast-1', {
+    expect(state.percent).toBe(42);
+    expect(h.update).toHaveBeenLastCalledWith('toast-1', {
       progress: 42,
       message: 'player.transcodingProgress:42'
     });
   });
 
   it('hides the percentage when the duration is unknown', () => {
-    const notice = useTranscodeNotice();
-    notice.start();
+    const { reporter, state } = useTranscodeNotice();
+    reporter.start();
 
-    notice.progress(-1);
+    reporter.progress(-1);
 
-    expect(h.update).toHaveBeenCalledWith('toast-1', { progress: undefined, message: undefined });
+    expect(state.percent).toBe(-1);
+    expect(h.update).toHaveBeenLastCalledWith('toast-1', {
+      progress: undefined,
+      message: undefined
+    });
   });
 
-  it('turns the toast into success or an error and clears it', () => {
-    const notice = useTranscodeNotice();
+  it('turns the toast into success or an error and hides the overlay', () => {
+    const { reporter, state } = useTranscodeNotice();
 
-    notice.finish(true);
+    reporter.finish(true);
     expect(h.update).not.toHaveBeenCalled();
 
-    notice.start();
-    notice.finish(true);
-    expect(h.update).toHaveBeenCalledWith('toast-1', {
+    reporter.start();
+    reporter.finish(true);
+    expect(state.active).toBe(false);
+    expect(h.update).toHaveBeenLastCalledWith('toast-1', {
       type: 'success',
       title: 'player.transcodingDone',
       message: undefined,
@@ -76,8 +85,9 @@ describe('useTranscodeNotice', () => {
       duration: 2500
     });
 
-    notice.start();
-    notice.finish(false);
+    reporter.start();
+    reporter.finish(false);
+    expect(state.active).toBe(false);
     expect(h.update).toHaveBeenLastCalledWith('toast-1', {
       type: 'error',
       title: 'player.videoUnsupported',
@@ -87,16 +97,17 @@ describe('useTranscodeNotice', () => {
     });
   });
 
-  it('removes the toast when a transcode is cancelled', () => {
-    const notice = useTranscodeNotice();
-    notice.cancel();
+  it('removes the toast and overlay when a transcode is cancelled', () => {
+    const { reporter, state } = useTranscodeNotice();
+    reporter.cancel();
     expect(h.remove).not.toHaveBeenCalled();
 
-    notice.start();
-    notice.cancel();
+    reporter.start();
+    reporter.cancel();
     expect(h.remove).toHaveBeenCalledWith('toast-1');
+    expect(state.active).toBe(false);
 
-    notice.finish(true);
-    expect(h.update).not.toHaveBeenCalled();
+    reporter.finish(true);
+    expect(h.update).toHaveBeenCalledTimes(1);
   });
 });

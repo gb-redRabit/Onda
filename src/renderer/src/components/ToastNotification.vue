@@ -16,6 +16,7 @@ const positionClasses: Record<string, string> = {
 
 const filtered = computed(() =>
   ui.notifications.filter((n) => {
+    if (n.alwaysShow) return true;
     if (n.type === 'error') return true;
     if (n.type === 'success' && !settings.toast.showSuccess) return false;
     if (n.type === 'warning' && !settings.toast.showWarning) return false;
