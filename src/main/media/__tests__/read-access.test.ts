@@ -39,4 +39,16 @@ describe('isReadableMediaPath', () => {
   it('rejects missing files instead of trusting the path', () => {
     expect(isReadableMediaPath(join(root, 'missing.mp3'))).toBe(false);
   });
+
+  it('reuses a fresh decision but invalidates it when the roots change', async () => {
+    const file = join(root, 'inside.mp3');
+    expect(isReadableMediaPath(file)).toBe(true);
+    expect(isReadableMediaPath(file)).toBe(true);
+
+    await setAllowedRoots([]);
+    expect(isReadableMediaPath(file)).toBe(false);
+
+    await setAllowedRoots([root]);
+    expect(isReadableMediaPath(file)).toBe(true);
+  });
 });

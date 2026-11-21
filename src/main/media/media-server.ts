@@ -29,6 +29,13 @@ export interface MediaServer {
 const libraryRoots: string[] = [];
 const extraRoots: string[] = [];
 let rootsChanged: (() => void) | null = null;
+// Wersja zbioru korzeni — pozwala cache'ować decyzje o dostępie bez czekania
+// na TTL po dodaniu/usunięciu korzenia.
+let rootsVersion = 0;
+
+export function getRootsVersion(): number {
+  return rootsVersion;
+}
 
 async function resolveReal(root: string): Promise<string> {
   try {
@@ -63,6 +70,7 @@ export function getExtraRoots(): string[] {
 export async function setAllowedRoots(roots: string[]): Promise<void> {
   libraryRoots.length = 0;
   libraryRoots.push(...(await resolveAll(roots)));
+  rootsVersion += 1;
   clearPathResolveCache();
   rootsChanged?.();
 }
@@ -109,6 +117,7 @@ export async function addAllowedRoot(
     return false;
   }
   extraRoots.push(real);
+  rootsVersion += 1;
   clearPathResolveCache();
   rootsChanged?.();
   return true;
