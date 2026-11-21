@@ -100,7 +100,10 @@ describe('checkRemoteSubscriptions', () => {
     const second = await checkRemoteSubscriptions(file);
     expect(second).toEqual({ checked: 0, newItems: 0, errors: 0 });
 
-    await new Promise((r) => setTimeout(r, 20));
+    // Pierwsze sprawdzenie może czytać plik dłużej niż stałe 20 ms; czekamy na
+    // faktyczne wejście w listowanie, inaczej `release` jest jeszcze undefined,
+    // a zawieszona obietnica zostawia globalny `running` na kolejne testy.
+    await vi.waitFor(() => expect(typeof release).toBe('function'), { timeout: 5000 });
     release([item('a')]);
     await expect(first).resolves.toMatchObject({ checked: 1 });
   });
