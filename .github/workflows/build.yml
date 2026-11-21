@@ -91,7 +91,7 @@ jobs:
             echo "::error::Test step failed before writing its log"
             exit 0
           fi
-          grep -E '^[[:space:]]*(FAIL|×|✕)|Unhandled|heap out of memory|Worker exited' "$log" \
+          grep -E '^[[:space:]]*(FAIL|×|✕)|Unhandled|heap out of memory|Worker exited|ERROR: Coverage' "$log" \
             | head -60 \
             | while IFS= read -r line; do
                 line="${line//$'\r'/}"
