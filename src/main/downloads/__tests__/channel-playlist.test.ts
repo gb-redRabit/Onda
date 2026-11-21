@@ -68,10 +68,7 @@ describe('addToChannelPlaylist', () => {
         updatedAt: Date.now()
       })
     ]);
-    expect(mocks.broadcast).toHaveBeenCalledWith('library:updated', {
-      folder: null,
-      added: 1
-    });
+    expect(mocks.broadcast).toHaveBeenCalledWith('library:updated', {});
   });
 
   it('appends to an existing channel playlist', async () => {

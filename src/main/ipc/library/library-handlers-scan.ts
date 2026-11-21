@@ -89,7 +89,7 @@ export async function runLibraryScan(
   // w trakcie zapisałoby niekompletną listę i praktycznie wyczyściło bibliotekę.
   if (!signal.aborted) {
     setLibraryScanned({ files: allFiles, folderTypes });
-    if (broadcast) broadcastToAllWindows('library:updated');
+    if (broadcast) broadcastToAllWindows('library:updated', { reset: true });
   }
 
   if (budget.truncated) {

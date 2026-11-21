@@ -108,6 +108,36 @@ describe('subscription', () => {
     expect(h.invoke).toHaveBeenCalledWith('playlist:loadAll');
   });
 
+  it('applies a patch without reloading the whole library', async () => {
+    const { deps } = setup(true);
+    h.invoke.mockResolvedValue([]);
+
+    emit('library:updated', {
+      removed: ['/a.mp3'],
+      updated: [track('/b.mp3')],
+      added: [track('/d.mp3')],
+      folderTypes: { '/': 'video' }
+    });
+    await Promise.resolve();
+
+    expect(deps.scheduleLoadTracksAsync).not.toHaveBeenCalled();
+    expect(deps.tracks.value.map((item) => item.path)).toEqual(['/b.mp3', '/c.mp3', '/d.mp3']);
+    expect(deps.folderTypes.value).toEqual({ '/': 'video' });
+    expect(h.invoke).toHaveBeenCalledWith('playlist:loadAll');
+  });
+
+  it('keeps tracks for an empty patch and reloads on reset', async () => {
+    const { deps } = setup(true);
+    h.invoke.mockResolvedValue([]);
+
+    emit('library:updated', {});
+    expect(deps.scheduleLoadTracksAsync).not.toHaveBeenCalled();
+    expect(deps.tracks.value.map((item) => item.path)).toEqual(['/a.mp3', '/b.mp3', '/c.mp3']);
+
+    emit('library:updated', { reset: true });
+    expect(deps.scheduleLoadTracksAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('skips the track reload before the library is loaded', async () => {
     const { deps } = setup(false);
     h.invoke.mockResolvedValue([]);

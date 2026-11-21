@@ -1,6 +1,7 @@
 import type { Ref, ShallowRef } from 'vue';
 import { logger } from '@shared/logger';
 import type { MediaFile, Playlist } from '@renderer/types/media';
+import type { LibraryUpdatedPayload } from '@shared/types/ipc/channels-library';
 
 export interface LibraryWatchDeps {
   isLoaded: Ref<boolean>;
@@ -13,8 +14,26 @@ export interface LibraryWatchDeps {
 // Okablowanie zdarzeń biblioteki z procesu main wyodrębnione z `stores/library.ts` (plan 2.8):
 // odświeżanie przy ponownym skanowaniu i wsadowa obsługa `library:fileMissing` (plan 1.4).
 export function createLibraryWatch(deps: LibraryWatchDeps) {
-  const { isLoaded, tracks, playlists, scheduleLoadTracksAsync } = deps;
+  const { isLoaded, tracks, folderTypes, playlists, scheduleLoadTracksAsync } = deps;
   let subscribedToLibraryUpdates = false;
+
+  /** Scala patch biblioteki bez ponownego czytania wszystkich porcji z main. */
+  function applyLibraryPatch(payload: LibraryUpdatedPayload): void {
+    const removed = Array.isArray(payload.removed) ? payload.removed : [];
+    const updated = Array.isArray(payload.updated) ? payload.updated : [];
+    const added = Array.isArray(payload.added) ? payload.added : [];
+    if (removed.length === 0 && updated.length === 0 && added.length === 0) {
+      if (payload.folderTypes) folderTypes.value = { ...folderTypes.value, ...payload.folderTypes };
+      return;
+    }
+
+    const byPath = new Map(tracks.value.map((item) => [item.path, item]));
+    for (const path of removed) byPath.delete(path);
+    for (const item of updated) byPath.set(item.path, item as MediaFile);
+    for (const item of added) byPath.set(item.path, item as MediaFile);
+    tracks.value = [...byPath.values()];
+    if (payload.folderTypes) folderTypes.value = { ...folderTypes.value, ...payload.folderTypes };
+  }
   let pendingMissing = new Set<string>();
   let missingTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -34,8 +53,14 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
   function subscribeLibraryUpdates() {
     if (subscribedToLibraryUpdates) return;
     subscribedToLibraryUpdates = true;
-    window.api?.on('library:updated', () => {
-      if (isLoaded.value) void scheduleLoadTracksAsync();
+    window.api?.on('library:updated', (...args: unknown[]) => {
+      const patch = args[0] as LibraryUpdatedPayload | undefined;
+      if (isLoaded.value) {
+        // Brak ładunku lub `reset` = stara/pełna ścieżka. Patch aktualizuje tylko
+        // zmienione wpisy, więc pobieranie całej biblioteki jest zbędne.
+        if (!patch || patch.reset === true) void scheduleLoadTracksAsync();
+        else applyLibraryPatch(patch);
+      }
       void reloadPlaylists();
     });
     // Wsadowo obsługuj zdarzenia brakujących plików: proces main zgłasza jedno zdarzenie na plik, a

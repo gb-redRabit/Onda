@@ -98,7 +98,10 @@ async function syncDownloadToLibraryInner(
       folderTypes[folder] = folderType;
       setLibraryScanned({ files, folderTypes });
       logger.info('library', `post-download scan: +${fresh.length} files in ${folder}`);
-      broadcastToAllWindows('library:updated', { folder, added: fresh.length });
+      broadcastToAllWindows('library:updated', {
+        added: fresh,
+        folderTypes: { [folder]: folderType }
+      });
     }
     const file = filesInDir.find((f) => resolve(f.path) === resolve(outputPath));
     return { inLibrary: true, folder, file };

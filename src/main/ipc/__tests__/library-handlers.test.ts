@@ -339,6 +339,7 @@ describe('addFiles', () => {
     state.scanFilePaths.mockResolvedValue([{ path: '/ok' }]);
     state.mergeAdded.mockReturnValue({
       added: 1,
+      addedFiles: [{ path: '/ok' }],
       files: [{ path: '/ok' }],
       folderTypes: {},
       dirs: ['/ok-dir']
@@ -352,7 +353,10 @@ describe('addFiles', () => {
     expect(state.addAllowedRoot).toHaveBeenCalledWith('/ok-dir');
     expect(state.setScanned).toHaveBeenCalledWith({ files: [{ path: '/ok' }], folderTypes: {} });
     expect(state.flushScanned).toHaveBeenCalled();
-    expect(state.broadcast).toHaveBeenCalledWith('library:updated');
+    expect(state.broadcast).toHaveBeenCalledWith('library:updated', {
+      added: [{ path: '/ok' }],
+      folderTypes: {}
+    });
   });
 
   it('accepts files that sit directly in a top-level library folder', async () => {
@@ -476,7 +480,7 @@ describe('loudness analysis', () => {
       total: 2
     });
     expect(state.flushScanned).toHaveBeenCalled();
-    expect(state.broadcast).toHaveBeenCalledWith('library:updated');
+    expect(state.broadcast).toHaveBeenCalledWith('library:updated', { reset: true });
   });
 
   it('skips progress for destroyed senders and avoids flushing when nothing changed', async () => {

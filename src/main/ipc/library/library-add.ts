@@ -5,6 +5,8 @@ import type { LibraryScannedData } from './library-store';
 export interface AddedFilesMerge {
   files: MediaFile[];
   folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+  /** Nowe pliki (bez duplikatów) — patch dla renderera. */
+  addedFiles: MediaFile[];
   /** Liczba nowych plików (duplikaty pominięte). */
   added: number;
   /** Katalogi nowych plików — trzeba je dodać do allowlisty serwera mediów. */
@@ -23,12 +25,14 @@ export function mergeAddedFiles(
   const files = [...data.files];
   const folderTypes = { ...data.folderTypes };
   const dirs = new Set<string>();
+  const addedFiles: MediaFile[] = [];
   let added = 0;
 
   for (const file of scanned) {
     if (existing.has(file.path)) continue;
     existing.add(file.path);
     files.push(file);
+    addedFiles.push(file);
     added += 1;
 
     const dir = dirname(file.path);
@@ -39,5 +43,5 @@ export function mergeAddedFiles(
     dirs.add(dir);
   }
 
-  return { files, folderTypes, added, dirs: [...dirs] };
+  return { files, folderTypes, addedFiles, added, dirs: [...dirs] };
 }

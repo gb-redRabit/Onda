@@ -216,8 +216,8 @@ describe('scanning and merging', () => {
       'post-download scan: +1 files in C:/music'
     );
     expect(state.broadcast).toHaveBeenCalledWith('library:updated', {
-      folder: 'C:/music',
-      added: 1
+      added: [fresh],
+      folderTypes: { 'C:/music': 'audio' }
     });
     expect(result).toMatchObject({ inLibrary: true, file: fresh });
     expect(existing.playCount).toBe(5);

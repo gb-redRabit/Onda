@@ -17,6 +17,18 @@ export interface LoudnessAnalysisResult {
   error?: string;
 }
 
+/**
+ * Patch biblioteki wysyłany z main. Brak ładunku lub `reset` oznacza pełne
+ * przeładowanie; reszta pól pozwala zaktualizować tylko zmienione wpisy.
+ */
+export interface LibraryUpdatedPayload {
+  reset?: boolean;
+  added?: IpcMediaFile[];
+  updated?: IpcMediaFile[];
+  removed?: string[];
+  folderTypes?: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+}
+
 export interface LoudnessProgress {
   current: number;
   total: number;

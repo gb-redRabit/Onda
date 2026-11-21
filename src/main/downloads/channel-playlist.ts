@@ -37,7 +37,9 @@ export async function addToChannelPlaylist(channelTitle: string, file: MediaFile
       playlist.tracks.push(file);
       playlist.updatedAt = Date.now();
       store.set('playlists', playlists);
-      broadcastToAllWindows('library:updated', { folder: null, added: 1 });
+      // Zmieniła się tylko playlista; renderer odświeży playlisty bez reloadu
+      // całej biblioteki, bo patch nie zawiera plików ani resetu.
+      broadcastToAllWindows('library:updated', {});
     }
   } catch (e) {
     logger.warn('library', 'addToChannelPlaylist failed', e);

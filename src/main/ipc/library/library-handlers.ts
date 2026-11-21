@@ -111,7 +111,9 @@ export function registerLibraryHandlers(): void {
       const updated = applyLoudnessUpdates(updates);
       if (updated > 0) {
         await flushLibraryScanned();
-        broadcastToAllWindows('library:updated');
+        // Analiza głośności zmienia metadane wielu plików; pełne przeładowanie
+        // jest tu prostsze i rzadsze niż budowanie patcha per utwór.
+        broadcastToAllWindows('library:updated', { reset: true });
       }
       return { ...summary, updated };
     } catch (err) {
@@ -165,7 +167,10 @@ export function registerLibraryHandlers(): void {
       await Promise.all(merged.dirs.map((dir) => addAllowedRoot(dir)));
       setLibraryScanned({ files: merged.files, folderTypes: merged.folderTypes });
       await flushLibraryScanned();
-      broadcastToAllWindows('library:updated');
+      broadcastToAllWindows('library:updated', {
+        added: merged.addedFiles,
+        folderTypes: merged.folderTypes
+      });
       return { added: merged.added, skipped: total - merged.added, total };
     } catch (err) {
       logger.error('library', 'addFiles failed', err);

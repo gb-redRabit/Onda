@@ -26,6 +26,7 @@ describe('mergeAddedFiles', () => {
     const result = mergeAddedFiles(library(), [file('/music/a.mp3')]);
 
     expect(result.added).toBe(1);
+    expect(result.addedFiles.map((f) => f.path)).toEqual(['/music/a.mp3']);
     expect(result.files.map((f) => f.path)).toEqual(['/music/a.mp3']);
     expect(result.folderTypes['/music']).toBe('audio');
     expect(result.dirs).toEqual(['/music']);
@@ -40,6 +41,7 @@ describe('mergeAddedFiles', () => {
     const result = mergeAddedFiles(library([existing]), [scanned]);
 
     expect(result.added).toBe(0);
+    expect(result.addedFiles).toHaveLength(0);
     expect(result.files).toHaveLength(1);
     expect(result.files[0].playCount).toBe(5);
   });

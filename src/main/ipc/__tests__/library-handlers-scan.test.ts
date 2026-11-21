@@ -81,7 +81,7 @@ describe('runLibraryScan', () => {
       files: [file('/a/1.mp3'), file('/b/2.mp4')],
       folderTypes: { '/a': 'audio', '/b': 'video' }
     });
-    expect(h.broadcast).toHaveBeenCalledWith('library:updated');
+    expect(h.broadcast).toHaveBeenCalledWith('library:updated', { reset: true });
     expect(h.scanDir).toHaveBeenCalledWith('/a', 8, 0, signal, expect.any(Map), h.budget, false);
   });
 
