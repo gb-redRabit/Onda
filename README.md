@@ -8,7 +8,7 @@
 <img src="https://img.shields.io/badge/Vue.js-3.5-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3" />
 <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
 <img src="https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=flat&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-<img src="https://img.shields.io/badge/Playwright-1.63-2EAD33?style=flat&logo=playwright&logoColor=white" alt="Playwright" />
+<img src="https://img.shields.io/badge/Playwright-1.65-2EAD33?style=flat&logo=playwright&logoColor=white" alt="Playwright" />
 <img src="https://img.shields.io/github/v/release/gb-redRabit/Onda?style=flat&label=version&color=605dff" alt="Version" />
 
 **[⬇ Download the latest release](https://github.com/gb-redRabit/Onda/releases)**
@@ -38,7 +38,7 @@
 - 🔁 A-B repeat for audio and video: a single cycling button, draggable A/B markers on the progress bar and `[` `]` `\` shortcuts.
 - 🎞 Frame stepping (`,` / `.`) and a one-click PNG screenshot of the current frame at the video's native resolution.
 - 🌈 8 canvas visualizations (bars, spectrum, wave, radial, rings, circle, particles, none) with crossfade, configurable colors, sensitivity, smoothing, FPS cap and quality levels.
-- 🖼 Free-canvas Audio View: place 5 elements (visualizer, cover, track info, progress, controls) anywhere with percentage positioning, layers and opacity. 5 layout presets.
+- 🖼 Free-canvas Audio View: place 8 elements (visualizer, cover, track info, progress, controls, lyrics, favorite, technical) anywhere with percentage positioning, layers and opacity. 5 layout presets.
 - 🛠 Layout editor with a live mini-preview, 1% grid, drag-and-drop and per-element show/hide.
 - ⛶ True Fullscreen API, auto-hiding HUD, cover "pulse" synced to the bass, video-cover loops and CSS marquee for long titles.
 - 🎬 Video playback: fullscreen, Picture-in-Picture, 0.2–3.0× speed, filters, skip zones, on-the-fly transcoding of Chromium-unsupported codecs (AC3/DTS → AAC).
@@ -64,6 +64,16 @@
 - 🗃 Drives, folders, tabs, breadcrumbs and 6 virtualized view modes, with real FFmpeg frame thumbnails for videos.
 - 🧹 Multi-select, copy/move/delete, rename, duplicate finder, properties, terminal, open-with.
 - 🖼 ImageViewer lightbox with zoom, rotate, slideshow and a thumbnail strip.
+
+**Tools**
+
+- 🧰 Seven detached tool windows sharing one shell and a narrow per-window IPC role: Converter (audio/video), Video Clipper, Video Concat, Tag Editor, Image Studio, Batch Images and History Export.
+- ⚙️ Tools accept files from the explorer context menu or drag-and-drop, run in the background with progress/cancel, and open from the command palette or the Tools hub.
+
+**Webcast & radio**
+
+- 📻 Webcast view with a Radio tab (add, rename, play and remove internet radio stations) and a Saved tab (saved tracks and playlists).
+- 💾 The last active tab is remembered; saved items can be played or queued right away.
 
 **Online (YouTube / SoundCloud) & downloads**
 
@@ -125,7 +135,7 @@
 | Images         | sharp (libvips)                                             |
 | Subtitles      | jassub (WASM)                                               |
 | File watching  | chokidar                                                    |
-| Testing        | Vitest 5 + jsdom 30, Playwright 1.65 (E2E)                  |
+| Testing        | Vitest 5 + jsdom 31, Playwright 1.65 (E2E)                  |
 | Packaging      | electron-builder (NSIS / DMG / AppImage / deb / rpm)        |
 
 ### External dependencies (not bundled)
@@ -145,18 +155,18 @@ Onda/
 │  │  ├─ index.ts           bootstrap, single-instance, splash, boot timeline
 │  │  ├─ bootstrap/         settings/media seeding + graceful shutdown
 │  │  ├─ media/             local HTTP media server (token, roots, Range) + stream proxy
-│  │  ├─ ipc/               ~25 typed IPC handler modules (contract-driven)
+│  │  ├─ ipc/               15 typed IPC domains (contract-driven)
 │  │  ├─ downloads/         yt-dlp + HTTP download pipeline (queue, retry, post-process)
 │  │  ├─ utils/             exec, sharp, validation, safe broadcast
 │  │  └─ …                  updater, tray, PiP managers, auth, watchers
 │  ├─ preload/              contextBridge + generated allowlists (window.api)
 │  ├─ renderer/src/
-│  │  ├─ views/             Home, Library, Explorer, Online, Downloads, Player, Audio, Settings, Sources
-│  │  ├─ modules/           ModuleManager + Player/Explorer/Library/YouTube/Home/Settings
+│  │  ├─ views/             Home, Library, Explorer, Online, Webcast, Downloads, Player, Audio, Tools, Settings, Sources
+│  │  ├─ modules/           ModuleManager + Player/Explorer/Library/Online/Home/Settings/Sources/Tools
 │  │  ├─ stores/            Pinia stores (player, library, settings, ui, online, sources …)
-│  │  ├─ composables/       ~87 reusable composables
-│  │  ├─ components/        layout, library, online, settings, audio, explorer, sources, wizard …
-│  │  ├─ utils/             ~120 helpers (formatters, caches, media, search …)
+│  │  ├─ composables/       ~106 reusable composables
+│  │  ├─ components/        layout, library, online, webcast, downloads, player, tools, settings, audio, explorer, sources, ui, wizard …
+│  │  ├─ utils/             ~139 helpers (formatters, caches, media, search …)
 │  │  └─ locales/           en.ts / pl.ts
 │  └─ shared/               types, constants, IPC contract, logger, built-in themes
 ├─ e2e/                     Playwright + Electron end-to-end specs
@@ -177,7 +187,7 @@ npm run dev
 Quality gates:
 
 ```bash
-npm test           # 12,811 unit tests (Vitest)
+npm test           # 12,858 unit tests (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (run `npm run build` first)
@@ -212,14 +222,15 @@ Onda is built to stay smooth on large libraries and slow disks.
 | **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                                                                                |
 | **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence, spawn semaphore for subtitle extraction, LRU eviction for cover/thumbnail caches. |
 | **Race-free selection & search** | Request-id/token guards make stale async responses (search pagination, cover loads, module switches, library scans) no-ops.                                                                                                 |
-| **Quality gates**                | 12,811 unit tests + 68 Playwright E2E specs + lint + typecheck + IPC codegen + a11y check run on every change.                                                                                                              |
+| **Quality gates**                | 12,858 unit tests + 117 Playwright E2E tests + lint + typecheck + IPC codegen + a11y check run on every change.                                                                                                             |
 
 ### Security
 
 Onda treats the renderer as untrusted and enforces its boundaries in the main process:
 
 - **Process isolation** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; a single window factory applies them everywhere.
-- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **284 invoke / 23 send / 59 receive**.
+- **IPC contract** — every channel is declared in one source of truth (`src/shared/ipc/contract.ts`), allowlisted in the preload, and verified by a compile-time guard plus tests (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). The `/metrics` of the codegen: **287 invoke / 23 send / 61 receive**.
+- **Per-window IPC roles** — Core, compact, image-viewer and tool windows get their own narrow preload allowlist (usually no `send` channels at all); the Explorer keeps full file operations by design. Compromising one window no longer exposes destructive channels from another.
 - **SSRF defense** — outbound fetches resolve through a pinned-DNS guard that blocks loopback/private/metadata ranges and validates **every** redirect hop (media, sources, remote images, SoundCloud artwork).
 - **Secrets never reach the renderer** — API keys are encrypted at rest via `safeStorage`; `settings:get` returns only a masked preview, and writes merge by id so the stored secret survives round-trips.
 - **Filesystem policy** — destructive and mutating handlers refuse volume roots, system directories and sensitive locations; the media server authorizes with a timing-safe token, origin checks and realpath-contained roots.
@@ -262,7 +273,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - 🔁 Pętla A-B w audio i wideo: jeden przycisk cykliczny, przeciągalne znaczniki A/B na pasku postępu i skróty `[` `]` `\`.
 - 🎞 Przewijanie klatka po klatce (`,` / `.`) i zrzut bieżącej klatki do PNG w natywnej rozdzielczości.
 - 🌈 8 wizualizacji na canvasie (bars, spectrum, wave, radial, rings, circle, particles, none) z crossfade, kolorami, czułością, wygładzaniem, limitem FPS i jakością.
-- 🖼 Widok Audio (free canvas): 5 elementów (wizualizacja, okładka, info, progress, kontrolki) w dowolnym miejscu, pozycjonowanie procentowe, warstwy i przezroczystość. 5 presetów.
+- 🖼 Widok Audio (free canvas): 8 elementów (wizualizacja, okładka, info, progress, kontrolki, tekst, ulubione, informacje techniczne) w dowolnym miejscu, pozycjonowanie procentowe, warstwy i przezroczystość. 5 presetów.
 - 🛠 Edytor layoutu z mini-podglądem, siatką 1%, drag-and-drop i show/hide per element.
 - ⛶ Prawdziwy Fullscreen API, auto-ukrywany HUD, „puls" okładki zsynchronizowany z basem, pętle okładek wideo i marquee długich tytułów.
 - 🎬 Odtwarzanie wideo: pełny ekran, Picture-in-Picture, prędkość 0.2–3.0×, filtry, strefy pomijania, transkodowanie w locie kodeków niewspieranych przez Chromium (AC3/DTS → AAC).
@@ -288,6 +299,16 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - 🗃 Dyski, foldery, zakładki, breadcrumb i 6 zwirtualizowanych trybów widoku, z prawdziwymi miniaturami klatek z FFmpeg dla wideo.
 - 🧹 Zaznaczanie wielokrotne, kopiuj/przenieś/usuń, zmiana nazwy, wyszukiwanie duplikatów, właściwości, terminal, otwieranie w aplikacji domyślnej.
 - 🖼 Podgląd obrazów (lightbox) z zoomem, rotacją, pokazem slajdów i paskiem miniatur.
+
+**Narzędzia**
+
+- 🧰 Siedem osobnych okien narzędzi ze wspólnym shellem i własną, wąską rolą IPC: Konwerter (audio/wideo), Wycinanie wideo, Łączenie wideo, Edytor tagów, Studio obrazów, Przetwarzanie obrazów wsadowo i Eksport historii.
+- ⚙️ Narzędzia przyjmują pliki z menu kontekstowego Eksploratora lub drag-and-drop, pracują w tle z postępem i anulowaniem, a otworzyć je można z palety poleceń albo z huba Narzędzi.
+
+**Webcast i radio**
+
+- 📻 Widok Webcast z zakładką Radio (dodawanie, zmiana nazwy, odtwarzanie i usuwanie stacji internetowych) oraz zakładką Zapisane (zapisane utwory i playlisty).
+- 💾 Ostatnia aktywna zakładka jest pamiętana; zapisane pozycje można od razu odtworzyć lub dodać do kolejki.
 
 **Online (YouTube / SoundCloud) i pobieranie**
 
@@ -349,7 +370,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 | Obrazy         | sharp (libvips)                                               |
 | Napisy         | jassub (WASM)                                                 |
 | Watcher plików | chokidar                                                      |
-| Testy          | Vitest 5 + jsdom 30, Playwright 1.65 (E2E)                    |
+| Testy          | Vitest 5 + jsdom 31, Playwright 1.65 (E2E)                    |
 | Pakiety        | electron-builder (NSIS / DMG / AppImage / deb / rpm)          |
 
 ### Zależności zewnętrzne (nie-NPM)
@@ -375,12 +396,12 @@ Onda/
 │  │  └─ …                  updater, tray, menedżery PiP, auth, watchery
 │  ├─ preload/              contextBridge + generowane allowlisty (window.api)
 │  ├─ renderer/src/
-│  │  ├─ views/             Home, Library, Explorer, Online, Downloads, Player, Audio, Settings, Sources
-│  │  ├─ modules/           ModuleManager + Player/Explorer/Library/YouTube/Home/Settings
+│  │  ├─ views/             Home, Library, Explorer, Online, Webcast, Downloads, Player, Audio, Tools, Settings, Sources
+│  │  ├─ modules/           ModuleManager + Player/Explorer/Library/Online/Home/Settings/Sources/Tools
 │  │  ├─ stores/            store'y Pinia (player, library, settings, ui, online, sources …)
-│  │  ├─ composables/       ~87 reużywalnych composables
-│  │  ├─ components/        layout, library, online, settings, audio, explorer, sources, wizard …
-│  │  ├─ utils/             ~120 helperów (formattery, cache, media, wyszukiwanie …)
+│  │  ├─ composables/       ~106 reużywalnych composables
+│  │  ├─ components/        layout, library, online, webcast, downloads, player, tools, settings, audio, explorer, sources, ui, wizard …
+│  │  ├─ utils/             ~139 helperów (formattery, cache, media, wyszukiwanie …)
 │  │  └─ locales/           en.ts / pl.ts
 │  └─ shared/               typy, stałe, kontrakt IPC, logger, motywy wbudowane
 ├─ e2e/                     specyfikacje Playwright + Electron
@@ -401,7 +422,7 @@ npm run dev
 Bramki jakości:
 
 ```bash
-npm test           # 12 811 testów jednostkowych (Vitest)
+npm test           # 12 858 testów jednostkowych (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (najpierw `npm run build`)
@@ -436,14 +457,15 @@ Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i w
 | **Praca poza wątkiem głównym**                   | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                                                               |
 | **Bezpieczeństwo zasobów**                       | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki, semafor spawnu przy ekstrakcji napisów, ewiction LRU cache okładek/miniatur. |
 | **Wolne od wyścigów zaznaczanie i wyszukiwanie** | Tokeny/request-id sprawiają, że przedawnione odpowiedzi (paginacja wyszukiwania, ładowanie okładek, przełączenia modułów, skany biblioteki) są no-opami.                                                             |
-| **Bramki jakości**                               | 12 811 testów jednostkowych + 68 specyfikacji E2E + lint + typecheck + check codegenu IPC + check a11y przy każdej zmianie.                                                                                          |
+| **Bramki jakości**                               | 12 858 testów jednostkowych + 117 testów E2E + lint + typecheck + check codegenu IPC + check a11y przy każdej zmianie.                                                                                               |
 
 ### Bezpieczeństwo
 
 Onda traktuje renderer jako niezaufany i egzekwuje granice w procesie głównym:
 
 - **Izolacja procesu** — `sandbox`, `contextIsolation`, `nodeIntegration: false`, `webSecurity: true`; jedna fabryka okien stosuje to wszędzie.
-- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **284 invoke / 23 send / 59 receive**.
+- **Kontrakt IPC** — każdy kanał zadeklarowany w jednym źródle prawdy (`src/shared/ipc/contract.ts`), na allowliście preloadu i pilnowany strażnikiem czasu kompilacji oraz testami (invoke ↔ `ipcMain.handle`, send ↔ `ipcMain.on`). Stan codegenu: **287 invoke / 23 send / 61 receive**.
+- **Role IPC per okno** — Core, compact, podgląd obrazów i okna narzędzi mają własne, wąskie allowlisty preloadu (często bez żadnego kanału `send`); Eksplorator świadomie zachowuje pełne operacje plikowe. Kompromitacja jednego okna nie daje kanałów destrukcyjnych z innego.
 - **Obrona przed SSRF** — wychodzące żądania przechodzą przez guard z przypiętym DNS, który blokuje zakresy loopback/prywatne/metadanych i waliduje **każdy** hop przekierowania (media, źródła, zdalne obrazy, okładki SoundCloud).
 - **Sekrety nie trafiają do renderera** — klucze API są szyfrowane w spoczynku przez `safeStorage`; `settings:get` zwraca tylko zamaskowany podgląd, a zapis scala po `id`, więc zapisany sekret przetrwa rundy zapisu.
 - **Polityka systemu plików** — destrukcyjne i mutujące handlery odrzucają korzenie wolumenów, katalogi systemowe i lokalizacje wrażliwe; serwer mediów autoryzuje timing-safe tokenem, sprawdzaniem originu i realpath wewnątrz rootów.
