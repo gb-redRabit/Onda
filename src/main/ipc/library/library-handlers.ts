@@ -1,23 +1,13 @@
 import { handleIpc } from '../typed-handle';
 import { stat } from 'fs/promises';
-import type { MediaFile } from '../../../shared/types/media';
 import { getStore } from '../cover/cover-cache';
 import { logger } from '../../../shared/logger';
 import { addAllowedRoot, setAllowedRoots } from '../../media/media-server';
 import { isProtectedPath, isSensitivePath } from '../../path-policy';
 import { scanFilePaths } from './library-scan';
 import { broadcastToAllWindows } from '../../utils/broadcast';
-import { e2eFixturesEnabled } from '../../e2e-fixtures';
 import { startLibraryWatcher, setLibraryWatcherScan } from './library-watcher';
-import {
-  applyLoudnessUpdates,
-  flushLibraryScanned,
-  loadLibraryScanned,
-  patchLibraryScanned,
-  setLibraryScanned,
-  updateLibraryStats
-} from './library-store';
-import { analyzeLibraryLoudness } from './loudness-analysis';
+import { flushLibraryScanned, loadLibraryScanned, setLibraryScanned } from './library-store';
 import { mergeAddedFiles } from './library-add';
 import {
   isSystemTemp,
@@ -26,21 +16,18 @@ import {
   withoutSensitivePaths
 } from './library-handlers-paths';
 import { runLibraryScan, type LibraryScanResult } from './library-handlers-scan';
-import { sanitizeScannedPatch } from './library-scanned-payload';
 import { registerPlaylistHandlers } from './library-handlers-playlists';
+import { registerLibraryLoudnessHandlers } from './library-handlers-loudness';
+import { registerLibraryScannedHandlers } from './library-handlers-scanned';
+
+export { cancelLibraryLoudness } from './library-handlers-loudness';
 
 // Rejestracja kanałów biblioteki (skan, foldery, pliki, postęp, watcher).
 // Normalizacja ścieżek jest w `library-handlers-paths.ts`, skan w
 // `library-handlers-scan.ts`, playlisty w `library-handlers-playlists.ts`.
 
 let activeScanController: AbortController | null = null;
-let activeLoudnessController: AbortController | null = null;
 let currentLibraryFolders: string[] = [];
-
-/** Przerywa analizę głośności przy zamykaniu aplikacji. */
-export function cancelLibraryLoudness(): void {
-  activeLoudnessController?.abort();
-}
 
 // Store bywa niedostępny w czystych testach node; brak ustawień oznacza domyślne
 // zachowanie (`fastScan: false`), a nie wyjątek przerywający skan.
@@ -75,62 +62,7 @@ export function registerLibraryHandlers(): void {
     return true;
   });
 
-  handleIpc('library:loudnessCancel', (): boolean => {
-    activeLoudnessController?.abort();
-    return true;
-  });
-
-  // Analiza głośności plików bez tagów ReplayGain. Długotrwała (dekoduje całe pliki),
-  // więc raportuje postęp i daje się anulować; nowe uruchomienie zastępuje poprzednie.
-  handleIpc('library:analyzeLoudness', async (event) => {
-    const controller = new AbortController();
-    const previous = activeLoudnessController;
-    activeLoudnessController = controller;
-    previous?.abort();
-    try {
-      const data = await loadLibraryScanned();
-      if (!data) {
-        return {
-          analyzed: 0,
-          albums: 0,
-          failed: 0,
-          aborted: false,
-          truncated: false,
-          updated: 0
-        };
-      }
-      const { updates, summary } = await analyzeLibraryLoudness(
-        data.files,
-        controller.signal,
-        (progress) => {
-          if (!event.sender.isDestroyed()) {
-            event.sender.send('library:loudness:progress', progress);
-          }
-        }
-      );
-      const updated = applyLoudnessUpdates(updates);
-      if (updated > 0) {
-        await flushLibraryScanned();
-        // Analiza głośności zmienia metadane wielu plików; pełne przeładowanie
-        // jest tu prostsze i rzadsze niż budowanie patcha per utwór.
-        broadcastToAllWindows('library:updated', { reset: true });
-      }
-      return { ...summary, updated };
-    } catch (err) {
-      logger.error('library', 'loudness analysis failed', err);
-      return {
-        analyzed: 0,
-        albums: 0,
-        failed: 0,
-        aborted: controller.signal.aborted,
-        truncated: false,
-        updated: 0,
-        error: err instanceof Error ? err.message : String(err)
-      };
-    } finally {
-      if (activeLoudnessController === controller) activeLoudnessController = null;
-    }
-  });
+  registerLibraryLoudnessHandlers();
 
   // Dodaje konkretne pliki (przeciągnięte z systemu) bez skanowania całych folderów.
   // Duplikaty są pomijane, więc upuszczenie tego samego pliku nie tworzy drugiej pozycji.
@@ -244,75 +176,7 @@ export function registerLibraryHandlers(): void {
     }
   });
 
-  handleIpc(
-    'library:loadScannedChunk',
-    async (
-      _event,
-      offset: unknown,
-      limit: unknown
-    ): Promise<{
-      files: MediaFile[];
-      total: number;
-      folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
-    } | null> => {
-      // Test-only: pozwala sprawdzić realny banner błędu biblioteki w E2E
-      // bez uszkadzania plików użytkownika. Poza try/catch, żeby IPC odrzuciło.
-      if (e2eFixturesEnabled() && process.env.ONDA_E2E_LIBRARY_FAIL === '1') {
-        throw new Error('E2E library load failure');
-      }
-      try {
-        const data = await loadLibraryScanned();
-        if (!data) return null;
-        const start = Math.max(0, Math.floor(Number(offset) || 0));
-        const size = Math.min(5000, Math.max(1, Math.floor(Number(limit) || 1000)));
-        return {
-          files: data.files.slice(start, start + size),
-          total: data.files.length,
-          folderTypes: data.folderTypes
-        };
-      } catch (err) {
-        logger.error('library', 'loadScannedChunk failed', err);
-        return null;
-      }
-    }
-  );
-
-  handleIpc('library:saveScanned', async (_event, data: unknown): Promise<void> => {
-    try {
-      const patch = sanitizeScannedPatch(data);
-      if (!patch) {
-        logger.warn('library', 'saveScanned rejected invalid payload');
-        return;
-      }
-      await patchLibraryScanned(patch);
-    } catch (err) {
-      logger.error('library', 'saveScanned failed', err);
-    }
-  });
-
-  handleIpc(
-    'library:updateStats',
-    async (
-      _event,
-      stats: Array<{ path: string; playCount: number; lastPlayed: number }>
-    ): Promise<void> => {
-      if (!Array.isArray(stats) || stats.length === 0) return;
-      const clean = stats.filter(
-        (s) => s && typeof s.path === 'string' && s.path && typeof s.playCount === 'number'
-      );
-      if (clean.length === 0) return;
-      try {
-        const data = await loadLibraryScanned();
-        if (!data || !Array.isArray(data.files)) return;
-        // Zapisuje tylko zmienione wpisy do library-stats.json. Zaplanowanie pełnego
-        // zapisu biblioteki tutaj oznaczałoby serializację każdego pliku w wątku main
-        // przy każdym zakończeniu utworu.
-        updateLibraryStats(clean);
-      } catch (err) {
-        logger.error('library', 'updateStats failed', err);
-      }
-    }
-  );
+  registerLibraryScannedHandlers();
 
   registerPlaylistHandlers();
 
