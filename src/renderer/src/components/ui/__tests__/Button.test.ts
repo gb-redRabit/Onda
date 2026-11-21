@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { logger } from '@shared/logger';
 import Button from '../Button.vue';
 
 function mountButton(props: Record<string, unknown> = {}, attrs: Record<string, unknown> = {}) {
@@ -46,17 +47,17 @@ describe('Button', () => {
   });
 
   it('warns in development about an icon button without a label', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
     mountButton({ size: 'icon' });
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a label'));
+    expect(warn).toHaveBeenCalledWith('ui/Button', expect.stringContaining('requires a label'));
     warn.mockRestore();
   });
 
   it('skips the warning outside development', () => {
     vi.stubEnv('DEV', false);
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
     try {
       mountButton({ size: 'icon' });
 

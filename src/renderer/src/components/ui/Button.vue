@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue';
+import { logger } from '@shared/logger';
 import { cn } from '@renderer/utils/cn';
 import Spinner from './Spinner.vue';
 import {
@@ -29,7 +30,7 @@ const props = withDefaults(
 const attrs = useAttrs();
 
 if (import.meta.env.DEV && props.size === 'icon' && !props.label) {
-  console.warn('[ui/Button] size="icon" requires a label (aria-label).');
+  logger.warn('ui/Button', 'size="icon" requires a label (aria-label)');
 }
 
 const classes = computed(() =>
