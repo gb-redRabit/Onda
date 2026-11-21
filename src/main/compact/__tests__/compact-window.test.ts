@@ -22,6 +22,7 @@ vi.mock('../../windows/window-icon', () => ({ windowIcon: () => '/icon.ico' }));
 vi.mock('../compact-state', () => ({ saveCompactState: h.saveState }));
 
 import { createCompactWindow } from '../compact-window';
+import { alwaysOnTopLevel } from '../../windows/always-on-top';
 
 function makeWin() {
   return {
@@ -77,7 +78,7 @@ describe('window creation', () => {
         htmlFile: 'compact.html'
       })
     );
-    expect(h.win.setAlwaysOnTop).toHaveBeenCalledWith(true);
+    expect(h.win.setAlwaysOnTop).toHaveBeenCalledWith(true, alwaysOnTopLevel());
   });
 
   it('falls back to default size for off-screen bounds', () => {

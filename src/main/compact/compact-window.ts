@@ -4,6 +4,7 @@ import { createWindow } from '../windows/window-factory';
 import { GLASS_WINDOW_OPTS } from '../windows/window-presets';
 import { windowIcon } from '../windows/window-icon';
 import { saveCompactState, type CompactState, type WindowBounds } from './compact-state';
+import { setWindowAlwaysOnTop } from '../windows/always-on-top';
 
 interface CompactWindowOptions {
   state?: CompactState;
@@ -49,7 +50,7 @@ export function createCompactWindow(options: CompactWindowOptions = {}): Browser
     }
   });
 
-  if (options.state?.alwaysOnTop === true) win.setAlwaysOnTop(true);
+  if (options.state?.alwaysOnTop === true) setWindowAlwaysOnTop(win, true);
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   const scheduleBoundsSave = (): void => {

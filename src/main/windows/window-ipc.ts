@@ -9,6 +9,7 @@ import { createExplorerWindow, getExplorerWindows } from './explorer-windows';
 import { closeImageViewer, getImageViewerData, openImageViewer } from './image-viewer-window';
 import { registerPipHandlers } from './window-ipc-pip';
 import { setDwmBorderColor, setDwmRoundedCorners } from './dwm';
+import { setWindowAlwaysOnTop } from './always-on-top';
 
 // Bounds niosą dodatkową flagę przywracania, której Electron nie typuje.
 type BoundsWithFlag = Electron.Rectangle & { wasMaximized?: boolean };
@@ -237,7 +238,7 @@ export function registerWindowHandlers(context: {
     if (typeof flag !== 'boolean') return false;
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win || win.isDestroyed()) return false;
-    win.setAlwaysOnTop(flag);
+    setWindowAlwaysOnTop(win, flag);
     return true;
   });
 

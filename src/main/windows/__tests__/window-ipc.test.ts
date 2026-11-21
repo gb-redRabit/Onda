@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { alwaysOnTopLevel } from '../always-on-top';
 
 // Warstwa IPC okien: sprawdzamy walidację danych z renderera i mapowanie na
 // metody okna. Wszystkie zależności systemowe są podstawione, więc testy nie
@@ -300,7 +301,7 @@ describe('window control IPC', () => {
   it('validates always-on-top input', () => {
     expect(handler('window:setAlwaysOnTop')({ sender: {} }, 'true')).toBe(false);
     expect(handler('window:setAlwaysOnTop')({ sender: {} }, true)).toBe(true);
-    expect(win.setAlwaysOnTop).toHaveBeenCalledWith(true);
+    expect(win.setAlwaysOnTop).toHaveBeenCalledWith(true, alwaysOnTopLevel());
   });
 
   it('stores bounds when entering fullscreen and restores them on exit', () => {

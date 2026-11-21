@@ -139,7 +139,16 @@ test('compact keyboard shortcuts, pin persistence and hide to tray', async () =>
         return api.invoke('app:getCompactPinned');
       });
     // Okno może być jeszcze ukryte przez splash; `setAlwaysOnTop` na ukrytym
-    // BrowserWindow jest no-opem, więc pokaż je przed testem pinu.
+    // BrowserWindow jest no-opem, a `page.bringToFront()` tylko focusuje — nie
+    // pokazuje okna. Pokazujemy je jawnie, żeby stan pinu był deterministyczny.
+    await onda.app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find(
+        (candidate) =>
+          !candidate.isDestroyed() && candidate.webContents.getURL().includes('compact.html')
+      );
+      win?.show();
+      win?.focus();
+    });
     await page.bringToFront();
     await page.getByTestId('compact-pin').click();
     await expect.poll(getPinned).toBe(true);

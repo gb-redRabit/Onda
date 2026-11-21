@@ -17,6 +17,7 @@ import { configureAutoCheck } from './updater-scheduler';
 import { syncSubscriptionsScheduler } from './ipc/subscriptions/subscriptions-handlers';
 import { syncLinkSubsScheduler } from './ipc/providers/providers-handlers';
 import { destroyTray, setupTray } from './windows/tray';
+import { setWindowAlwaysOnTop } from './windows/always-on-top';
 import { startCoreService } from './core/core-spike';
 import { createCompactWindow } from './compact/compact-window';
 import { loadCompactState, saveCompactState, type WindowMode } from './compact/compact-state';
@@ -259,7 +260,7 @@ app.whenReady().then(async () => {
     },
     getCompactPinned: () => shell.compactWindow?.isAlwaysOnTop() ?? false,
     setCompactPinned: async (pinned) => {
-      shell.compactWindow?.setAlwaysOnTop(pinned);
+      if (shell.compactWindow) setWindowAlwaysOnTop(shell.compactWindow, pinned);
       await saveCompactState({ alwaysOnTop: pinned });
     },
     isActiveShellSender: (senderId) => {
