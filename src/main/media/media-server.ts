@@ -14,7 +14,7 @@ import {
 } from './media-server-guards';
 import { handleStreamProxy, handleProviderStreamProxy } from './media-server-stream';
 import { isServableMediaPath } from './media-paths';
-import { isAllowedExternalMediaRoot, isProtectedPath } from '../path-policy';
+import { isAllowedExternalMediaRoot, isProtectedLibraryRoot } from '../path-policy';
 export { isAllowedStreamHost, validateStreamUrl };
 
 export interface MediaServer {
@@ -92,7 +92,10 @@ export async function addAllowedRoot(
 ): Promise<boolean> {
   if (typeof root !== 'string' || !root) return false;
   const real = await resolveReal(root);
-  if (isProtectedPath(real)) {
+  // Korzenie bibliotek i jawnie otwarte foldery mogą leżeć bezpośrednio na dysku
+  // (`D:\Wideo`), więc używamy polityki bibliotecznej, a nie destrukcyjnej, która
+  // blokuje wszystko w korzeniu wolumenu.
+  if (isProtectedLibraryRoot(real)) {
     logger.warn('media', `refusing protected root: ${real}`);
     return false;
   }

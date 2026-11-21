@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
   loggerError: vi.fn(),
   getMimeType: vi.fn((_path: string): string => 'video/mp4'),
   isServableMediaPath: vi.fn((_path: string) => true),
-  isProtectedPath: vi.fn((path: string) => path.includes('protected')),
+  isProtectedLibraryRoot: vi.fn((path: string) => path.includes('protected')),
   isAllowedExternalMediaRoot: vi.fn((path: string) => !path.includes('sensitive')),
   handleStreamProxy: vi.fn(async () => undefined),
   handleProviderStreamProxy: vi.fn(async () => undefined),
@@ -66,7 +66,7 @@ vi.mock('../media-paths', () => ({
   isServableMediaPath: (path: string) => state.isServableMediaPath(path)
 }));
 vi.mock('../../path-policy', () => ({
-  isProtectedPath: (path: string) => state.isProtectedPath(path),
+  isProtectedLibraryRoot: (path: string) => state.isProtectedLibraryRoot(path),
   isAllowedExternalMediaRoot: (path: string) => state.isAllowedExternalMediaRoot(path)
 }));
 
@@ -125,7 +125,7 @@ beforeEach(async () => {
   state.getMimeType.mockReturnValue('video/mp4');
   state.isServableMediaPath.mockReset();
   state.isServableMediaPath.mockReturnValue(true);
-  state.isProtectedPath.mockImplementation((path: string) => path.includes('protected'));
+  state.isProtectedLibraryRoot.mockImplementation((path: string) => path.includes('protected'));
   state.isAllowedExternalMediaRoot.mockImplementation(
     (path: string) => !path.includes('sensitive')
   );
@@ -154,6 +154,15 @@ describe('allowed roots', () => {
     expect(changed).toHaveBeenCalledTimes(1);
     expect(isPathWithinAllowedRoots('C:/library/song.mp3')).toBe(true);
     expect(isPathWithinAllowedRoots('D:/other/song.mp3')).toBe(false);
+  });
+
+  it('accepts ordinary top-level folders but rejects protected roots', async () => {
+    // `D:\\Wideo` jest legalnym rootem biblioteki mimo leżenia bezpośrednio na dysku;
+    // polityka destrukcyjna blokowałaby go razem z korzeniem wolumenu.
+    expect(await addAllowedRoot('D:/Wideo')).toBe(true);
+    expect(await addAllowedRoot('D:/protected')).toBe(false);
+    expect(getExtraRoots()).toContain('D:/Wideo');
+    expect(getExtraRoots()).not.toContain('D:/protected');
   });
 
   it('honours the handler for granted roots', async () => {

@@ -298,6 +298,16 @@ describe('media:writeTags', () => {
     expect(mocks.id3Update).not.toHaveBeenCalled();
   });
 
+  it('accepts a file directly in a top-level folder', async () => {
+    // `D:\\Wideo` jest chroniony jako cel destrukcyjny, ale plik w nim nie jest
+    // systemowy; sprawdzanie `dirname` blokowało edycję tagów takich plików.
+    const file = tempFile('top-level.mp3');
+    mocks.protectedPaths.add(root);
+
+    expect(await handler('media:writeTags')({}, file, { title: 'x' })).toEqual({ success: true });
+    expect(mocks.id3Update).toHaveBeenCalledWith({ title: 'x' }, file);
+  });
+
   it('drops undefined values and writes the rest', async () => {
     const file = tempFile('tags.mp3');
     const result = await handler('media:writeTags')({}, file, {

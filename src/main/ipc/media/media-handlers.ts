@@ -40,11 +40,11 @@ import type { AudioTagField, AudioTagFields } from '../../../shared/types/tools'
 // dotyczy przyznawania dostępu mediów (dane logowania), a nie prawa użytkownika do
 // zarządzania własnymi plikami (np. `AppData\Local\Temp`).
 function isProtectedTarget(filePath: string): boolean {
-  return (
-    isProtectedAppDataPath(filePath) ||
-    isProtectedPath(filePath) ||
-    isProtectedPath(dirname(filePath))
-  );
+  // Sam plik wystarczy: polityka dopasowuje katalogi systemowe po prefiksie,
+  // a korzeń wolumenu obejmuje plik o jednym segmencie. Sprawdzanie `dirname`
+  // blokowało legalne pliki bezpośrednio w folderach najwyższego poziomu
+  // (`D:\Wideo\song.mp3`), bo `D:\Wideo` jest dzieckiem korzenia dysku.
+  return isProtectedAppDataPath(filePath) || isProtectedPath(filePath);
 }
 
 // Tylko tekstowe ramki ID3. `node-id3` traktuje string `image` jako ścieżkę do
@@ -500,10 +500,7 @@ export function registerMediaHandlers(): void {
       logger.warn('media', `media:grantAccess rejected missing path: ${filePath}`);
       return false;
     }
-    if (
-      !isSystemTempPath(real) &&
-      (isProtectedPath(real) || isProtectedPath(dirname(real)) || isSensitivePath(real))
-    ) {
+    if (!isSystemTempPath(real) && (isProtectedPath(real) || isSensitivePath(real))) {
       logger.warn('media', `media:grantAccess rejected protected path: ${real}`);
       return false;
     }
