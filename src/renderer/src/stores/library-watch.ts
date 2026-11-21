@@ -1,7 +1,6 @@
 import type { Ref, ShallowRef } from 'vue';
 import { logger } from '@shared/logger';
 import type { MediaFile, Playlist } from '@renderer/types/media';
-import { clonePlain } from '@renderer/utils/clone';
 
 export interface LibraryWatchDeps {
   isLoaded: Ref<boolean>;
@@ -14,7 +13,7 @@ export interface LibraryWatchDeps {
 // Okablowanie zdarzeń biblioteki z procesu main wyodrębnione z `stores/library.ts` (plan 2.8):
 // odświeżanie przy ponownym skanowaniu i wsadowa obsługa `library:fileMissing` (plan 1.4).
 export function createLibraryWatch(deps: LibraryWatchDeps) {
-  const { isLoaded, tracks, folderTypes, playlists, scheduleLoadTracksAsync } = deps;
+  const { isLoaded, tracks, playlists, scheduleLoadTracksAsync } = deps;
   let subscribedToLibraryUpdates = false;
   let pendingMissing = new Set<string>();
   let missingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -54,15 +53,17 @@ export function createLibraryWatch(deps: LibraryWatchDeps) {
         const before = tracks.value.length;
         tracks.value = tracks.value.filter((t) => !toRemove.has(t.path));
         if (tracks.value.length !== before) {
-          // zapisz od razu żeby nie wracał po restarcie
-          try {
-            const files = clonePlain(tracks.value);
-            // `folderTypes.value` jest reaktywnym proxy — IPC (structured clone) go nie
-            // sklonuje ("An object could not be cloned"). Klonujemy jawnie.
-            const folderTypesPlain = clonePlain(folderTypes.value);
-            window.api?.invoke('library:saveScanned', { files, folderTypes: folderTypesPlain });
-          } catch (e) {
+          // Patch z samymi ścieżkami: main usuwa je ze swojej kopii, bez
+          // przesyłania i ryzykowania nadpisania całej biblioteki.
+          const warn = (e: unknown): void =>
             logger.warn('library', 'failed to persist scanned library after missing files', e);
+          try {
+            const request = window.api?.invoke('library:saveScanned', {
+              removePaths: [...toRemove]
+            });
+            void request?.catch(warn);
+          } catch (e) {
+            warn(e);
           }
         }
       }, 300);

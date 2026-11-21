@@ -54,7 +54,9 @@ beforeEach(() => {
   };
   state.updateTrack.mockImplementation((path: string, fn: (item: any) => void) => {
     const target = state.library.tracks.find((item: any) => item.path === path);
-    if (target) fn(target);
+    if (!target) return undefined;
+    fn(target);
+    return target;
   });
   state.player = { invalidateCoverCache: state.invalidate };
   (window as unknown as { api?: unknown }).api = {
@@ -142,17 +144,29 @@ describe('tag edits', () => {
     expect(state.invalidate).toHaveBeenCalledWith('D:/music/song.flac');
   });
 
-  it('persists the scanned library', () => {
+  it('persists only the edited track as a patch', () => {
     const editor = setup();
     editor.editingTrack.value = state.library.tracks[0];
 
     editor.onTagSaved({ title: 'Title' });
 
-    expect(state.clone).toHaveBeenCalledWith(state.library.tracks);
-    expect(state.clone).toHaveBeenCalledWith(state.library.folderTypes);
+    expect(state.clone).toHaveBeenCalledWith(state.library.tracks[0]);
+    expect(state.clone).toHaveBeenCalledTimes(1);
     expect(state.invoke).toHaveBeenCalledWith('library:saveScanned', {
-      files: state.library.tracks,
-      folderTypes: state.library.folderTypes
+      upsertFiles: [state.library.tracks[0]],
+      removePaths: []
+    });
+  });
+
+  it('removes the old path when a tag edit moves the file', () => {
+    const editor = setup();
+    editor.editingTrack.value = state.library.tracks[0];
+
+    editor.onTagSaved({ path: 'D:/music/moved.flac' });
+
+    expect(state.invoke).toHaveBeenCalledWith('library:saveScanned', {
+      upsertFiles: [state.library.tracks[0]],
+      removePaths: ['D:/music/song.flac']
     });
   });
 

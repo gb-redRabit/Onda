@@ -27,13 +27,14 @@ interface LibraryMbApplyData {
   coverMime?: string;
 }
 
-function persistScanned(library: ReturnType<typeof useLibraryStore>) {
+function persistScanned(upsert: MediaFile[], removePaths: string[] = []) {
+  if (upsert.length === 0 && removePaths.length === 0) return;
   try {
-    // używaj JSON jako fallback dla proxy / Uint8Array które structuredClone czasem odrzuca w rendererze
-    const files = clonePlain(library.tracks);
-    const folderTypes = clonePlain(library.folderTypes);
+    // Wysyłamy tylko zmienione wpisy — main scala je z biblioteką. Pełna lista
+    // przy każdym tagu była kosztowna i pozwalała nadpisać całość nieświeżym stanem.
+    const upsertFiles = upsert.map((track) => clonePlain(track));
     window.api
-      ?.invoke('library:saveScanned', { files, folderTypes })
+      ?.invoke('library:saveScanned', { upsertFiles, removePaths })
       .catch((err) => logger.error('Library', 'saveScanned', err));
   } catch (_e) {
     /* serializacja nie powiodła się po cichu */
@@ -50,7 +51,7 @@ export function useLibraryTagEditor(
   function onTagSaved(tags: LibraryTagInput) {
     if (!editingTrack.value) return;
     const oldPath = editingTrack.value.path;
-    library.updateTrack(oldPath, (track) => {
+    const updated = library.updateTrack(oldPath, (track) => {
       track.metadata = {
         ...(track.metadata || {}),
         title: tags.title,
@@ -71,14 +72,14 @@ export function useLibraryTagEditor(
     if (tags.path) {
       player.invalidateCoverCache(oldPath);
     }
-    persistScanned(library);
+    persistScanned(updated ? [updated] : [], tags.path ? [oldPath] : []);
   }
 
   function onMBApply(data: LibraryMbApplyData) {
     if (!editingTrack.value) return;
     const targetPath = editingTrack.value.path;
     // updateTrack wyzwala reaktywne odświeżenie (triggerRef) potrzebne widokom pochodnym
-    library.updateTrack(targetPath, (track) => {
+    const updated = library.updateTrack(targetPath, (track) => {
       track.metadata = {
         ...(track.metadata || {}),
         title: data.title || track.metadata?.title,
@@ -105,7 +106,7 @@ export function useLibraryTagEditor(
     }
     // updateTrack już zrobił refreshDerived, ale dla pewności
     try {
-      persistScanned(library);
+      persistScanned(updated ? [updated] : []);
     } catch (e) {
       logger.warn('Library', 'persistScanned after tag edit failed', e);
     }

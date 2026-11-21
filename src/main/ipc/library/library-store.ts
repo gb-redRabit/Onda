@@ -17,6 +17,13 @@ export interface LibraryScannedData {
   folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
 }
 
+/** Zmiana punktowa zamiast pełnego snapshotu — renderer nie nadpisuje całej listy. */
+export interface LibraryScannedPatch {
+  upsertFiles?: MediaFile[];
+  removePaths?: string[];
+  folderTypes?: LibraryScannedData['folderTypes'];
+}
+
 const EMPTY: LibraryScannedData = { files: [], folderTypes: {} };
 
 /**
@@ -148,6 +155,37 @@ export function setLibraryScanned(data: LibraryScannedData): void {
   stats = next;
   scheduleStatsSave();
   scheduleLibraryScannedSave();
+}
+
+/**
+ * Scala zmianę z aktualną biblioteką: usuwa wskazane ścieżki, podmienia
+ * istniejące wpisy i dopisuje nowe. `loadLibraryScanned()` jest tu konieczne —
+ * bez niego pierwszy patch po starcie nadpisałby cały plik pustą listą.
+ */
+export async function patchLibraryScanned(patch: LibraryScannedPatch): Promise<void> {
+  const current = (await loadLibraryScanned()) ?? EMPTY;
+  const remove = new Set(patch.removePaths ?? []);
+  const updates = new Map((patch.upsertFiles ?? []).map((file) => [file.path, file]));
+  const files: MediaFile[] = [];
+  const seen = new Set<string>();
+
+  for (const file of current.files) {
+    if (remove.has(file.path)) continue;
+    files.push(updates.get(file.path) ?? file);
+    seen.add(file.path);
+  }
+  for (const file of patch.upsertFiles ?? []) {
+    if (remove.has(file.path) || seen.has(file.path)) continue;
+    files.push(file);
+    seen.add(file.path);
+  }
+
+  setLibraryScanned({
+    files,
+    folderTypes: patch.folderTypes
+      ? { ...current.folderTypes, ...patch.folderTypes }
+      : current.folderTypes
+  });
 }
 
 export function scheduleLibraryScannedSave(delay = 400): void {

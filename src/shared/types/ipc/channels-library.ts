@@ -56,11 +56,14 @@ export interface LibraryChannels {
       folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
     } | null;
   };
+  // Patch zamiast pełnego snapshotu: renderer nie może wyczyścić biblioteki
+  // przez niekompletną listę, a IPC przenosi tylko faktyczną zmianę.
   'library:saveScanned': {
     args: [
-      data: {
-        files: IpcMediaFile[];
-        folderTypes: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
+      patch: {
+        upsertFiles?: IpcMediaFile[];
+        removePaths?: string[];
+        folderTypes?: Record<string, 'audio' | 'video' | 'image' | 'mixed'>;
       }
     ];
     result: void;

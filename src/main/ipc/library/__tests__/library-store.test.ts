@@ -397,3 +397,74 @@ describe('library store edge branches', () => {
     expect(state.writeFile).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('patchLibraryScanned', () => {
+  function entry(path: string, name = path) {
+    return {
+      id: path,
+      path,
+      name,
+      type: 'audio' as const,
+      extension: '.mp3',
+      mimeType: 'audio/mpeg',
+      size: 1,
+      addedAt: 0,
+      playCount: 0
+    };
+  }
+
+  function persisted(paths: string[], folderTypes: Record<string, string> = {}) {
+    state.readFile.mockImplementation(async (path: string) => {
+      if (path.endsWith('library-stats.json')) return '{}';
+      return JSON.stringify({ files: paths.map((p) => entry(p)), folderTypes });
+    });
+  }
+
+  it('loads the persisted library before applying the first patch', async () => {
+    persisted(['a', 'b'], { x: 'audio' });
+    const store = await load();
+
+    await store.patchLibraryScanned({
+      upsertFiles: [entry('a', 'A2')],
+      removePaths: ['b']
+    });
+
+    const data = store.getLibraryScanned();
+    expect(data.files.map((f) => [f.path, f.name])).toEqual([['a', 'A2']]);
+    expect(data.folderTypes).toEqual({ x: 'audio' });
+  });
+
+  it('appends new upserts and merges folder types', async () => {
+    persisted(['a'], { x: 'audio' });
+    const store = await load();
+
+    await store.patchLibraryScanned({
+      upsertFiles: [entry('c')],
+      folderTypes: { y: 'video' }
+    });
+
+    const data = store.getLibraryScanned();
+    expect(data.files.map((f) => f.path)).toEqual(['a', 'c']);
+    expect(data.folderTypes).toEqual({ x: 'audio', y: 'video' });
+  });
+
+  it('lets removal win over an upsert of the same path', async () => {
+    persisted(['a', 'b']);
+    const store = await load();
+
+    await store.patchLibraryScanned({
+      upsertFiles: [entry('a'), entry('b')],
+      removePaths: ['b']
+    });
+
+    expect(store.getLibraryScanned().files.map((f) => f.path)).toEqual(['a']);
+  });
+
+  it('keeps an empty patch as a no-op', async () => {
+    const store = await load();
+
+    await store.patchLibraryScanned({});
+
+    expect(store.getLibraryScanned()).toEqual({ files: [], folderTypes: {} });
+  });
+});

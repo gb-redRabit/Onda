@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   analyze: vi.fn(),
   loadScanned: vi.fn(),
   setScanned: vi.fn(),
+  patchScanned: vi.fn(),
   flushScanned: vi.fn(),
   applyLoudness: vi.fn(),
   updateStats: vi.fn(),
@@ -62,6 +63,7 @@ vi.mock('../library/library-store', () => ({
   applyLoudnessUpdates: state.applyLoudness,
   flushLibraryScanned: state.flushScanned,
   loadLibraryScanned: state.loadScanned,
+  patchLibraryScanned: state.patchScanned,
   setLibraryScanned: state.setScanned,
   updateLibraryStats: state.updateStats
 }));
@@ -75,7 +77,7 @@ vi.mock('../library/library-handlers-paths', () => ({
 }));
 vi.mock('../library/library-handlers-scan', () => ({ runLibraryScan: state.runLibraryScan }));
 vi.mock('../library/library-scanned-payload', () => ({
-  sanitizeScannedPayload: state.sanitizeScanned
+  sanitizeScannedPatch: state.sanitizeScanned
 }));
 vi.mock('../library/library-handlers-playlists', () => ({
   registerPlaylistHandlers: state.registerPlaylists
@@ -564,16 +566,16 @@ describe('scanned payloads', () => {
     expect(state.logger.error).toHaveBeenCalled();
   });
 
-  it('saves only sanitized payloads', async () => {
+  it('applies only sanitized scan patches', async () => {
     state.sanitizeScanned.mockReturnValueOnce(null);
     await handler('library:saveScanned')({}, { bad: true });
-    expect(state.setScanned).not.toHaveBeenCalled();
+    expect(state.patchScanned).not.toHaveBeenCalled();
     expect(state.logger.warn).toHaveBeenCalled();
 
-    const clean = { files: [], folderTypes: {} };
-    state.sanitizeScanned.mockReturnValueOnce(clean);
-    await handler('library:saveScanned')({}, clean);
-    expect(state.setScanned).toHaveBeenCalledWith(clean);
+    const patch = { upsertFiles: [], removePaths: ['/gone.mp3'] };
+    state.sanitizeScanned.mockReturnValueOnce(patch);
+    await handler('library:saveScanned')({}, patch);
+    expect(state.patchScanned).toHaveBeenCalledWith(patch);
 
     state.sanitizeScanned.mockImplementationOnce(() => {
       throw new Error('bad');

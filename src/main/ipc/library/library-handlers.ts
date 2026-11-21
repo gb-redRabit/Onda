@@ -13,6 +13,7 @@ import {
   applyLoudnessUpdates,
   flushLibraryScanned,
   loadLibraryScanned,
+  patchLibraryScanned,
   setLibraryScanned,
   updateLibraryStats
 } from './library-store';
@@ -25,7 +26,7 @@ import {
   withoutSensitivePaths
 } from './library-handlers-paths';
 import { runLibraryScan, type LibraryScanResult } from './library-handlers-scan';
-import { sanitizeScannedPayload } from './library-scanned-payload';
+import { sanitizeScannedPatch } from './library-scanned-payload';
 import { registerPlaylistHandlers } from './library-handlers-playlists';
 
 // Rejestracja kanałów biblioteki (skan, foldery, pliki, postęp, watcher).
@@ -273,12 +274,12 @@ export function registerLibraryHandlers(): void {
 
   handleIpc('library:saveScanned', async (_event, data: unknown): Promise<void> => {
     try {
-      const clean = sanitizeScannedPayload(data);
-      if (!clean) {
+      const patch = sanitizeScannedPatch(data);
+      if (!patch) {
         logger.warn('library', 'saveScanned rejected invalid payload');
         return;
       }
-      setLibraryScanned(clean);
+      await patchLibraryScanned(patch);
     } catch (err) {
       logger.error('library', 'saveScanned failed', err);
     }

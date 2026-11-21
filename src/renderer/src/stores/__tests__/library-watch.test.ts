@@ -144,8 +144,7 @@ describe('library:fileMissing batching', () => {
 
     expect(deps.tracks.value.map((item) => item.path)).toEqual(['/b.mp3']);
     expect(h.invoke).toHaveBeenCalledWith('library:saveScanned', {
-      files: [expect.objectContaining({ path: '/b.mp3' })],
-      folderTypes: { '/': 'mixed' }
+      removePaths: ['/a.mp3', '/c.mp3']
     });
   });
 
@@ -160,22 +159,21 @@ describe('library:fileMissing batching', () => {
     expect(h.invoke).not.toHaveBeenCalled();
   });
 
-  it('logs when persisting the pruned library fails', () => {
+  it('logs when persisting the pruned library fails', async () => {
     vi.useFakeTimers();
     const { deps } = setup();
-    deps.folderTypes.value = {
-      '/': 1n as never,
-      broken: (() => undefined) as never
-    } as never;
+    h.invoke.mockRejectedValueOnce(new Error('ipc'));
 
     emit('library:fileMissing', '/a.mp3');
     vi.advanceTimersByTime(300);
+    await Promise.resolve();
 
     expect(h.loggerWarn).toHaveBeenCalledWith(
       'library',
       'failed to persist scanned library after missing files',
       expect.any(Error)
     );
+    expect(deps.tracks.value.map((item) => item.path)).toEqual(['/b.mp3', '/c.mp3']);
   });
 
   it('starts a new batch after the previous one flushed', () => {
