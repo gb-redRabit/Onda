@@ -192,6 +192,43 @@ export function isWithinRoot(
 }
 
 /**
+ * Ochrona korzeni biblioteki: inna niż destrukcyjna. `protectedPathReason`
+ * blokuje wszystko bezpośrednio w korzeniu wolumenu, bo `C:\Users` obejmuje
+ * wszystkie profile — ale legalnym rootem biblioteki bywa `D:\Muzyka`.
+ * Tutaj blokujemy korzeń wolumenu, katalogi systemowe, kontenery profili
+ * (`C:\Users`, `/home`) i sam profil; zwykłe foldery najwyższego poziomu
+ * (`D:\Wideo`, `/Volumes/Media`) zostają dozwolone.
+ */
+export function isProtectedLibraryRoot(
+  target: unknown,
+  platform: NodeJS.Platform = process.platform
+): boolean {
+  if (typeof target !== 'string' || !target || target.includes('\0')) return true;
+  if (!isAbsoluteFor(target, platform)) return true;
+  if (isFilesystemRoot(target, platform)) return true;
+  if (isUserProfileRoot(target, platform)) return true;
+  const segments = segmentsOf(normalizeFor(target, platform), platform);
+  if (segments.length === 0) return true;
+  if (segments.length === 1) {
+    const first = segments[0].toLowerCase();
+    if (platform === 'win32') {
+      return first === 'users' || WINDOWS_PROTECTED.some((entry) => entry.split('\\')[0] === first);
+    }
+    return (
+      first === 'home' ||
+      first === 'users' ||
+      first === 'volumes' ||
+      first === 'mnt' ||
+      first === 'media' ||
+      first === 'net' ||
+      first === 'private' ||
+      POSIX_PROTECTED.includes(first)
+    );
+  }
+  return isProtectedPath(target, platform);
+}
+
+/**
  * Sam katalog domowy użytkownika (`C:\Users\<user>`, `/home/<user>`,
  * `/Users/<user>`), bez jego zawartości. `protectedPathReason` blokuje tylko
  * korzenie systemowe, więc mutacje fs muszą sprawdzić ten przypadek osobno.

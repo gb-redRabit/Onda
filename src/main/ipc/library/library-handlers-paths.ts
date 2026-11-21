@@ -1,6 +1,6 @@
 import { isAbsolute, normalize, sep } from 'path';
 import { tmpdir } from 'os';
-import { isProtectedPath, isSensitivePath, isUserProfileRoot } from '../../path-policy';
+import { isProtectedLibraryRoot, isSensitivePath } from '../../path-policy';
 
 // Normalizacja niezaufanych ścieżek z renderera. Wspólne dla skanowania,
 // dodawania plików i zapisu folderów biblioteki.
@@ -60,6 +60,6 @@ export function isSystemTemp(target: string): boolean {
 
 export function withoutSensitivePaths(paths: string[]): string[] {
   return paths.filter(
-    (p) => (isSystemTemp(p) || !isSensitivePath(p)) && !isProtectedPath(p) && !isUserProfileRoot(p)
+    (p) => (isSystemTemp(p) || !isSensitivePath(p)) && !isProtectedLibraryRoot(p)
   );
 }

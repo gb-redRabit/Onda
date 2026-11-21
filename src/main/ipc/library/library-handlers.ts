@@ -1,6 +1,5 @@
 import { handleIpc } from '../typed-handle';
 import { stat } from 'fs/promises';
-import { dirname } from 'path';
 import type { MediaFile } from '../../../shared/types/media';
 import { getStore } from '../cover/cover-cache';
 import { logger } from '../../../shared/logger';
@@ -146,7 +145,7 @@ export function registerLibraryHandlers(): void {
         try {
           const s = await stat(filePath);
           if (!s.isFile()) continue;
-          if (isProtectedPath(filePath) || isProtectedPath(dirname(filePath))) continue;
+          if (isProtectedPath(filePath)) continue;
           if (!isSystemTemp(filePath) && isSensitivePath(filePath)) continue;
           usable.push(filePath);
         } catch {

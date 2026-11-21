@@ -4,14 +4,12 @@ import { tmpdir } from 'node:os';
 
 const h = vi.hoisted(() => ({
   isSensitivePath: vi.fn(),
-  isProtectedPath: vi.fn(),
-  isUserProfileRoot: vi.fn()
+  isProtectedLibraryRoot: vi.fn()
 }));
 
 vi.mock('../../../path-policy', () => ({
   isSensitivePath: h.isSensitivePath,
-  isProtectedPath: h.isProtectedPath,
-  isUserProfileRoot: h.isUserProfileRoot
+  isProtectedLibraryRoot: h.isProtectedLibraryRoot
 }));
 
 import {
@@ -25,8 +23,7 @@ import {
 
 beforeEach(() => {
   h.isSensitivePath.mockReset().mockReturnValue(false);
-  h.isProtectedPath.mockReset().mockReturnValue(false);
-  h.isUserProfileRoot.mockReset().mockReturnValue(false);
+  h.isProtectedLibraryRoot.mockReset().mockReturnValue(false);
 });
 
 describe('sanitizeFilePaths', () => {
@@ -117,20 +114,26 @@ describe('withoutSensitivePaths', () => {
     expect(withoutSensitivePaths([join('/', 'home', '.ssh')])).toEqual([]);
   });
 
-  it('drops system roots and the bare user profile even when not sensitive', () => {
+  it('drops protected library roots and keeps their children', () => {
     const root = join('/', 'music');
-    h.isProtectedPath.mockImplementation((p: string) => p === root);
-    h.isUserProfileRoot.mockImplementation((p: string) => p === join('/', 'home', 'u'));
+    h.isProtectedLibraryRoot.mockImplementation((p: string) => p === root);
 
-    expect(
-      withoutSensitivePaths([root, join('/', 'home', 'u'), join('/', 'music', 'album')])
-    ).toEqual([join('/', 'music', 'album')]);
+    expect(withoutSensitivePaths([root, join('/', 'music', 'album')])).toEqual([
+      join('/', 'music', 'album')
+    ]);
   });
 
   it('never lets the temp exemption override system protection', () => {
     const temp = join(normalize(tmpdir()), 'nested');
-    h.isProtectedPath.mockReturnValue(true);
+    h.isProtectedLibraryRoot.mockReturnValue(true);
 
     expect(withoutSensitivePaths([temp])).toEqual([]);
+  });
+
+  it('keeps ordinary top-level folders on secondary drives', () => {
+    const folders = [join('/', 'Wideo'), join('/', 'Muzyka'), join('/', 'tapety')];
+    h.isProtectedLibraryRoot.mockReturnValue(false);
+
+    expect(withoutSensitivePaths(folders)).toEqual(folders);
   });
 });

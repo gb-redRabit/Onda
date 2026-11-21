@@ -5,6 +5,7 @@ import {
   isAllowedExternalMediaRoot,
   isFilesystemRoot,
   isProtectedDestructivePath,
+  isProtectedLibraryRoot,
   isProtectedPath,
   isSensitivePath,
   isSystemTempPath,
@@ -27,6 +28,39 @@ describe('isFilesystemRoot', () => {
     expect(isFilesystemRoot('/', 'linux')).toBe(true);
     expect(isFilesystemRoot('/home/user', 'linux')).toBe(false);
     expect(isFilesystemRoot('C:\\Users\\user', 'win32')).toBe(false);
+  });
+});
+
+describe('isProtectedLibraryRoot', () => {
+  it('allows ordinary top-level drive folders', () => {
+    expect(isProtectedLibraryRoot('D:\\Wideo', 'win32')).toBe(false);
+    expect(isProtectedLibraryRoot('D:\\Muzyka', 'win32')).toBe(false);
+    expect(isProtectedLibraryRoot('C:\\Users\\u\\Music', 'win32')).toBe(false);
+    expect(isProtectedLibraryRoot('/Volumes/Media', 'darwin')).toBe(false);
+    expect(isProtectedLibraryRoot('/home/u/music', 'linux')).toBe(false);
+  });
+
+  it('blocks volume roots, system directories and profile containers', () => {
+    expect(isProtectedLibraryRoot('D:\\', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('C:\\Windows', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('C:\\Users', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('C:\\Users\\u', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('\\\\server\\share', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('/etc', 'linux')).toBe(true);
+    expect(isProtectedLibraryRoot('/home', 'linux')).toBe(true);
+    expect(isProtectedLibraryRoot('/mnt', 'linux')).toBe(true);
+    expect(isProtectedLibraryRoot('/Users', 'darwin')).toBe(true);
+    expect(isProtectedLibraryRoot('/Users/u', 'darwin')).toBe(true);
+    expect(isProtectedLibraryRoot('/private', 'darwin')).toBe(true);
+  });
+
+  it('allows children of POSIX containers and rejects invalid input', () => {
+    expect(isProtectedLibraryRoot('/media/u/disk', 'linux')).toBe(false);
+    expect(isProtectedLibraryRoot('\\\\server\\share\\Media', 'win32')).toBe(false);
+    expect(isProtectedLibraryRoot(null, 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('relative', 'win32')).toBe(true);
+    expect(isProtectedLibraryRoot('C:\\bad\0path', 'win32')).toBe(true);
   });
 });
 

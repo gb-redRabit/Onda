@@ -353,6 +353,29 @@ describe('addFiles', () => {
     expect(state.broadcast).toHaveBeenCalledWith('library:updated');
   });
 
+  it('accepts files that sit directly in a top-level library folder', async () => {
+    // `D:\\Wideo` jest chroniony jako cel destrukcyjny, więc sprawdzanie jego
+    // `dirname` odrzucało każdy plik leżący bezpośrednio w takim folderze.
+    const file = '/Wideo/song.mp3';
+    state.loadScanned.mockResolvedValue({ files: [], folderTypes: {} });
+    state.stat.mockResolvedValue({ isFile: () => true });
+    state.isProtected.mockImplementation((path?: string) => path === '/Wideo');
+    state.scanFilePaths.mockResolvedValue([{ path: file }]);
+    state.mergeAdded.mockReturnValue({
+      added: 1,
+      files: [{ path: file }],
+      folderTypes: {},
+      dirs: ['/Wideo']
+    });
+
+    await expect(handler('library:addFiles')({}, [file])).resolves.toEqual({
+      added: 1,
+      skipped: 0,
+      total: 1
+    });
+    expect(state.scanFilePaths).toHaveBeenCalledWith([file], expect.any(Map), false);
+  });
+
   it('returns early for invalid input and no usable files', async () => {
     await expect(handler('library:addFiles')({}, 'nope')).resolves.toEqual({
       added: 0,
