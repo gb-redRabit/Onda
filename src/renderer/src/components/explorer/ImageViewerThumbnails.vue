@@ -86,11 +86,11 @@ function setupThumbObserver() {
   els.forEach((el) => thumbObserver!.observe(el));
 }
 
-function scrollToCurrent() {
+function scrollToCurrent(behavior: 'auto' | 'smooth' = 'smooth') {
   if (!stripRef.value) return;
   const strip = stripRef.value;
   const targetLeft = props.currentIndex * ITEM_W - strip.offsetWidth / 2 + 32;
-  strip.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+  strip.scrollTo({ left: Math.max(0, targetLeft), behavior });
 }
 
 function preloadNearby() {
@@ -138,7 +138,10 @@ onMounted(() => {
   // zmieni się później, inaczej aktywna miniatura startuje poza ekranem.
   nextTick(() => {
     setupThumbObserver();
-    scrollToCurrent();
+    // Pierwsze ustawienie bez animacji: okno bywa jeszcze w tle podczas
+    // pełnoekranowego przejścia, a Chromium potrafi wtedy wstrzymać smooth scroll
+    // i pasek zostaje na pozycji 0.
+    scrollToCurrent('auto');
   });
 });
 onBeforeUnmount(() => {

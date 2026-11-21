@@ -179,7 +179,7 @@ describe('layout', () => {
     await flush();
     expect(state.scrollTo).toHaveBeenCalledWith({
       left: 3 * 68 - 0 + 32,
-      behavior: 'smooth'
+      behavior: 'auto'
     });
   });
 });

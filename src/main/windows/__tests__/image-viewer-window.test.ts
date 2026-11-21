@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { alwaysOnTopLevel } from '../always-on-top';
 
 const state = vi.hoisted(() => ({
   createWindow: vi.fn(),
@@ -96,7 +97,7 @@ describe('opening', () => {
       files: [{ path: 'b' }],
       index: 1
     });
-    expect(created.setAlwaysOnTop).toHaveBeenCalledWith(true, 'floating');
+    expect(created.setAlwaysOnTop).toHaveBeenCalledWith(true, alwaysOnTopLevel());
     expect(created.focus).toHaveBeenCalled();
     expect(created.moveTop).toHaveBeenCalled();
   });
@@ -124,7 +125,7 @@ describe('opening', () => {
 
     expect(created.show).toHaveBeenCalledTimes(1);
     expect(created.setFullScreen).toHaveBeenCalledWith(true);
-    expect(created.setAlwaysOnTop).toHaveBeenCalledWith(true, 'floating');
+    expect(created.setAlwaysOnTop).toHaveBeenCalledWith(true, alwaysOnTopLevel());
     expect(state.handlers.has('enter-full-screen')).toBe(true);
 
     created.setAlwaysOnTop.mockClear();
@@ -146,7 +147,7 @@ describe('owner window', () => {
     expect(owner.setAlwaysOnTop).toHaveBeenCalledWith(false);
 
     state.createWindow.mock.calls[0][0].onClosed();
-    expect(owner.setAlwaysOnTop).toHaveBeenLastCalledWith(true);
+    expect(owner.setAlwaysOnTop).toHaveBeenLastCalledWith(true, alwaysOnTopLevel());
   });
 
   it('does not demote owners that are already normal', async () => {

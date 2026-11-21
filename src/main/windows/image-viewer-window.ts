@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { createWindow } from './window-factory';
+import { setWindowAlwaysOnTop } from './always-on-top';
 
 // Okno podglądu zdjęć (lightbox) wyodrębnione z `window-ipc.ts` (plan 2.8).
 // Jedno reużywalne okno pełnoekranowe, którego lista plików jest wysyłana przez IPC.
@@ -13,7 +14,7 @@ let ownerWasOnTop = false;
 
 function raiseViewer(win: BrowserWindow): void {
   if (win.isDestroyed()) return;
-  win.setAlwaysOnTop(true, 'floating');
+  setWindowAlwaysOnTop(win, true);
   win.focus();
   win.moveTop();
 }
@@ -27,7 +28,7 @@ function demoteOwner(owner?: BrowserWindow | null): void {
 
 function restoreOwner(): void {
   if (ownerWindow && !ownerWindow.isDestroyed() && ownerWasOnTop) {
-    ownerWindow.setAlwaysOnTop(true);
+    setWindowAlwaysOnTop(ownerWindow, true);
   }
   ownerWindow = null;
   ownerWasOnTop = false;
@@ -58,6 +59,9 @@ export function openImageViewer(
     fullscreen: true,
     fullscreenable: true,
     hash: '/image-viewer',
+    // Lightbox ma działać także wtedy, gdy chwilowo straci fokus podczas
+    // przejścia w pełny ekran — bez tego animacje/scroll bywają wstrzymane.
+    webPreferences: { backgroundThrottling: false },
     onReadyToShow: (win) => {
       win.show();
       win.setFullScreen(true);

@@ -12,6 +12,7 @@ import { createImageFixture } from './helpers/media';
 interface OndaTestApi {
   invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
   grantMediaAccess: (filePath: string) => Promise<boolean>;
+  getWindowId: () => Promise<number>;
 }
 
 const COUNT = 55;
@@ -60,6 +61,18 @@ test.describe('image viewer', () => {
         { files: fileItems(), index: midIndex }
       );
       const viewer = await windowPromise;
+
+      // Świeże okno lightboxa bywa chwilowo w tle (przejście w pełny ekran),
+      // a wtedy Chromium wstrzymuje animacje i auto-scroll. Podnosimy je jawnie.
+      const viewerId = await viewer.evaluate(() =>
+        (window as unknown as { api: OndaTestApi }).api.getWindowId()
+      );
+      await app.evaluate(({ BrowserWindow }, id) => {
+        const win = BrowserWindow.fromId(id);
+        win?.show();
+        win?.focus();
+        win?.moveTop();
+      }, viewerId);
 
       await expect(viewer.locator('main[data-route]')).toHaveAttribute(
         'data-route',
@@ -130,10 +143,18 @@ test.describe('image viewer', () => {
       // Kliknięcie wyrenderowanej miniatury przeskakuje do niej (pasek jest okienkowany).
       await viewer.locator('[data-thumb-idx="20"]').click();
       await expect(viewer.getByTestId('image-viewer-counter')).toHaveText(`21 / ${COUNT}`);
+      // Kliknięcie miniatury uruchamia ~500 ms przejście, które blokuje kolejne
+      // akcje; bez tego zoom potrafił zostać pominięty i wskaźnik skali się nie
+      // pojawiał (flaky pod obciążeniem).
+      await settle();
 
-      // Odczyty zoom / obrót / dopasowanie.
-      await viewer.getByTestId('image-viewer-zoom-in').click();
-      await expect(viewer.getByTestId('image-viewer-scale')).toBeVisible();
+      // Odczyty zoom / obrót / dopasowanie. Pod obciążeniem pojedynczy klik
+      // w przycisk bywa zgubiony (mousedown/mouseup trafiają w różne węzły podczas
+      // kończącego się przejścia), więc ponawiamy klik, dopóki skala się nie pojawi.
+      await expect(async () => {
+        await viewer.getByTestId('image-viewer-zoom-in').click({ timeout: 5000 });
+        await expect(viewer.getByTestId('image-viewer-scale')).toBeVisible({ timeout: 1500 });
+      }).toPass({ timeout: 10_000 });
       await viewer.getByTestId('image-viewer-rotate').click();
       await expect(viewer.getByTestId('image-viewer-rotation')).toHaveText('90°');
       await viewer.getByTestId('image-viewer-fit').click();
