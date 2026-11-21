@@ -759,6 +759,31 @@ describe('media:getDuration', () => {
     });
   });
 
+  it('uses ffprobe directly for video containers music-metadata cannot parse', async () => {
+    const file = tempFile('direct.avi');
+    mocks.runCommand.mockResolvedValue('1268.04\n');
+
+    expect(await getDuration(file)).toBe(1268.04);
+    expect(mocks.parseFile).not.toHaveBeenCalled();
+    expect(mocks.runCommand).toHaveBeenCalledWith(
+      '/usr/bin/ffprobe',
+      expect.arrayContaining(['-show_entries', 'format=duration', '--', file]),
+      { timeout: 10000 }
+    );
+    expect(mocks.setCachedDuration).toHaveBeenCalledWith(file, {
+      duration: 1268.04,
+      mtimeMs: expect.any(Number)
+    });
+  });
+
+  it('returns zero when ffprobe fails for a video', async () => {
+    const file = tempFile('broken.avi');
+    mocks.runCommand.mockRejectedValue(new Error('no ffprobe'));
+
+    expect(await getDuration(file)).toBe(0);
+    expect(mocks.parseFile).not.toHaveBeenCalled();
+  });
+
   it('falls back to ffprobe when metadata parsing fails', async () => {
     const file = tempFile('ffprobe.mp3');
     mocks.parseFile.mockRejectedValue(new Error('bad metadata'));

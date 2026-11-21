@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   runCommand: vi.fn(),
   resolveBin: vi.fn(),
   sourceStamp: vi.fn(),
+  detectH264Encoder: vi.fn(),
   errMsg: vi.fn((err: unknown) => String(err)),
   error: vi.fn(),
   warn: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock('../../../../shared/logger', () => ({
 }));
 vi.mock('../../../utils/exec', () => ({ runCommand: state.runCommand }));
 vi.mock('../../../binaries', () => ({ resolveBin: state.resolveBin }));
+vi.mock('../../../tools/media-convert', () => ({ detectH264Encoder: state.detectH264Encoder }));
 vi.mock('../../../utils/source-stamp', () => ({ sourceStamp: state.sourceStamp }));
 
 async function load() {
@@ -59,6 +61,8 @@ beforeEach(() => {
   state.runCommand.mockResolvedValue(undefined);
   state.resolveBin.mockReset();
   state.resolveBin.mockResolvedValue('/bin/ffmpeg');
+  state.detectH264Encoder.mockReset();
+  state.detectH264Encoder.mockResolvedValue('libx264');
   state.sourceStamp.mockReset();
   state.sourceStamp.mockResolvedValue('stamp');
   state.errMsg.mockReset();
@@ -206,6 +210,76 @@ describe('transcodeVideo', () => {
         'veryfast',
         '-crf',
         '23',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        '-movflags',
+        '+faststart',
+        '/tmp/onda/video-transcodes/hash123.mp4',
+        '-y'
+      ],
+      { timeout: 30 * 60 * 1000 }
+    );
+  });
+
+  it('uses OpenH264 bitrate control when libx264 is unavailable', async () => {
+    state.detectH264Encoder.mockResolvedValue('libopenh264');
+    const { transcodeVideo } = await load();
+    expect(await transcodeVideo('C:/a.mkv')).toBe('/tmp/onda/video-transcodes/hash123.mp4');
+    expect(state.runCommand).toHaveBeenCalledWith(
+      '/bin/ffmpeg',
+      [
+        '-v',
+        'error',
+        '-i',
+        'C:/a.mkv',
+        '-map',
+        '0:v:0',
+        '-map',
+        '0:a:0?',
+        '-c:v',
+        'libopenh264',
+        '-b:v',
+        '2M',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        '-movflags',
+        '+faststart',
+        '/tmp/onda/video-transcodes/hash123.mp4',
+        '-y'
+      ],
+      { timeout: 30 * 60 * 1000 }
+    );
+  });
+
+  it('falls back to MPEG-4 when no H.264 encoder exists', async () => {
+    state.detectH264Encoder.mockResolvedValue('mpeg4');
+    const { transcodeVideo } = await load();
+    expect(await transcodeVideo('C:/a.mkv')).toBe('/tmp/onda/video-transcodes/hash123.mp4');
+    expect(state.runCommand).toHaveBeenCalledWith(
+      '/bin/ffmpeg',
+      [
+        '-v',
+        'error',
+        '-i',
+        'C:/a.mkv',
+        '-map',
+        '0:v:0',
+        '-map',
+        '0:a:0?',
+        '-c:v',
+        'mpeg4',
+        '-q:v',
+        '4',
+        '-pix_fmt',
+        'yuv420p',
         '-c:a',
         'aac',
         '-b:a',

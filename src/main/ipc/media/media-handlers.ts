@@ -28,6 +28,7 @@ import {
   cleanupOldTranscodes
 } from './media-transcode';
 import { isSafeAbsolutePath, isSafeStringArray } from '../../utils/validate';
+import { VIDEO_EXTS } from '../../../shared/constants';
 import { isProtectedPath, isSensitivePath, isSystemTempPath } from '../../path-policy';
 import { isPathWithinAllowedRoots, addAllowedRoot } from '../../media/media-server';
 import { coverEmbedSupported, embedCover } from '../../media/cover-embed';
@@ -105,6 +106,24 @@ function looksLikeImage(buffer: Buffer): boolean {
   );
 }
 
+const VIDEO_EXT_SET = new Set(VIDEO_EXTS);
+
+async function probeDuration(filePath: string): Promise<number> {
+  const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
+  const stdout = await runCommand(
+    ffprobe,
+    ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', '--', filePath],
+    { timeout: 10000 }
+  );
+  return parseFloat(stdout.trim()) || 0;
+}
+
+async function rememberDuration(filePath: string, duration: number): Promise<number> {
+  const s = await stat(filePath).catch(() => null);
+  if (s) setCachedDuration(filePath, { duration, mtimeMs: s.mtimeMs });
+  return duration;
+}
+
 export async function getDuration(filePath: string): Promise<number> {
   const cached = getCachedDuration(filePath);
   if (cached) {
@@ -117,26 +136,26 @@ export async function getDuration(filePath: string): Promise<number> {
     deleteCachedDuration(filePath);
   }
 
+  // music-metadata nie zna wszystkich kontenerów wideo (np. AVI kończy się
+  // UnsupportedFileTypeError), a ffprobe i tak jest dla nich źródłem prawdy.
+  // Dla wideo pytamy go od razu — bez fałszywego ostrzeżenia przy każdym pliku.
+  if (VIDEO_EXT_SET.has(extname(filePath).toLowerCase())) {
+    try {
+      return await rememberDuration(filePath, await probeDuration(filePath));
+    } catch (e) {
+      logger.warn('media', `ffprobe duration failed for ${filePath}`, e);
+      return 0;
+    }
+  }
+
   try {
     const { parseFile } = await loadMusicMetadata();
     const meta = await parseFile(filePath, { duration: true });
-    const duration = meta.format?.duration || 0;
-    const s = await stat(filePath).catch(() => null);
-    if (s) setCachedDuration(filePath, { duration, mtimeMs: s.mtimeMs });
-    return duration;
+    return await rememberDuration(filePath, meta.format?.duration || 0);
   } catch (e) {
     logger.warn('media', `music-metadata failed for ${filePath}`, e);
     try {
-      const ffprobe = (await resolveBin('ffprobe')) || 'ffprobe';
-      const stdout = await runCommand(
-        ffprobe,
-        ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', '--', filePath],
-        { timeout: 10000 }
-      );
-      const duration = parseFloat(stdout.trim()) || 0;
-      const s = await stat(filePath).catch(() => null);
-      if (s) setCachedDuration(filePath, { duration, mtimeMs: s.mtimeMs });
-      return duration;
+      return await rememberDuration(filePath, await probeDuration(filePath));
     } catch (e2) {
       logger.warn('media', `ffprobe duration failed for ${filePath}`, e2);
       return 0;

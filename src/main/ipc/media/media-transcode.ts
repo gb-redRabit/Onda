@@ -6,6 +6,7 @@ import { errMsg } from '../../../shared/helpers';
 import { logger } from '../../../shared/logger';
 import { runCommand } from '../../utils/exec';
 import { resolveBin } from '../../binaries';
+import { detectH264Encoder } from '../../tools/media-convert';
 import { sourceStamp } from '../../utils/source-stamp';
 
 const tempDir = join(os.tmpdir(), 'onda', 'audio-transcodes');
@@ -158,6 +159,16 @@ async function doTranscodeVideo(filePath: string): Promise<string | null> {
 
   try {
     const ffmpeg = (await resolveBin('ffmpeg')) || 'ffmpeg';
+    // Zarządzane buildy Windows/Linux są LGPL i nie zawierają libx264. Bez fallbacku
+    // każde „nieobsługiwane przez Chromium” wideo (DivX/Xvid, WMV, HEVC) kończyło się
+    // błędem `Unknown encoder 'libx264'` i komunikatem o nieobsługiwanym pliku.
+    const encoder = await detectH264Encoder();
+    const videoArgs =
+      encoder === 'libx264'
+        ? ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23']
+        : encoder === 'mpeg4'
+          ? ['-c:v', 'mpeg4', '-q:v', '4']
+          : ['-c:v', encoder, '-b:v', '2M'];
     await runCommand(
       ffmpeg,
       [
@@ -169,12 +180,9 @@ async function doTranscodeVideo(filePath: string): Promise<string | null> {
         '0:v:0',
         '-map',
         '0:a:0?',
-        '-c:v',
-        'libx264',
-        '-preset',
-        'veryfast',
-        '-crf',
-        '23',
+        ...videoArgs,
+        '-pix_fmt',
+        'yuv420p',
         '-c:a',
         'aac',
         '-b:a',
