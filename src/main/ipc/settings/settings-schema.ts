@@ -37,17 +37,19 @@ const GEOMETRY_FIELDS: Record<string, Sanitizer> = {
   noise: numClamped(0, 1)
 };
 
+const AUDIO_LAYOUT_ELEMENT_IDS = [
+  'visualization',
+  'cover',
+  'progress',
+  'trackInfo',
+  'controls',
+  'lyrics',
+  'favorite',
+  'technical'
+] as const;
+
 const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
-  id: enumOf([
-    'visualization',
-    'cover',
-    'progress',
-    'trackInfo',
-    'controls',
-    'lyrics',
-    'favorite',
-    'technical'
-  ]),
+  id: enumOf(AUDIO_LAYOUT_ELEMENT_IDS),
   x: numClamped(0, 100),
   y: numClamped(0, 100),
   width: numClamped(1, 100),
@@ -80,17 +82,42 @@ const AUDIO_LAYOUT_ELEMENT_FIELDS: Record<string, Sanitizer> = {
   ])
 };
 
+const layoutElement = obj(AUDIO_LAYOUT_ELEMENT_FIELDS);
+
+/**
+ * Jeden element na id. Starsze buildy potrafiły zapisać wpisy bez `id` (pole
+ * wypadało w sanitizerze), a widok audio iterował po nich i czytał pozycję
+ * z `null`. Przy duplikatach wygrywa pierwszy wpis — trzyma bieżące
+ * położenie użytkownika.
+ */
+function layoutElements(v: unknown): unknown | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
+  for (const value of v) {
+    const cleaned = layoutElement(value);
+    if (!isPlainObject(cleaned)) continue;
+    const id = cleaned['id'];
+    if (typeof id !== 'string') continue;
+    if (!(AUDIO_LAYOUT_ELEMENT_IDS as readonly string[]).includes(id)) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(cleaned);
+  }
+  return out;
+}
+
 const AUDIO_LAYOUT_FIELDS: Record<string, Sanitizer> = {
-  elements: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
+  elements: layoutElements,
   preset: enumOf(['compact', 'stacked', 'split', 'full', 'immersive']),
   hudOpacity: numClamped(0, 100),
   vizQuality: enumOf(['low', 'medium', 'high']),
   customLayouts: obj({
-    compact: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
-    stacked: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
-    split: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
-    full: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS)),
-    immersive: arrayOf(obj(AUDIO_LAYOUT_ELEMENT_FIELDS))
+    compact: layoutElements,
+    stacked: layoutElements,
+    split: layoutElements,
+    full: layoutElements,
+    immersive: layoutElements
   })
 };
 

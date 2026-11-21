@@ -5,7 +5,9 @@ export function elementStyle(
   dragPos: { id: string; x: number; y: number } | null
 ): Record<string, string> {
   let { x, y } = el;
-  if (dragPos?.id === el.id) {
+  // Samo `dragPos?.id === el.id` przepuszczało `null` przy elemencie bez `id`
+  // (undefined === undefined) i wywracało cały widok audio na `dragPos.x`.
+  if (dragPos && dragPos.id === el.id) {
     x = dragPos.x;
     y = dragPos.y;
   }

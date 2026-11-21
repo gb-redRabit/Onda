@@ -368,6 +368,53 @@ describe('sanitizeSettings', () => {
     });
   });
 
+  it('drops audio layout entries without a known id and duplicate ids', () => {
+    const { sanitized } = sanitizeSettings({
+      appearance: {
+        audioLayout: {
+          elements: [
+            {
+              id: 'cover',
+              x: 10,
+              y: 0,
+              width: 20,
+              height: 20,
+              opacity: 100,
+              layer: 2,
+              visible: true
+            },
+            { x: 74, y: 6, width: 8, height: 6, opacity: 100, layer: 4, visible: true },
+            {
+              id: 'cover',
+              x: 60,
+              y: 0,
+              width: 20,
+              height: 20,
+              opacity: 100,
+              layer: 2,
+              visible: true
+            }
+          ],
+          customLayouts: {
+            full: [
+              { x: 1, y: 1, width: 5, height: 5 },
+              { id: 'progress', x: 0, y: 90, width: 100, height: 5 }
+            ]
+          }
+        }
+      }
+    });
+
+    const layout = sanitized.appearance?.audioLayout;
+    const ids = (layout?.elements ?? []).map((el) => el.id);
+    expect(ids.filter((id) => id === 'cover')).toHaveLength(1);
+    expect(layout?.elements?.[0]).toMatchObject({ id: 'cover', x: 10 });
+    expect(ids).not.toContain(undefined);
+    expect(layout?.customLayouts?.full).toEqual([
+      { id: 'progress', x: 0, y: 90, width: 100, height: 5 }
+    ]);
+  });
+
   it('adds the favorite and technical elements once and hides them in compact', () => {
     const { sanitized } = sanitizeSettings({
       appearance: {

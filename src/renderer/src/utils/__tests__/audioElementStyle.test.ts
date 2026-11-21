@@ -39,6 +39,13 @@ describe('elementStyle', () => {
     });
   });
 
+  it('ignores a null drag position for an element with a missing id', () => {
+    const malformed = element({ id: undefined as unknown as Element['id'] });
+
+    expect(() => elementStyle(malformed, null)).not.toThrow();
+    expect(elementStyle(malformed, null)).toMatchObject({ left: '10%', top: '20%' });
+  });
+
   it('converts opacity and layer values', () => {
     const style = elementStyle(element({ opacity: 40, layer: 0 }), null);
 

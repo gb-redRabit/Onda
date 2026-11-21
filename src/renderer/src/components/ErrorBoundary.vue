@@ -2,6 +2,7 @@
 import { ref, onErrorCaptured } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@renderer/stores/ui';
+import { logger } from '@shared/logger';
 
 const error = ref<Error | null>(null);
 // Nowy klucz po „Spróbuj ponownie” wymusza remount slotu — samo wyczyszczenie
@@ -17,6 +18,9 @@ function retry(): void {
 
 onErrorCaptured((err) => {
   error.value = err;
+  // Sam komunikat w powiadomieniu nie wystarcza do diagnozy: bez śladu stosu
+  // nie da się ustalić, który komponent i która gałąź renderu zawiodła.
+  logger.error('render', (err as Error)?.message || String(err), (err as Error)?.stack);
   ui.notify('error', t('errorBoundary.notifTitle'), err.message || String(err));
   return false;
 });
