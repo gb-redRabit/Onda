@@ -8,6 +8,41 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 `chore(main): release X.Y.Z` z PR-a release-please. Ręczne `npm version` na `main`
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI.
 
+## [1.2.0](https://github.com/gb-redRabit/Onda/compare/v1.1.0...v1.2.0) (2026-11-21)
+
+
+### Features
+
+* **player:** show video transcode progress ([9e42288](https://github.com/gb-redRabit/Onda/commit/9e42288cb24d9ce13fb9a249bfd6be0c5491a0ea))
+
+
+### Bug Fixes
+
+* bound settings imports, cap fs probes and keep panel teardown clean ([de4155a](https://github.com/gb-redRabit/Onda/commit/de4155afc5d9962a29c782a47e13713cc6d7d2f9))
+* **image-viewer:** keep FileItem objects when capping the open list ([307b0fe](https://github.com/gb-redRabit/Onda/commit/307b0fee8a785423d6f7c59cb3aa2bae51a16be3))
+* **image-viewer:** keep the lightbox responsive during fullscreen ([df06e90](https://github.com/gb-redRabit/Onda/commit/df06e90c93af857b94bf8d8f5052b88b97eef308))
+* **library:** allow top-level folders as library roots ([246b2e6](https://github.com/gb-redRabit/Onda/commit/246b2e6fb153973c83ba82a9fed736574d2011c0))
+* **library:** keep play history across rescans and flush writes before quit ([3897cb3](https://github.com/gb-redRabit/Onda/commit/3897cb352a0286802ebb52aeef66ab157311f1e7))
+* **media:** stop blocking files in top-level folders ([463d572](https://github.com/gb-redRabit/Onda/commit/463d5720ca187ee0c573ce2d7cdd643249f7f818))
+* **media:** transcode videos without libx264 ([31c8313](https://github.com/gb-redRabit/Onda/commit/31c831394ee9e41535eb9d015df19a6120fdc650))
+* **media:** write tags through ffmpeg for non-MP3 containers ([9605987](https://github.com/gb-redRabit/Onda/commit/960598768f0ae5c5e9f951f752ffb0be9af544f7))
+* **player:** keep transcode progress visible in fullscreen ([b9647da](https://github.com/gb-redRabit/Onda/commit/b9647da900e26010b7912adf5522017257067228))
+* **player:** seek the real video element and stop double volume scaling ([f11b70a](https://github.com/gb-redRabit/Onda/commit/f11b70a83e42cf910b40c12f5527a5b9884735c8))
+* **player:** show transcode progress only in the player overlay ([839536c](https://github.com/gb-redRabit/Onda/commit/839536c5bfe8a9910a58835a0e78bc3672b1c0a8))
+* **plugins:** cap worker messages and API arguments on the host ([259fd32](https://github.com/gb-redRabit/Onda/commit/259fd3233851104e92345c04a7897c2379ba2e89))
+* **security:** close path, IPC and trust boundary gaps ([e3078c4](https://github.com/gb-redRabit/Onda/commit/e3078c4774ec00e3acb8a465610a9f32a6c854f9))
+* **tools:** keep a newer FFmpeg job when a stale one closes ([1fa9159](https://github.com/gb-redRabit/Onda/commit/1fa91599e47d7bf685f45ff046f17f5024d57b5f))
+* **windows:** keep pinned windows above the taskbar ([293d355](https://github.com/gb-redRabit/Onda/commit/293d3550df374b515df8371f5f7c10a262870b4f))
+
+
+### Performance Improvements
+
+* **core:** send ticks for non-structural commands ([0ab8796](https://github.com/gb-redRabit/Onda/commit/0ab8796f9d25c2095c7948c8359518db4d6476b5))
+* **explorer:** list Windows drives without PowerShell ([b5a4823](https://github.com/gb-redRabit/Onda/commit/b5a4823c0d738ac5e3b0bc1c342fc5adc3d7559b))
+* **library:** persist scan changes as a patch ([944db0a](https://github.com/gb-redRabit/Onda/commit/944db0a04e150c3a6fb5e2908e26f16ecbc0cee2))
+* **library:** send incremental library updates ([a3f513a](https://github.com/gb-redRabit/Onda/commit/a3f513ab2daca10dfe9dfad6b2b01bfba3b629e0))
+* **media:** cache read-access checks per roots version ([decb928](https://github.com/gb-redRabit/Onda/commit/decb9284bbede1a933dfba35ea9992e595f6aec5))
+
 ## [1.1.0](https://github.com/gb-redRabit/Onda/compare/v1.0.1...v1.1.0) (2026-11-20)
 
 
