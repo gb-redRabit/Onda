@@ -4,7 +4,6 @@ const state = vi.hoisted(() => ({
   access: vi.fn(),
   lstat: vi.fn(),
   statfs: vi.fn(),
-  execAsync: vi.fn(),
   withTimeout: vi.fn((promise: Promise<unknown>) => promise),
   loggerWarn: vi.fn(),
   hashFile: vi.fn(),
@@ -29,8 +28,6 @@ vi.mock('path', () => ({
   },
   dirname: (p: string) => p.slice(0, p.lastIndexOf('/')) || p
 }));
-vi.mock('child_process', () => ({ exec: vi.fn() }));
-vi.mock('util', () => ({ promisify: () => state.execAsync }));
 vi.mock('../../../../shared/logger', () => ({
   logger: { warn: state.loggerWarn, info: vi.fn(), error: vi.fn() }
 }));
@@ -58,8 +55,6 @@ beforeEach(() => {
   state.lstat.mockRejectedValue(new Error('ENOENT'));
   state.statfs.mockReset();
   state.statfs.mockResolvedValue({ bsize: 4096, blocks: 1000, bavail: 500 });
-  state.execAsync.mockReset();
-  state.execAsync.mockResolvedValue({ stdout: '' });
   state.withTimeout.mockReset();
   state.withTimeout.mockImplementation((promise: Promise<unknown>) => promise);
   state.loggerWarn.mockReset();
@@ -154,79 +149,30 @@ describe('getDriveUsage', () => {
 });
 
 describe('getDrives', () => {
-  it('maps PowerShell output', async () => {
-    state.platform = 'win32';
-    state.execAsync.mockResolvedValueOnce({
-      stdout: JSON.stringify([
-        { Name: 'C', Root: 'C:\\', Free: 10, Used: 20 },
-        { Name: 'D', Root: 'D:\\', Free: null, Used: null }
-      ])
-    });
-    const { getDrives } = await load();
-    const drives = await getDrives();
-    expect(drives).toHaveLength(2);
-    expect(drives[0]).toMatchObject({
-      name: 'C:',
-      path: 'C:\\',
-      isDirectory: true,
-      size: 30,
-      extension: ''
-    });
-    expect(drives[1].size).toBe(0);
-    expect(state.execAsync).toHaveBeenCalledWith(
-      expect.stringContaining('Get-PSDrive'),
-      expect.objectContaining({ encoding: 'utf-8', timeout: 15000, windowsHide: true })
-    );
-  });
-
-  it('accepts a single object response', async () => {
-    state.platform = 'win32';
-    state.execAsync.mockResolvedValueOnce({
-      stdout: JSON.stringify({ Name: 'E', Root: 'E:\\', Free: 1, Used: 2 })
-    });
-    const { getDrives } = await load();
-    expect(await getDrives()).toEqual([
-      expect.objectContaining({ name: 'E:', path: 'E:\\', size: 3 })
-    ]);
-  });
-
-  it('filters malformed entries', async () => {
-    state.platform = 'win32';
-    state.execAsync.mockResolvedValueOnce({
-      stdout: JSON.stringify([null, {}, { Name: 'C', Free: 1, Used: 1 }])
-    });
-    const { getDrives } = await load();
-    expect(await getDrives()).toEqual([
-      expect.objectContaining({ name: 'C:', path: 'C:\\', size: 2 })
-    ]);
-  });
-
-  it('falls back to letter scanning for empty or invalid output', async () => {
+  it('maps accessible Windows drives with their statfs totals', async () => {
     state.platform = 'win32';
     state.access.mockImplementation(async (root: string) => {
-      if (root === 'F:\\') return undefined;
+      if (root === 'C:\\' || root === 'D:\\') return undefined;
       throw new Error('missing');
     });
-    state.execAsync.mockResolvedValueOnce({ stdout: '   ' });
+    state.statfs.mockImplementation(async (root: string) =>
+      root === 'C:\\'
+        ? { bsize: 10, blocks: 100, bavail: 40 }
+        : { bsize: 10, blocks: 50, bavail: 10 }
+    );
     const { getDrives } = await load();
-    expect(await getDrives()).toEqual([expect.objectContaining({ name: 'F:', path: 'F:\\' })]);
 
-    state.execAsync.mockResolvedValueOnce({ stdout: 'not json' });
-    expect(await getDrives()).toEqual([expect.objectContaining({ name: 'F:' })]);
-    expect(state.loggerWarn).toHaveBeenCalledWith('fs', 'could not parse drive list output');
+    expect(await getDrives()).toEqual([
+      expect.objectContaining({ name: 'C:', path: 'C:\\', size: 1000, isDirectory: true }),
+      expect.objectContaining({ name: 'D:', path: 'D:\\', size: 500, isDirectory: true })
+    ]);
   });
 
-  it('falls back when PowerShell throws', async () => {
+  it('returns an empty list when no Windows drive is accessible', async () => {
     state.platform = 'win32';
-    state.execAsync.mockRejectedValueOnce(new Error('powershell'));
     state.access.mockRejectedValue(new Error('missing'));
     const { getDrives } = await load();
     expect(await getDrives()).toEqual([]);
-    expect(state.loggerWarn).toHaveBeenCalledWith(
-      'fs',
-      'getDrives (win32) failed',
-      expect.any(Error)
-    );
   });
 
   it('returns platform roots on macOS and Linux', async () => {
@@ -240,15 +186,6 @@ describe('getDrives', () => {
     expect(await getDrives()).toEqual([
       expect.objectContaining({ name: '/', path: '/', isDirectory: true })
     ]);
-  });
-
-  it('normalises Windows drive names without appending separators twice', async () => {
-    state.platform = 'win32';
-    state.execAsync.mockResolvedValueOnce({
-      stdout: JSON.stringify([{ Name: 'C:', Free: 0, Used: 0 }])
-    });
-    const { getDrives } = await load();
-    expect((await getDrives())[0]).toMatchObject({ name: 'C::', path: 'C::' });
   });
 });
 
