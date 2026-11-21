@@ -69,6 +69,7 @@ export function openToolWindow(
       ...GLASS_WINDOW_OPTS,
       title: definition.title,
       hash: definition.route,
+      webPreferences: { additionalArguments: ['--onda-window-role=tool'] },
       onReadyToShow: (ready) => {
         bringToFront(ready);
       },

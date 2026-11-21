@@ -172,6 +172,18 @@ const IMAGE_VIEWER_RECEIVE_CHANNELS = new Set([
   'tools:message'
 ]);
 
+// Okno narzędzia: tylko tools/dialog/settings/app/window/media i pokazanie
+// wyniku w folderze. Bez fs, biblioteki, online, pluginów.
+const TOOL_INVOKE_PREFIXES = ['tools:', 'dialog:', 'settings:', 'app:', 'window:', 'media:'];
+const TOOL_RECEIVE_CHANNELS = new Set([
+  'tools:context',
+  'tools:message',
+  'tools:progress',
+  'tools:batchImagesProgress',
+  'window:fullscreenChanged',
+  'settings:appearance'
+]);
+
 function compactInvokeAllowed(channel: string): boolean {
   if (channel.startsWith('media:')) return COMPACT_MEDIA_INVOKE_CHANNELS.has(channel);
   return COMPACT_INVOKE_PREFIXES.some((prefix) => channel.startsWith(prefix));
@@ -183,10 +195,16 @@ function imageViewerInvokeAllowed(channel: string): boolean {
   return IMAGE_VIEWER_INVOKE_PREFIXES.some((prefix) => channel.startsWith(prefix));
 }
 
+function toolInvokeAllowed(channel: string): boolean {
+  if (channel === 'shell:showItemInFolder') return true;
+  return TOOL_INVOKE_PREFIXES.some((prefix) => channel.startsWith(prefix));
+}
+
 function canSend(channel: string): boolean {
   if (WINDOW_ROLE === 'core') return CORE_SEND_CHANNELS.has(channel);
   if (WINDOW_ROLE === 'compact') return COMPACT_SEND_CHANNELS.has(channel);
   if (WINDOW_ROLE === 'image-viewer') return IMAGE_VIEWER_SEND_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'tool') return false;
   return ALLOWED_SEND_CHANNELS.has(channel);
 }
 
@@ -194,6 +212,7 @@ function canReceive(channel: string): boolean {
   if (WINDOW_ROLE === 'core') return CORE_RECEIVE_CHANNELS.has(channel);
   if (WINDOW_ROLE === 'compact') return COMPACT_RECEIVE_CHANNELS.has(channel);
   if (WINDOW_ROLE === 'image-viewer') return IMAGE_VIEWER_RECEIVE_CHANNELS.has(channel);
+  if (WINDOW_ROLE === 'tool') return TOOL_RECEIVE_CHANNELS.has(channel);
   return ALLOWED_RECEIVE_CHANNELS.has(channel);
 }
 
@@ -231,6 +250,11 @@ function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
   }
   if (WINDOW_ROLE === 'image-viewer' && !imageViewerInvokeAllowed(channel)) {
     const message = `IPC invoke is blocked in the image viewer: '${channel}'`;
+    logger.warn('preload', message);
+    return Promise.reject(new Error(message));
+  }
+  if (WINDOW_ROLE === 'tool' && !toolInvokeAllowed(channel)) {
+    const message = `IPC invoke is blocked in the tool window: '${channel}'`;
     logger.warn('preload', message);
     return Promise.reject(new Error(message));
   }

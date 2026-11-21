@@ -184,6 +184,35 @@ describe('image viewer role', () => {
   });
 });
 
+describe('tool window role', () => {
+  it('allows tools/dialog/media but blocks fs, library and sends', async () => {
+    process.argv.push('--onda-window-role=tool');
+    try {
+      vi.resetModules();
+      await import('../index');
+      const toolApi = state.expose.mock.calls.at(-1)![1] as Record<string, (...args: any[]) => any>;
+      state.invoke.mockResolvedValue('ok');
+
+      await expect(toolApi.invoke('tools:convert', {})).resolves.toBe('ok');
+      await expect(toolApi.invoke('dialog:openFile', {})).resolves.toBe('ok');
+      await expect(toolApi.invoke('shell:showItemInFolder', '/a')).resolves.toBe('ok');
+      await expect(toolApi.invoke('fs:delete', '/a')).rejects.toThrow('tool window');
+      await expect(toolApi.invoke('library:loadFolders')).rejects.toThrow('tool window');
+
+      toolApi.send('tools:message', { type: 'x' });
+      expect(state.send).not.toHaveBeenCalled();
+
+      const handler = vi.fn();
+      toolApi.on('tools:context', handler);
+      expect(state.on).toHaveBeenCalledWith('tools:context', expect.any(Function));
+      toolApi.on('library:updated', handler);
+      expect(state.on).not.toHaveBeenCalledWith('library:updated', expect.any(Function));
+    } finally {
+      process.argv.pop();
+    }
+  });
+});
+
 describe('invoke guard', () => {
   it('forwards an allowed channel and returns the result', async () => {
     state.invoke.mockResolvedValue(7);
