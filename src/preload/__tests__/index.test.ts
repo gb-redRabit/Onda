@@ -82,6 +82,41 @@ describe('exposure', () => {
   });
 });
 
+describe('core window role', () => {
+  it('blocks invoke and channels outside the core allowlist', async () => {
+    process.argv.push('--onda-window-role=core');
+    try {
+      vi.resetModules();
+      await import('../index');
+      const coreApi = state.expose.mock.calls.at(-1)![1] as Record<string, (...args: any[]) => any>;
+
+      state.invoke.mockResolvedValue('http://media');
+      await expect(coreApi.invoke('media:getServerUrl')).resolves.toBe('http://media');
+      state.invoke.mockClear();
+      await expect(coreApi.invoke('window:id')).rejects.toThrow('Core window');
+      await expect(coreApi.invoke('fs:delete', '/x')).rejects.toThrow('Core window');
+      expect(state.invoke).not.toHaveBeenCalled();
+
+      coreApi.send('core:state', { revision: 1 });
+      expect(state.send).toHaveBeenCalledWith('core:state', { revision: 1 });
+      coreApi.send('discord:update', null);
+      expect(state.send).toHaveBeenCalledWith('discord:update', null);
+      coreApi.send('fs:delete', '/x');
+      expect(state.send).not.toHaveBeenCalledWith('fs:delete', '/x');
+
+      const handler = vi.fn();
+      coreApi.on('core:command', handler);
+      coreApi.on('core:ready', handler);
+      expect(state.on).toHaveBeenCalledWith('core:command', expect.any(Function));
+      expect(state.on).toHaveBeenCalledWith('core:ready', expect.any(Function));
+      coreApi.on('library:updated', handler);
+      expect(state.on).not.toHaveBeenCalledWith('library:updated', expect.any(Function));
+    } finally {
+      process.argv.pop();
+    }
+  });
+});
+
 describe('invoke guard', () => {
   it('forwards an allowed channel and returns the result', async () => {
     state.invoke.mockResolvedValue(7);

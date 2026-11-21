@@ -222,7 +222,8 @@ function createCoreWindow(): BrowserWindow {
     autoShow: false,
     webPreferences: {
       backgroundThrottling: false,
-      autoplayPolicy: 'no-user-gesture-required'
+      autoplayPolicy: 'no-user-gesture-required',
+      additionalArguments: ['--onda-window-role=core']
     }
   });
   win.webContents.on('did-finish-load', () => logger.info('core-service', 'core renderer loaded'));

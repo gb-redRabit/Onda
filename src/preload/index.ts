@@ -73,8 +73,54 @@ import {
 } from './generated';
 import { logger } from '../shared/logger';
 
+// Rola okna jest przekazywana przez `webPreferences.additionalArguments`.
+// Okno Core jest ukrytym rendererem audio — nie potrzebuje żadnego invoke,
+// a z `send`/`on` tylko kanałów Core. To ogranicza skutki przejęcia tego
+// renderera bez zmiany allowlisty głównego okna.
+const WINDOW_ROLE_PREFIX = '--onda-window-role=';
+const WINDOW_ROLE =
+  process.argv
+    .find((arg) => arg.startsWith(WINDOW_ROLE_PREFIX))
+    ?.slice(WINDOW_ROLE_PREFIX.length) ?? 'main';
+const CORE_SEND_CHANNELS = new Set([
+  'core:state',
+  'core:tick',
+  'core:viz',
+  'core:error',
+  'core:ready',
+  'discord:update'
+]);
+const CORE_RECEIVE_CHANNELS = new Set(['core:command', 'core:viz', 'core:ready']);
+// Core jest właścicielem audio: potrzebuje tylko ustawień, pozycji odtwarzania,
+// serwera mediów, scrobblingu i Discorda. Żadnych fs/media mutacji.
+const CORE_INVOKE_CHANNELS = new Set([
+  'media:getServerUrl',
+  'settings:get',
+  'settings:set',
+  'playback:setPosition',
+  'playback:clearPosition',
+  'scrobbling:nowPlaying',
+  'scrobbling:scrobble',
+  'discord:configure',
+  'discord:getStatus',
+  'discord:resolveCover',
+  'discord:resolveLocalCover'
+]);
+
+function canSend(channel: string): boolean {
+  return WINDOW_ROLE === 'core'
+    ? CORE_SEND_CHANNELS.has(channel)
+    : ALLOWED_SEND_CHANNELS.has(channel);
+}
+
+function canReceive(channel: string): boolean {
+  return WINDOW_ROLE === 'core'
+    ? CORE_RECEIVE_CHANNELS.has(channel)
+    : ALLOWED_RECEIVE_CHANNELS.has(channel);
+}
+
 function trySend(channel: string, ...args: unknown[]): void {
-  if (!ALLOWED_SEND_CHANNELS.has(channel)) {
+  if (!canSend(channel)) {
     logger.warn('preload', `IPC send on non-allowlisted channel '${channel}' blocked`);
     return;
   }
@@ -95,6 +141,11 @@ function trySend(channel: string, ...args: unknown[]): void {
 function tryInvoke<C extends IpcChannel>(channel: C, ...args: IpcArgs<C>): Promise<IpcResult<C>>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown>;
 function tryInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
+  if (WINDOW_ROLE === 'core' && !CORE_INVOKE_CHANNELS.has(channel)) {
+    const message = `IPC invoke is blocked in the Core window: '${channel}'`;
+    logger.warn('preload', message);
+    return Promise.reject(new Error(message));
+  }
   if (!ALLOWED_INVOKE_CHANNELS.has(channel)) {
     const message = `IPC invoke on non-allowlisted channel '${channel}' blocked`;
     logger.warn('preload', message);
@@ -119,7 +170,7 @@ const api: OndaAPI = {
   getWindowId: (): Promise<number> => tryInvoke('window:id'),
   send: trySend,
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
-    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
+    if (!canReceive(channel)) {
       logger.warn('preload', `IPC on for non-allowlisted channel '${channel}' blocked`);
       return () => {};
     }
@@ -131,7 +182,7 @@ const api: OndaAPI = {
     };
   },
   once: (channel: string, callback: (...args: unknown[]) => void): void => {
-    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
+    if (!canReceive(channel)) {
       logger.warn('preload', `IPC once for non-allowlisted channel '${channel}' blocked`);
       return;
     }
