@@ -46,11 +46,24 @@ describe('conf encryption', () => {
     expect(decryptConf(encrypted, 'k'.repeat(32))).toBe('{"theme":"ciemny"}');
   });
 
-  it('fails to decrypt with a different key or corrupted data', () => {
+  it('rejects structurally corrupted payloads', () => {
+    const key = 'a'.repeat(32);
+    const encrypted = encryptConf('secret', key);
+
+    expect(decryptConf(Buffer.from('too short'), key)).toBeNull();
+    // Brak separatora po IV.
+    expect(decryptConf(Buffer.alloc(17, 7), key)).toBeNull();
+    // Szyfrogram nie jest wielokrotnością bloku — padding zawsze zawodzi.
+    expect(decryptConf(encrypted.subarray(0, encrypted.length - 1), key)).toBeNull();
+  });
+
+  it('does not return the plaintext when the key is wrong', () => {
+    // AES-CBC nie uwierzytelnia danych: przy złym kluczu padding może przejść
+    // (średnio 1/256). Produkcyjnie odrzuca to walidacja JSON w migracji, więc
+    // ten test nie może wymagać `null` — sprawdza tylko, że nie wycieka tekst.
     const encrypted = encryptConf('secret', 'a'.repeat(32));
 
-    expect(decryptConf(encrypted, 'b'.repeat(32))).toBeNull();
-    expect(decryptConf(Buffer.from('too short'), 'a'.repeat(32))).toBeNull();
+    expect(decryptConf(encrypted, 'b'.repeat(32))).not.toBe('secret');
   });
 });
 
