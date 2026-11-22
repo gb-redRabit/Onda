@@ -452,6 +452,10 @@ export function registerMediaHandlers(): void {
           { timeout: 15000 }
         );
         const codec = stdout.trim().toLowerCase();
+        // Plik bez ścieżki audio (np. nieme wideo) nie ma czego transkodować.
+        // Wcześniej pusty wynik dawał `supported: false`, co wyciszało wideo
+        // i uruchamiało ffmpeg z `-map 0:a:0`, kończąc się błędem.
+        if (!codec) return null;
         const supported = [
           'aac',
           'mp3',

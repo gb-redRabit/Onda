@@ -648,6 +648,14 @@ describe('media:checkAudioCodec', () => {
     });
   });
 
+  it('returns null when the file has no audio stream', async () => {
+    const file = tempFile('silent.mp4');
+    mocks.readable.add(file);
+    mocks.runCommand.mockResolvedValue('  \n');
+
+    expect(await handler('media:checkAudioCodec')({}, file)).toBeNull();
+  });
+
   it('returns null when ffprobe fails', async () => {
     const file = tempFile('codec3.mp3');
     mocks.readable.add(file);

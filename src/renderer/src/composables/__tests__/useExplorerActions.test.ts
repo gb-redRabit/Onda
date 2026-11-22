@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@renderer/utils/explorerMedia', () => ({ buildMediaFile: state.buildMediaFile }));
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: state.t }) }));
+vi.mock('@shared/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
 const { useExplorerActions } = await import('../useExplorerActions');
 
@@ -136,6 +137,16 @@ describe('playItem', () => {
     expect(state.grantMediaAccess).toHaveBeenCalledWith('/dir/c.mp4');
     expect(router.push).toHaveBeenCalledWith('/player');
     expect(player.setTrack).toHaveBeenCalledWith(expect.objectContaining({ type: 'video' }));
+  });
+
+  it('opens the player even when media access is rejected', async () => {
+    state.grantMediaAccess.mockRejectedValueOnce(new Error('denied'));
+    const { actions, player, router } = setup();
+
+    await actions.playItem(item('c.mp4'));
+
+    expect(player.setTrack).toHaveBeenCalledWith(expect.objectContaining({ type: 'video' }));
+    expect(router.push).toHaveBeenCalledWith('/player');
   });
 
   it('ignores unsupported items', async () => {

@@ -8,6 +8,7 @@ import { IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS } from '@shared/constants';
 import type { FileItem } from '@renderer/types/explorer';
 import type { MediaFile } from '@renderer/types/media';
 import { buildMediaFile } from '@renderer/utils/explorerMedia';
+import { logger } from '@shared/logger';
 import type { useRouter } from 'vue-router';
 
 interface ExplorerActionsCtx {
@@ -52,7 +53,13 @@ export function useExplorerActions(ctx: ExplorerActionsCtx) {
       // Wideo/obraz są serwowane przez lokalny serwer mediów — przyznaj dostęp do
       // folderu pliku, zanim odtwarzacz zażąda URL.
       if (track.type === 'video') {
-        await window.api?.grantMediaAccess(item.path);
+        try {
+          await window.api?.grantMediaAccess(item.path);
+        } catch (e) {
+          // Odmowa dostępu nie może blokować otwarcia odtwarzacza — użytkownik
+          // zobaczy właściwy błąd odtwarzania zamiast ciszy po dwukliku.
+          logger.warn('explorer', 'grantMediaAccess failed; opening the player anyway', e);
+        }
       }
       player.setTrack(track);
       if (track.type === 'video') ctx.router.push('/player');
