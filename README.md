@@ -37,7 +37,7 @@
 - ⏱ Audio delay compensation (0–500 ms) to fix lip-sync on files whose audio runs ahead of the picture.
 - 🔁 A-B repeat for audio and video: a single cycling button, draggable A/B markers on the progress bar and `[` `]` `\` shortcuts.
 - 🎞 Frame stepping (`,` / `.`) and a one-click PNG screenshot of the current frame at the video's native resolution.
-- 🌈 8 canvas visualizations (bars, spectrum, wave, radial, rings, circle, particles, none) with crossfade, configurable colors, sensitivity, smoothing, FPS cap and quality levels.
+- 🌈 8 canvas visualizations (bars, spectrum, wave, radial, rings, circle, particles, none) with crossfade, theme-following colors (overridable and resettable), sensitivity, smoothing, FPS cap and quality levels.
 - 🖼 Free-canvas Audio View: place 8 elements (visualizer, cover, track info, progress, controls, lyrics, favorite, technical) anywhere with percentage positioning, layers and opacity. 5 layout presets.
 - 🛠 Layout editor with a live mini-preview, 1% grid, drag-and-drop and per-element show/hide.
 - ⛶ True Fullscreen API, auto-hiding HUD, cover "pulse" synced to the bass, video-cover loops and CSS marquee for long titles.
@@ -187,7 +187,7 @@ npm run dev
 Quality gates:
 
 ```bash
-npm test           # 12,858 unit tests (Vitest)
+npm test           # 12,867 unit tests (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (run `npm run build` first)
@@ -222,7 +222,7 @@ Onda is built to stay smooth on large libraries and slow disks.
 | **Work off the main thread**     | JASSUB subtitles run in a Web Worker (WASM); plugins are sandboxed in workers with hard CPU/message budgets.                                                                                                                |
 | **Resource safety**              | `AbortController` for cancelling scans/downloads, pinned DNS to prevent SSRF, download concurrency capped at 8, atomic queue persistence, spawn semaphore for subtitle extraction, LRU eviction for cover/thumbnail caches. |
 | **Race-free selection & search** | Request-id/token guards make stale async responses (search pagination, cover loads, module switches, library scans) no-ops.                                                                                                 |
-| **Quality gates**                | 12,858 unit tests + 117 Playwright E2E tests + lint + typecheck + IPC codegen + a11y check run on every change.                                                                                                             |
+| **Quality gates**                | 12,867 unit tests + 118 Playwright E2E tests + lint + typecheck + IPC codegen + a11y check run on every change.                                                                                                             |
 
 ### Security
 
@@ -272,7 +272,7 @@ Onda is **source-available**, not open source: you may use, modify and share it 
 - ⏱ Kompensacja opóźnienia dźwięku (0–500 ms) dla plików, w których dźwięk ucieka przed obrazem (lip-sync).
 - 🔁 Pętla A-B w audio i wideo: jeden przycisk cykliczny, przeciągalne znaczniki A/B na pasku postępu i skróty `[` `]` `\`.
 - 🎞 Przewijanie klatka po klatce (`,` / `.`) i zrzut bieżącej klatki do PNG w natywnej rozdzielczości.
-- 🌈 8 wizualizacji na canvasie (bars, spectrum, wave, radial, rings, circle, particles, none) z crossfade, kolorami, czułością, wygładzaniem, limitem FPS i jakością.
+- 🌈 8 wizualizacji na canvasie (bars, spectrum, wave, radial, rings, circle, particles, none) z crossfade, kolorami podążającymi za motywem (z możliwością nadpisania i resetu), czułością, wygładzaniem, limitem FPS i jakością.
 - 🖼 Widok Audio (free canvas): 8 elementów (wizualizacja, okładka, info, progress, kontrolki, tekst, ulubione, informacje techniczne) w dowolnym miejscu, pozycjonowanie procentowe, warstwy i przezroczystość. 5 presetów.
 - 🛠 Edytor layoutu z mini-podglądem, siatką 1%, drag-and-drop i show/hide per element.
 - ⛶ Prawdziwy Fullscreen API, auto-ukrywany HUD, „puls" okładki zsynchronizowany z basem, pętle okładek wideo i marquee długich tytułów.
@@ -422,7 +422,7 @@ npm run dev
 Bramki jakości:
 
 ```bash
-npm test           # 12 858 testów jednostkowych (Vitest)
+npm test           # 12 867 testów jednostkowych (Vitest)
 npm run typecheck  # tsc (main/preload) + vue-tsc (renderer)
 npm run lint       # ESLint
 npm run e2e        # Playwright + Electron (najpierw `npm run build`)
@@ -457,7 +457,7 @@ Onda jest zaprojektowana tak, by pozostać płynna przy dużych bibliotekach i w
 | **Praca poza wątkiem głównym**                   | Napisy JASSUB w Web Workerze (WASM); wtyczki w sandboxie workera z twardymi budżetami.                                                                                                                               |
 | **Bezpieczeństwo zasobów**                       | `AbortController` do anulowania skanów/pobrań, przypięty DNS przeciw SSRF, limit współbieżności pobrań 8, atomowa persystencja kolejki, semafor spawnu przy ekstrakcji napisów, ewiction LRU cache okładek/miniatur. |
 | **Wolne od wyścigów zaznaczanie i wyszukiwanie** | Tokeny/request-id sprawiają, że przedawnione odpowiedzi (paginacja wyszukiwania, ładowanie okładek, przełączenia modułów, skany biblioteki) są no-opami.                                                             |
-| **Bramki jakości**                               | 12 858 testów jednostkowych + 117 testów E2E + lint + typecheck + check codegenu IPC + check a11y przy każdej zmianie.                                                                                               |
+| **Bramki jakości**                               | 12 867 testów jednostkowych + 118 testów E2E + lint + typecheck + check codegenu IPC + check a11y przy każdej zmianie.                                                                                               |
 
 ### Bezpieczeństwo
 
