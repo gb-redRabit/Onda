@@ -5,6 +5,11 @@ import { join, resolve } from 'path';
 import { launchOnda, dismissWizard } from './helpers/app';
 
 // Regresja: dwuklik na pliku wideo w Eksploratorze ma otworzyć odtwarzacz.
+test.skip(
+  process.platform === 'darwin',
+  'macOS runner: Electron exits during explorer item double-click (SIGTRAP pattern)'
+);
+
 test('opens a video from the explorer in the player', async () => {
   test.slow();
   const dir = mkdtempSync(join(tmpdir(), 'onda-explorer-video-'));
