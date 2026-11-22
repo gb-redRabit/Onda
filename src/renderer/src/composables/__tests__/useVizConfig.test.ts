@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, nextTick, reactive } from 'vue';
 
@@ -34,6 +34,11 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => {
+  document.documentElement.style.removeProperty('--color-primary');
+  document.documentElement.style.removeProperty('--color-secondary');
+});
+
 describe('useVizConfig', () => {
   it('applies defaults for missing settings', () => {
     const { api } = mountViz();
@@ -47,6 +52,48 @@ describe('useVizConfig', () => {
     });
     expect(h.qualityPreset).toHaveBeenCalledWith('high');
     expect(api.quality.value).toBe('preset:high');
+  });
+
+  it('uses the active theme colours while they are left at defaults', () => {
+    document.documentElement.style.setProperty('--color-primary', '#123456');
+    document.documentElement.style.setProperty('--color-secondary', '#abcdef');
+
+    const { api } = mountViz();
+
+    expect(api.vizCfg.primaryColor).toBe('#123456');
+    expect(api.vizCfg.secondaryColor).toBe('#abcdef');
+  });
+
+  it('keeps colours the user picked explicitly', () => {
+    document.documentElement.style.setProperty('--color-primary', '#123456');
+    h.settings.playback.visualization = {
+      primaryColor: '#111111',
+      secondaryColor: '#222222'
+    };
+
+    const { api } = mountViz();
+
+    expect(api.vizCfg.primaryColor).toBe('#111111');
+    expect(api.vizCfg.secondaryColor).toBe('#222222');
+  });
+
+  it('refreshes theme colours when the theme variables change', async () => {
+    const { api } = mountViz();
+    expect(api.vizCfg.primaryColor).toBe('#8b7cf0');
+
+    document.documentElement.style.setProperty('--color-primary', '#00ff00');
+
+    await vi.waitFor(() => expect(api.vizCfg.primaryColor).toBe('#00ff00'));
+  });
+
+  it('stops reacting to theme changes after unmount', async () => {
+    const { wrapper, api } = mountViz();
+    wrapper.unmount();
+
+    document.documentElement.style.setProperty('--color-primary', '#00ff00');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(api.vizCfg.primaryColor).toBe('#8b7cf0');
   });
 
   it('reads stored settings and keeps zero smoothing', () => {

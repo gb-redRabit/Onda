@@ -67,6 +67,8 @@ afterEach(() => {
   wrapper?.unmount();
   wrapper = null;
   document.body.innerHTML = '';
+  document.documentElement.style.removeProperty('--color-primary');
+  document.documentElement.style.removeProperty('--color-secondary');
   vi.restoreAllMocks();
 });
 
@@ -122,6 +124,50 @@ describe('colours and sliders', () => {
     await colors[1].setValue('#000000');
     expect(state.settings.updatePlayback).toHaveBeenLastCalledWith({
       visualization: viz({ secondaryColor: '#000000' })
+    });
+  });
+
+  it('shows the theme colours and disables reset while following the theme', () => {
+    document.documentElement.style.setProperty('--color-primary', '#123456');
+    document.documentElement.style.setProperty('--color-secondary', '#abcdef');
+    state.settings.playback.visualization = viz({
+      primaryColor: '#8b7cf0',
+      secondaryColor: '#4f46e5'
+    });
+    mountView();
+
+    const colors = wrapper!.findAll('input[type="color"]');
+    expect(colors[0].attributes('value')).toBe('#123456');
+    expect(colors[1].attributes('value')).toBe('#abcdef');
+    expect(wrapper!.text()).toContain('audioView.vizColorsFollowTheme');
+    expect(wrapper!.get('[data-testid="viz-colors-reset"]').attributes('disabled')).toBeDefined();
+  });
+
+  it('refreshes the displayed theme colours after a theme change', async () => {
+    state.settings.playback.visualization = viz({
+      primaryColor: '#8b7cf0',
+      secondaryColor: '#4f46e5'
+    });
+    state.settings.appearance.theme = 'dark';
+    mountView();
+    const colors = wrapper!.findAll('input[type="color"]');
+    expect(colors[0].attributes('value')).toBe('#8b7cf0');
+
+    document.documentElement.style.setProperty('--color-primary', '#abcdef');
+    state.settings.appearance.theme = 'light';
+
+    await vi.waitFor(() => expect(colors[0].attributes('value')).toBe('#abcdef'));
+  });
+
+  it('resets custom colours back to the theme defaults', async () => {
+    mountView();
+    const reset = wrapper!.get('[data-testid="viz-colors-reset"]');
+    expect(reset.attributes('disabled')).toBeUndefined();
+
+    await reset.trigger('click');
+
+    expect(state.settings.updatePlayback).toHaveBeenCalledWith({
+      visualization: viz({ primaryColor: '#8b7cf0', secondaryColor: '#4f46e5' })
     });
   });
 

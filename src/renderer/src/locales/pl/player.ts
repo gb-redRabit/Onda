@@ -161,6 +161,8 @@ export default {
     vizModeLabel: 'Tryb',
     vizPrimaryColor: 'Kolor podstawowy',
     vizSecondaryColor: 'Kolor dodatkowy',
+    vizColorsFollowTheme: 'Kolory podążają za motywem',
+    vizColorsReset: 'Przywróć motyw',
     vizSensitivity: 'Czułość',
     vizSmoothing: 'Wygładzanie',
     vizFpsCap: 'Limit FPS',

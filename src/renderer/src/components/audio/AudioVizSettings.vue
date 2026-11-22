@@ -1,16 +1,58 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { X } from '@lucide/vue';
+import { RotateCcw, X } from '@lucide/vue';
 import { useSettingsStore } from '@renderer/stores/settings';
 import Button from '@renderer/components/ui/Button.vue';
 import type { VisualizationMode } from '@renderer/types/settings';
+import {
+  DEFAULT_VIZ_PRIMARY,
+  DEFAULT_VIZ_SECONDARY,
+  followsThemeColor,
+  resolveVizColor
+} from '@renderer/utils/vizColors';
 
 const emit = defineEmits<{ close: [] }>();
 
 const { t } = useI18n();
 const settings = useSettingsStore();
 const viz = computed(() => settings.playback.visualization);
+// Motyw jest aplikowany przez CSS vars w rAF; podbijamy wersję po tej samej
+// ramce, żeby podgląd kolorów w panelu nie został na poprzednim motywie.
+const colorVersion = ref(0);
+let colorFrame = 0;
+watch(
+  () => [
+    settings.appearance.theme,
+    settings.appearance.customBase,
+    settings.appearance.customColors
+  ],
+  () => {
+    if (typeof requestAnimationFrame !== 'function') {
+      colorVersion.value += 1;
+      return;
+    }
+    cancelAnimationFrame(colorFrame);
+    colorFrame = requestAnimationFrame(() => {
+      colorFrame = 0;
+      colorVersion.value += 1;
+    });
+  },
+  { deep: true }
+);
+const primaryColor = computed(() => {
+  void colorVersion.value;
+  return resolveVizColor(viz.value.primaryColor, 'primary');
+});
+const secondaryColor = computed(() => {
+  void colorVersion.value;
+  return resolveVizColor(viz.value.secondaryColor, 'secondary');
+});
+const colorsFollowTheme = computed(
+  () =>
+    followsThemeColor(viz.value.primaryColor, 'primary') &&
+    followsThemeColor(viz.value.secondaryColor, 'secondary')
+);
 const audioLayout = computed(() => settings.appearance.audioLayout);
 const vizQuality = computed(() => audioLayout.value?.vizQuality ?? 'high');
 
@@ -55,6 +97,11 @@ function update(partial: Partial<typeof viz.value>) {
   settings.updatePlayback({ visualization: { ...viz.value, ...partial } });
 }
 
+// Wpisanie dawnych wartości domyślnych przywraca tryb "podążaj za motywem".
+function resetColors(): void {
+  update({ primaryColor: DEFAULT_VIZ_PRIMARY, secondaryColor: DEFAULT_VIZ_SECONDARY });
+}
+
 function updateLayout(partial: Record<string, unknown>) {
   settings.updateAppearance({
     audioLayout: { ...audioLayout.value, ...partial }
@@ -66,7 +113,10 @@ function onKeydown(event: KeyboardEvent): void {
   if (event.key === 'Escape') emit('close');
 }
 onMounted(() => document.addEventListener('keydown', onKeydown));
-onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown);
+  if (colorFrame) cancelAnimationFrame(colorFrame);
+});
 </script>
 
 <template>
@@ -115,12 +165,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
       <div class="flex items-center gap-2">
         <input
           type="color"
-          :value="viz.primaryColor"
+          :value="primaryColor"
           class="h-7 w-7 cursor-pointer rounded-field border-0 p-0 fx-depth"
           :aria-label="t('audioView.vizPrimaryColor')"
           @input="(e: Event) => update({ primaryColor: (e.target as HTMLInputElement).value })"
         />
-        <span class="font-mono text-2xs text-base-content/70">{{ viz.primaryColor }}</span>
+        <span class="font-mono text-2xs text-base-content/70">{{ primaryColor }}</span>
       </div>
     </div>
 
@@ -131,13 +181,30 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
       <div class="flex items-center gap-2">
         <input
           type="color"
-          :value="viz.secondaryColor"
+          :value="secondaryColor"
           class="h-7 w-7 cursor-pointer rounded-field border-0 p-0 fx-depth"
           :aria-label="t('audioView.vizSecondaryColor')"
           @input="(e: Event) => update({ secondaryColor: (e.target as HTMLInputElement).value })"
         />
-        <span class="font-mono text-2xs text-base-content/70">{{ viz.secondaryColor }}</span>
+        <span class="font-mono text-2xs text-base-content/70">{{ secondaryColor }}</span>
       </div>
+    </div>
+
+    <div class="flex items-center justify-between gap-2">
+      <span v-if="colorsFollowTheme" class="text-2xs text-base-content/50">
+        {{ t('audioView.vizColorsFollowTheme') }}
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="ml-auto"
+        data-testid="viz-colors-reset"
+        :disabled="colorsFollowTheme"
+        @click="resetColors"
+      >
+        <RotateCcw :size="12" />
+        {{ t('audioView.vizColorsReset') }}
+      </Button>
     </div>
 
     <div>

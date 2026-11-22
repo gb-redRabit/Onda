@@ -161,6 +161,8 @@ export default {
     vizModeLabel: 'Mode',
     vizPrimaryColor: 'Primary color',
     vizSecondaryColor: 'Secondary color',
+    vizColorsFollowTheme: 'Colors follow the theme',
+    vizColorsReset: 'Reset to theme',
     vizSensitivity: 'Sensitivity',
     vizSmoothing: 'Smoothing',
     vizFpsCap: 'FPS cap',
