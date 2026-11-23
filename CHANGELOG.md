@@ -8,6 +8,18 @@ na `main` wersję ostatnio opublikowanego release'a; wersję podnosi wyłącznie
 `chore(main): release X.Y.Z` z PR-a release-please. Ręczne `npm version` na `main`
 jest błędem — pilnują tego `npm run version:check` i `npm run check:artifacts` w CI.
 
+## [1.3.0](https://github.com/gb-redRabit/Onda/compare/v1.2.0...v1.3.0) (2026-11-22)
+
+
+### Features
+
+* **audio:** follow the theme in visualization colours ([631df6d](https://github.com/gb-redRabit/Onda/commit/631df6d7cb65328dad81c078eb49115c6c06eae4))
+
+
+### Bug Fixes
+
+* **explorer:** open videos without audio and survive media-grant errors ([975abc7](https://github.com/gb-redRabit/Onda/commit/975abc7e4784cd2e844ebb784bd897a4bf3f5dc5))
+
 ## [1.2.0](https://github.com/gb-redRabit/Onda/compare/v1.1.0...v1.2.0) (2026-11-21)
 
 
